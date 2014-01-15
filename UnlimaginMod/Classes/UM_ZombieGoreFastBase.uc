@@ -57,6 +57,7 @@ defaultproperties
      OnlineHeadshotOffset=(X=5.000000,Z=53.000000)
      OnlineHeadshotScale=1.500000
      MotionDetectorThreat=0.500000
+     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Death'
      ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
      ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'

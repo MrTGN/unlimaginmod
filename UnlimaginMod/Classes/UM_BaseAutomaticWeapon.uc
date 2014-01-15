@@ -57,6 +57,21 @@ replication
 
 function bool AllowSwitchFireMode()
 {
+	local	int		Mode;
+	
+	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
+		if ( FireMode[Mode] == None )
+			Continue;
+		else if ( (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring)
+				 || FireMode[Mode].IsInState('FireLoop')
+				 || FireMode[Mode].IsInState('Bursting')
+				 || FireMode[Mode].IsInState('SwitchingFireMode') )
+			Return False;
+	}
+
+	if ( bIsReloading )
+		Return False;
+	
 	Return SelectiveFireModes.Length > 0;
 }
 
@@ -120,6 +135,9 @@ state SwitchingFireMode
 	{
 		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(FireModeSwitchAnim.Anim) )
 			PlayAnim(FireModeSwitchAnim.Anim, FireModeSwitchAnim.Rate, FireModeSwitchAnim.TweenTime);
+		
+		SetTimer(0.0, false);
+		GotoState('');
 	}
 }
 
@@ -132,8 +150,9 @@ simulated function bool ReadyToFire(int Mode)
 	else
 		alt = 0;
 	
-	if ( FireMode[Mode].IsInState('FireLoop') || FireMode[alt].IsInState('FireLoop') ||
-		 FireMode[Mode].IsInState('Bursting') || FireMode[alt].IsInState('Bursting') )
+	if ( FireMode[Mode].IsInState('FireLoop') || FireMode[alt].IsInState('FireLoop')
+	     || FireMode[Mode].IsInState('Bursting') || FireMode[alt].IsInState('Bursting') 
+		 || FireMode[Mode].IsInState('SwitchingFireMode') || FireMode[alt].IsInState('SwitchingFireMode') )
 		Return False;
 	
 	Return Super.ReadyToFire(Mode);
@@ -232,6 +251,8 @@ simulated event OnZoomOutFinished()
 
 defaultproperties
 {
-     bHasTacticalReload=True
+     FireModeSwitchAnim=(Rate=1.000000, TweenTime=0.001000)
+	 FireModeSwitchTime=0.150000
+	 bHasTacticalReload=True
 	 FireModeSwitchMessageClass=Class'UnlimaginMod.UM_SelectiveFireModeSwitchMessage'
 }

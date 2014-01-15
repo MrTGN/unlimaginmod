@@ -673,7 +673,7 @@ function bool AllowReload()
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
 		if ( FireMode[Mode] == None )
 			Continue;
-		else if ( FireMode[Mode].bIsFiring )
+		else if ( FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring )
 			Return False;
 	}
 	

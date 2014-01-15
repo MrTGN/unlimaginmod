@@ -83,16 +83,6 @@ exec function SwitchFireMode()
 
 simulated function SetFireMode(EFireMode NewFM)
 {
-	local	PlayerController	Player;
-
-	Player = Level.GetLocalPlayerController();
-	if ( Player != None )  {
-		if ( ModeSwitchSound != None )
-			PlayOwnedSound(ModeSwitchSound, SLOT_None, ModeSwitchSoundVolume, , , , false);
-		//ToDo: в дальнейшем заменить это на отдельную строку на экране и менять её содержимое
-		Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, NewFM);
-	}
-	
 	switch(NewFM)  {
 		case FM_Auto:
 			FireMode[0].bWaitForRelease = False;
@@ -133,6 +123,16 @@ state SwitchingFireMode
 	
 	simulated function Timer()
 	{
+		local	PlayerController	Player;
+
+		Player = Level.GetLocalPlayerController();
+		if ( Player != None )  {
+			if ( ModeSwitchSound != None )
+				PlayOwnedSound(ModeSwitchSound, SLOT_None, ModeSwitchSoundVolume, , , , false);
+			//ToDo: в дальнейшем заменить это на отдельную строку на экране и менять её содержимое
+			Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, NewFM);
+		}
+		
 		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(FireModeSwitchAnim.Anim) )
 			PlayAnim(FireModeSwitchAnim.Anim, FireModeSwitchAnim.Rate, FireModeSwitchAnim.TweenTime);
 		

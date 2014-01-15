@@ -81,12 +81,30 @@ simulated event PostBeginPlay()
 
 simulated function float CalcPenitrationBonus(float EnergyLoss)
 {
-	Return (EnergyLoss * ExpansionCoefficient);
+	local	float	Result;
+	
+	if ( ExpansionCoefficient > 1.0 )  {
+		Result = EnergyLoss * ExpansionCoefficient;
+		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
+		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
+		Return Result;
+	}
+	else
+		Return EnergyLoss;
 }
 
 simulated function float CalcBounceBonus(float EnergyLoss)
 {
-	Return (EnergyLoss * ExpansionCoefficient);
+	local	float	Result;
+	
+	if ( ExpansionCoefficient > 1.0 )  {
+		Result = EnergyLoss * ExpansionCoefficient;
+		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
+		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
+		Return Result;
+	}
+	else
+		Return EnergyLoss;
 }
 
 // Called when projectile has lost all energy

@@ -1,0 +1,131 @@
+//==================================
+//Weapon changing. Added by TGN
+var travel Weapon	Weapon;			// The pawn's current weapon.
+var Weapon			PendingWeapon;	// Will become weapon once current weapon is put down
+
+var Weapon			TmpPendingWeapon; // New var for tmp by TGN
+
+// Just changed to pendingWeapon
+simulated function ChangedWeapon()
+{
+	local Weapon OldWeapon;
+
+	ServerChangedWeapon(Weapon, PendingWeapon);
+	if (Role < ROLE_Authority)
+	{
+		OldWeapon = Weapon;
+		Weapon = PendingWeapon;
+		PendingWeapon = None;
+		if ( Controller != None )
+			Controller.ChangedWeapon();
+
+		if (Weapon != None)
+			Weapon.BringUp(OldWeapon);
+	}
+	 
+	if (Weapon != None && Role < ROLE_Authority)
+	{
+		if (bBerserk)
+			Weapon.StartBerserk();
+		else if ( Weapon.bBerserk )
+			Weapon.StopBerserk();
+	}
+
+	// Experience Level relate stuff .
+	if ( Weapon != none && KFWeapon(Weapon).bSpeedMeUp )
+	{
+		// Adjust Melee weapon speed bonuses depending on perk.
+		BaseMeleeIncrease = default.BaseMeleeIncrease;
+
+		if ( KFPlayerReplicationInfo(PlayerReplicationInfo) != none && KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill != none )
+		{
+			BaseMeleeIncrease += KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill.Static.GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo(PlayerReplicationInfo));
+		}
+
+		InventorySpeedModifier = ((default.GroundSpeed * BaseMeleeIncrease) - (KFWeapon(Weapon).Weight * 2));
+	}
+	else if ( Weapon == none || !KFWeapon(Weapon).bSpeedMeUp )
+	{
+		InventorySpeedModifier = 0;
+	}
+}
+
+function ServerChangedWeapon(Weapon OldWeapon, Weapon NewWeapon)
+{
+	local float InvisTime;
+
+	if ( bInvis )
+	{
+		if ( (OldWeapon != None) && (OldWeapon.OverlayMaterial == InvisMaterial) )
+			InvisTime = OldWeapon.ClientOverlayCounter;
+		else
+			InvisTime = 20000;
+	}
+	if (HasUDamage() || bInvis)
+		SetWeaponOverlay(None, 0.f, true);
+
+	Weapon = NewWeapon;
+
+	if ( Controller != None )
+		Controller.ChangedWeapon();
+
+	PendingWeapon = None;
+
+	if ( OldWeapon != None )
+	{
+		OldWeapon.SetDefaultDisplayProperties();
+		OldWeapon.DetachFromPawn(self);
+		OldWeapon.GotoState('Hidden');
+		OldWeapon.NetUpdateFrequency = 2;
+	}
+
+	if ( Weapon != None )
+	{
+		Weapon.NetUpdateFrequency = 100;
+		Weapon.AttachToPawn(self);
+		Weapon.BringUp(OldWeapon);
+		PlayWeaponSwitch(NewWeapon);
+	}
+
+	if ( Inventory != None )
+		Inventory.OwnerEvent('ChangedWeapon'); // tell inventory that weapon changed (in case any effect was being applied)
+
+	if (bInvis)
+		SetWeaponOverlay(InvisMaterial, InvisTime, true);
+	else if (HasUDamage())
+		SetWeaponOverlay(UDamageWeaponMaterial, UDamageTime - Level.TimeSeconds, false);
+
+	if (bBerserk)
+		Weapon.StartBerserk();
+	else if ( Weapon.bBerserk )
+		Weapon.StopBerserk();
+
+	// Experience Level relate stuff .
+	if( Weapon!= none && KFWeapon(Weapon).bSpeedMeUp )
+	{
+		// Adjust Melee weapon speed bonuses depending on perk.
+		BaseMeleeIncrease = default.BaseMeleeIncrease;
+
+		if ( KFPlayerReplicationInfo(PlayerReplicationInfo) != none && KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill != none )
+		{
+			BaseMeleeIncrease += KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill.Static.GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo(PlayerReplicationInfo));
+		}
+
+		InventorySpeedModifier = ((default.GroundSpeed * BaseMeleeIncrease) - (KFWeapon(Weapon).Weight * 2));
+	}
+	else if (Weapon == none || !KfWeapon(Weapon).bSpeedMeUp)
+	{
+		InventorySpeedModifier = 0;
+	}
+}
+
+// another one cut-n-pasted to remove must-have-ammo fetish
+exec function SwitchToLastWeapon()
+{
+	if ( (Weapon != None) && (Weapon.OldWeapon != None) ) // && Weapon.OldWeapon.HasAmmo() )
+	{
+		PendingWeapon = Weapon.OldWeapon;
+		Weapon.PutDown();
+	}
+}
+//=================================

@@ -1,0 +1,134 @@
+	class'DeagleFire'.default.DamageMin = 95;
+	class'DeagleFire'.default.DamageMax = 115;
+	.50 Action Express	430м/сек	2000дж	14mm	20,4g
+	95
+	115
+		
+	class'MKb42Fire'.default.DamageMin = 54;
+	class'MKb42Fire'.default.DamageMax = 64;
+	7.92×33mm	685 m/s	1909 J	8.1g
+	8.2/14*1900/2000=0,56
+	54
+	64
+	
+	class'SingleFire'.default.DamageMin = 25;
+	class'SingleFire'.default.DamageMax = 35;
+	9×19mm Parabellum 400м/сек 700дж
+	9.93/14*700/2000=0,2485
+	0.71*0.35
+	24
+	30
+	
+	
+	class'AK47Fire'.default.DamageMin = 56;
+	class'AK47Fire'.default.DamageMax = 68;
+	7.62×39mm 730м/сек 2192дж
+	7,92/14*2192/2000=0,61924
+	0.565*1,096
+	58
+	71
+	
+	
+	class'SCARMK17Fire'.default.DamageMin = 90;
+	class'SCARMK17Fire'.default.DamageMax = 110;
+	7.62×51mm NATO 800м/сек 3500дж
+	7,82/14*3514/2000=0,9775
+	92
+	112
+	
+	SVDS
+	7.62x54mmR
+	7.92/14*3650/2000=1,03
+	0.565*1.825
+	100
+	120
+	
+	M99
+	12,7x99mm NATO
+	12,95/14*13720/2000=6,3455
+	0,925*6,86
+	602
+	729
+	avrg=665
+	
+	V94
+	12,7x108mm Rus
+	12,98/14*18880/2000=8,74144
+	0.926*9.44=
+	830
+	1005
+	avrg=917
+	
+	HuntingRifle (Remington 700)
+	DamageMin=210
+    DamageMax=230
+	.338 Lapua Magnum (8.58x70mm)
+	8.58/14*6665/2000=2,04234
+	0.612*3.3325
+	194
+	235
+
+	
+	class'M4Fire'.default.DamageMin = 35;
+	class'M4Fire'.default.DamageMax = 40;
+	5.56×45mm NATO 900м/сек 1747дж
+	5,70/14*1747/2000=0,3556
+	33
+	40
+	
+	
+	class'Magnum44Fire'.default.DamageMin = 70;
+	class'Magnum44Fire'.default.DamageMax = 80;
+	.44 Magnum 400м/сек 1700дж
+	11,6/14*1700/2000=0,70
+	65
+	80
+	
+	
+	.45 ACP
+	DamageMin = 30 - 32
+	DamageMax = 40 - 42
+	
+	
+	class'MAC10Fire'.default.DamageMin = 28;
+	class'MAC10Fire'.default.DamageMax = 34;
+	.45 ACP 300м/сек 700дж
+	12,1/14*700/2000=0,2975
+	28
+	34
+	
+	9x39mm
+	9.25/14*760/2000=0.251
+	25
+	30
+	Гильзы у патрона СП-5 9х39мм используются от пуль 7,62х39мм (АК47),
+	но масса пули больше, меньше скорость полета пули, соотвественно урон
+	должен быть примерно на 10-15% меньше, чем у АК47.
+	По-этому вписываю урон
+	48
+	58
+	
+	.45-70 Government Rem 300 JHP
+	11.6/14*3860/2000=1.599
+	95*1.599=150
+	115*1.599=180
+	
+	Hornady 30-30 Win 160 gr FTX
+	7.8/14*2664.5/2000=0.742
+	95*0.742=70
+	115*0.742=85
+	
+	Hornady 30-06 Springfield 180 gr SST
+	7.8/14*4313.3472/2000=1.20
+	95*1.20=114
+	115*1.20=138
+	
+	Hornady 357 Mag 158 gr XTP
+	9.1/14*740/2000=0.2405
+	95*0.2405=23
+	115*0.2405=28
+	
+	Hornady 40 S&W 180 gr XTP
+	10/14*524.88/2000=0.19
+	95*0.19=18
+	115*0.19=22

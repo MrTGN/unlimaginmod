@@ -57,6 +57,10 @@ var		bool						bAttachFlashEmitter, bAttachSmokeEmitter;
 
 var		array< string >				SkinRefs;
 
+var		Class< UM_BaseWeaponModuleAttachment >	TacticalModuleClass;
+var		UM_BaseWeaponModuleAttachment			TacticalModule;
+var		name									TacticalModuleBone;
+
 //[end] Varibles
 //====================================================================
 
@@ -140,6 +144,27 @@ simulated event PostNetBeginPlay()
 		InitThirdPersonEffects();
 }
 
+function UM_BaseWeaponModuleAttachment SpawnTacticalModule()
+{
+	local	UM_BaseWeaponModule		Module;
+	
+	if ( TacticalModuleClass != None && TacticalModuleBone != '' )  {
+		TacticalModule = Spawn(TacticalModuleClass, Owner);
+		if ( TacticalModule != None )
+			AttachToBone(TacticalModule, TacticalModuleBone);
+	}
+	
+	Return TacticalModule;
+}
+
+simulated function DestroyTacticalModule()
+{
+	if ( TacticalModule != None )  {
+		TacticalModule.Destroy();
+		TacticalModule = None;
+	}
+}
+
 function InitFor(Inventory I)
 {
 	local	name	RightHandBone;
@@ -154,7 +179,7 @@ function InitFor(Inventory I)
 		SetRelativeLocation(vect(0,0,0));
 
 	// Checking for the SecondMesh in effects arrays.
-	// Becuase somebody can forgot to set bHasSecondMesh to True.
+	// If somebody has forgot to set bHasSecondMesh to True.
 	if ( !bHasSecondMesh )  {
 		for ( f = 0; f < ArrayCount(FireModeEffects); ++f )  {
 			for ( g = 0; g < FireModeEffects[f].MeshNums.Length; ++g )  {

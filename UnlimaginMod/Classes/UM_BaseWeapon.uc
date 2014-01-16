@@ -46,10 +46,12 @@ struct	AnimData
 	var	float	TweenTime;
 };
 
-var		Class< UM_BaseWeaponModule >	TacticalModuleClass;
-var		UM_BaseWeaponModule				TacticalModule;
-var		AnimData						TacticalModuleSwitchAnim;
-var		float							TacticalModuleSwitchTime;
+var		Class< UM_BaseWeaponModule >			TacticalModuleClass;
+var		UM_BaseWeaponModule						TacticalModule;
+var		UM_BaseWeaponModuleAttachment			TacticalModuleAttachment;	//3rd person view
+var		name									TacticalModuleBone;
+var		AnimData								TacticalModuleSwitchAnim;
+var		float									TacticalModuleSwitchTime;
 
 //[end] Varibles
 //====================================================================
@@ -143,7 +145,7 @@ simulated event PostBeginPlay()
 	// Weapon will handle FireMode instantiation
 	Super(BaseKFWeapon).PostBeginPlay();
 
-	// client code next
+	//[block] Client code
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return;
 
@@ -151,6 +153,37 @@ simulated event PostBeginPlay()
 		KFScopeDetail = KF_None;
 
 	InitFOV();
+	//[end]
+}
+
+function SpawnTacticalModule()
+{
+	local	UM_BaseWeaponAttachment		WA;
+	
+	if ( TacticalModuleClass != None && TacticalModuleBone != '' )  {
+		TacticalModule = Spawn(TacticalModuleClass, Owner);
+		if ( TacticalModule != None )
+			AttachToBone(TacticalModule, TacticalModuleBone);
+			WA = UM_BaseWeaponAttachment(ThirdPersonActor);
+			if ( WA != None )
+				TacticalModuleAttachment = SpawnTacticalModule();
+	}
+}
+
+simulated function DestroyTacticalModule()
+{
+	local	UM_BaseWeaponAttachment		WA;
+	
+	WA = UM_BaseWeaponAttachment(ThirdPersonActor);
+	if ( WA != None && TacticalModuleAttachment != None )  {
+		WA.DestroyTacticalModule();
+		TacticalModuleAttachment = None;
+	}
+	
+	if ( TacticalModule != None )  {
+		TacticalModule.Destroy();
+		TacticalModule = None;
+	}
 }
 
 function bool AllowSwitchTacticalModule()
@@ -185,6 +218,7 @@ state SwitchingTacticalModule
 	simulated function BeginState()
 	{
 		TacticalModule.SwitchMode();
+		TacticalModuleAttachment.SwitchMode();
 		SetTimer(TacticalModuleSwitchTime, False);
 	}
 	

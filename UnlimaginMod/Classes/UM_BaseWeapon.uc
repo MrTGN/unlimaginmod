@@ -46,6 +46,10 @@ struct	AnimData
 	var	float	TweenTime;
 };
 
+var		Class< UM_BaseWeaponModule >	TacticalModuleClass;
+var		UM_BaseWeaponModule				TacticalModule;
+var		AnimData						TacticalModuleSwitchAnim;
+var		float							TacticalModuleSwitchTime;
 
 //[end] Varibles
 //====================================================================
@@ -147,6 +151,51 @@ simulated event PostBeginPlay()
 		KFScopeDetail = KF_None;
 
 	InitFOV();
+}
+
+function bool AllowSwitchTacticalModule()
+{
+	local	int		Mode;
+	
+	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
+		if ( FireMode[Mode] == None )
+			Continue;
+		else if ( (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring)
+				 || FireMode[Mode].IsInState('FireLoop')
+				 || FireMode[Mode].IsInState('Bursting')
+				 || FireMode[Mode].IsInState('SwitchingFireMode') 
+				 || FireMode[Mode].IsInState('SwitchingTacticalModule') )
+			Return False;
+	}
+
+	if ( bIsReloading || TacticalModule == None )
+		Return False;
+	
+	Return True;
+}
+
+exec function SwitchTacticalModule()
+{
+	if ( AllowSwitchTacticalModule() )
+		GotoState('SwitchingTacticalModule');
+}
+
+state SwitchingTacticalModule
+{
+	simulated function BeginState()
+	{
+		TacticalModule.SwitchMode();
+		SetTimer(TacticalModuleSwitchTime, False);
+	}
+	
+	simulated function Timer()
+	{
+		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(TacticalModuleSwitchAnim.Anim) )
+			PlayAnim(TacticalModuleSwitchAnim.Anim, TacticalModuleSwitchAnim.Rate, TacticalModuleSwitchAnim.TweenTime);
+		
+		SetTimer(0.0, false);
+		GotoState('');
+	}
 }
 
 //[block] Copied from KFWeapon with some changes

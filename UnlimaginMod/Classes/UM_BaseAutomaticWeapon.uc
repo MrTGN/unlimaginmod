@@ -47,6 +47,9 @@ replication
 {
 	reliable if ( Role == ROLE_Authority )
 		SetFireMode;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		SelectiveFireModeNum;
 }
 
 //[end] Replication
@@ -65,7 +68,8 @@ function bool AllowSwitchFireMode()
 		else if ( (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring)
 				 || FireMode[Mode].IsInState('FireLoop')
 				 || FireMode[Mode].IsInState('Bursting')
-				 || FireMode[Mode].IsInState('SwitchingFireMode') )
+				 || FireMode[Mode].IsInState('SwitchingFireMode') 
+				 || FireMode[Mode].IsInState('SwitchingTacticalModule') )
 			Return False;
 	}
 

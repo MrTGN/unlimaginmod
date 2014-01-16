@@ -21,7 +21,7 @@ class UM_BaseWeaponModule extends Actor
 //========================================================================
 //[block] Variables
 
-var		bool							bModuleIsEnabled;
+var		bool							bModuleIsActive;
 
 //[end] Varibles
 //====================================================================
@@ -35,7 +35,7 @@ replication
 		SwitchMode;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		bModuleIsEnabled;
+		bModuleIsActive;
 }
 
 //[end] Replication
@@ -46,7 +46,20 @@ replication
 
 simulated function SwitchMode()
 {
-	bModuleIsEnabled = !bModuleIsEnabled;
+	if ( bModuleIsActive )
+		TurnOffModule();
+	else
+		TurnOnModule();
+}
+
+simulated function TurnOnModule()
+{
+	bModuleIsActive = True;
+}
+
+simulated function TurnOffModule()
+{
+	bModuleIsActive = False;
 }
 
 //[end] Functions

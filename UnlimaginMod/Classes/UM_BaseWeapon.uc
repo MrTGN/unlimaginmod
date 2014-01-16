@@ -166,7 +166,7 @@ function SpawnTacticalModule()
 			AttachToBone(TacticalModule, TacticalModuleBone);
 			WA = UM_BaseWeaponAttachment(ThirdPersonActor);
 			if ( WA != None )
-				TacticalModuleAttachment = SpawnTacticalModule();
+				TacticalModuleAttachment = WA.SpawnTacticalModule();
 	}
 }
 

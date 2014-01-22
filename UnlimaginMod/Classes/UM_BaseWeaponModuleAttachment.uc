@@ -32,10 +32,7 @@ var		bool							bModuleIsActive;
 replication
 {
 	reliable if ( Role == ROLE_Authority )
-		SwitchMode;
-	
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		bModuleIsActive;
+		TurnOnModule, TurnOffModule;
 }
 
 //[end] Replication
@@ -44,7 +41,7 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function SwitchMode()
+function Toggle()
 {
 	if ( bModuleIsActive )
 		TurnOffModule();

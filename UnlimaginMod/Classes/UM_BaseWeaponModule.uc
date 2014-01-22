@@ -22,6 +22,7 @@ class UM_BaseWeaponModule extends Actor
 //[block] Variables
 
 var		bool							bModuleIsActive;
+var		UM_BaseWeaponModuleAttachment	ModuleAttachment;	//3rd person view
 
 //[end] Varibles
 //====================================================================
@@ -32,10 +33,7 @@ var		bool							bModuleIsActive;
 replication
 {
 	reliable if ( Role == ROLE_Authority )
-		SwitchMode;
-	
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		bModuleIsActive;
+		TurnOnModule, TurnOffModule;
 }
 
 //[end] Replication
@@ -44,7 +42,12 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function SwitchMode()
+function InitModule(bool bNewModuleIsActive, UM_BaseWeaponModuleAttachment NewModuleAttachment)
+{
+	
+}
+
+function Toggle()
 {
 	if ( bModuleIsActive )
 		TurnOffModule();

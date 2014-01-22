@@ -48,10 +48,10 @@ struct	AnimData
 
 var		Class< UM_BaseWeaponModule >			TacticalModuleClass;
 var		UM_BaseWeaponModule						TacticalModule;
-var		UM_BaseWeaponModuleAttachment			TacticalModuleAttachment;	//3rd person view
 var		name									TacticalModuleBone;
-var		AnimData								TacticalModuleSwitchAnim;
-var		float									TacticalModuleSwitchTime;
+var		AnimData								TacticalModuleToggleAnim;
+var		float									TacticalModuleToggleTime;
+var		bool									bTacticalModuleIsActive;
 
 //[end] Varibles
 //====================================================================
@@ -162,11 +162,12 @@ function SpawnTacticalModule()
 	
 	if ( TacticalModuleClass != None && TacticalModuleBone != '' )  {
 		TacticalModule = Spawn(TacticalModuleClass, Owner);
-		if ( TacticalModule != None )
+		if ( TacticalModule != None )  {
 			AttachToBone(TacticalModule, TacticalModuleBone);
 			WA = UM_BaseWeaponAttachment(ThirdPersonActor);
 			if ( WA != None )
 				TacticalModuleAttachment = WA.SpawnTacticalModule();
+		}
 	}
 }
 
@@ -186,7 +187,7 @@ simulated function DestroyTacticalModule()
 	}
 }
 
-function bool AllowSwitchTacticalModule()
+function bool AllowToggleTacticalModule()
 {
 	local	int		Mode;
 	
@@ -197,7 +198,7 @@ function bool AllowSwitchTacticalModule()
 				 || FireMode[Mode].IsInState('FireLoop')
 				 || FireMode[Mode].IsInState('Bursting')
 				 || FireMode[Mode].IsInState('SwitchingFireMode') 
-				 || FireMode[Mode].IsInState('SwitchingTacticalModule') )
+				 || FireMode[Mode].IsInState('TogglingTacticalModule') )
 			Return False;
 	}
 
@@ -207,25 +208,25 @@ function bool AllowSwitchTacticalModule()
 	Return True;
 }
 
-exec function SwitchTacticalModule()
+exec function ToggleTacticalModule()
 {
-	if ( AllowSwitchTacticalModule() )
-		GotoState('SwitchingTacticalModule');
+	if ( AllowToggleTacticalModule() )
+		GotoState('TogglingTacticalModule');
 }
 
-state SwitchingTacticalModule
+state TogglingTacticalModule
 {
 	simulated function BeginState()
 	{
-		TacticalModule.SwitchMode();
-		TacticalModuleAttachment.SwitchMode();
-		SetTimer(TacticalModuleSwitchTime, False);
+		TacticalModule.Toggle();
+		TacticalModuleAttachment.Toggle();
+		SetTimer(TacticalModuleToggleTime, False);
 	}
 	
 	simulated function Timer()
 	{
 		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(TacticalModuleSwitchAnim.Anim) )
-			PlayAnim(TacticalModuleSwitchAnim.Anim, TacticalModuleSwitchAnim.Rate, TacticalModuleSwitchAnim.TweenTime);
+			PlayAnim(TacticalModuleToggleAnim.Anim, TacticalModuleToggleAnim.Rate, TacticalModuleToggleAnim.TweenTime);
 		
 		SetTimer(0.0, false);
 		GotoState('');
@@ -1286,6 +1287,7 @@ function UpdateMagCapacity(PlayerReplicationInfo PRI)
 	}
 }
 
+// Called on the server from ServerChangedWeapon function in Pawn class
 function AttachToPawn(Pawn P)
 {
 	local	name	LeftHandBone;
@@ -1311,6 +1313,7 @@ function AttachToPawn(Pawn P)
 	}
 }
 
+// Called on the server from ServerChangedWeapon function in Pawn class
 function DetachFromPawn(Pawn P)
 {
 	if ( ThirdPersonActor != None )  {

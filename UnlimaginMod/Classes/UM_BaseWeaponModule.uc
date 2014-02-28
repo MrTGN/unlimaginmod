@@ -83,18 +83,18 @@ function TurnOnModule()
 		ModuleAttachment.TurnOnModule()
 }
 
-// Client effects and sounds
-simulated function ClientTurnOnModule()
-{
-
-}
-
 function TurnOffModule()
 {
 	bModuleIsActive = False;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	if ( ModuleAttachment != None )
 		ModuleAttachment.TurnOffModule()
+}
+
+// Client effects and sounds
+simulated function ClientTurnOnModule()
+{
+
 }
 
 // Client effects and sounds

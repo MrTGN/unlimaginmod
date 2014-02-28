@@ -61,9 +61,15 @@ simulated event PostNetReceive()
 		ClientTurnOffModule();
 }
 
-simulated function TurnOnModule()
+function TurnOnModule()
 {
 	bModuleIsActive = True;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+function TurnOffModule()
+{
+	bModuleIsActive = False;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
@@ -71,12 +77,6 @@ simulated function TurnOnModule()
 simulated function ClientTurnOnModule()
 {
 
-}
-
-simulated function TurnOffModule()
-{
-	bModuleIsActive = False;
-	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
 // Client effects and sounds

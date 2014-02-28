@@ -440,8 +440,9 @@ simulated function IncrementFlashCount(int Mode)
 	UMWA = UM_BaseWeaponAttachment(ThirdPersonActor);
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
-        UMWA.NetUpdateTime = Level.TimeSeconds - 1;
+        //UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         ++UMWA.FlashCount;
+		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.ThirdPersonEffects();
     }
 }
@@ -453,8 +454,9 @@ simulated function ZeroFlashCount(int Mode)
 	UMWA = UM_BaseWeaponAttachment(ThirdPersonActor);
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
-        UMWA.NetUpdateTime = Level.TimeSeconds - 1;
+        //UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.FlashCount = 0;
+		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.ThirdPersonEffects();
     }
 }

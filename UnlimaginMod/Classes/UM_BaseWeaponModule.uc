@@ -32,8 +32,10 @@ var		UM_BaseWeaponModuleAttachment	ModuleAttachment;	//3rd person view
 
 replication
 {
-	reliable if ( Role == ROLE_Authority )
-		TurnOnModule, TurnOffModule;
+	//reliable if ( Role == ROLE_Authority )
+		//TurnOnModule, TurnOffModule;
+	reliable if( Role == ROLE_Authority && bNetDirty )
+		bModuleIsActive;
 }
 
 //[end] Replication
@@ -41,6 +43,24 @@ replication
 
 //========================================================================
 //[block] Functions
+
+// If ROLE_SimulatedProxy has just spawned on client
+simulated event PostNetBeginPlay()
+{
+	if ( bModuleIsActive )
+		ClientTurnOnModule();
+	else
+		ClientTurnOffModule();
+}
+
+// Clients switching
+simulated event PostNetReceive()
+{
+	if ( bModuleIsActive )
+		ClientTurnOnModule();
+	else
+		ClientTurnOffModule();
+}
 
 function InitModule(bool bNewModuleIsActive, UM_BaseWeaponModuleAttachment NewModuleAttachment)
 {
@@ -55,14 +75,32 @@ function Toggle()
 		TurnOnModule();
 }
 
-simulated function TurnOnModule()
+function TurnOnModule()
 {
 	bModuleIsActive = True;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( ModuleAttachment != None )
+		ModuleAttachment.TurnOnModule()
 }
 
-simulated function TurnOffModule()
+// Client effects and sounds
+simulated function ClientTurnOnModule()
+{
+
+}
+
+function TurnOffModule()
 {
 	bModuleIsActive = False;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( ModuleAttachment != None )
+		ModuleAttachment.TurnOffModule()
+}
+
+// Client effects and sounds
+simulated function ClientTurnOffModule()
+{
+
 }
 
 //[end] Functions

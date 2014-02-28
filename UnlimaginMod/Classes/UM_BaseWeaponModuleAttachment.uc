@@ -31,8 +31,10 @@ var		bool							bModuleIsActive;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority )
-		TurnOnModule, TurnOffModule;
+	//reliable if ( Role == ROLE_Authority )
+		//TurnOnModule, TurnOffModule;
+	reliable if( Role == ROLE_Authority && bNetDirty )
+		bModuleIsActive;
 }
 
 //[end] Replication
@@ -41,22 +43,46 @@ replication
 //========================================================================
 //[block] Functions
 
-function Toggle()
+// If ROLE_SimulatedProxy has just spawned on client
+simulated event PostNetBeginPlay()
 {
 	if ( bModuleIsActive )
-		TurnOffModule();
+		ClientTurnOnModule();
 	else
-		TurnOnModule();
+		ClientTurnOffModule();
+}
+
+// Clients switching
+simulated event PostNetReceive()
+{
+	if ( bModuleIsActive )
+		ClientTurnOnModule();
+	else
+		ClientTurnOffModule();
 }
 
 simulated function TurnOnModule()
 {
 	bModuleIsActive = True;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+// Client effects and sounds
+simulated function ClientTurnOnModule()
+{
+
 }
 
 simulated function TurnOffModule()
 {
 	bModuleIsActive = False;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+// Client effects and sounds
+simulated function ClientTurnOffModule()
+{
+
 }
 
 //[end] Functions

@@ -57,9 +57,9 @@ var		bool						bAttachFlashEmitter, bAttachSmokeEmitter;
 
 var		array< string >				SkinRefs;
 
-var		Class< UM_BaseWeaponModuleAttachment >	TacticalModuleClass;
-var		UM_BaseWeaponModuleAttachment			TacticalModule;
-var		name									TacticalModuleBone;
+var		Class< UM_BaseTacticalModuleAttachment >	TacticalModuleClass;
+var		UM_BaseTacticalModuleAttachment				TacticalModule;
+var		name										TacticalModuleBone;
 
 //[end] Varibles
 //====================================================================
@@ -144,9 +144,10 @@ simulated event PostNetBeginPlay()
 		InitThirdPersonEffects();
 }
 
-function UM_BaseWeaponModuleAttachment SpawnTacticalModule()
+function UM_BaseTacticalModuleAttachment SpawnTacticalModule()
 {
-	local	UM_BaseWeaponModule		Module;
+	if ( TacticalModule != None )
+		DestroyTacticalModule();
 	
 	if ( TacticalModuleClass != None && TacticalModuleBone != '' )  {
 		TacticalModule = Spawn(TacticalModuleClass, Owner);

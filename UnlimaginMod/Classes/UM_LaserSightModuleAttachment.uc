@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_LaserSightModuleAttachment
-//	Parent class:	 UM_BaseWeaponModuleAttachment
+//	Parent class:	 UM_BaseTacticalModuleAttachment
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_LaserSightModuleAttachment extends UM_BaseWeaponModuleAttachment;
+class UM_LaserSightModuleAttachment extends UM_BaseTacticalModuleAttachment;
 
 
 defaultproperties

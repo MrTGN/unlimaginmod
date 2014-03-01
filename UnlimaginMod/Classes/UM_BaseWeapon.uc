@@ -46,8 +46,8 @@ struct	AnimData
 	var	float	TweenTime;
 };
 
-var		Class< UM_BaseWeaponModule >			TacticalModuleClass;
-var		UM_BaseWeaponModule						TacticalModule;
+var		Class< UM_BaseTacticalModule >			TacticalModuleClass;
+var		UM_BaseTacticalModule					TacticalModule;
 var		name									TacticalModuleBone;
 var		AnimData								TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
@@ -158,7 +158,8 @@ simulated event PostBeginPlay()
 
 function SpawnTacticalModule()
 {
-	local	UM_BaseWeaponAttachment		WA;
+	local	UM_BaseWeaponAttachment			WA;
+	local	UM_BaseTacticalModuleAttachment	TMA;
 	
 	if ( TacticalModuleClass != None && TacticalModuleBone != '' )  {
 		TacticalModule = Spawn(TacticalModuleClass, Owner);
@@ -166,7 +167,9 @@ function SpawnTacticalModule()
 			AttachToBone(TacticalModule, TacticalModuleBone);
 			WA = UM_BaseWeaponAttachment(ThirdPersonActor);
 			if ( WA != None )
-				TacticalModuleAttachment = WA.SpawnTacticalModule();
+				TMA = WA.SpawnTacticalModule();
+			
+			TacticalModule.InitModule(bTacticalModuleIsActive, TMA);
 		}
 	}
 }
@@ -176,10 +179,8 @@ simulated function DestroyTacticalModule()
 	local	UM_BaseWeaponAttachment		WA;
 	
 	WA = UM_BaseWeaponAttachment(ThirdPersonActor);
-	if ( WA != None && TacticalModuleAttachment != None )  {
+	if ( WA != None )
 		WA.DestroyTacticalModule();
-		TacticalModuleAttachment = None;
-	}
 	
 	if ( TacticalModule != None )  {
 		TacticalModule.Destroy();
@@ -219,7 +220,6 @@ state TogglingTacticalModule
 	simulated function BeginState()
 	{
 		TacticalModule.Toggle();
-		TacticalModuleAttachment.Toggle();
 		SetTimer(TacticalModuleToggleTime, False);
 	}
 	
@@ -1313,11 +1313,14 @@ function AttachToPawn(Pawn P)
 		else
 			P.AttachToBone(ThirdPersonActor, LeftHandBone);
 	}
+	
+	SpawnTacticalModule();
 }
 
 // Called on the server from ServerChangedWeapon function in Pawn class
 function DetachFromPawn(Pawn P)
 {
+	DestroyTacticalModule();
 	if ( ThirdPersonActor != None )  {
 		ThirdPersonActor.Destroy();
 		ThirdPersonActor = None;

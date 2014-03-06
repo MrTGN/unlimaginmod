@@ -19,4 +19,13 @@ class UM_FlashlightLight1P extends UM_BaseEmitter;
 
 defaultproperties
 {
+     DrawType=
+	 Style=
+     RemoteRole=ROLE_None
+	 bDirectional=True
+	 bUnlit=False
+	 bNoDelete=False
+     bHardAttach=True
+     bNotOnDedServer=True
+	 LifeSpan=0.000000
 }

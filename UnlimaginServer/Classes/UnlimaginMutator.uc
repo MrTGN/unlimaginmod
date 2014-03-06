@@ -654,25 +654,26 @@ defaultproperties
 	WeaponCategories(6)="Flame Thrower"
 	WeaponCategories(7)="Common"
 	
-	SmileyTags(0)=(IconTag=">:(",IconTexture="UnlimaginMod.I_Mad")
-	SmileyTags(1)=(IconTag=":(",IconTexture="UnlimaginMod.I_Frown")
-	SmileyTags(2)=(IconTag=":)",IconTexture="UnlimaginMod.I_GreenLickB")
-	SmileyTags(3)=(IconTag=":P",IconTexture="UnlimaginMod.I_Tongue",bCaseInsensitive=true)
-	SmileyTags(4)=(IconTag=":d",IconTexture="UnlimaginMod.I_GreenLick")
-	SmileyTags(5)=(IconTag=":D",IconTexture="UnlimaginMod.I_BigGrin")
-	SmileyTags(6)=(IconTag=":|",IconTexture="UnlimaginMod.I_Indiffe")
-	SmileyTags(7)=(IconTag=":/",IconTexture="UnlimaginMod.I_Ohwell")
-	SmileyTags(8)=(IconTag=":*",IconTexture="UnlimaginMod.I_RedFace")
-	SmileyTags(9)=(IconTag=":-*",IconTexture="UnlimaginMod.I_RedFace")
-	SmileyTags(10)=(IconTag="Ban?",IconTexture="UnlimaginMod.I_Ban",bCaseInsensitive=true)
-	SmileyTags(11)=(IconTag="B)",IconTexture="UnlimaginMod.I_Cool")
-	SmileyTags(12)=(IconTag="Hmm",IconTexture="UnlimaginMod.I_Hmm")
-	SmileyTags(13)=(IconTag="XD",IconTexture="UnlimaginMod.I_Scream")
-	SmileyTags(14)=(IconTag="SPAM",IconTexture="UnlimaginMod.I_Spam")
+	SmileyTags(0)=(IconTag=">:(",IconTexture="UnlimaginMod_T.Smileys.I_Mad")
+	SmileyTags(1)=(IconTag=":(",IconTexture="UnlimaginMod_T.Smileys.I_Frown")
+	SmileyTags(2)=(IconTag=":)",IconTexture="UnlimaginMod_T.Smileys.I_GreenLickB")
+	SmileyTags(3)=(IconTag=":P",IconTexture="UnlimaginMod_T.Smileys.I_Tongue",bCaseInsensitive=true)
+	SmileyTags(4)=(IconTag=":d",IconTexture="UnlimaginMod_T.Smileys.I_GreenLick")
+	SmileyTags(5)=(IconTag=":D",IconTexture="UnlimaginMod_T.Smileys.I_BigGrin")
+	SmileyTags(6)=(IconTag=":|",IconTexture="UnlimaginMod_T.Smileys.I_Indiffe")
+	SmileyTags(7)=(IconTag=":/",IconTexture="UnlimaginMod_T.Smileys.I_Ohwell")
+	SmileyTags(8)=(IconTag=":*",IconTexture="UnlimaginMod_T.Smileys.I_RedFace")
+	SmileyTags(9)=(IconTag=":-*",IconTexture="UnlimaginMod_T.Smileys.I_RedFace")
+	SmileyTags(10)=(IconTag="Ban?",IconTexture="UnlimaginMod_T.Smileys.I_Ban",bCaseInsensitive=true)
+	SmileyTags(11)=(IconTag="B)",IconTexture="UnlimaginMod_T.Smileys.I_Cool")
+	SmileyTags(12)=(IconTag="Hmm",IconTexture="UnlimaginMod_T.Smileys.I_Hmm")
+	SmileyTags(13)=(IconTag="XD",IconTexture="UnlimaginMod_T.Smileys.I_Scream")
+	SmileyTags(14)=(IconTag="SPAM",IconTexture="UnlimaginMod_T.Smileys.I_Spam")
 	
 	//[block] ServerPackages
 	ModServerPackages(0)="UnlimaginMod.u"
 	ModServerPackages(1)="UnlimaginMod_Snd.uax"
+	ModServerPackages(2)="UnlimaginMod_T.uax"
 	//ModServerPackages(1)="UnlimaginMod_SM.usx"
 	//ModServerPackages(2)="UnlimaginMod_SM.usx"
 	//ModServerPackages(3)="UnlimaginMod_SM.usx"

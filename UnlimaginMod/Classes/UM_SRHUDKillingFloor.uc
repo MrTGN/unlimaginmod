@@ -2,21 +2,6 @@ class UM_SRHUDKillingFloor extends HUDKillingFloor;
 
 #exec obj load file="KFMapEndTextures.utx"
 #exec obj load file="2K4Menus.utx"
-#exec TEXTURE IMPORT FILE="Textures\11_FROWN.pcx" NAME="I_Frown" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\12_INDIFFE.pcx" NAME="I_Indiffe" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\13_OHWELL.pcx" NAME="I_Ohwell" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\16_BIGGRIN.pcx" NAME="I_BigGrin" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\17_TONGUE1.pcx" NAME="I_Tongue" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\17_TONGUE2.pcx" NAME="I_TongueB" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\18_REDFACE.pcx" NAME="I_RedFace" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\19_GREENLI1.pcx" NAME="I_GreenLick" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\19_GREENLI2.pcx" NAME="I_GreenLickB" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\Ban.pcx" NAME="I_Ban" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\COOL.pcx" NAME="I_Cool" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\HM.pcx" NAME="I_Hmm" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\MAD.pcx" NAME="I_Mad" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\SCREAM6.pcx" NAME="I_Scream" GROUP="Emo" MIPS=0 MASKED=1
-#exec TEXTURE IMPORT FILE="Textures\SPAM.pcx" NAME="I_Spam" GROUP="Emo" MIPS=0 MASKED=1
 
 struct SmileyMessageType
 {

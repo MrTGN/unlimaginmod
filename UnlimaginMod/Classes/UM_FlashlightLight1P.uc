@@ -19,13 +19,29 @@ class UM_FlashlightLight1P extends UM_BaseEmitter;
 
 defaultproperties
 {
-     DrawType=
-	 Style=
+     Texture=None
+	 DrawType=DT_Particle
+	 Style=STY_Particle
      RemoteRole=ROLE_None
+	 bMovable=True
 	 bDirectional=True
 	 bUnlit=False
 	 bNoDelete=False
      bHardAttach=True
      bNotOnDedServer=True
+	 //LightColor
+	 LightBrightness=255.000000
+	 LightHue=42
+     LightSaturation=251
+	 //Light
+	 bActorShadows=True
+	 //bCorona=True
+	 //bDirectionalCorona=True
+	 bLightVisibility=True
+	 bDynamicLight=True
+	 LightCone=2
+	 LightEffect=LE_Spotlight
+	 LightRadius=128.000000
+	 LightType=LT_Steady
 	 LifeSpan=0.000000
 }

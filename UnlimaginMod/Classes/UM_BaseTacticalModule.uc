@@ -47,19 +47,23 @@ replication
 // If ROLE_SimulatedProxy has just spawned on client
 simulated event PostNetBeginPlay()
 {
-	if ( bModuleIsActive )
-		ClientTurnOnModule();
-	else
-		ClientTurnOffModule();
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( bModuleIsActive )
+			ClientTurnOnModule();
+		else
+			ClientTurnOffModule();
+	}
 }
 
 // Clients switching
 simulated event PostNetReceive()
 {
-	if ( bModuleIsActive )
-		ClientTurnOnModule();
-	else
-		ClientTurnOffModule();
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( bModuleIsActive )
+			ClientTurnOnModule();
+		else
+			ClientTurnOffModule();
+	}
 }
 
 function InitModule(bool bNewModuleIsActive, UM_BaseTacticalModuleAttachment NewModuleAttachment)

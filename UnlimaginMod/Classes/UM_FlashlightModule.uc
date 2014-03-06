@@ -16,6 +16,15 @@
 //================================================================================
 class UM_FlashlightModule extends UM_BaseTacticalModule;
 
+//========================================================================
+//[block] Variables
+
+var		Class< UM_BaseEmitter >		LightEmitterClass;
+var		UM_BaseEmitter				LightEmitter;
+var		name						LightBone;
+
+//[end] Varibles
+//====================================================================
 
 //========================================================================
 //[block] Functions
@@ -23,13 +32,28 @@ class UM_FlashlightModule extends UM_BaseTacticalModule;
 // Client effects and sounds
 simulated function ClientTurnOnModule()
 {
-
+	//Destroying the old Light if needed
+	ClientTurnOffModule();
+	
+	//Spawning a new one
+	if ( LightEmitterClass != None )
+		LightEmitter = Spawn(LightEmitterClass);
+	
+	if ( LightEmitter != None )  {
+		if ( LightBone != '' )
+			AttachToBone(LightEmitter, LightBone);
+		else
+			LightEmitter.SetBase(self);
+	}
 }
 
 // Client effects and sounds
 simulated function ClientTurnOffModule()
 {
-
+	if ( LightEmitter != None )  {
+		LightEmitter.Destroy();
+		LightEmitter = None;
+	}
 }
 
 //[end] Functions
@@ -38,4 +62,5 @@ simulated function ClientTurnOffModule()
 
 defaultproperties
 {
+     LightEmitterClass=Class'UnlimaginMod.UM_FlashlightLight1P'
 }

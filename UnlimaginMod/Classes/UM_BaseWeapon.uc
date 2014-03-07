@@ -21,6 +21,20 @@ class UM_BaseWeapon extends KFWeapon
 //========================================================================
 //[block] Variables
 
+struct	AnimData
+{
+	var	name	Anim;
+	var	float	Rate;
+	var	float	TweenTime;
+};
+
+struct	SoundData
+{
+	var	name	Ref;
+	var	sound	S;
+	var	float	Vol;
+};
+
 var		sound				ModeSwitchSound;
 var		string				ModeSwitchSoundRef;
 var		float				ModeSwitchSoundVolume;
@@ -39,18 +53,14 @@ var		bool				bAssetsLoaded;
 var		bool				bAllowAutoReload;
 var		byte				AutoReloadRequestsNum;
 
-struct	AnimData
-{
-	var	name	Anim;
-	var	float	Rate;
-	var	float	TweenTime;
-};
-
 var		Class< UM_BaseTacticalModule >			TacticalModuleClass;
 var		UM_BaseTacticalModule					TacticalModule;
 var		name									TacticalModuleBone;
 var		AnimData								TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
+var		sound									TacticalModuleToggleSound;
+var		string									TacticalModuleToggleSoundRef;
+var		float									TacticalModuleToggleSoundVolume;
 var		bool									bTacticalModuleIsActive;
 
 //[end] Varibles

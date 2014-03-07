@@ -30,9 +30,13 @@ struct	AnimData
 
 struct	SoundData
 {
-	var	name	Ref;
-	var	sound	S;
-	var	float	Vol;
+	var	name		Ref;
+	var	sound		Snd;
+	var	ESoundSlot	Slot;
+	var	float		Vol;
+	var	bool		bNoOverride;
+	var	float		Radius;
+	var	float		Pitch;
 };
 
 var		sound				ModeSwitchSound;
@@ -58,9 +62,7 @@ var		UM_BaseTacticalModule					TacticalModule;
 var		name									TacticalModuleBone;
 var		AnimData								TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
-var		sound									TacticalModuleToggleSound;
-var		string									TacticalModuleToggleSoundRef;
-var		float									TacticalModuleToggleSoundVolume;
+var		SoundData								TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
 
 //[end] Varibles

@@ -26,6 +26,7 @@ struct	AnimData
 	var	name	Anim;
 	var	float	Rate;
 	var	float	TweenTime;
+	var	int		Channel;
 };
 
 struct	SoundData
@@ -37,6 +38,7 @@ struct	SoundData
 	var	bool		bNoOverride;
 	var	float		Radius;
 	var	float		Pitch;
+	var	bool		Attenuate;
 };
 
 var		sound				ModeSwitchSound;

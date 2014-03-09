@@ -48,7 +48,7 @@ defaultproperties
      //SelectedHudImage=Texture'UMP45LLI_A.UMP45LLI_T.UMP45LLI_selected'
 	 SelectedHudImageRef="UMP45LLI_A.UMP45LLI_T.UMP45LLI_selected"
 	 //[end]
-	 TacticalReloadAnim="Reload_LLIePLLIeHb"
+	 TacticalReloadAnim=(Anim="Reload_LLIePLLIeHb", Rate=1.250000)
      //TacticalReloadRate=2.880000
 	 //TacticalReloadRate=2.880000 / 1.25 = 2.304000
 	 TacticalReloadRate=2.304000

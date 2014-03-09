@@ -54,49 +54,45 @@ struct	SoundData
 //[block] Functions
 
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundStruct(SoundData SName)
+simulated final function PlaySoundStruct(SoundData SD)
 {
-	local	float	Vol, Radius, Pitch;
-	
-	if (  SName.Snd != None )  {
+	if (  SD.Snd != None )  {
 		// Volume
-		if ( SName.Vol > 0.0 )
-			Vol = FClamp(SName.Vol, 0.0, 1.0);
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
-			Vol = 1.0;
+			SD.Vol = 1.0;
 		// Radius
-		Radius = FMax(SName.Radius, 0.0);
+		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
-		if ( SName.Pitch > 0.0 )
-			Pitch = FClamp(SName.Pitch, 0.5, 2.0);
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
 		else
-			Pitch = 1.0;
+			SD.Pitch = 1.0;
 		// PlaySound
-		PlaySound(SName.Snd, SName.Slot, Vol, SName.bNoOverride, Radius, Pitch, SName.Attenuate);
+		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundStruct( SoundData SName )
+simulated final function PlayOwnedSoundStruct( SoundData SD )
 {
-	local	float	Vol, Radius, Pitch;
-	
-	if (  SName.Snd != None )  {
+	if (  SD.Snd != None )  {
 		// Volume
-		if ( SName.Vol > 0.0 )
-			Vol = FClamp(SName.Vol, 0.0, 1.0);
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
-			Vol = 1.0;
+			SD.Vol = 1.0;
 		// Radius
-		Radius = FMax(SName.Radius, 0.0);
+		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
-		if ( SName.Pitch > 0.0 )
-			Pitch = FClamp(SName.Pitch, 0.5, 2.0);
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
 		else
-			Pitch = 1.0;
+			SD.Pitch = 1.0;
 		//PlayOwnedSound
-		PlayOwnedSound(SName.Snd, SName.Slot, Vol, SName.bNoOverride, Radius, Pitch, SName.Attenuate);
+		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
 

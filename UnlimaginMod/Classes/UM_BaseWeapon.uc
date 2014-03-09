@@ -31,7 +31,7 @@ struct	AnimData
 
 struct	SoundData
 {
-	var	name		Ref;
+	var	string		Ref;
 	var	sound		Snd;
 	var	ESoundSlot	Slot;
 	var	float		Vol;

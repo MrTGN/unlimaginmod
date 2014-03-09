@@ -31,7 +31,7 @@ struct	AnimData
 
 struct	SoundData
 {
-	var	name		Ref;
+	var	string		Ref;
 	var	sound		Snd;
 	var	ESoundSlot	Slot;
 	var	float		Vol;
@@ -54,7 +54,7 @@ struct	SoundData
 //[block] Functions
 
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundStruct(SoundData SD)
+simulated final function PlaySoundStruct( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -71,6 +71,27 @@ simulated final function PlaySoundStruct(SoundData SD)
 			SD.Pitch = 1.0;
 		// PlaySound
 		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+	}
+}
+
+// Static function for classes which do not extend this class
+simulated static final function ActorPlaySoundStruct( Actor A, SoundData SD )
+{
+	if (  A != None && SD.Snd != None )  {
+		// Volume
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
+		else
+			SD.Vol = 1.0;
+		// Radius
+		SD.Radius = FMax(SD.Radius, 0.0);
+		// Pitch
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
+		else
+			SD.Pitch = 1.0;
+		// PlaySound
+		A.PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
 
@@ -94,6 +115,33 @@ simulated final function PlayOwnedSoundStruct( SoundData SD )
 		//PlayOwnedSound
 		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
+}
+
+// Static function for classes which do not extend this class
+simulated static final function ActorPlayOwnedSoundStruct( Actor A, SoundData SD )
+{
+	if (  A != None && SD.Snd != None )  {
+		// Volume
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
+		else
+			SD.Vol = 1.0;
+		// Radius
+		SD.Radius = FMax(SD.Radius, 0.0);
+		// Pitch
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
+		else
+			SD.Pitch = 1.0;
+		//PlayOwnedSound
+		A.PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+	}
+}
+
+simulated static final function PreloadSound( string Ref, out sound Snd )
+{
+	if ( Ref != "" )
+		Snd = sound(DynamicLoadObject(Ref, class'sound'));
 }
 
 //[end] Functions

@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseWeaponModule extends Actor
+class UM_BaseWeaponModule extends UM_BaseActor
 	Abstract;
 
 

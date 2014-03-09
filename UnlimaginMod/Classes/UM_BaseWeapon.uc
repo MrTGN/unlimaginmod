@@ -73,30 +73,23 @@ var		bool									bTacticalModuleIsActive;
 //[block] Dynamic Loading
 simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCount)
 {
-	local	int						i;
+	local	int		i;
 
 	if ( !bSkipRefCount )
 		default.ReferenceCount++;
 
-	if ( default.MeshRef != "" )
-		UpdateDefaultMesh(SkeletalMesh(DynamicLoadObject(default.MeshRef, class'SkeletalMesh')));
-	if ( default.HudImageRef != "" )
-		default.HudImage = texture(DynamicLoadObject(default.HudImageRef, class'texture'));
-	if ( default.SelectedHudImageRef != "" )
-		default.SelectedHudImage = texture(DynamicLoadObject(default.SelectedHudImageRef, class'texture'));
-	if ( default.SelectSoundRef != "" )
-		default.SelectSound = sound(DynamicLoadObject(default.SelectSoundRef, class'sound'));
-	
+	UpdateDefaultMesh(Class'UM_BaseActor'.static.LoadSkeletalMesh(default.MeshRef));
+	Class'UM_BaseActor'.static.LoadTexture(default.HudImageRef, default.HudImage);
+	Class'UM_BaseActor'.static.LoadTexture(default.SelectedHudImageRef, default.SelectedHudImage);
+	Class'UM_BaseActor'.static.LoadSound(default.SelectSoundRef, default.SelectSound);
 	Class'UM_BaseActor'.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
 	
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )
 			default.Skins.Length = default.SkinRefs.Length;
 		
-		for ( i = 0; i < default.SkinRefs.Length; i++ )  {
-			if ( default.SkinRefs[i] != "" )
-				default.Skins[i] = Material(DynamicLoadObject(default.SkinRefs[i], class'Material'));
-		}
+		for ( i = 0; i < default.SkinRefs.Length; i++ )
+			Class'UM_BaseActor'.static.LoadMaterial(default.SkinRefs[i], default.Skins[i]);
 	}
 
 	if ( UM_BaseWeapon(Inv) != None )  {
@@ -137,8 +130,8 @@ simulated static function bool UnloadAssets()
 		default.SelectedHudImage = None;
 	if ( default.SelectSound != None )
 		default.SelectSound = None;
-	if ( default.ModeSwitchSound != None )
-		default.ModeSwitchSound = None;
+	if ( default.ModeSwitchSound.Snd != None )
+		default.ModeSwitchSound.Snd = None;
 	if ( default.Skins.Length > 0 )
 		default.Skins.Length = 0;
 	

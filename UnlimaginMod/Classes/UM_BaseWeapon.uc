@@ -41,9 +41,7 @@ struct	SoundData
 	var	bool		Attenuate;
 };
 
-var		sound				ModeSwitchSound;
-var		string				ModeSwitchSoundRef;
-var		float				ModeSwitchSoundVolume;
+var		SoundData			ModeSwitchSound;
 
 var		bool				bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload allows to turn on/off TacticalReload
 var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
@@ -88,8 +86,8 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 		default.SelectedHudImage = texture(DynamicLoadObject(default.SelectedHudImageRef, class'texture'));
 	if ( default.SelectSoundRef != "" )
 		default.SelectSound = sound(DynamicLoadObject(default.SelectSoundRef, class'sound'));
-	if ( default.ModeSwitchSoundRef != "" )
-		default.ModeSwitchSound = sound(DynamicLoadObject(default.ModeSwitchSoundRef, class'sound'));
+	
+	Class'UM_BaseActor'.static.LoadSound(default.ModeSwitchSoundRef, default.ModeSwitchSound);
 	
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )

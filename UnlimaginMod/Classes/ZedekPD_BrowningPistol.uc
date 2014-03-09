@@ -34,7 +34,7 @@ defaultproperties
      ReloadRate=2.266600
      ReloadAnim="Reload_Empty"
 	 TacticalReloadRate=1.866600
-	 TacticalReloadAnim="Reload"
+	 TacticalReloadAnim=(Anim="Reload",Rate=1.000000)
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_Single9mm"
      Weight=2.000000

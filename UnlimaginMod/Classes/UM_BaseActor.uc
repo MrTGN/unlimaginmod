@@ -144,6 +144,12 @@ simulated static final function PreloadSound( string Ref, out sound Snd )
 		Snd = sound(DynamicLoadObject(Ref, class'sound'));
 }
 
+simulated static final function PreloadTexture( string Ref, out texture T )
+{
+	if ( Ref != "" )
+		T = texture(DynamicLoadObject(Ref, class'texture'));
+}
+
 //[end] Functions
 //====================================================================
 

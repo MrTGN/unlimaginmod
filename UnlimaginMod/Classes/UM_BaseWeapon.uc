@@ -76,7 +76,7 @@ var		bool									bTacticalModuleIsActive;
 //[block] Dynamic Loading
 simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCount)
 {
-	local	int		i;
+	local	int						i;
 
 	if ( !bSkipRefCount )
 		default.ReferenceCount++;

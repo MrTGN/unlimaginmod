@@ -138,50 +138,106 @@ simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 	}
 }
 
-// DynamicLoad FinalBlend specified in the Ref string
-simulated static final function FinalBlend PreloadFinalBlend( string Ref, optional out FinalBlend FB )
+
+// DynamicLoad Class specified in the Ref string
+simulated static final function Class LoadClass( string Ref, optional out Class C, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		FB = FinalBlend(DynamicLoadObject(Ref, class'FinalBlend'));
+		C = Class(DynamicLoadObject(Ref, class'Class', bMayFail));
+	
+	Return C;
+}
+
+// DynamicLoad Combiner specified in the Ref string
+simulated static final function Combiner LoadCombiner( string Ref, optional out Combiner C, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		C = Combiner(DynamicLoadObject(Ref, class'Combiner', bMayFail));
+	
+	Return C;
+}
+
+// DynamicLoad FinalBlend specified in the Ref string
+simulated static final function FinalBlend LoadFinalBlend( string Ref, optional out FinalBlend FB, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		FB = FinalBlend(DynamicLoadObject(Ref, class'FinalBlend', bMayFail));
 	
 	Return FB;
 }
 
-// DynamicLoad Material specified in the Ref string
-simulated static final function Material PreloadMaterial( string Ref, optional out Material M )
+// DynamicLoad Font specified in the Ref string
+simulated static final function Font LoadFont( string Ref, optional out Font F, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		M = Material(DynamicLoadObject(Ref, class'Material'));
+		F = Font(DynamicLoadObject(Ref, class'Font', bMayFail));
+	
+	Return F;
+}
+
+// DynamicLoad Material specified in the Ref string
+simulated static final function Material LoadMaterial( string Ref, optional out Material M, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		M = Material(DynamicLoadObject(Ref, class'Material', bMayFail));
+	
+	Return M;
+}
+
+// DynamicLoad Mesh specified in the Ref string
+simulated static final function Mesh LoadMesh( string Ref, optional out Mesh M, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		M = Mesh(DynamicLoadObject(Ref, class'Mesh', bMayFail));
 	
 	Return M;
 }
 
 // DynamicLoad SkeletalMesh specified in the Ref string
-simulated static final function SkeletalMesh PreloadSkeletalMesh( string Ref, optional out SkeletalMesh SM )
+simulated static final function SkeletalMesh LoadSkeletalMesh( string Ref, optional out SkeletalMesh SM, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		SM = SkeletalMesh(DynamicLoadObject(Ref, class'SkeletalMesh'));
+		SM = SkeletalMesh(DynamicLoadObject(Ref, class'SkeletalMesh', bMayFail));
 	
 	Return SM;
 }
 
-// DynamicLoad Sound specified in the Ref string
-simulated static final function Sound PreloadSound( string Ref, optional out Sound S )
+// DynamicLoad StaticMesh specified in the Ref string
+simulated static final function StaticMesh LoadStaticMesh( string Ref, optional out StaticMesh SM, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		S = Sound(DynamicLoadObject(Ref, class'Sound'));
+		SM = StaticMesh(DynamicLoadObject(Ref, class'StaticMesh', bMayFail));
+	
+	Return SM;
+}
+
+// DynamicLoad ScriptedTexture specified in the Ref string
+simulated static final function ScriptedTexture LoadScriptedTexture( string Ref, optional out ScriptedTexture ST, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		ST = ScriptedTexture(DynamicLoadObject(Ref, class'ScriptedTexture', bMayFail));
+	
+	Return ST;
+}
+
+// DynamicLoad Sound specified in the Ref string
+simulated static final function Sound LoadSound( string Ref, optional out Sound S, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		S = Sound(DynamicLoadObject(Ref, class'Sound', bMayFail));
 	
 	Return S;
 }
 
 // DynamicLoad Texture specified in the Ref string
-simulated static final function Texture PreloadTexture( string Ref, optional out Texture T )
+simulated static final function Texture LoadTexture( string Ref, optional out Texture T, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		T = Texture(DynamicLoadObject(Ref, class'Texture'));
+		T = Texture(DynamicLoadObject(Ref, class'Texture', bMayFail));
 	
 	Return T;
 }
+
 
 //[end] Functions
 //====================================================================

@@ -752,7 +752,7 @@ defaultproperties
      //SelectedHudImage=Texture'SVDLLI_A.SVDLLI_T.SVDLLI_selected'
 	 SelectedHudImageRef="SVDLLI_A.SVDLLI_T.SVDLLI_selected"
 	 //[end]
-	 TacticalReloadAnim="Reload_Short"
+	 TacticalReloadAnim=(Anim="Reload_Short", Rate=1.000000)
      TacticalReloadRate=4.000000
      lenseMaterialID=4
      scopePortalFOVHigh=20.000000

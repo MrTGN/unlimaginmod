@@ -48,8 +48,7 @@ var		float				ModeSwitchSoundVolume;
 var		bool				bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload allows to turn on/off TacticalReload
 var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
 
-var		name				TacticalReloadAnim;		// Short tactical reload animation
-var		float				TacticalReloadAnimRate;	// If TacticalReloadAnim has another AnimRate use TacticalReloadAnimRate variable to set it.
+var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
 var		float				TacticalReloadRate;		// Actually it's a time needed to play TacticalReloadAnim
 
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
@@ -871,15 +870,15 @@ simulated function ClientReload()
 				ReloadMulti = 1.0;
 			
 			if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus && 
-				 default.TacticalReloadAnimRate > 0.0 )
-				ReloadAnimRate = default.TacticalReloadAnimRate * ReloadMulti;
+				 default.TacticalReloadAnim.Rate > 0.0 )
+				ReloadAnimRate = default.TacticalReloadAnim.Rate * ReloadMulti;
 			else
 				ReloadAnimRate = default.ReloadAnimRate * ReloadMulti;
 			
 			AnimStopLooping();
 			if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus && 
-				 HasAnim(TacticalReloadAnim) )
-				PlayAnim(TacticalReloadAnim, ReloadAnimRate, 0.1);
+				 HasAnim(TacticalReloadAnim.Anim) )
+				PlayAnim(TacticalReloadAnim.Anim, ReloadAnimRate, 0.1);
 			else if ( HasAnim(ReloadAnim) )
 				PlayAnim(ReloadAnim, ReloadAnimRate, 0.1);
 		}

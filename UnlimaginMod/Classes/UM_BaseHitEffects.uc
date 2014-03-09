@@ -42,70 +42,67 @@ var		float				DefaultHitSoundRadius;
 //[block] Functions
 
 simulated function PlayHitEffects(
- optional	ESurfaceTypes	HitSurfaceType, 
- optional	ESurfaceTypes	HitSoundSurfaceType, 
+ optional	ESurfaceTypes	SurfaceType, 
+ optional	ESurfaceTypes	SoundSurfaceType, 
  optional	float			NewHitSoundVolume, 
  optional	float			NewHitSoundRadius,
  optional	Sound			NewHitSound )
 {
-	local ESurfaceTypes ST;
-	local ESurfaceTypes SndST;
 	local vector	HitLoc, HitNormal, TraceEnd;
 	local Material	HitMat;
 
-	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail &&
-		 Level.DetailMode != DM_Low )
-    {
+	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail && Level.DetailMode != DM_Low )  {
 		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[ST].Effect$" Particle Effect = "$HitEffects[ST].ParticleEffect$" TempEffect = "$HitEffects[ST].TempEffect);
 		//log("
 		TraceEnd = Location + Vector(Rotation) * 20;
 		Trace(HitLoc, HitNormal, TraceEnd, Location, false,, HitMat);
 		
-		if ( HitSurfaceType != EST_Default && HitSurfaceType < ArrayCount(HitEffects) )
-			ST = HitSurfaceType;
-		else if ( HitMat != None )
-			ST = ESurfaceTypes(HitMat.SurfaceType);
-		else
-			ST = EST_Default;
+		if ( SurfaceType < ArrayCount(HitEffects) )  {
+			if ( SurfaceType == EST_Default && HitMat != None )
+				SurfaceType = HitMat;
+		}
+		else  {
+			if ( HitMat != None )
+				SurfaceType = HitMat;
+			else
+				SurfaceType = EST_Default;
+		}
+		
+		if ( SoundSurfaceType == EST_Default || SoundSurfaceType >= ArrayCount(HitEffects) )
+			SoundSurfaceType = SurfaceType;
 
-		if ( HitSoundSurfaceType != EST_Default && HitSoundSurfaceType < ArrayCount(HitEffects)  )
-			SndST = HitSoundSurfaceType;
-		else
-			SndST = ST;
+		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[SurfaceType].Effect$" Particle Effect = "$HitEffects[SurfaceType].ParticleEffect$" TempEffect = "$HitEffects[SurfaceType].TempEffect);
 
-		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[ST].Effect$" Particle Effect = "$HitEffects[ST].ParticleEffect$" TempEffect = "$HitEffects[ST].TempEffect);
+		if ( HitEffects[SurfaceType].HitDecal != None )
+			Spawn(HitEffects[SurfaceType].HitDecal, self,, Location, Rotation);
 
-		if ( HitEffects[ST].HitDecal != None )
-			Spawn(HitEffects[ST].HitDecal, self,, Location, Rotation);
-
-		if ( HitEffects[SndST].HitSound != None || NewHitSound != None )
-		{
+		if ( HitEffects[SoundSurfaceType].HitSound != None || NewHitSound != None )  {
 			if ( NewHitSound == None )
-				NewHitSound = HitEffects[SndST].HitSound;
+				NewHitSound = HitEffects[SoundSurfaceType].HitSound;
 			
 			if ( NewHitSoundVolume <= 0.0 )  {
-				if ( HitEffects[SndST].HitSoundVolume <= 0.0 )
-					NewHitSoundVolume = DefaultHitSoundVolume;
+				if ( HitEffects[SoundSurfaceType].HitSoundVolume > 0.0 )
+					NewHitSoundVolume = HitEffects[SoundSurfaceType].HitSoundVolume;
 				else
-					NewHitSoundVolume = HitEffects[SndST].HitSoundVolume;
+					NewHitSoundVolume = DefaultHitSoundVolume;
 			}
 			
 			if ( NewHitSoundRadius <= 0.0 )  {
-				if ( HitEffects[SndST].HitSoundRadius <= 0.0 )
-					NewHitSoundRadius = DefaultHitSoundRadius;
+				if ( HitEffects[SoundSurfaceType].HitSoundRadius > 0.0 )
+					NewHitSoundRadius = HitEffects[SoundSurfaceType].HitSoundRadius;
 				else
-					NewHitSoundRadius = HitEffects[SndST].HitSoundRadius;
+					NewHitSoundRadius = DefaultHitSoundRadius;
 			}
 			
 			if ( NewHitSoundVolume > 0.0 )
 				PlaySound(NewHitSound, SLOT_None, NewHitSoundVolume, false, NewHitSoundRadius);
 		}
 
-		if ( HitEffects[ST].HitEffect != None )  {
+		if ( HitEffects[SurfaceType].HitEffect != None )  {
 			if ( HitLoc != vect(0,0,0) )
-				Spawn(HitEffects[ST].HitEffect,,, HitLoc, rotator(HitNormal));
+				Spawn(HitEffects[SurfaceType].HitEffect,,, HitLoc, rotator(HitNormal));
 			else
-				Spawn(HitEffects[ST].HitEffect,,, Location, Rotation);
+				Spawn(HitEffects[SurfaceType].HitEffect,,, Location, Rotation);
 		}
 	}
 	

@@ -138,18 +138,47 @@ simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 	}
 }
 
-simulated static final function sound PreloadSound( string Ref, optional out sound Snd )
+// DynamicLoad FinalBlend specified in the Ref string
+simulated static final function FinalBlend PreloadFinalBlend( string Ref, optional out FinalBlend FB )
 {
 	if ( Ref != "" )
-		Snd = sound(DynamicLoadObject(Ref, class'sound'));
+		FB = FinalBlend(DynamicLoadObject(Ref, class'FinalBlend'));
 	
-	Return Snd;
+	Return FB;
 }
 
-simulated static final function texture PreloadTexture( string Ref, optional out texture T )
+// DynamicLoad Material specified in the Ref string
+simulated static final function Material PreloadMaterial( string Ref, optional out Material M )
 {
 	if ( Ref != "" )
-		T = texture(DynamicLoadObject(Ref, class'texture'));
+		M = Material(DynamicLoadObject(Ref, class'Material'));
+	
+	Return M;
+}
+
+// DynamicLoad SkeletalMesh specified in the Ref string
+simulated static final function SkeletalMesh PreloadSkeletalMesh( string Ref, optional out SkeletalMesh SM )
+{
+	if ( Ref != "" )
+		SM = SkeletalMesh(DynamicLoadObject(Ref, class'SkeletalMesh'));
+	
+	Return SM;
+}
+
+// DynamicLoad Sound specified in the Ref string
+simulated static final function Sound PreloadSound( string Ref, optional out Sound S )
+{
+	if ( Ref != "" )
+		S = Sound(DynamicLoadObject(Ref, class'Sound'));
+	
+	Return S;
+}
+
+// DynamicLoad Texture specified in the Ref string
+simulated static final function Texture PreloadTexture( string Ref, optional out Texture T )
+{
+	if ( Ref != "" )
+		T = Texture(DynamicLoadObject(Ref, class'Texture'));
 	
 	Return T;
 }

@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 08.03.2014 14:41
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 
+//	Comments:		 UnlimaginMod base Actor class
 //================================================================================
 class UM_BaseActor extends Actor
 	Abstract;
@@ -54,7 +54,7 @@ struct	SoundData
 //[block] Functions
 
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundStruct( SoundData SD )
+simulated final function PlaySoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -75,7 +75,7 @@ simulated final function PlaySoundStruct( SoundData SD )
 }
 
 // Static function for classes which do not extend this class
-simulated static final function ActorPlaySoundStruct( Actor A, SoundData SD )
+simulated static final function ActorPlaySoundData( Actor A, SoundData SD )
 {
 	if (  A != None && SD.Snd != None )  {
 		// Volume
@@ -97,7 +97,7 @@ simulated static final function ActorPlaySoundStruct( Actor A, SoundData SD )
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundStruct( SoundData SD )
+simulated final function PlayOwnedSoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -118,7 +118,7 @@ simulated final function PlayOwnedSoundStruct( SoundData SD )
 }
 
 // Static function for classes which do not extend this class
-simulated static final function ActorPlayOwnedSoundStruct( Actor A, SoundData SD )
+simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 {
 	if (  A != None && SD.Snd != None )  {
 		// Volume

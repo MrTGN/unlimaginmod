@@ -16,7 +16,7 @@
 //					 a new additional mesh for the actors, or just to spawn and 
 //					 place the mesh somewhere on the level.
 //================================================================================
-class UM_MeshActor extends Actor;
+class UM_MeshActor extends UM_BaseActor;
 
 simulated final function Vector GetBoneLocation(name BoneName)
 {

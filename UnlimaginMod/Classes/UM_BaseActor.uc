@@ -138,16 +138,20 @@ simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 	}
 }
 
-simulated static final function PreloadSound( string Ref, out sound Snd )
+simulated static final function sound PreloadSound( string Ref, optional out sound Snd )
 {
 	if ( Ref != "" )
 		Snd = sound(DynamicLoadObject(Ref, class'sound'));
+	
+	Return Snd;
 }
 
-simulated static final function PreloadTexture( string Ref, out texture T )
+simulated static final function texture PreloadTexture( string Ref, optional out texture T )
 {
 	if ( Ref != "" )
 		T = texture(DynamicLoadObject(Ref, class'texture'));
+	
+	Return T;
 }
 
 //[end] Functions

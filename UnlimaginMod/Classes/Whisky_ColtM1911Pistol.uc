@@ -23,7 +23,7 @@ defaultproperties
 	 //[end]
 	 EmptyIdleAimAnim="Idle_Empty"
 	 EmptyIdleAnim="Idle_Empty"
-	 TacticalReloadAnim="Reload_Half"
+	 TacticalReloadAnim=(Anim="Reload_Half",Rate=1.000000)
 	 TacticalReloadRate=1.633330
      MagCapacity=7
      ReloadRate=1.633330

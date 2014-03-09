@@ -201,8 +201,7 @@ function float SuggestAttackStyle()
 
 defaultproperties
 {
-     ModeSwitchSoundRef="KF_KSGSnd.KSG_Magin"
-	 ModeSwitchSoundVolume=1.850000
+     ModeSwitchSound=(Ref="KF_KSGSnd.KSG_Magin",Vol=1.850000)
 	 MagCapacity=6
      // ReloadRate=1.634000 / 1.10
 	 ReloadRate=1.485454

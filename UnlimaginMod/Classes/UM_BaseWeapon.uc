@@ -87,7 +87,7 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 	if ( default.SelectSoundRef != "" )
 		default.SelectSound = sound(DynamicLoadObject(default.SelectSoundRef, class'sound'));
 	
-	Class'UM_BaseActor'.static.LoadSound(default.ModeSwitchSoundRef, default.ModeSwitchSound);
+	Class'UM_BaseActor'.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
 	
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )
@@ -108,8 +108,8 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 			UM_BaseWeapon(Inv).SelectedHudImage = default.SelectedHudImage;
 		if ( default.SelectSound != None )
 			UM_BaseWeapon(Inv).SelectSound = default.SelectSound;
-		if ( default.ModeSwitchSound != None )
-			UM_BaseWeapon(Inv).ModeSwitchSound = default.ModeSwitchSound;
+		if ( default.ModeSwitchSound.Snd != None )
+			UM_BaseWeapon(Inv).ModeSwitchSound.Snd = default.ModeSwitchSound.Snd;
 		
 		if ( default.Skins.Length > 0 )  {
 			if ( UM_BaseWeapon(Inv).Skins.Length < default.Skins.Length )
@@ -1447,13 +1447,13 @@ function DropFrom(vector StartLocation)
 //[end] Functions
 //====================================================================
 
+
 defaultproperties
 {
      bAllowInterruptReload=True
 	 bAllowAutoReload=True
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1
-	 ModeSwitchSoundRef="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01"
-     ModeSwitchSoundVolume=2.200000
+	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.200000)
 	 IdleAimAnim="Idle_Iron"
 }

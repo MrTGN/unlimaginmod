@@ -785,7 +785,6 @@ simulated function ZoomOut(bool bAnimateTransition)
 
 defaultproperties
 {
-	 ModeSwitchSoundRef="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01"
      ZoomRatio=1.600000
 	 scopePortalFOVHigh=20.000000
      scopePortalFOV=12.000000

@@ -62,8 +62,6 @@ simulated final function PlaySoundData( SoundData SD )
 			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
 			SD.Vol = 1.0;
-		// Radius
-		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
 		if ( SD.Pitch > 0.0 )
 			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
@@ -83,8 +81,6 @@ simulated static final function ActorPlaySoundData( Actor A, SoundData SD )
 			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
 			SD.Vol = 1.0;
-		// Radius
-		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
 		if ( SD.Pitch > 0.0 )
 			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
@@ -105,14 +101,12 @@ simulated final function PlayOwnedSoundData( SoundData SD )
 			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
 			SD.Vol = 1.0;
-		// Radius
-		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
 		if ( SD.Pitch > 0.0 )
 			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
 		else
 			SD.Pitch = 1.0;
-		//PlayOwnedSound
+		// PlayOwnedSound
 		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
@@ -126,14 +120,12 @@ simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
 		else
 			SD.Vol = 1.0;
-		// Radius
-		SD.Radius = FMax(SD.Radius, 0.0);
 		// Pitch
 		if ( SD.Pitch > 0.0 )
 			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
 		else
 			SD.Pitch = 1.0;
-		//PlayOwnedSound
+		// PlayOwnedSound
 		A.PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }

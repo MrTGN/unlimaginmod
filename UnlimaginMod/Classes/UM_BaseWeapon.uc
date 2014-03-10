@@ -49,6 +49,7 @@ var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalRe
 var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
 var		float				TacticalReloadRate;		// Actually it's a time needed to play TacticalReloadAnim
 
+//Todo: перенести эти переменные на AnimData
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
 var()	name				EmptySelectAnim, EmptyPutDownAnim;	// Empty weapon animation
 
@@ -77,7 +78,8 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 
 	if ( !bSkipRefCount )
 		default.ReferenceCount++;
-
+	
+	//Todo: протестировать как работая эта новая подгрузка
 	UpdateDefaultMesh(Class'UM_BaseActor'.static.LoadSkeletalMesh(default.MeshRef));
 	Class'UM_BaseActor'.static.LoadTexture(default.HudImageRef, default.HudImage);
 	Class'UM_BaseActor'.static.LoadTexture(default.SelectedHudImageRef, default.SelectedHudImage);

@@ -24,6 +24,7 @@ class UM_BaseActor extends Actor
 struct	AnimData
 {
 	var	name	Anim;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
 	var	float	TweenTime;
 	var	int		Channel;
@@ -53,6 +54,7 @@ struct	SoundData
 //========================================================================
 //[block] Functions
 
+//[block] Sound functions
 // Play a sound effect from SoundData struct.
 simulated final function PlaySoundData( SoundData SD )
 {
@@ -129,8 +131,14 @@ simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
 		A.PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
+//[end]
+
+//[block] Animation functions
 
 
+//[end]
+
+//[block] DynamicLoad functions
 // DynamicLoad Class specified in the Ref string
 simulated static final function Class LoadClass( string Ref, optional out Class C, optional bool bMayFail )
 {
@@ -229,7 +237,7 @@ simulated static final function Texture LoadTexture( string Ref, optional out Te
 	
 	Return T;
 }
-
+//[end]
 
 //[end] Functions
 //====================================================================

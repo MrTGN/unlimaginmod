@@ -24,6 +24,7 @@ class UM_BaseWeapon extends KFWeapon
 struct	AnimData
 {
 	var	name	Anim;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
 	var	float	TweenTime;
 	var	int		Channel;
@@ -48,6 +49,7 @@ var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalRe
 
 var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
 var		float				TacticalReloadRate;		// Actually it's a time needed to play TacticalReloadAnim
+var		float				TacticalReloadAnimStartFrame;	
 
 //Todo: перенести эти переменные на AnimData
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
@@ -871,6 +873,8 @@ simulated function ClientReload()
 					NewAnimRate *= default.ReloadAnimRate;
 				//PlayAnim
 				PlayAnim(TacticalReloadAnim.Anim, NewAnimRate, 0.1);
+				if ( TacticalReloadAnimStartFrame > 0.0 )
+					SetAnimFrame(TacticalReloadAnimStartFrame, , 1);
 			}
 			else if ( HasAnim(ReloadAnim) )
 				NewAnimRate *= default.ReloadAnimRate;

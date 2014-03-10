@@ -233,8 +233,8 @@ state TogglingTacticalModule
 	
 	simulated function Timer()
 	{
-		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(TacticalModuleSwitchAnim.Anim) )
-			PlayAnim(TacticalModuleToggleAnim.Anim, TacticalModuleToggleAnim.Rate, TacticalModuleToggleAnim.TweenTime);
+		if ( Instigator.IsLocallyControlled() )
+			Class'UM_BaseActor'.static.ActorPlayAnimData(self, TacticalModuleToggleAnim);
 		
 		SetTimer(0.0, false);
 		GotoState('');

@@ -161,7 +161,7 @@ simulated final function LoopAnimData( AnimData AD )
 	}
 }
 
-// Play the animation once on the specified actor
+// Play the animation once at the specified actor
 simulated static final function ActorPlayAnimData( Actor A, AnimData AD )
 {
 	if ( A != None && AD.Anim != '' && A.HasAnim(AD.Anim) )  {
@@ -176,7 +176,7 @@ simulated static final function ActorPlayAnimData( Actor A, AnimData AD )
 	}
 }
 
-// Loop the animation playback
+// Loop the animation playback at the specified actor
 simulated static final function ActorLoopAnimData( Actor A, AnimData AD )
 {
 	if ( A != None && AD.Anim != '' && A.HasAnim(AD.Anim) )  {

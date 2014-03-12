@@ -673,7 +673,7 @@ defaultproperties
 	//[block] ServerPackages
 	ModServerPackages(0)="UnlimaginMod.u"
 	ModServerPackages(1)="UnlimaginMod_Snd.uax"
-	ModServerPackages(2)="UnlimaginMod_T.uax"
+	ModServerPackages(2)="UnlimaginMod_T.utx"
 	//ModServerPackages(1)="UnlimaginMod_SM.usx"
 	//ModServerPackages(2)="UnlimaginMod_SM.usx"
 	//ModServerPackages(3)="UnlimaginMod_SM.usx"

@@ -671,7 +671,7 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player != None )
 	{
-		Class'UM_BaseActor'.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
 		
 		FireMode[0].bWaitForRelease = !FireMode[0].bWaitForRelease;
 		// Case - semi fire

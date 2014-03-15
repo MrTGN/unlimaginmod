@@ -133,7 +133,7 @@ simulated function DoToggle()
 {
 	if( Instigator.IsLocallyControlled() )
 	{
-		Class'UM_BaseActor'.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
 		
 		if ( Role < ROLE_Authority )
 			ServerSetLaserActive(!bLaserActive);

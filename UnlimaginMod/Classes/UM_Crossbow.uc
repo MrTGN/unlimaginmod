@@ -645,7 +645,7 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player != None )
 	{
-		Class'UM_BaseActor'.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
 		
 		if ( scopePortalFOVHigh == default.scopePortalFOVHigh || 
 			scopePortalFOV == default.scopePortalFOV )

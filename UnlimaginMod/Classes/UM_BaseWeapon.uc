@@ -67,6 +67,8 @@ var		float									TacticalModuleToggleTime;
 var		SoundData								TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
 
+const 	BaseActor = Class'UM_BaseActor';
+
 //[end] Varibles
 //====================================================================
 
@@ -82,18 +84,18 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 		default.ReferenceCount++;
 	
 	//Todo: протестировать как работая эта новая подгрузка
-	UpdateDefaultMesh(Class'UM_BaseActor'.static.LoadSkeletalMesh(default.MeshRef));
-	Class'UM_BaseActor'.static.LoadTexture(default.HudImageRef, default.HudImage);
-	Class'UM_BaseActor'.static.LoadTexture(default.SelectedHudImageRef, default.SelectedHudImage);
-	Class'UM_BaseActor'.static.LoadSound(default.SelectSoundRef, default.SelectSound);
-	Class'UM_BaseActor'.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
+	UpdateDefaultMesh(BaseActor.static.LoadSkeletalMesh(default.MeshRef));
+	BaseActor.static.LoadTexture(default.HudImageRef, default.HudImage);
+	BaseActor.static.LoadTexture(default.SelectedHudImageRef, default.SelectedHudImage);
+	BaseActor.static.LoadSound(default.SelectSoundRef, default.SelectSound);
+	BaseActor.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
 	
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )
 			default.Skins.Length = default.SkinRefs.Length;
 		
 		for ( i = 0; i < default.SkinRefs.Length; i++ )
-			Class'UM_BaseActor'.static.LoadMaterial(default.SkinRefs[i], default.Skins[i]);
+			BaseActor.static.LoadMaterial(default.SkinRefs[i], default.Skins[i]);
 	}
 
 	if ( UM_BaseWeapon(Inv) != None )  {
@@ -234,7 +236,7 @@ state TogglingTacticalModule
 	simulated function Timer()
 	{
 		if ( Instigator.IsLocallyControlled() )
-			Class'UM_BaseActor'.static.ActorPlayAnimData(self, TacticalModuleToggleAnim);
+			BaseActor.static.ActorPlayAnimData(self, TacticalModuleToggleAnim);
 		
 		SetTimer(0.0, false);
 		GotoState('');

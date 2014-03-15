@@ -244,4 +244,15 @@ state FadeOut
 
 defaultproperties
 {
+     UV2Texture=None
+	 //LightColor
+	 LightBrightness=193.000000
+	 LightHue=149
+     LightSaturation=125
+	 bLightVisibility=True
+	 LightCone=1
+	 LightEffect=LE_None
+	 LightRadius=1.000000
+	 LightPeriod=64
+	 LightType=LT_Pulse
 }

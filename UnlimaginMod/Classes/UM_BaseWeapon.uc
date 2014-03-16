@@ -1412,7 +1412,7 @@ function DropFrom(vector StartLocation)
 		if ( Instigator.Health > 0 )  {
 			SW = Class<UM_BaseWeaponPickup>(PickupClass).default.SingleWeaponClass;
 			if ( SW != None )  {
-				KFW = KFWeapon( Spawn(SW, Owner) );
+				KFW = Spawn(SW, Owner);
 				if ( KFW != None )  {
 					KFW.GiveTo(Instigator);
 					OtherAmmo = AmmoThrown / 2;

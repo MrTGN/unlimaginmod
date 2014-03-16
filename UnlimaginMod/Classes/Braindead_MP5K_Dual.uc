@@ -34,7 +34,7 @@ simulated function DoToggle ()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		PlayOwnedSoundData(ModeSwitchSound);
 		// Case - burst fire
 		if ( FireMode[0].bWaitForRelease && Braindead_MP5K_DualFire(FireMode[0]).bSetToBurst )
 		{

@@ -93,44 +93,6 @@ simulated final function PlayOwnedSoundData( SoundData SD )
 		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
 	}
 }
-
-// Static function for classes which do not extend this class
-simulated static final function ActorPlaySoundData( Actor A, SoundData SD )
-{
-	if (  A != None && SD.Snd != None )  {
-		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
-		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
-			SD.Pitch = 1.0;
-		// PlaySound
-		A.PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
-	}
-}
-
-// Static function for classes which do not extend this class
-simulated static final function ActorPlayOwnedSoundData( Actor A, SoundData SD )
-{
-	if (  A != None && SD.Snd != None )  {
-		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
-		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
-			SD.Pitch = 1.0;
-		// PlayOwnedSound
-		A.PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
-	}
-}
 //[end]
 
 //[block] Animation functions
@@ -158,33 +120,6 @@ simulated final function LoopAnimData( AnimData AD )
 			AD.Rate = 1.0;
 		// LoopAnim
 		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
-	}
-}
-
-// Play the animation once at the specified actor
-simulated static final function ActorPlayAnimData( Actor A, AnimData AD )
-{
-	if ( A != None && AD.Anim != '' && A.HasAnim(AD.Anim) )  {
-		// Rate
-		if ( AD.Rate <= 0.0 )
-			AD.Rate = 1.0;
-		// PlayAnim
-		A.PlayAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
-		// StartFrame
-		if ( AD.StartFrame > 0.0 )
-			A.SetAnimFrame(AD.StartFrame, AD.Channel, 1);
-	}
-}
-
-// Loop the animation playback at the specified actor
-simulated static final function ActorLoopAnimData( Actor A, AnimData AD )
-{
-	if ( A != None && AD.Anim != '' && A.HasAnim(AD.Anim) )  {
-		// Rate
-		if ( AD.Rate <= 0.0 )
-			AD.Rate = 1.0;
-		// LoopAnim
-		A.LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
 	}
 }
 //[end]

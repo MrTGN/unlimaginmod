@@ -147,6 +147,76 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
+//[block] Sound functions
+// Play a sound effect from SoundData struct.
+simulated final function PlaySoundData( SoundData SD )
+{
+	if (  SD.Snd != None )  {
+		// Volume
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
+		else
+			SD.Vol = 1.0;
+		// Pitch
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
+		else
+			SD.Pitch = 1.0;
+		// PlaySound
+		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+	}
+}
+
+// play a sound effect, but don't propagate to a remote owner
+// (he is playing the sound clientside)
+simulated final function PlayOwnedSoundData( SoundData SD )
+{
+	if (  SD.Snd != None )  {
+		// Volume
+		if ( SD.Vol > 0.0 )
+			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
+		else
+			SD.Vol = 1.0;
+		// Pitch
+		if ( SD.Pitch > 0.0 )
+			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
+		else
+			SD.Pitch = 1.0;
+		// PlayOwnedSound
+		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+	}
+}
+//[end]
+
+//[block] Animation functions
+// Play the animation once
+simulated final function PlayAnimData( AnimData AD )
+{
+	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
+		// Rate
+		if ( AD.Rate <= 0.0 )
+			AD.Rate = 1.0;
+		// PlayAnim
+		PlayAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
+		// StartFrame
+		if ( AD.StartFrame > 0.0 )
+			SetAnimFrame(AD.StartFrame, AD.Channel, 1);
+	}
+}
+
+// Loop the animation playback
+simulated final function LoopAnimData( AnimData AD )
+{
+	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
+		// Rate
+		if ( AD.Rate <= 0.0 )
+			AD.Rate = 1.0;
+		// LoopAnim
+		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
+	}
+}
+//[end]
+
 simulated event PostBeginPlay()
 {
 	if ( !default.bAssetsLoaded )
@@ -236,7 +306,7 @@ state TogglingTacticalModule
 	simulated function Timer()
 	{
 		if ( Instigator.IsLocallyControlled() )
-			BaseActor.static.ActorPlayAnimData(self, TacticalModuleToggleAnim);
+			PlayAnimData(TacticalModuleToggleAnim);
 		
 		SetTimer(0.0, false);
 		GotoState('');

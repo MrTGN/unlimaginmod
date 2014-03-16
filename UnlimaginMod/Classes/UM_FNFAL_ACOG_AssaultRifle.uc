@@ -45,7 +45,7 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		PlayOwnedSoundData(ModeSwitchSound);
 		// Case - burst fire
 		if ( FireMode[0].bWaitForRelease && UM_FNFALFire(FireMode[0]).bSetToBurst )
 		{

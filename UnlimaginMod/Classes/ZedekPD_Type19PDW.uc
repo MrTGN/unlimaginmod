@@ -40,7 +40,7 @@ simulated function DoToggle ()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		PlayOwnedSoundData(ModeSwitchSound);
 		
 		// Case - burst fire
 		if ( FireMode[0].bWaitForRelease && ZedekPD_Type19Fire(FireMode[0]).bSetToBurst )

@@ -50,7 +50,7 @@ simulated function DoToggle ()
 	
 	if ( Player != None )
 	{
-		BaseActor.static.ActorPlayOwnedSoundData(self, ModeSwitchSound);
+		PlayOwnedSoundData(ModeSwitchSound);
 		
 		FireMode[0].bWaitForRelease = !FireMode[0].bWaitForRelease;
 		// Case - semi fire

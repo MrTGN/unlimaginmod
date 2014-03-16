@@ -23,6 +23,56 @@ simulated event PreBeginPlay()
 	Super.PreBeginPlay();
 }*/
 
+// Set up the widescreen FOV values for this player
+simulated final function InitFOV()
+{
+	local	Inventory	Inv;
+	local	int			i;
+	local	float		ResX, ResY;
+	local	float		AspectRatio, NewFOV;
+
+    ResX = float(GUIController(Player.GUIController).ResX);
+    ResY = float(GUIController(Player.GUIController).ResY);
+    AspectRatio = ResX / ResY;
+
+	//1.6 = 16/10 which is 16:10 ratio and 16:9 comes to 1.77
+	if ( bUseTrueWideScreenFOV && AspectRatio >= 1.60 )  {
+		// 4 / 3 - OriginalAspectRatio
+		// 360.0 / 90.0 = 4.0
+        NewFOV = ATan((Tan(Pi / 4.0) * (AspectRatio * 3.0 / 4.0)), 1.0) * 360.0 / Pi;
+        default.DefaultFOV = NewFOV;
+        DefaultFOV = NewFOV;
+		/*
+		// 16X9
+        if( AspectRatio >= 1.70 )
+            log("Detected 16X9: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+        else
+            log("Detected 16X10: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+        */
+    }
+	else  {
+            //log("Detected 4X3: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+            default.DefaultFOV = 90.0;
+            DefaultFOV = 90.0;
+	}
+
+    // Initialize the FOV of all the weapons the player is carrying
+	if ( Pawn != None )  {
+    	for ( Inv = Pawn.Inventory; Inv != None; Inv = Inv.Inventory )  {
+    		if ( KFWeapon(Inv) != None )
+                KFWeapon(Inv).InitFOV();
+			
+    		// Little hack to catch possible runaway loops. Gotta love those linked listed in UE2.5 - Ramm
+			++i;
+    		if ( i > 10000 )
+    		  Break;
+    	}
+	}
+
+	// Set the FOV to the default FOV
+	TransitionFOV(DefaultFOV, 0.0);
+}
+
 function ServerSetReadyToStart()
 {
 	bReadyToStart = True;

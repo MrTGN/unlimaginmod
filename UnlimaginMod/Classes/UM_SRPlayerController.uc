@@ -24,7 +24,7 @@ simulated event PreBeginPlay()
 }*/
 
 // Set up the widescreen FOV values for this player
-simulated final function InitFOV()
+simulated function SetUpWidescreenFOV()
 {
 	local	Inventory	Inv;
 	local	int			i;
@@ -92,7 +92,8 @@ simulated event InitInputSystem()
 		PlayerInput = new(self) InputClass;
 	
 	// Set up the widescreen FOV values for this player
-	InitFOV();
+	// Had to replace InitFOV() with my own function because it was a final function.
+	SetUpWidescreenFOV();
 	
 	if ( LoginMenuClass != "" )
 		ShowLoginMenu();

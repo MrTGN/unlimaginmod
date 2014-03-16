@@ -397,7 +397,7 @@ function ServerSpeech( name Type, int Index, string Callsign )
 defaultproperties
 {
 	InputClass=None
-	InputClassName="UnlimaginMod.UM_KFPlayerInput"
+	InputClassName="UnlimaginMod.UM_PlayerInput"
 	LobbyMenuClassString="UnlimaginMod.UM_SRLobbyMenu"
 	MidGameMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	SteamStatsAndAchievementsClass=None

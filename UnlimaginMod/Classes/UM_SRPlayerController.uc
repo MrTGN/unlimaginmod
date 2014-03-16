@@ -24,6 +24,7 @@ simulated event PreBeginPlay()
 }*/
 
 // Set up the widescreen FOV values for this player
+// Optimized version of the InitFOV() function
 simulated function SetUpWidescreenFOV()
 {
 	local	Inventory	Inv;

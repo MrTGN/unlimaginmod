@@ -35,15 +35,18 @@ Only called for playercontrollers that belong to local players
 simulated event InitInputSystem()
 {
 	InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
-	PlayerInput = new(self) InputClass;
+	if ( InputClass == None )
+		log("Warning! No InputClass to initialise!");
+	// Server only!
+	else if ( Role == ROLE_Authority )
+		PlayerInput = new(self) InputClass;
+	
+	// Set up the widescreen FOV values for this player
+	InitFOV();
 	
 	if ( LoginMenuClass != "" )
 		ShowLoginMenu();
 
-	InitFOV();
-	
-	//ToDo: тут, возможно, следует использовать одну общую функцию, 
-	// вместо приравнивания и вызова функции, просто вызывать функцию, вместе с репликацией.
 	bReadyToStart = True;
 	ServerSetReadyToStart();
 }
@@ -343,6 +346,7 @@ function ServerSpeech( name Type, int Index, string Callsign )
 
 defaultproperties
 {
+	InputClass=None
 	InputClassName="UnlimaginMod.UM_KFPlayerInput"
 	LobbyMenuClassString="UnlimaginMod.UM_SRLobbyMenu"
 	MidGameMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"

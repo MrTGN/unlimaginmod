@@ -88,10 +88,9 @@ simulated event InitInputSystem()
 	InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
 	if ( InputClass == None )
 		log("Warning! No InputClass to initialise!");
-	// Server only!
-	else if ( Role == ROLE_Authority )
-		PlayerInput = new(self) InputClass;
-	
+	else
+		Super(PlayerController).InitInputSystem();
+
 	// Set up the widescreen FOV values for this player
 	// Had to replace InitFOV() with my own function because it was a final function.
 	SetUpWidescreenFOV();

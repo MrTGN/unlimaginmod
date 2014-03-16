@@ -13,7 +13,7 @@ defaultproperties
      Description="A sturdy sledge hammer."
      ItemName="Sledge Hammer"
      ItemShortName="Hammer"
-     showMesh=SkeletalMesh'whisky_hammer_A.whisky_hammer_3rd'
+     //showMesh=SkeletalMesh'whisky_hammer_A.whisky_hammer_3rd'
      CorrespondingPerkIndex=4
      InventoryType=Class'UnlimaginMod.Whisky_Hammer'
      PickupMessage="You got the Sledge Hammer."

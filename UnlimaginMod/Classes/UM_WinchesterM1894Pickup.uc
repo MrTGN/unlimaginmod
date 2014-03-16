@@ -30,7 +30,7 @@ defaultproperties
      ItemName="Winchester Model 1894"
      ItemShortName="Winchester M1894"
      AmmoItemName="Rifle bullets"
-     showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Winchester_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Winchester_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.UM_WinchesterM1894Rifle'

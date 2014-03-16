@@ -13,7 +13,7 @@ defaultproperties
      ItemName="AS Val"
      ItemShortName="AS Val"
      AmmoItemName="Bullets 9x39mm SP5"
-     showMesh=SkeletalMesh'VALDT_v2_A.ValDT3rd'
+     //showMesh=SkeletalMesh'VALDT_v2_A.ValDT3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

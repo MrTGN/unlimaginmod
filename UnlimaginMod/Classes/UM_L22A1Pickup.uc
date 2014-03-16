@@ -30,7 +30,7 @@ defaultproperties
      ItemName="L22A1 (EOTech)"
      ItemShortName="L22A1"
      AmmoItemName="5.56 NATO Ammo"
-     showMesh=SkeletalMesh'KF_Weapons3rd_Trip.BullPup_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd_Trip.BullPup_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

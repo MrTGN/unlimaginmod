@@ -18,7 +18,7 @@ defaultproperties
      ItemName="Stinger Minigun"
      ItemShortName="Stinger Minigun"
      AmmoItemName="5.56x45mm Ammo"
-     showMesh=SkeletalMesh'Stinger_A.SK_WP_Stinger_3P_Mid'
+     //showMesh=SkeletalMesh'Stinger_A.SK_WP_Stinger_3P_Mid'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=3

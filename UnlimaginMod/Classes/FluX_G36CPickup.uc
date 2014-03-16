@@ -21,7 +21,7 @@ defaultproperties
      ItemName="HK G36C"
      ItemShortName="G36C"
      AmmoItemName="5.56mm Ammo"
-     showMesh=SkeletalMesh'FX-G36C_v2_A.G36C_3rd'
+     //showMesh=SkeletalMesh'FX-G36C_v2_A.G36C_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

@@ -16,7 +16,7 @@ defaultproperties
      ItemName="L85A2 (SUSAT)"
      ItemShortName="L85A2 (SUSAT)"
      AmmoItemName="5.556x45mm Ammo"
-     showMesh=SkeletalMesh'JS_L85A2_3rd.L85A2_3rd'
+     //showMesh=SkeletalMesh'JS_L85A2_3rd.L85A2_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=3

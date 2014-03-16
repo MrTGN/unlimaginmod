@@ -30,7 +30,7 @@ defaultproperties
      ItemName="FlameThrower"
      ItemShortName="FlameThrower"
      AmmoItemName="Napalm"
-     showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Flamethrower_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Flamethrower_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.FT_AmmoMesh'
      CorrespondingPerkIndex=5
      EquipmentCategoryID=3

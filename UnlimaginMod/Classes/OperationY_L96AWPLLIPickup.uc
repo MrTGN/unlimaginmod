@@ -14,7 +14,7 @@ defaultproperties
      ItemName="L96 AWM"
      ItemShortName="L96 AWM"
      AmmoItemName=".338 Lapua Magnum Bullets"
-     showMesh=SkeletalMesh'L96AWPLLI_A.L96AWPLLI_3rd'
+     //showMesh=SkeletalMesh'L96AWPLLI_A.L96AWPLLI_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_L96AWPLLI'

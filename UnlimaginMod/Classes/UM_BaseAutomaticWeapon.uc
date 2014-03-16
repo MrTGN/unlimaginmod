@@ -133,7 +133,7 @@ state SwitchingFireMode
 		if ( Player != None )  {
 			PlayOwnedSoundData(ModeSwitchSound);
 			//ToDo: в дальнейшем заменить это на отдельную строку на экране и менять её содержимое
-			Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, NewFM);
+			Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, SelectiveFireModeNum);
 		}
 		
 		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(FireModeSwitchAnim.Anim) )
@@ -254,7 +254,7 @@ simulated event OnZoomOutFinished()
 
 defaultproperties
 {
-     FireModeSwitchAnim=(Rate=1.000000, TweenTime=0.001000)
+     FireModeSwitchAnim=(Rate=1.000000,TweenTime=0.001000)
 	 FireModeSwitchTime=0.150000
 	 bHasTacticalReload=True
 	 FireModeSwitchMessageClass=Class'UnlimaginMod.UM_SelectiveFireModeSwitchMessage'

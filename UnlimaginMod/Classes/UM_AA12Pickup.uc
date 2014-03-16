@@ -30,7 +30,7 @@ defaultproperties
      ItemName="AA12 Shotgun"
      ItemShortName="AA12 Shotgun"
      AmmoItemName="12-gauge drum"
-     showMesh=SkeletalMesh'KF_Weapons3rd2_Trip.AA12_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd2_Trip.AA12_3rd'
      CorrespondingPerkIndex=1
      EquipmentCategoryID=3
      //VariantClasses(0)=Class'UnlimaginMod.UM_GoldenAA12AutoShotgun'

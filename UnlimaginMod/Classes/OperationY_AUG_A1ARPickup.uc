@@ -14,7 +14,7 @@ defaultproperties
      ItemName="Steyr AUG A1"
      ItemShortName="AUG A1"
      AmmoItemName="5.56mm NATO Bullets"
-     showMesh=SkeletalMesh'AUG_A1_A.AUG_A1_3rd'
+     //showMesh=SkeletalMesh'AUG_A1_A.AUG_A1_3rd'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_AUG_A1AssaultRifle'

@@ -17,7 +17,7 @@ defaultproperties
      ItemName="Spas-12"
      ItemShortName="Spas-12"
      AmmoItemName="12-gauge shells"
-     showMesh=SkeletalMesh'Spas_A.spas12_3rd'
+     //showMesh=SkeletalMesh'Spas_A.spas12_3rd'
      CorrespondingPerkIndex=1
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.MrQuebec_HekuT_Spas12Shotgun'

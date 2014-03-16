@@ -24,7 +24,7 @@ defaultproperties
      ItemName="V-94"
      ItemShortName="V-94"
      AmmoItemName="12.7 x 108 mm round"
-     showMesh=SkeletalMesh'B94_A.b94mesh_3rd'
+     //showMesh=SkeletalMesh'B94_A.b94mesh_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_V94SniperRifle'

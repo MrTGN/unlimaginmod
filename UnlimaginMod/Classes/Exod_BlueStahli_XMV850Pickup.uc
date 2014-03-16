@@ -16,7 +16,7 @@ defaultproperties
      ItemName="XMV850 Minigun"
      ItemShortName="XMV850"
      AmmoItemName="5.56x45mm Ammo"
-     showMesh=SkeletalMesh'XMV850_A.XMV850-3rd'
+     //showMesh=SkeletalMesh'XMV850_A.XMV850-3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=3

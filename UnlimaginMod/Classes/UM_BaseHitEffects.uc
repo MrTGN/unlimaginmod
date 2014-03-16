@@ -59,11 +59,11 @@ simulated function PlayHitEffects(
 		
 		if ( SurfaceType < ArrayCount(HitEffects) )  {
 			if ( SurfaceType == EST_Default && HitMat != None )
-				SurfaceType = HitMat;
+				SurfaceType = ESurfaceTypes(HitMat.SurfaceType);
 		}
 		else  {
 			if ( HitMat != None )
-				SurfaceType = HitMat;
+				SurfaceType = ESurfaceTypes(HitMat.SurfaceType);
 			else
 				SurfaceType = EST_Default;
 		}

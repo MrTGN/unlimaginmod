@@ -17,7 +17,7 @@ defaultproperties
      ItemName="SVD"
      ItemShortName="SVD"
      AmmoItemName="7.62x54mmR Rounds"
-     showMesh=SkeletalMesh'SVDLLI_A.SVDLLI_3rd'
+     //showMesh=SkeletalMesh'SVDLLI_A.SVDLLI_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_SVDLLI'

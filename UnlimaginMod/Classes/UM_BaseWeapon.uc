@@ -85,8 +85,8 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 	
 	//Todo: протестировать как работая эта новая подгрузка
 	UpdateDefaultMesh(BaseActor.static.LoadSkeletalMesh(default.MeshRef));
-	BaseActor.static.LoadTexture(default.HudImageRef, default.HudImage);
-	BaseActor.static.LoadTexture(default.SelectedHudImageRef, default.SelectedHudImage);
+	BaseActor.static.LoadMaterial(default.HudImageRef, default.HudImage);
+	BaseActor.static.LoadMaterial(default.SelectedHudImageRef, default.SelectedHudImage);
 	BaseActor.static.LoadSound(default.SelectSoundRef, default.SelectSound);
 	BaseActor.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
 	

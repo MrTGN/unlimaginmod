@@ -30,7 +30,7 @@ defaultproperties
      ItemName="MGL140 Tactical"
      ItemShortName="MGL140 Tactical"
      AmmoItemName="MGL140 RMC Grenades"
-     showMesh=SkeletalMesh'KF_Weapons3rd2_Trip.M32_MGL_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd2_Trip.M32_MGL_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.XbowAmmo'
      CorrespondingPerkIndex=6
      EquipmentCategoryID=2

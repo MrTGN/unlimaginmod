@@ -24,7 +24,7 @@ defaultproperties
      ItemName="HK417 Sniper Rifle"
      ItemShortName="HK417"
      AmmoItemName="7.62x51mm NATO"
-     showMesh=SkeletalMesh'HK417_A.HK417_3rd'
+     //showMesh=SkeletalMesh'HK417_A.HK417_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_HK417BattleRifle'

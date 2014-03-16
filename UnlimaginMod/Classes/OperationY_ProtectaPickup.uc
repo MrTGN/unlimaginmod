@@ -14,7 +14,7 @@ defaultproperties
      ItemName="Protecta"
      ItemShortName="Protecta"
      AmmoItemName="12 Gauge"
-     showMesh=SkeletalMesh'Protecta_A.protecta_3rd'
+     //showMesh=SkeletalMesh'Protecta_A.protecta_3rd'
      CorrespondingPerkIndex=1
      EquipmentCategoryID=3
      InventoryType=Class'UnlimaginMod.OperationY_ProtectaShotgun'

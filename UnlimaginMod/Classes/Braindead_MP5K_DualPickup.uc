@@ -16,7 +16,7 @@ defaultproperties
      ItemName="Dual MP5K"
      ItemShortName="Dual MP5K"
      AmmoItemName="9mm Rounds"
-     showMesh=SkeletalMesh'BD_FL_MP5_A.MP5K'
+     //showMesh=SkeletalMesh'BD_FL_MP5_A.MP5K'
      AmmoMesh=StaticMesh'KillingFloorStatics.DualiesAmmo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=1

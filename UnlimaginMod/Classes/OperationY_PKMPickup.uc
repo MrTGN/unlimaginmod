@@ -16,7 +16,7 @@ defaultproperties
      ItemName="PKM"
      ItemShortName="PKM"
      AmmoItemName="7.62x54mmR Ammo"
-     showMesh=SkeletalMesh'Pkm_A.pkm3rd'
+     //showMesh=SkeletalMesh'Pkm_A.pkm3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

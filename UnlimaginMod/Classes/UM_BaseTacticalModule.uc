@@ -89,7 +89,7 @@ function TurnOnModule()
 	bModuleIsActive = True;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	if ( ModuleAttachment != None )
-		ModuleAttachment.TurnOnModule()
+		ModuleAttachment.TurnOnModule();
 }
 
 function TurnOffModule()
@@ -97,7 +97,7 @@ function TurnOffModule()
 	bModuleIsActive = False;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	if ( ModuleAttachment != None )
-		ModuleAttachment.TurnOffModule()
+		ModuleAttachment.TurnOffModule();
 }
 
 // Client effects and sounds

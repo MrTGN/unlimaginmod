@@ -23,7 +23,7 @@ defaultproperties
      ItemName="Mossberg 500"
      ItemShortName="Moss500"
      AmmoItemName="12-gauge shells"
-     showMesh=SkeletalMesh'KF_Moss12Anims.Moss12_3rd'
+     //showMesh=SkeletalMesh'KF_Moss12Anims.Moss12_3rd'
      CorrespondingPerkIndex=1
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.Hemi_Braindead_Moss12Shotgun'

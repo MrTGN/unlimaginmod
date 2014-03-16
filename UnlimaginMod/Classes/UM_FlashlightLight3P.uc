@@ -37,7 +37,7 @@ defaultproperties
 	 bActorShadows=True
 	 //bCorona=True
 	 //bDirectionalCorona=True
-	 bLightVisibility=True
+	 //bLightingVisibility=True
 	 bDynamicLight=True
 	 LightCone=2
 	 LightEffect=LE_Spotlight

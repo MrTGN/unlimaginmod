@@ -13,7 +13,7 @@ defaultproperties
      ItemName="VSS Vintorez"
      ItemShortName="VSS"
      AmmoItemName="9x39mm SP-5 bullets"
-     showMesh=SkeletalMesh'VSSDT_v2_A.vintorezDT3rd'
+     //showMesh=SkeletalMesh'VSSDT_v2_A.vintorezDT3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_VSSDT'

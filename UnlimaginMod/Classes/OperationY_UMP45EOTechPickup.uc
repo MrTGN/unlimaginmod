@@ -14,7 +14,7 @@ defaultproperties
      ItemName="HK UMP45 EOTech"
      ItemShortName="UMP45 EOT"
      AmmoItemName=".45 ACP Ammo"
-     showMesh=SkeletalMesh'UMP45LLI_A.UMP45LLI_3rd'
+     //showMesh=SkeletalMesh'UMP45LLI_A.UMP45LLI_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

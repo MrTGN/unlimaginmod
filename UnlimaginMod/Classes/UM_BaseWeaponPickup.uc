@@ -249,7 +249,6 @@ defaultproperties
 	 LightBrightness=193.000000
 	 LightHue=149
      LightSaturation=125
-	 bLightVisibility=True
 	 LightCone=1
 	 LightEffect=LE_None
 	 LightRadius=1.000000

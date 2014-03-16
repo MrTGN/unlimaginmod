@@ -25,7 +25,7 @@ defaultproperties
      ItemName="XM8 Rifle"
      ItemShortName="XM8 Rifle"
      AmmoItemName="5.56 NATO Ammo"
-     showMesh=SkeletalMesh'XM8_A.xm8_3rd'
+     //showMesh=SkeletalMesh'XM8_A.xm8_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

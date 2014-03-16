@@ -24,7 +24,7 @@ defaultproperties
      ItemName="Type-19 PDW"
      ItemShortName="Type-19"
      AmmoItemName="5.7x28 Ammo"
-     showMesh=SkeletalMesh'Type19_A.type19_3rd'
+     //showMesh=SkeletalMesh'Type19_A.type19_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.L85Ammo'
      CorrespondingPerkIndex=3
      EquipmentCategoryID=2

@@ -17,7 +17,7 @@ defaultproperties
      ItemName="Browning Hi-Power"
      ItemShortName="Browning HP"
      AmmoItemName=".40 S&W Bullets"
-     showMesh=SkeletalMesh'Browning_A.browning_3rd'
+     //showMesh=SkeletalMesh'Browning_A.browning_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=1
      //GoldenVariantClass=Class'UnlimaginMod.ZedekPD_GoldenBrowningPickup'

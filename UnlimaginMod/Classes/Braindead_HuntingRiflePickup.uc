@@ -24,7 +24,7 @@ defaultproperties
      ItemName="Remington 700"
      ItemShortName="Remington 700"
      AmmoItemName=".338 Lapua Magnum bullets"
-     showMesh=SkeletalMesh'HuntingRifleA.HuntingRifle3rd'
+     //showMesh=SkeletalMesh'HuntingRifleA.HuntingRifle3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.Braindead_HuntingRifle'

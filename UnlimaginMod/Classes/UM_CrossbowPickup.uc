@@ -30,7 +30,7 @@ defaultproperties
      ItemName="Crossbow"
      ItemShortName="Crossbow"
      AmmoItemName="Crossbow Bolts"
-     showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Crossbow_3rd'
+     //showMesh=SkeletalMesh'KF_Weapons3rd_Trip.Crossbow_3rd'
      AmmoMesh=StaticMesh'KillingFloorStatics.XbowAmmo'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=3

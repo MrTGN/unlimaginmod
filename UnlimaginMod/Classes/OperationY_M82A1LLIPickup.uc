@@ -14,7 +14,7 @@ defaultproperties
      ItemName="Barrett M82A1"
      ItemShortName="M82A1"
      AmmoItemName=".50BMG Ammo"
-     showMesh=SkeletalMesh'M82A1LLI_A.M82A1LLI_3rd'
+     //showMesh=SkeletalMesh'M82A1LLI_A.M82A1LLI_3rd'
      CorrespondingPerkIndex=2
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.OperationY_M82A1LLISniperRifle'

@@ -1381,14 +1381,13 @@ function AttachToPawn(Pawn P)
 	if ( AttachmentClass != None )  {
 		if ( ThirdPersonActor == None )  {
 			ThirdPersonActor = Spawn(AttachmentClass, Owner);
-			
 			if ( ThirdPersonActor != None )
-				InventoryAttachment(ThirdPersonActor).InitFor(self);
+				InventoryAttachment(ThirdPersonActor).InitFor(Self);
 		}
 		else
 			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1;
 		
-		LeftHandBone = P.GetWeaponBoneFor(self);
+		LeftHandBone = P.GetWeaponBoneFor(Self);
 		if ( LeftHandBone == '' )  {
 			ThirdPersonActor.SetLocation(P.Location);
 			ThirdPersonActor.SetBase(P);

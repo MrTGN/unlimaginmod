@@ -70,7 +70,7 @@ var		name										TacticalModuleBone;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		MuzzleNums, SecondMeshActor, bNeedToInitEffects;
+		SecondMeshActor, bNeedToInitEffects, MuzzleNums;
 }
 
 //[end] Replication
@@ -135,7 +135,7 @@ simulated event PostNetBeginPlay()
 		PreloadAssets(self);
 
 	if ( Instigator != None && xPawn(Instigator) != None )
-		xPawn(Instigator).SetWeaponAttachment(self);
+		xPawn(Instigator).SetWeaponAttachment(Self);
 	
 	LastInstig = Instigator;
 	mHitLocation = vect(0.0,0.0,0.0);
@@ -169,7 +169,7 @@ simulated function DestroyTacticalModule()
 function InitFor(Inventory I)
 {
 	local	name	RightHandBone;
-	local	byte	f, g;
+	local	byte	Mode, g;
 	
 	Instigator = I.Instigator;
 	
@@ -182,9 +182,9 @@ function InitFor(Inventory I)
 	// Checking for the SecondMesh in effects arrays.
 	// If somebody has forgot to set bHasSecondMesh to True.
 	if ( !bHasSecondMesh )  {
-		for ( f = 0; f < ArrayCount(FireModeEffects); ++f )  {
-			for ( g = 0; g < FireModeEffects[f].MeshNums.Length; ++g )  {
-				if ( FireModeEffects[f].MeshNums[g] == MN_Two )  {
+		for ( Mode = 0; Mode < ArrayCount(FireModeEffects); ++Mode )  {
+			for ( g = 0; g < FireModeEffects[Mode].MeshNums.Length; ++g )  {
+				if ( FireModeEffects[Mode].MeshNums[g] == MN_Two )  {
 					default.bHasSecondMesh = True;
 					bHasSecondMesh = True;
 					Break;
@@ -209,6 +209,7 @@ function InitFor(Inventory I)
 		}
 	}
 	
+	NetUpdateTime = Level.TimeSeconds - 1;
 	bNeedToInitEffects = True;
 }
 
@@ -242,65 +243,65 @@ simulated function WeaponLight()
 
 simulated function InitThirdPersonEffects()
 {
-	local	byte	f, i;
+	local	byte	Mode, Muz;
 	
 	bEffectsInitialized = True;
 	
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return;
 	
-	for ( f = 0; f < ArrayCount(FireModeEffects); ++f )  {
+	for ( Mode = 0; Mode < ArrayCount(FireModeEffects); ++Mode )  {
 		//Smoke Effects
-		for ( i = 0; i < FireModeEffects[f].SmokeClasses.Length; ++i )  {
-			if ( FireModeEffects[f].SmokeClasses[i] != None )  {
+		for ( Muz = 0; Muz < FireModeEffects[Mode].SmokeClasses.Length; ++Muz )  {
+			if ( FireModeEffects[Mode].SmokeClasses[Muz] != None )  {
 				//if SecondMeshActor
-				if ( FireModeEffects[f].MeshNums.Length > i && FireModeEffects[f].MeshNums[i] == MN_Two && SecondMeshActor != None )  {
-					FireModeEffects[f].Smokes[i] = SecondMeshActor.Spawn( FireModeEffects[f].SmokeClasses[i], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
+				if ( FireModeEffects[Mode].MeshNums.Length > Muz && FireModeEffects[Mode].MeshNums[Muz] == MN_Two && SecondMeshActor != None )  {
+					FireModeEffects[Mode].Smokes[Muz] = SecondMeshActor.Spawn( FireModeEffects[Mode].SmokeClasses[Muz], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
 					//Attaching
-					if ( bAttachSmokeEmitter && FireModeEffects[f].Smokes[i] != None && FireModeEffects[f].MuzzleBones[i] != '' )
-						SecondMeshActor.AttachToBone( FireModeEffects[f].Smokes[i], FireModeEffects[f].MuzzleBones[i] );
+					if ( bAttachSmokeEmitter && FireModeEffects[Mode].Smokes[Muz] != None && FireModeEffects[Mode].MuzzleBones[Muz] != '' )
+						SecondMeshActor.AttachToBone( FireModeEffects[Mode].Smokes[Muz], FireModeEffects[Mode].MuzzleBones[Muz] );
 				}
 				else  {
-					FireModeEffects[f].Smokes[i] = Spawn( FireModeEffects[f].SmokeClasses[i], self );
+					FireModeEffects[Mode].Smokes[Muz] = Spawn( FireModeEffects[Mode].SmokeClasses[Muz], self );
 					//Attaching
-					if ( bAttachSmokeEmitter && FireModeEffects[f].Smokes[i] != None && FireModeEffects[f].MuzzleBones[i] != '' )
-						AttachToBone( FireModeEffects[f].Smokes[i], FireModeEffects[f].MuzzleBones[i] );
+					if ( bAttachSmokeEmitter && FireModeEffects[Mode].Smokes[Muz] != None && FireModeEffects[Mode].MuzzleBones[Muz] != '' )
+						AttachToBone( FireModeEffects[Mode].Smokes[Muz], FireModeEffects[Mode].MuzzleBones[Muz] );
 				}
 			}
 		}
 		//Flash Effects
-		for ( i = 0; i < FireModeEffects[f].FlashClasses.Length; ++i )  {
-			if ( FireModeEffects[f].FlashClasses[i] != None )  {
+		for ( Muz = 0; Muz < FireModeEffects[Mode].FlashClasses.Length; ++Muz )  {
+			if ( FireModeEffects[Mode].FlashClasses[Muz] != None )  {
 				//if SecondMeshActor
-				if ( FireModeEffects[f].MeshNums.Length > i && FireModeEffects[f].MeshNums[i] == MN_Two && SecondMeshActor != None )  {
-					FireModeEffects[f].Flashes[i] = SecondMeshActor.Spawn( FireModeEffects[f].FlashClasses[i], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
+				if ( FireModeEffects[Mode].MeshNums.Length > Muz && FireModeEffects[Mode].MeshNums[Muz] == MN_Two && SecondMeshActor != None )  {
+					FireModeEffects[Mode].Flashes[Muz] = SecondMeshActor.Spawn( FireModeEffects[Mode].FlashClasses[Muz], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
 					//Attaching
-					if ( bAttachFlashEmitter && FireModeEffects[f].Flashes[i] != None && FireModeEffects[f].MuzzleBones[i] != '' )
-						SecondMeshActor.AttachToBone( FireModeEffects[f].Flashes[i], FireModeEffects[f].MuzzleBones[i] );
+					if ( bAttachFlashEmitter && FireModeEffects[Mode].Flashes[Muz] != None && FireModeEffects[Mode].MuzzleBones[Muz] != '' )
+						SecondMeshActor.AttachToBone( FireModeEffects[Mode].Flashes[Muz], FireModeEffects[Mode].MuzzleBones[Muz] );
 				}
 				else  {
-					FireModeEffects[f].Flashes[i] = Spawn( FireModeEffects[f].FlashClasses[i], self );
+					FireModeEffects[Mode].Flashes[Muz] = Spawn( FireModeEffects[Mode].FlashClasses[Muz], self );
 					//Attaching
-					if ( bAttachFlashEmitter && FireModeEffects[f].Flashes[i] != None && FireModeEffects[f].MuzzleBones[i] != '' )
-						AttachToBone( FireModeEffects[f].Flashes[i], FireModeEffects[f].MuzzleBones[i] );
+					if ( bAttachFlashEmitter && FireModeEffects[Mode].Flashes[Muz] != None && FireModeEffects[Mode].MuzzleBones[Muz] != '' )
+						AttachToBone( FireModeEffects[Mode].Flashes[Muz], FireModeEffects[Mode].MuzzleBones[Muz] );
 				}
 			}
 		}
 		//ShellEjects
-		for ( i = 0; i < FireModeEffects[f].ShellEjectClasses.Length; ++i )  {
-			if ( FireModeEffects[f].ShellEjectClasses[i] != None )  {
+		for ( Muz = 0; Muz < FireModeEffects[Mode].ShellEjectClasses.Length; ++Muz )  {
+			if ( FireModeEffects[Mode].ShellEjectClasses[Muz] != None )  {
 				//if SecondMeshActor
-				if ( FireModeEffects[f].MeshNums.Length > i && FireModeEffects[f].MeshNums[i] == MN_Two && SecondMeshActor != None )  {
-					FireModeEffects[f].ShellEjects[i] = SecondMeshActor.Spawn( FireModeEffects[f].ShellEjectClasses[i], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
+				if ( FireModeEffects[Mode].MeshNums.Length > Muz && FireModeEffects[Mode].MeshNums[Muz] == MN_Two && SecondMeshActor != None )  {
+					FireModeEffects[Mode].ShellEjects[Muz] = SecondMeshActor.Spawn( FireModeEffects[Mode].ShellEjectClasses[Muz], SecondMeshActor, , SecondMeshActor.Location, SecondMeshActor.Rotation );
 					//Attaching
-					if ( FireModeEffects[f].ShellEjects[i] != None && FireModeEffects[f].ShellEjectBones[i] != '' )
-						SecondMeshActor.AttachToBone( FireModeEffects[f].ShellEjects[i], FireModeEffects[f].ShellEjectBones[i] );
+					if ( FireModeEffects[Mode].ShellEjects[Muz] != None && FireModeEffects[Mode].ShellEjectBones[Muz] != '' )
+						SecondMeshActor.AttachToBone( FireModeEffects[Mode].ShellEjects[Muz], FireModeEffects[Mode].ShellEjectBones[Muz] );
 				}
 				else {
-					FireModeEffects[f].ShellEjects[i] = Spawn( FireModeEffects[f].ShellEjectClasses[i], self );
+					FireModeEffects[Mode].ShellEjects[Muz] = Spawn( FireModeEffects[Mode].ShellEjectClasses[Muz], self );
 					//Attaching
-					if ( FireModeEffects[f].ShellEjects[i] != None && FireModeEffects[f].ShellEjectBones[i] != '' )
-						AttachToBone( FireModeEffects[f].ShellEjects[i], FireModeEffects[f].ShellEjectBones[i] );
+					if ( FireModeEffects[Mode].ShellEjects[Muz] != None && FireModeEffects[Mode].ShellEjectBones[Muz] != '' )
+						AttachToBone( FireModeEffects[Mode].ShellEjects[Muz], FireModeEffects[Mode].ShellEjectBones[Muz] );
 				}
 			}
 		}
@@ -309,86 +310,86 @@ simulated function InitThirdPersonEffects()
 
 simulated function DestroyThirdPersonEffects()
 {
-	local	byte	f, i;
+	local	byte	Mode, Muz;
 	
 	bEffectsInitialized = False;
 	
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return;
 	
-	for ( f = 0; f < ArrayCount(FireModeEffects); ++f )  {
+	for ( Mode = 0; Mode < ArrayCount(FireModeEffects); ++Mode )  {
 		//Smoke Effects
-		while ( FireModeEffects[f].Smokes.Length > 0 )  {
-			i = FireModeEffects[f].Smokes.Length - 1;
-			FireModeEffects[f].Smokes[i].Destroy();
-			FireModeEffects[f].Smokes.Remove(i, 1);
+		while ( FireModeEffects[Mode].Smokes.Length > 0 )  {
+			Muz = FireModeEffects[Mode].Smokes.Length - 1;
+			FireModeEffects[Mode].Smokes[Muz].Destroy();
+			FireModeEffects[Mode].Smokes.Remove(Muz, 1);
 		}
 		//Flash Effects
-		while ( FireModeEffects[f].Flashes.Length > 0 )  {
-			i = FireModeEffects[f].Flashes.Length - 1;
-			FireModeEffects[f].Flashes[i].Destroy();
-			FireModeEffects[f].Flashes.Remove(i, 1);
+		while ( FireModeEffects[Mode].Flashes.Length > 0 )  {
+			Muz = FireModeEffects[Mode].Flashes.Length - 1;
+			FireModeEffects[Mode].Flashes[Muz].Destroy();
+			FireModeEffects[Mode].Flashes.Remove(Muz, 1);
 		}
 		//ShellEjects
-		while ( FireModeEffects[f].ShellEjects.Length > 0 )  {
-			i = FireModeEffects[f].ShellEjects.Length - 1;
-			FireModeEffects[f].ShellEjects[i].Destroy();
-			FireModeEffects[f].ShellEjects.Remove(i, 1);
+		while ( FireModeEffects[Mode].ShellEjects.Length > 0 )  {
+			Muz = FireModeEffects[Mode].ShellEjects.Length - 1;
+			FireModeEffects[Mode].ShellEjects[Muz].Destroy();
+			FireModeEffects[Mode].ShellEjects.Remove(Muz, 1);
 		}
 	}
 }
 
 simulated function FlashMuzzleFlash()
 {
-	local	byte	i;
+	local	byte	Muz;
 	local	Vector	Loc;
 	
 	//Muzzle Number for the current FiringMode
-	i = MuzzleNums[FiringMode];
-	if ( FireModeEffects[FiringMode].Flashes.Length > i 
-		 && FireModeEffects[FiringMode].Flashes[i] != None )  {
+	Muz = MuzzleNums[FiringMode];
+	if ( FireModeEffects[FiringMode].Flashes.Length > Muz 
+		 && FireModeEffects[FiringMode].Flashes[Muz] != None )  {
 		// If not attached
-		if ( !bAttachFlashEmitter && FireModeEffects[FiringMode].MuzzleBones[i] != '' )  {
-			if ( FireModeEffects[FiringMode].MeshNums.Length > i && FireModeEffects[FiringMode].MeshNums[i] == MN_Two && SecondMeshActor != None )
-				Loc = SecondMeshActor.GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[i] );
+		if ( !bAttachFlashEmitter && FireModeEffects[FiringMode].MuzzleBones[Muz] != '' )  {
+			if ( FireModeEffects[FiringMode].MeshNums.Length > Muz && FireModeEffects[FiringMode].MeshNums[Muz] == MN_Two && SecondMeshActor != None )
+				Loc = SecondMeshActor.GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[Muz] );
 			else
-				Loc = GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[i] );
-			FireModeEffects[FiringMode].Flashes[i].SetLocation( Loc );
+				Loc = GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[Muz] );
+			FireModeEffects[FiringMode].Flashes[Muz].SetLocation( Loc );
 		}
-		FireModeEffects[FiringMode].Flashes[i].Trigger(self, Instigator);
+		FireModeEffects[FiringMode].Flashes[Muz].Trigger(self, Instigator);
 	}
 }
 
 simulated function StartMuzzleSmoke()
 {
-	local	byte	i;
+	local	byte	Muz;
 	local	Vector	Loc;
 	
 	//Muzzle Number for the current FiringMode
-	i = MuzzleNums[FiringMode];
-	if ( !Level.bDropDetail && FireModeEffects[FiringMode].Smokes.Length > i 
-		 && FireModeEffects[FiringMode].Smokes[i] != None )  {
+	Muz = MuzzleNums[FiringMode];
+	if ( !Level.bDropDetail && FireModeEffects[FiringMode].Smokes.Length > Muz 
+		 && FireModeEffects[FiringMode].Smokes[Muz] != None )  {
 		// If not attached
-		if ( !bAttachSmokeEmitter && FireModeEffects[FiringMode].MuzzleBones[i] != '' )  {
-			if ( FireModeEffects[FiringMode].MeshNums.Length > i && FireModeEffects[FiringMode].MeshNums[i] == MN_Two && SecondMeshActor != None )
-				Loc = SecondMeshActor.GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[i] );
+		if ( !bAttachSmokeEmitter && FireModeEffects[FiringMode].MuzzleBones[Muz] != '' )  {
+			if ( FireModeEffects[FiringMode].MeshNums.Length > Muz && FireModeEffects[FiringMode].MeshNums[Muz] == MN_Two && SecondMeshActor != None )
+				Loc = SecondMeshActor.GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[Muz] );
 			else
-				Loc = GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[i] );
-			FireModeEffects[FiringMode].Smokes[i].SetLocation( Loc );
+				Loc = GetBoneLocation( FireModeEffects[FiringMode].MuzzleBones[Muz] );
+			FireModeEffects[FiringMode].Smokes[Muz].SetLocation( Loc );
 		}
-		FireModeEffects[FiringMode].Smokes[i].Trigger(self, Instigator);
+		FireModeEffects[FiringMode].Smokes[Muz].Trigger(self, Instigator);
 	}
 }
 
 simulated function EjectShell()
 {
-	local	byte	i;
+	local	byte	Muz;
 	
 	//Muzzle Number for the current FiringMode
-	i = MuzzleNums[FiringMode];
-	if ( FireModeEffects[FiringMode].ShellEjects.Length > i 
-		 && FireModeEffects[FiringMode].ShellEjects[i] != None )
-		FireModeEffects[FiringMode].ShellEjects[i].mStartParticles++;
+	Muz = MuzzleNums[FiringMode];
+	if ( FireModeEffects[FiringMode].ShellEjects.Length > Muz 
+		 && FireModeEffects[FiringMode].ShellEjects[Muz] != None )
+		FireModeEffects[FiringMode].ShellEjects[Muz].mStartParticles++;
 	//If we have only one ShellEject
 	else if ( FireModeEffects[FiringMode].ShellEjects.Length > 0 
 		 && FireModeEffects[FiringMode].ShellEjects[0] != None )

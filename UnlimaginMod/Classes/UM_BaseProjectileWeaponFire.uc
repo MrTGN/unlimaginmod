@@ -226,7 +226,8 @@ simulated function SetMuzzleNum(byte NewMuzzleNum)
 	MuzzleNum = NewMuzzleNum;
 	UMWA = UM_BaseWeaponAttachment(Weapon.ThirdPersonActor);
 	//Server
-	if ( UMWA != None && !Instigator.IsLocallyControlled() )  {
+	//if ( UMWA != None && !Instigator.IsLocallyControlled() )  {
+	if ( UMWA != None && Weapon.Role == ROLE_Authority )  {
 		UMWA.MuzzleNums[ThisModeNum] = NewMuzzleNum;
 		//UMWA.NetUpdateTime = Level.TimeSeconds - 1;
 	}
@@ -842,7 +843,8 @@ simulated function CheckClientMuzzleNum()
 
 simulated function ChangeMuzzleNum()
 {
-	/* Put your logic to Change MuzzleNum into this function */
+	/* Put your logic to Change MuzzleNum into this function.
+	Use SetMuzzleNum() function to set the new MuzzleNum. */
 }
 
 // Copeid from WeaponFire class with some changes. Added some new functions.

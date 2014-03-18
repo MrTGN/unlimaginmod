@@ -105,8 +105,22 @@ const	DefaultAnimRate = 1.000000;
 struct	AnimData
 {
 	var	name	Anim;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
 	var	float	TweenTime;
+	var	int		Channel;
+};
+
+struct	SoundData
+{
+	var	string		Ref;
+	var	sound		Snd;
+	var	ESoundSlot	Slot;
+	var	float		Vol;
+	var	bool		bNoOverride;
+	var	float		Radius;
+	var	float		Pitch;
+	var	bool		Attenuate;
 };
 // Fire Animation arrays
 // Switches between elements by MuzzleNum.
@@ -785,11 +799,11 @@ simulated function bool AllowFire()
 	
 	KFW = KFWeapon(Weapon);
 	
-	if ( (!KFW.bHoldToReload && KFW.bIsReloading)
-		 || (KFW.bHoldToReload && KFW.bIsReloading && KFW.MagAmmoRemaining < 1)
+	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < 1))
 		 || KFPawn(Instigator).SecondaryItem != None
 		 || KFPawn(Instigator).bThrowingNade )
 		Return False;
+		
 
 	if ( KFW.MagAmmoRemaining < 1 )  {
 		//Dry fire and auto reload

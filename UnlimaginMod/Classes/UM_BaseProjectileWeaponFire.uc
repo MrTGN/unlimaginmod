@@ -801,10 +801,11 @@ simulated function bool AllowFire()
 	
 	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < 1))
 		 || KFPawn(Instigator).SecondaryItem != None
-		 || KFPawn(Instigator).bThrowingNade )
+		 || KFPawn(Instigator).bThrowingNade
+		 || Instigator.IsProneTransitioning() 
+		 || Level.TimeSeconds < NextFireTime )
 		Return False;
 		
-
 	if ( KFW.MagAmmoRemaining < 1 )  {
 		//Dry fire and auto reload
 		if ( UM_BaseWeapon(Weapon) != None && Level.TimeSeconds >= NextAutoReloadCheckTime )  {
@@ -815,7 +816,7 @@ simulated function bool AllowFire()
 		Return False;
 	}
 
-	Return Super(WeaponFire).AllowFire();
+	Return (Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
 }
 
 // Prevents the de-synchronization between the client and the server
@@ -834,6 +835,7 @@ simulated function ChangeMuzzleNum()
 	/* Put your logic to Change MuzzleNum into this function */
 }
 
+// Copeid from WeaponFire class with some changes. Added some new functions.
 event ModeDoFire()
 {
 	local	float	Rec, FireRateRatio;
@@ -842,6 +844,9 @@ event ModeDoFire()
 	if ( Instigator == None || Instigator.Controller == None || 
 		 !AllowFire() )
 		Return;
+	
+	if ( MaxHoldTime > 0.0 )
+		HoldTime = FMin(HoldTime, MaxHoldTime);
 	
 	// Storing InstigatorMovingSpeed
 	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
@@ -862,10 +867,16 @@ event ModeDoFire()
 		Rec = 1.00;
 	
 	UpdateFireRate();
-	
-	//[block] Copeid from WeaponFire.uc with some changes. Added some new functions.
-	if ( MaxHoldTime > 0.0 )
-		HoldTime = FMin(HoldTime, MaxHoldTime);
+	// Set the next firing time. 
+	// Must be careful here so client and server do not get out of sync.
+	if ( bFireOnRelease )  {
+		if ( bIsFiring )
+			NextFireTime += MaxHoldTime + FireRate;
+		else
+			NextFireTime = Level.TimeSeconds + FireRate;
+	}
+	else
+		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
@@ -900,24 +911,8 @@ event ModeDoFire()
 
 	//ThirdPerson FireEffects
 	Weapon.IncrementFlashCount(ThisModeNum);
-	// LastFireTime used for Spread bonus calculations. 
-	// More info in UpdateSpread function.
-	LastFireTime = Level.TimeSeconds;
-	// Set the next firing time. 
-	// Must be careful here so client and server do not get out of sync.
-	if ( bFireOnRelease )  {
-		if ( bIsFiring )
-			NextFireTime += MaxHoldTime + FireRate;
-		else
-			NextFireTime = Level.TimeSeconds + FireRate;
-	}
-	else
-		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
-
-	Load = float(AmmoPerFire);
-	HoldTime = 0;
-	//[end]
 	
+	// Affect on the Instigator movement
 	if ( !bFiringDoesntAffectMovement )  {
 		if ( FireRate > 0.25 )
 			FireRateRatio = (Level.TimeSeconds - LastFireTime) / (FireRate * 1.25);
@@ -938,15 +933,18 @@ event ModeDoFire()
 		}
 	}
 	
-	//[block] Copeid from WeaponFire.uc
+	// LastFireTime used for Spread bonus calculations. 
+	// More info in UpdateSpread function.
+	LastFireTime = Level.TimeSeconds;
+	Load = float(AmmoPerFire);
+	HoldTime = 0;
+	ChangeMuzzleNum();
+	
 	if ( Instigator.PendingWeapon != None && Instigator.PendingWeapon != Weapon )  {
 		bIsFiring = False;
 		Weapon.PutDown();
 		Return;
 	}
-	//[end]
-	
-	ChangeMuzzleNum();
 }
 
 // Copied from KFShotgunFire with some changes like in KFFire

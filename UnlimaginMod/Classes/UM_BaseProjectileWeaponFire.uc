@@ -111,6 +111,18 @@ struct	AnimData
 	var	int		Channel;
 };
 
+// Sound slots for weapons.
+enum ESoundSlot
+{
+	SLOT_None,
+	SLOT_Misc,
+	SLOT_Pain,
+	SLOT_Interact,
+	SLOT_Ambient,
+	SLOT_Talk,
+	SLOT_Interface,
+};
+
 struct	SoundData
 {
 	var	string		Ref;
@@ -798,14 +810,12 @@ simulated function bool AllowFire()
 	local	KFWeapon	KFW;
 	
 	KFW = KFWeapon(Weapon);
-	
 	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < 1))
 		 || KFPawn(Instigator).SecondaryItem != None
 		 || KFPawn(Instigator).bThrowingNade
-		 || Instigator.IsProneTransitioning() 
-		 || Level.TimeSeconds < NextFireTime )
+		 || Instigator.IsProneTransitioning() )
 		Return False;
-		
+	
 	if ( KFW.MagAmmoRemaining < 1 )  {
 		//Dry fire and auto reload
 		if ( UM_BaseWeapon(Weapon) != None && Level.TimeSeconds >= NextAutoReloadCheckTime )  {
@@ -867,16 +877,6 @@ event ModeDoFire()
 		Rec = 1.00;
 	
 	UpdateFireRate();
-	// Set the next firing time. 
-	// Must be careful here so client and server do not get out of sync.
-	if ( bFireOnRelease )  {
-		if ( bIsFiring )
-			NextFireTime += MaxHoldTime + FireRate;
-		else
-			NextFireTime = Level.TimeSeconds + FireRate;
-	}
-	else
-		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
@@ -911,6 +911,17 @@ event ModeDoFire()
 
 	//ThirdPerson FireEffects
 	Weapon.IncrementFlashCount(ThisModeNum);
+	
+	// Set the next firing time. 
+	// Must be careful here so client and server do not get out of sync.
+	if ( bFireOnRelease )  {
+		if ( bIsFiring )
+			NextFireTime += MaxHoldTime + FireRate;
+		else
+			NextFireTime = Level.TimeSeconds + FireRate;
+	}
+	else
+		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
 	
 	// Affect on the Instigator movement
 	if ( !bFiringDoesntAffectMovement )  {

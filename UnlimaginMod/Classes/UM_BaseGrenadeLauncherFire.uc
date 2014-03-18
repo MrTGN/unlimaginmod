@@ -42,8 +42,8 @@ defaultproperties
 	 AimingSpreadBonus=1.000000
 	 CrouchedSpreadBonus=0.960000
      //AimError
-     AimingAimErrorBonus=0.850000
-     CrouchedAimErrorBonus=0.900000
+     AimingAimErrorBonus=0.700000
+     CrouchedAimErrorBonus=0.800000
 	 //ShakeView
 	 AimingShakeBonus=0.980000
 	 //Movement

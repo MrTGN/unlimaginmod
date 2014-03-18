@@ -92,8 +92,8 @@ defaultproperties
 	 SemiAutoSpreadBonus=1.000000
 	 BurstSpreadBonus=1.000000
      //AimError
-     AimingAimErrorBonus=0.900000
-     CrouchedAimErrorBonus=0.950000
+     AimingAimErrorBonus=0.800000
+     CrouchedAimErrorBonus=0.900000
 	 //ShakeView
 	 AimingShakeBonus=0.980000
 	 //Movement

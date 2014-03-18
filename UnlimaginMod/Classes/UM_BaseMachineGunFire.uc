@@ -29,13 +29,13 @@ defaultproperties
 	 AimingHorizontalRecoilBonus=1.000000
 	 //Spread
 	 SpreadCooldownTime=0.600000
-	 AimingSpreadBonus=0.700000
-	 CrouchedSpreadBonus=0.920000
-	 SemiAutoSpreadBonus=0.860000
-	 BurstSpreadBonus=0.960000
+	 AimingSpreadBonus=0.920000
+	 CrouchedSpreadBonus=0.980000
+	 SemiAutoSpreadBonus=0.900000
+	 BurstSpreadBonus=0.980000
      //AimError
-     AimingAimErrorBonus=0.750000
-     CrouchedAimErrorBonus=0.900000
+     AimingAimErrorBonus=0.700000
+     CrouchedAimErrorBonus=0.850000
 	 //ShakeView
 	 AimingShakeBonus=0.960000
 	 //Movement

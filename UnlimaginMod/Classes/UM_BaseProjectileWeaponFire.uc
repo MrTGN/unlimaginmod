@@ -926,23 +926,22 @@ event ModeDoFire()
 		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
 	
 	// Affect on the Instigator movement
-	if ( !bFiringDoesntAffectMovement )  {
+	if ( !bFiringDoesntAffectMovement && Instigator.Physics != PHYS_Falling
+		 && Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
+		// FireRateRatio
 		if ( FireRate > 0.25 )
 			FireRateRatio = (Level.TimeSeconds - LastFireTime) / (FireRate * 1.25);
 		else
 			FireRateRatio = (Level.TimeSeconds - LastFireTime) / (FireRate * 1.50);
-		
-		if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
-			if ( FireRateRatio < 1.0 )  {
-				// Full Fire rate firing
-				Instigator.Velocity.X *= FireMovingSpeedScale;
-				Instigator.Velocity.Y *= FireMovingSpeedScale;
-			}
-			else  {
-				// FirstShot or slow fire rate firing
-				Instigator.Velocity.X *= FirstShotMovingSpeedScale;
-				Instigator.Velocity.Y *= FirstShotMovingSpeedScale;
-			}
+		// Full Fire rate firing
+		if ( FireRateRatio < 1.0 )  {
+			Instigator.Velocity.X *= FireMovingSpeedScale;
+			Instigator.Velocity.Y *= FireMovingSpeedScale;
+		}
+		// FirstShot or slow fire rate firing
+		else  {
+			Instigator.Velocity.X *= FirstShotMovingSpeedScale;
+			Instigator.Velocity.Y *= FirstShotMovingSpeedScale;
 		}
 	}
 	

@@ -169,12 +169,12 @@ simulated function DestroyTacticalModule()
 function InitFor(Inventory I)
 {
 	local	name	RightHandBone;
-	local	byte	Mode, g;
+	local	byte	Mode, Muz;
 	
 	Instigator = I.Instigator;
 	
 	if ( xPawn(I.Instigator) == None )
-		return;
+		Return;
 
 	if ( xPawn(I.Instigator).bClearWeaponOffsets )
 		SetRelativeLocation(vect(0,0,0));
@@ -183,8 +183,8 @@ function InitFor(Inventory I)
 	// If somebody has forgot to set bHasSecondMesh to True.
 	if ( !bHasSecondMesh )  {
 		for ( Mode = 0; Mode < ArrayCount(FireModeEffects); ++Mode )  {
-			for ( g = 0; g < FireModeEffects[Mode].MeshNums.Length; ++g )  {
-				if ( FireModeEffects[Mode].MeshNums[g] == MN_Two )  {
+			for ( Muz = 0; Muz < FireModeEffects[Mode].MeshNums.Length; ++Muz )  {
+				if ( FireModeEffects[Mode].MeshNums[Muz] == MN_Two )  {
 					default.bHasSecondMesh = True;
 					bHasSecondMesh = True;
 					Break;
@@ -196,7 +196,7 @@ function InitFor(Inventory I)
 	}
 	
 	if ( bHasSecondMesh )  {
-		SecondMeshActor = Spawn(SecondMeshActorClass, Instigator);
+		SecondMeshActor = Spawn(SecondMeshActorClass, I.Owner);
 		if ( SecondMeshActor != None && default.Mesh != None )  {
 			SecondMeshActor.LinkMesh(default.Mesh);
 			RightHandBone = Instigator.GetOffhandBoneFor(I);

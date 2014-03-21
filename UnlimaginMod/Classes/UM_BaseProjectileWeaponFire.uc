@@ -847,7 +847,7 @@ simulated function ChangeMuzzleNum()
 	Use SetMuzzleNum() function to set the new MuzzleNum. */
 }
 
-// Copeid from WeaponFire class with some changes. Added some new functions.
+// Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
 	local	float	Rec, FireRateRatio;

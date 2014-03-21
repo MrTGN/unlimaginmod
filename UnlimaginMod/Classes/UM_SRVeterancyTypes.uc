@@ -218,7 +218,7 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 	Return Min(Level, 15);
 }
 
-//New function for the extra jump height
+// New function for the extra jump height
 static function float GetJumpModifier(KFPlayerReplicationInfo KFPRI)
 {
 	Return 1.0;
@@ -227,6 +227,26 @@ static function float GetJumpModifier(KFPlayerReplicationInfo KFPRI)
 static function int GetMaxBounce(KFPlayerReplicationInfo KFPRI)
 {
 	Return 0;
+}
+
+static function float GetSpreadModifier(KFPlayerReplicationInfo KFPRI)
+{
+	Return 1.0;
+}
+
+static function float GetAimErrorModifier(KFPlayerReplicationInfo KFPRI)
+{
+	Return 1.0;
+}
+
+static function float GetRecoilModifier(KFPlayerReplicationInfo KFPRI)
+{
+	Return 1.0;
+}
+
+static function float GetShakeViewModifier(KFPlayerReplicationInfo KFPRI)
+{
+	Return 1.0;
 }
 
 

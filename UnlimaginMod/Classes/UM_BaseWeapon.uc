@@ -1381,11 +1381,15 @@ function AttachToPawn(Pawn P)
 	if ( AttachmentClass != None )  {
 		if ( ThirdPersonActor == None )  {
 			ThirdPersonActor = Spawn(AttachmentClass, Owner);
-			if ( ThirdPersonActor != None )
+			if ( ThirdPersonActor != None )  {
+				ThirdPersonActor.bAlwaysRelevant = True;
 				InventoryAttachment(ThirdPersonActor).InitFor(Self);
+			}
 		}
-		else
+		else  {
+			ThirdPersonActor.bAlwaysRelevant = True;
 			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1;
+		}
 		
 		LeftHandBone = P.GetWeaponBoneFor(Self);
 		if ( LeftHandBone == '' )  {
@@ -1397,6 +1401,7 @@ function AttachToPawn(Pawn P)
 	}
 	
 	SpawnTacticalModule();
+	ThirdPersonActor.bAlwaysRelevant = False;
 }
 
 // Called on the server from ServerChangedWeapon function in Pawn class

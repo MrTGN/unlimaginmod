@@ -18,9 +18,10 @@ var		class<Projectile>	SecondProjectileClass;
 var		int					AltProjPerFire;
 var		float				AltSpread;
 
-function UpdateFireProperties(KFPlayerReplicationInfo KFPRI, float RecoilModif)
+function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
+	local	float	SpreadModif, AimErrorModif;
 	
 	MaxSpread = default.MaxSpread;
 	AimError = default.AimError;
@@ -36,49 +37,57 @@ function UpdateFireProperties(KFPlayerReplicationInfo KFPRI, float RecoilModif)
 	}
 	
 	//[block] Switching ProjectileClass, ProjPerFire and Spread by Perk Index
-	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None && bChangeProjByPerk )  {
-		// Assign default.PerkIndex
-		DefPerkIndex = KFPRI.ClientVeteranSkill.default.PerkIndex;
-		if ( UM_KSGShotgun(Weapon) != None && UM_KSGShotgun(Weapon).bWideSpread )  {
-			// Checking and assigning ProjectileClass
-			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjClass != None )
-				ProjectileClass = PerkProjsInfo[DefPerkIndex].SecondPerkProjClass;
-			
-			// Checking and assigning ProjPerFire
-			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire > 0 )
-				ProjPerFire = PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire;
-			
-			// Checking and assigning Spread
-			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread > 0.0 )
-				Spread = PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread;
-			
-			// Checking and assigning MaxSpread
-			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread > 0.0 )
-				MaxSpread = PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread;
+	if ( KFPRI != None && SRVT != None )  {
+		if ( bChangeProjByPerk  )  {
+			// Assign default.PerkIndex
+			DefPerkIndex = KFPRI.ClientVeteranSkill.default.PerkIndex;
+			if ( UM_KSGShotgun(Weapon) != None && UM_KSGShotgun(Weapon).bWideSpread )  {
+				// Checking and assigning ProjectileClass
+				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjClass != None )
+					ProjectileClass = PerkProjsInfo[DefPerkIndex].SecondPerkProjClass;
+				
+				// Checking and assigning ProjPerFire
+				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire > 0 )
+					ProjPerFire = PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire;
+				
+				// Checking and assigning Spread
+				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread > 0.0 )
+					Spread = PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread;
+				
+				// Checking and assigning MaxSpread
+				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread > 0.0 )
+					MaxSpread = PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread;
+			}
+			else  {
+				// Checking and assigning ProjectileClass
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
+					ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
+				
+				// Checking and assigning ProjPerFire
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
+					ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
+				
+				// Checking and assigning Spread
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
+					Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
+				
+				// Checking and assigning MaxSpread
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
+					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
+			}
 		}
-		else  {
-			// Checking and assigning ProjectileClass
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
-				ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
-			
-			// Checking and assigning ProjPerFire
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
-				ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
-			
-			// Checking and assigning Spread
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
-				Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
-			
-			// Checking and assigning MaxSpread
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
-				MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
-		}
+		SpreadModif = SRVT.static.GetSpreadModifier( KFPRI, Self );
+		AimErrorModif = SRVT.static.GetAimErrorModifier( KFPRI, Self );
+	}
+	else  {
+		SpreadModif = 1.0;
+		AimErrorModif = 1.0;
 	}
 	//[end]
 	
 	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-	Spread = UpdateSpread(Spread) * RecoilModif;
-	AimError = UpdateAimError(AimError);
+	Spread = UpdateSpread(Spread) * SpreadModif;
+	AimError = UpdateAimError(AimError) * AimErrorModif;
 }
 
 defaultproperties

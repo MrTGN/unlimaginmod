@@ -866,7 +866,7 @@ simulated function ChangeMuzzleNum()
 // Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
-	local	float						Rec, FireRateRatio;
+	local	float						FireRateRatio;
 	local	KFPlayerReplicationInfo		KFPRI;
 	local	Class<UM_SRVeterancyTypes>	SRVT;
 
@@ -888,7 +888,7 @@ event ModeDoFire()
 		InstigatorMovingSpeed = 0.0;
 	
 	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-	if ( KFPRI != None )  {
+	if ( KFPRI != None )
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
@@ -994,7 +994,6 @@ simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteranc
 				maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
 				maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
 			}
-			
 			NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
          	NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
 

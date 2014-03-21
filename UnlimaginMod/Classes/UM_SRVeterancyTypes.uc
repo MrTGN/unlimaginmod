@@ -229,22 +229,22 @@ static function int GetMaxBounce(KFPlayerReplicationInfo KFPRI)
 	Return 0;
 }
 
-static function float GetSpreadModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetSpreadModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
-static function float GetAimErrorModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
-static function float GetRecoilModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
-static function float GetShakeViewModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetShakeViewModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }

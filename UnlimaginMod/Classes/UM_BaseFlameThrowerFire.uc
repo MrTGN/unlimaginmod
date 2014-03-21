@@ -18,58 +18,10 @@ class UM_BaseFlameThrowerFire extends UM_BaseAutomaticWeaponFire
 	Abstract;
 
 
-// Copied from KFShotgunFire with some changes like in KFFire
-// Handle setting new recoil
-simulated function HandleRecoil(float Rec)
-{
-	local rotator NewRecoilRotation;
-	local KFPlayerController KFPC;
-	local KFPawn KFPwn;
-	local vector AdjustedVelocity;
-	local float AdjustedSpeed;
-
-    if ( Instigator != None )
-    {
-		KFPC = KFPlayerController(Instigator.Controller);
-		KFPwn = KFPawn(Instigator);
-	}
-
-    if ( KFPC == None || KFPwn == None )
-    	Return;
-
-	if ( !KFPC.bFreeCamera )
-	{
-		if ( Weapon.GetFireMode(ThisModeNum).bIsFiring )
-    	{
-          	NewRecoilRotation.Pitch = RandRange(maxVerticalRecoilAngle * 0.5, maxVerticalRecoilAngle);
-         	NewRecoilRotation.Yaw = RandRange(maxHorizontalRecoilAngle * 0.5, maxHorizontalRecoilAngle);
-
-          	if ( !bRecoilRightOnly && Rand(2) == 1 )
-				NewRecoilRotation.Yaw *= -1;
-
-            if ( RecoilVelocityScale > 0.0 )
-    	    {
-				// FlameThrower will always Ignore Z velocity
-				AdjustedVelocity = Weapon.Owner.Velocity;
-				AdjustedVelocity.Z = 0.0;
-				AdjustedSpeed = VSize(AdjustedVelocity);
-				//log("Velocity = "$VSize(Weapon.Owner.Velocity)$" scale = "$(VSize(Weapon.Owner.Velocity)* RecoilVelocityScale));
-				NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale);
-				NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
-			}
-			// Recoil based on how much Health the player have
-    	    NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
-    	    NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
-    	    NewRecoilRotation *= Rec;
-
- 		    KFPC.SetRecoil(NewRecoilRotation, RecoilRate * (default.FireRate / FireRate));
-    	}
- 	}
-}
-
 defaultproperties
 {
      //[block] Fire Effects
+	 bRecoilIgnoreZVelocity=True
 	 MuzzleBones(0)="tip"
 	 SmokeEmitterClasses(0)=Class'UnlimaginMod.UM_BaseMuzzleSmoke1st'
 	 FlashEmitterClasses(0)=None

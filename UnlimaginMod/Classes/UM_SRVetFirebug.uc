@@ -188,6 +188,22 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 	Return 1.00;
 }
 
+static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseFlameThrowerFire(WF) != None )
+		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+	
+	Return 1.0;
+}
+
+static function float GetShakeViewModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseFlameThrowerFire(WF) != None )
+		Return 1.00 - (0.02 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+	
+	Return 1.0;
+}
+
 // Give Extra Items as default
 static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 {

@@ -215,16 +215,6 @@ static function float GetShotgunPenetrationDamageMulti(KFPlayerReplicationInfo K
 	Return DefaultPenDamageReduction + ((PenDamageInverse / 5.5555) * float(Min(KFPRI.ClientVeteranSkillLevel, 5)));
 }
 
-// Get nades type.
-/*
-static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
-{
-	if ( KFPRI.ClientVeteranSkillLevel >= 3 )
-		Return class'UM_HandGrenadeWithBouncingShrapnel'; // Grenade with bouncing Shrapnel
-
-	Return Super.GetNadeType(KFPRI);
-} */
-
 // Change the cost of particular items
 static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {
@@ -242,6 +232,22 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on Shotguns
 
 	Return 1.00;
+}
+
+static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseShotgunFire(WF) != None )
+		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+	
+	Return 1.0;
+}
+
+static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseShotgunFire(WF) != None )
+		Return 1.00 - (0.02 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+	
+	Return 1.0;
 }
 
 // Give Extra Items as Default

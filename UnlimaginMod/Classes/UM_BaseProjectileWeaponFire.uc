@@ -59,6 +59,7 @@ var(Movement)	float			MovingAimErrorScale;	// Increases AimError when player is 
 var(Movement)	float			MovingSpreadScale;		// Increases Spread when player is moving. Must be > 1.000000
 
 var				bool			bChangeProjByPerk;
+var				bool			bRecoilIgnoreZVelocity;
 
 struct	PerkProjData
 {
@@ -590,7 +591,7 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 }
 //[end]
 
-function AdjustKickMomentum()
+function AddKickMomentum()
 {
 	if ( Instigator != None && !bNoKickMomentum )  {
 		if ( !bOnlyLowGravKickMomentum )
@@ -741,46 +742,58 @@ function float UpdateAimError(float NewAimError)
 	Return NewAimError;
 }
 
-function UpdateFireProperties(KFPlayerReplicationInfo KFPRI, float RecoilModif)
+function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
+	local	float	SpreadModif, AimErrorModif;
 	
 	ProjectileClass = default.ProjectileClass;
 	ProjPerFire = default.ProjPerFire;
 	Spread = default.Spread;
 	MaxSpread = default.MaxSpread;
 	AimError = default.AimError;
-	
+		
 	//[block] Switching ProjectileClass, ProjPerFire and Spread by Perk Index if Perk exist
-	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None && bChangeProjByPerk )  {
-		// Assign default.PerkIndex
-		DefPerkIndex = KFPRI.ClientVeteranSkill.default.PerkIndex;
-		if ( PerkProjsInfo.Length > DefPerkIndex )  {
-			// Checking and assigning ProjectileClass
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
-				ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
-			
-			// Checking and assigning ProjPerFire
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
-				ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
-			
-			// Checking and assigning Spread
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
-				Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
-			
-			// Checking and assigning MaxSpread
-			if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
-				MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
+	if ( KFPRI != None && SRVT != None )  {
+		if ( bChangeProjByPerk  )  {
+			// Assign default.PerkIndex
+			DefPerkIndex = SRVT.default.PerkIndex;
+			if ( PerkProjsInfo.Length > DefPerkIndex )  {
+				// Checking and assigning ProjectileClass
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
+					ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
+				
+				// Checking and assigning ProjPerFire
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
+					ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
+				
+				// Checking and assigning Spread
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
+					Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
+				
+				// Checking and assigning MaxSpread
+				if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
+					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
+			}
 		}
+		SpreadModif = SRVT.static.GetSpreadModifier( KFPRI, Self );
+		AimErrorModif = SRVT.static.GetAimErrorModifier( KFPRI, Self );
+	}
+	else  {
+		SpreadModif = 1.0;
+		AimErrorModif = 1.0;
 	}
 	//[end]
 	
 	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-	Spread = UpdateSpread(Spread) * RecoilModif;
-	AimError = UpdateAimError(AimError);
+	Spread = UpdateSpread(Spread) * SpreadModif;
+	AimError = UpdateAimError(AimError) * AimErrorModif;
 }
 
-function ShakeView()
+// Cleaning up the old function
+function ShakeView() { }
+
+function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
     local	PlayerController	P;
 	local	float				ShakeScaler;
@@ -792,6 +805,9 @@ function ShakeView()
 			ShakeScaler = FMax((MaxMoveShakeScale * InstigatorMovingSpeed / Instigator.default.GroundSpeed), 1.0);
 		else
 			ShakeScaler = 1.0;
+		
+		if ( KFPRI != None && SRVT != None )
+			ShakeScaler *= SRVT.static.GetShakeViewModifier( KFPRI, Self );
 		
 		// Aiming bonuses
 		if ( KFWeap.bAimingRifle )
@@ -850,9 +866,10 @@ simulated function ChangeMuzzleNum()
 // Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
-	local	float	Rec, FireRateRatio;
-	local	KFPlayerReplicationInfo	KFPRI;
-	
+	local	float						Rec, FireRateRatio;
+	local	KFPlayerReplicationInfo		KFPRI;
+	local	Class<UM_SRVeterancyTypes>	SRVT;
+
 	if ( Instigator == None || Instigator.Controller == None || 
 		 !AllowFire() )
 		Return;
@@ -870,22 +887,18 @@ event ModeDoFire()
 	else
 		InstigatorMovingSpeed = 0.0;
 	
-	if ( Instigator.PlayerReplicationInfo != None
-		 && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None )  {
-		KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-		KFPRI.ClientVeteranSkill.Static.ModifyRecoilSpread(KFPRI, self, Rec);
-	}
-	else
-		Rec = 1.00;
+	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	if ( KFPRI != None )  {
+		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
 		// Updating spread and projectile info. 
-		UpdateFireProperties(KFPRI, Rec);
+		UpdateFireProperties( KFPRI, SRVT );
 		DoFireEffect();
-		AdjustKickMomentum();
+		AddKickMomentum();
 		Weapon.ConsumeAmmo(ThisModeNum, Load);
 		HoldTime = 0;	// if bot decides to stop firing, HoldTime must be reset first
 
@@ -899,14 +912,14 @@ event ModeDoFire()
 	if ( Instigator.IsLocallyControlled() )  {
 		CheckClientMuzzleNum();
 		PlayFiring();
-		ShakeView();
+		ShakePlayerView( KFPRI, SRVT );
 		if ( bDoFiringEffects )  {
 			FlashMuzzleFlash();
 			StartMuzzleSmoke();
 			EjectShell();
 		}
 		// client Updating Recoil
-		HandleRecoil(Rec);
+		AddRecoil( KFPRI, SRVT );
 	}
 	else // server
 		ServerPlayFiring();
@@ -959,14 +972,15 @@ event ModeDoFire()
 	}
 }
 
-// Copied from KFShotgunFire with some changes like in KFFire
-// Handle setting new recoil
-simulated function HandleRecoil(float Rec)
+// Cleaning up the old function
+simulated function HandleRecoil(float Rec) { }
+
+simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
-	local rotator NewRecoilRotation;
-	local KFPlayerController KFPC;
-	local vector AdjustedVelocity;
-	local float AdjustedSpeed;
+	local	Rotator				NewRecoilRotation;
+	local	KFPlayerController	KFPC;
+	local	Vector				AdjustedVelocity;
+	local	float				AdjustedSpeed, RecoilModif;
 
 	KFPC = KFPlayerController(Instigator.Controller);
 	if ( Instigator != None && KFPC != None && !KFPC.bFreeCamera )  {
@@ -990,28 +1004,34 @@ simulated function HandleRecoil(float Rec)
             if ( RecoilVelocityScale > 0.0 )  {
 				AdjustedVelocity = Instigator.Velocity;
 				if ( Instigator.Physics == PHYS_Falling &&
-					Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )
-				{
+					Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
 					// Ignore Z velocity in low grav so we don't get massive recoil
 					AdjustedVelocity.Z = 0.0;
 					AdjustedSpeed = VSize(AdjustedVelocity);
 					//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
-
 					// Reduce the falling recoil in low grav
 					NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale * 0.5);
 					NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale * 0.5);
 				}
 				else  {
+					if ( bRecoilIgnoreZVelocity )
+						AdjustedVelocity.Z = 0.0;
 					AdjustedSpeed = VSize(AdjustedVelocity);
 					//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
 					NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale);
 					NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
 				}
 			}
+			
+			if ( KFPRI != None && SRVT != None )
+				RecoilModif = SRVT.static.GetRecoilModifier( KFPRI, Self );
+			else
+				RecoilModif = 1.0;
+			
 			// Recoil based on how much Health the player have
     	    NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
     	    NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
-    	    NewRecoilRotation *= Rec;
+    	    NewRecoilRotation *= RecoilModif;
 
  		    KFPC.SetRecoil(NewRecoilRotation, (RecoilRate * FireSpeedModif));
     	}

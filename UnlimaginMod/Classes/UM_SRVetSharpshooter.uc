@@ -247,6 +247,50 @@ static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pi
 	Return 1.00;
 }
 
+static function float GetSpreadModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseAutomaticSniperRifleFire(WF) != None
+		 || UM_BaseBattleRifleFire(WF) != None 
+		 || UM_BaseHandgunFire(WF) != None
+		 || UM_BaseSniperRifleFire(WF) != None )
+		Return 1.00 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 50% bonus
+	
+	Return 1.0;
+}
+
+static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseAutomaticSniperRifleFire(WF) != None
+		 || UM_BaseBattleRifleFire(WF) != None 
+		 || UM_BaseHandgunFire(WF) != None
+		 || UM_BaseSniperRifleFire(WF) != None )
+		Return 1.00 - (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 60% bonus
+	
+	Return 1.0;
+}
+
+static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseAutomaticSniperRifleFire(WF) != None
+		 || UM_BaseBattleRifleFire(WF) != None 
+		 || UM_BaseHandgunFire(WF) != None
+		 || UM_BaseSniperRifleFire(WF) != None )
+		Return 1.00 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 70% bonus
+	
+	Return 1.0;
+}
+
+static function float GetShakeViewModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+{
+	if ( UM_BaseAutomaticSniperRifleFire(WF) != None
+		 || UM_BaseBattleRifleFire(WF) != None 
+		 || UM_BaseHandgunFire(WF) != None
+		 || UM_BaseSniperRifleFire(WF) != None )
+		Return 1.000 - (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 25% bonus
+	
+	Return 1.0;
+}
+
 // Give Extra Items as Default
 static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 {

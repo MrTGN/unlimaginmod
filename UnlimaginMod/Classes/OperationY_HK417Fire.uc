@@ -46,7 +46,7 @@ defaultproperties
      ShakeOffsetTime=1.500000
 	 ProjectileClass=Class'UnlimaginMod.UM_HK417Bullet'
      BotRefireRate=0.990000
-     AimError=32.000000
+     AimError=26.000000
      Spread=0.005000
 	 MaxSpread=0.025000
      SpreadStyle=SS_Random

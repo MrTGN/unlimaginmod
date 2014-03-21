@@ -690,8 +690,10 @@ function UpdateFireRate()
 	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )  {
 		FireSpeedModif = KFPRI.ClientVeteranSkill.Static.GetFireSpeedMod(KFPRI, Weapon);
-		if ( UM_SRHumanPawn(Instigator) != None )
+		// UM_SRHumanPawn(Instigator).FireSpeedModif replicates from the server
+		if ( UM_SRHumanPawn(Instigator) != None && Weapon.Role == ROLE_Authority )
 			UM_SRHumanPawn(Instigator).FireSpeedModif = FireSpeedModif;
+		// FireRate
 		FireRate = default.FireRate / FireSpeedModif;
 	}
 	else
@@ -706,7 +708,7 @@ function float UpdateSpread(float NewSpread)
 	else  {
 		NumShotsInBurst++;
 		// Decrease accuracy up to MaxSpread by the number of recent shots up to ShotsForMaxSpread
-		NewSpread = FMin(( NewSpread + (float(NumShotsInBurst) * (MaxSpread / float(ShotsForMaxSpread))) ), MaxSpread);
+		NewSpread = FMin( (NewSpread + (float(NumShotsInBurst) * (MaxSpread / float(ShotsForMaxSpread)))), MaxSpread );
 	}
 	
 	// Scale spread by Instigator moving speed
@@ -745,7 +747,6 @@ function float UpdateAimError(float NewAimError)
 function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
-	local	float	SpreadModif, AimErrorModif;
 	
 	ProjectileClass = default.ProjectileClass;
 	ProjPerFire = default.ProjPerFire;
@@ -776,18 +777,16 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
 			}
 		}
-		SpreadModif = SRVT.static.GetSpreadModifier( KFPRI, Self );
-		AimErrorModif = SRVT.static.GetAimErrorModifier( KFPRI, Self );
+		// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
+		Spread = UpdateSpread(Spread) * SRVT.static.GetSpreadModifier( KFPRI, Self );
+		AimError = UpdateAimError(AimError) * SRVT.static.GetAimErrorModifier( KFPRI, Self );
 	}
 	else  {
-		SpreadModif = 1.0;
-		AimErrorModif = 1.0;
+		// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
+		Spread = UpdateSpread(Spread);
+		AimError = UpdateAimError(AimError);
 	}
 	//[end]
-	
-	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-	Spread = UpdateSpread(Spread) * SpreadModif;
-	AimError = UpdateAimError(AimError) * AimErrorModif;
 }
 
 // Cleaning up the old function
@@ -980,7 +979,7 @@ simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteranc
 	local	Rotator				NewRecoilRotation;
 	local	KFPlayerController	KFPC;
 	local	Vector				AdjustedVelocity;
-	local	float				AdjustedSpeed, RecoilModif;
+	local	float				AdjustedSpeed;
 
 	KFPC = KFPlayerController(Instigator.Controller);
 	if ( Instigator != None && KFPC != None && !KFPC.bFreeCamera )  {
@@ -1021,16 +1020,12 @@ simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteranc
 					NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
 				}
 			}
-			
-			if ( KFPRI != None && SRVT != None )
-				RecoilModif = SRVT.static.GetRecoilModifier( KFPRI, Self );
-			else
-				RecoilModif = 1.0;
-			
 			// Recoil based on how much Health the player have
     	    NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
     	    NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
-    	    NewRecoilRotation *= RecoilModif;
+    	    // Perk bouns
+			if ( KFPRI != None && SRVT != None )
+				NewRecoilRotation *= SRVT.static.GetRecoilModifier( KFPRI, Self );
 
  		    KFPC.SetRecoil(NewRecoilRotation, (RecoilRate * FireSpeedModif));
     	}

@@ -122,7 +122,7 @@ defaultproperties
 	 //Demolitions
 	 PerkProjsInfo(6)=(PerkProjClass=Class'UnlimaginMod.UM_KSGFragBullet',PerkProjPerFire=1,PerkProjSpread=0.014000,SecondPerkProjClass=Class'UnlimaginMod.UM_KSGFragBulletB',SecondPerkProjPerFire=4,SecondPerkProjSpread=800.000000)
      BotRefireRate=0.250000
-     AimError=40.000000
+     AimError=76.000000
 	 Spread=1000.000000
 	 AltSpread=2400.000000
 }

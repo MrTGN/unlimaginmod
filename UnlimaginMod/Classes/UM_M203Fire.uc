@@ -52,6 +52,6 @@ defaultproperties
      ShakeOffsetMag=(X=3.000000,Y=3.000000,Z=3.000000)
      ProjectileClass=Class'KFMod.M203GrenadeProjectile'
      BotRefireRate=1.800000
-     AimError=42.000000
+     AimError=60.000000
      Spread=0.015000
 }

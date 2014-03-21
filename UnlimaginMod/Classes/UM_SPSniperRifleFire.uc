@@ -53,7 +53,7 @@ defaultproperties
      ShakeOffsetTime=2.000000
 	 ProjectileClass=Class'UnlimaginMod.UM_SPSniperRifleBullet'
      BotRefireRate=0.990000
-     AimError=20.000000
+     AimError=50.000000
      Spread=0.005000
 	 MaxSpread=0.024000
      SpreadStyle=SS_Random

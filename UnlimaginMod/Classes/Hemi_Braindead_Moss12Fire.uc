@@ -55,6 +55,6 @@ defaultproperties
      ShakeOffsetTime=3.000000
      ProjectileClass=Class'UnlimaginMod.UM_Moss12_0Buckshot'
      BotRefireRate=1.500000
-     AimError=40.000000
+     AimError=76.000000
      Spread=1315.000000
 }

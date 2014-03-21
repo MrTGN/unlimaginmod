@@ -41,5 +41,5 @@ defaultproperties
      ShakeOffsetTime=1.250000
 	 ProjectileClass=Class'UnlimaginMod.UM_UMP45EOTechBullet'
      BotRefireRate=0.990000
-     AimError=40.000000
+     AimError=62.000000
 }

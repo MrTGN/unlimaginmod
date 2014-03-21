@@ -48,9 +48,9 @@ defaultproperties
      ShakeOffsetTime=2.000000
 	 ProjectileClass=Class'UnlimaginMod.UM_Cz75LaserBullet'
      BotRefireRate=0.350000
-     AimErrorWithLaser=22.000000
-	 AimErrorWithOutLaser=32.000000
-	 AimError=32.000000
+     AimErrorWithLaser=25.000000
+	 AimErrorWithOutLaser=50.000000
+	 AimError=50.000000
      Spread=0.010000
 	 MaxSpread=0.038000
      SpreadStyle=SS_Random

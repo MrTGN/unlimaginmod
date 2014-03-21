@@ -67,6 +67,6 @@ defaultproperties
      ShakeOffsetMag=(X=3.000000,Y=3.000000,Z=3.000000)
      ProjectileClass=Class'UnlimaginMod.UM_MGL140StickyRMCGrenade'
      BotRefireRate=1.800000
-     AimError=40.000000
+     AimError=60.000000
      Spread=0.015000
 }

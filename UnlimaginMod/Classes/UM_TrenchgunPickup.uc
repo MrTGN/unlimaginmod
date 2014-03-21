@@ -29,7 +29,7 @@ defaultproperties
      ItemName="Winchester Model 1897"
      ItemShortName="Winchester M1897"
      AmmoItemName="Dragon's breath shells"
-     CorrespondingPerkIndex=5
+     CorrespondingPerkIndex=1
      EquipmentCategoryID=2
      InventoryType=Class'UnlimaginMod.UM_Trenchgun'
      PickupMessage="You got the Winchester M1897."

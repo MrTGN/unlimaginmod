@@ -60,7 +60,7 @@ defaultproperties
 	 ShakeOffsetTime=1.250000
      ProjectileClass=Class'KFMod.FlameTendril'
 	 BotRefireRate=0.070000
-     AimError=20.000000
+     AimError=70.000000
      Spread=760.000000
 	 MaxSpread=900.000000
      SpreadStyle=SS_Random

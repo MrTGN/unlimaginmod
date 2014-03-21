@@ -38,7 +38,7 @@ defaultproperties
      ShakeOffsetMag=(X=3.000000,Y=3.000000,Z=3.000000)
      ProjectileClass=Class'UnlimaginMod.UM_CrossbowArrow'
      BotRefireRate=1.800000
-     aimerror=4.000000
+     AimError=16.000000
      Spread=0.010000
 	 MaxSpread=0.020000
      SpreadStyle=SS_Random

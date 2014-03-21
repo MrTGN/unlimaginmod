@@ -44,7 +44,7 @@ defaultproperties
      ShakeOffsetTime=1.150000
 	 ProjectileClass=Class'UnlimaginMod.UM_StingerMinigunBullet'
      BotRefireRate=0.990000
-     AimError=50.000000
+     AimError=85.000000
 	 DamageAtten=1.000000
      Spread=400.000000
 	 MaxSpread=500.000000

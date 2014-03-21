@@ -47,6 +47,6 @@ defaultproperties
      ShakeOffsetTime=2.500000
      ProjectileClass=Class'UnlimaginMod.OperationY_G2ContenderBullet'
      BotRefireRate=3.570000
-     AimError=2.000000
+     AimError=30.000000
      Spread=0.004000
 }

@@ -56,6 +56,6 @@ defaultproperties
 	 //Demolitions
 	 PerkProjsInfo(6)=(PerkProjClass=Class'UnlimaginMod.UM_AA12FragBullet',PerkProjPerFire=1,PerkProjSpread=0.016000)
 	 BotRefireRate=0.250000
-     AimError=40.000000
+     AimError=78.000000
      Spread=1400.000000
 }

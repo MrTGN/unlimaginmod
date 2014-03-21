@@ -16,7 +16,7 @@
 //================================================================================
 class UM_FlameThrowerAltFire extends UM_FlameThrowerFire;
 
-function AdjustKickMomentum()
+function AddKickMomentum()
 {
 	// Modified to always push the player
 	if ( Instigator != None )

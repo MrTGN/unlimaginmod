@@ -78,48 +78,47 @@ const 	BaseActor = Class'UM_BaseActor';
 //[block] Dynamic Loading
 simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCount)
 {
-	local	int		i;
+	local	int				i;
+	local	UM_BaseWeapon	BW;
 
 	if ( !bSkipRefCount )
 		default.ReferenceCount++;
 	
-	//Todo: протестировать как работая эта новая подгрузка
-	UpdateDefaultMesh(BaseActor.static.LoadSkeletalMesh(default.MeshRef));
+	// Will be loaded actor variables
+	if ( Inv != None )  {
+		BW = UM_BaseWeapon(Inv);
+		BaseActor.static.LoadActorSkeletalMesh(default.MeshRef, Inv);
+	}
+	// Only defaults will be loaded in this case
+	else
+		UpdateDefaultMesh( BaseActor.static.LoadSkeletalMesh(default.MeshRef) );
+	
 	BaseActor.static.LoadMaterial(default.HudImageRef, default.HudImage);
 	BaseActor.static.LoadMaterial(default.SelectedHudImageRef, default.SelectedHudImage);
 	BaseActor.static.LoadSound(default.SelectSoundRef, default.SelectSound);
 	BaseActor.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
-	
+	// default.Skins
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )
 			default.Skins.Length = default.SkinRefs.Length;
-		
-		for ( i = 0; i < default.SkinRefs.Length; i++ )
+		for ( i = 0; i < default.SkinRefs.Length; ++i )
 			BaseActor.static.LoadMaterial(default.SkinRefs[i], default.Skins[i]);
 	}
 
-	if ( UM_BaseWeapon(Inv) != None )  {
-		if ( default.Mesh != None )
-			UM_BaseWeapon(Inv).LinkMesh(default.Mesh);
-		if ( default.HudImage != None )
-			UM_BaseWeapon(Inv).HudImage = default.HudImage;
-		if ( default.SelectedHudImage != None )
-			UM_BaseWeapon(Inv).SelectedHudImage = default.SelectedHudImage;
-		if ( default.SelectSound != None )
-			UM_BaseWeapon(Inv).SelectSound = default.SelectSound;
-		if ( default.ModeSwitchSound.Snd != None )
-			UM_BaseWeapon(Inv).ModeSwitchSound.Snd = default.ModeSwitchSound.Snd;
-		
+	if ( BW != None )  {
+		BW.HudImage = default.HudImage;
+		BW.SelectedHudImage = default.SelectedHudImage;
+		BW.SelectSound = default.SelectSound;
+		BW.ModeSwitchSound.Snd = default.ModeSwitchSound.Snd;
+		// Skins
 		if ( default.Skins.Length > 0 )  {
-			if ( UM_BaseWeapon(Inv).Skins.Length < default.Skins.Length )
-				UM_BaseWeapon(Inv).Skins.Length = default.Skins.Length;
-			
-			for ( i = 0; i < default.Skins.Length; i++ )  {
-				if ( default.Skins[i] != None )
-					UM_BaseWeapon(Inv).Skins[i] = default.Skins[i];
-			}
+			if ( BW.Skins.Length < default.Skins.Length )
+				BW.Skins.Length = default.Skins.Length;
+			for ( i = 0; i < default.Skins.Length; ++i )
+				BW.Skins[i] = default.Skins[i];
 		}
 	}
+	
 	default.bAssetsLoaded = True;
 }
 
@@ -128,18 +127,12 @@ simulated static function bool UnloadAssets()
 	default.ReferenceCount--;
 	log("UnloadAssets RefCount after: " @ default.ReferenceCount);
 
-	if ( default.Mesh != None )
-		UpdateDefaultMesh(None);
-	if ( default.HudImage != None )
-		default.HudImage = None;
-	if ( default.SelectedHudImage != None )
-		default.SelectedHudImage = None;
-	if ( default.SelectSound != None )
-		default.SelectSound = None;
-	if ( default.ModeSwitchSound.Snd != None )
-		default.ModeSwitchSound.Snd = None;
-	if ( default.Skins.Length > 0 )
-		default.Skins.Length = 0;
+	UpdateDefaultMesh(None);
+	default.HudImage = None;
+	default.SelectedHudImage = None;
+	default.SelectSound = None;
+	default.ModeSwitchSound.Snd = None;
+	default.Skins.Length = 0;
 	
 	default.bAssetsLoaded = False;
 

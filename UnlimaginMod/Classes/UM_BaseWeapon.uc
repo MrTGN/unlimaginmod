@@ -470,7 +470,7 @@ simulated function Vector GetFireModeEffectStart(int ModeNum)
 // prevent the pawn from picking something up. Return true to abort pickup
 // or if item handles pickup, otherwise keep going through inventory list.
 //
-function bool HandlePickupQuery( pickup Item )
+function bool HandlePickupQuery( Pickup Item )
 {
 	local	int		i;
 	local	KFPlayerController	KFPC;

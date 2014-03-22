@@ -227,11 +227,8 @@ simulated function SetMuzzleNum(byte NewMuzzleNum)
 	MuzzleNum = NewMuzzleNum;
 	UMWA = UM_BaseWeaponAttachment(Weapon.ThirdPersonActor);
 	//Server
-	//if ( UMWA != None && !Instigator.IsLocallyControlled() )  {
-	if ( UMWA != None && Weapon.Role == ROLE_Authority )  {
+	if ( UMWA != None && Weapon.Role == ROLE_Authority )
 		UMWA.MuzzleNums[ThisModeNum] = NewMuzzleNum;
-		//UMWA.NetUpdateTime = Level.TimeSeconds - 1;
-	}
 }
 
 simulated function CheckAnimArrays()
@@ -678,10 +675,10 @@ function DoFireEffect()
 }
 
 // Clearing StartFiring function
-function StartFiring() {}
+function StartFiring() { }
 
 // Clearing StopFiring function
-function StopFiring() {}
+function StopFiring() { }
 
 function UpdateFireRate()
 {
@@ -690,7 +687,7 @@ function UpdateFireRate()
 	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )  {
 		FireSpeedModif = KFPRI.ClientVeteranSkill.Static.GetFireSpeedMod(KFPRI, Weapon);
-		// UM_SRHumanPawn(Instigator).FireSpeedModif replicates from the server
+		// FireSpeedModif in UM_SRHumanPawn replicates from the server to the clients
 		if ( UM_SRHumanPawn(Instigator) != None && Weapon.Role == ROLE_Authority )
 			UM_SRHumanPawn(Instigator).FireSpeedModif = FireSpeedModif;
 		// FireRate

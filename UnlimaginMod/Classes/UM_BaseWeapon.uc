@@ -234,13 +234,12 @@ simulated event PostBeginPlay()
 	Super(BaseKFWeapon).PostBeginPlay();
 
 	//[block] Client code
-	if ( Level.NetMode == NM_DedicatedServer )
-		Return;
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( !bHasScope )
+			KFScopeDetail = KF_None;
 
-	if ( !bHasScope )
-		KFScopeDetail = KF_None;
-
-	InitFOV();
+		InitFOV();
+	}
 	//[end]
 }
 
@@ -528,7 +527,6 @@ simulated function IncrementFlashCount(int Mode)
 	UMWA = UM_BaseWeaponAttachment(ThirdPersonActor);
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
-        //UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         ++UMWA.FlashCount;
 		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.ThirdPersonEffects();
@@ -542,7 +540,6 @@ simulated function ZeroFlashCount(int Mode)
 	UMWA = UM_BaseWeaponAttachment(ThirdPersonActor);
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
-        //UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.FlashCount = 0;
 		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
         UMWA.ThirdPersonEffects();
@@ -921,7 +918,7 @@ exec function ReloadMeNow()
 simulated function ClientReload()
 {
 	local	int						Mode;
-	local	float					NewAnimRate;
+	local	float					AnimRateMod;
 	local	class<KFVeterancyTypes>	CVS;
 
 	if ( Level.NetMode != NM_DedicatedServer )  {
@@ -941,20 +938,16 @@ simulated function ClientReload()
 		if ( Instigator.IsLocallyControlled() )  {
 			CVS = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill;
 			if ( CVS != None )
-				NewAnimRate = CVS.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
+				AnimRateMod = CVS.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
 			else
-				NewAnimRate = 1.0;
+				AnimRateMod = 1.0;
 			
 			AnimStopLooping();
-			if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus 
-				 && HasAnim(TacticalReloadAnim.Anim) )  {
-				NewAnimRate *= default.TacticalReloadAnim.Rate;
-				//PlayAnim
-				PlayAnim(TacticalReloadAnim.Anim, NewAnimRate, 0.1);
-			}
-			else if ( HasAnim(ReloadAnim) )
-				NewAnimRate *= default.ReloadAnimRate;
-				PlayAnim(ReloadAnim, NewAnimRate, 0.1);
+			TacticalReloadAnim.Rate = default.TacticalReloadAnim.Rate * AnimRateMod;
+			ReloadAnimRate = default.ReloadAnimRate * AnimRateMod;
+			if ( !(bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus
+					&& PlayAnimData(TacticalReloadAnim)) && HasAnim(ReloadAnim) )
+				PlayAnim(ReloadAnim, ReloadAnimRate, 0.1);
 		}
 	}
 }
@@ -973,8 +966,10 @@ function ServerInterruptReload()
 // Server forces the reload to be cancelled
 simulated function ClientInterruptReload()
 {
-	bIsReloading = False;
-	PlayIdle();
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		bIsReloading = False;
+		PlayIdle();
+	}
 }
 
 // Interrupt the reload

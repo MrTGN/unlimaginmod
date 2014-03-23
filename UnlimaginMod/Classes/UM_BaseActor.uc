@@ -56,7 +56,7 @@ struct	SoundData
 
 //[block] Sound functions
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundData( SoundData SD )
+simulated final function bool PlaySoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -71,12 +71,16 @@ simulated final function PlaySoundData( SoundData SD )
 			SD.Pitch = 1.0;
 		// PlaySound
 		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD )
+simulated final function bool PlayOwnedSoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -91,13 +95,17 @@ simulated final function PlayOwnedSoundData( SoundData SD )
 			SD.Pitch = 1.0;
 		// PlayOwnedSound
 		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 //[end]
 
 //[block] Animation functions
 // Play the animation once
-simulated final function PlayAnimData( AnimData AD )
+simulated final function bool PlayAnimData( AnimData AD )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
@@ -108,11 +116,15 @@ simulated final function PlayAnimData( AnimData AD )
 		// StartFrame
 		if ( AD.StartFrame > 0.0 )
 			SetAnimFrame(AD.StartFrame, AD.Channel, 1);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // Loop the animation playback
-simulated final function LoopAnimData( AnimData AD )
+simulated final function bool LoopAnimData( AnimData AD )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
@@ -120,7 +132,11 @@ simulated final function LoopAnimData( AnimData AD )
 			AD.Rate = 1.0;
 		// LoopAnim
 		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 //[end]
 

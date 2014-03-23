@@ -1040,7 +1040,7 @@ function float MaxRange()
 
 // Overriden because I'm using my own functions to update Spread and AimError.
 // More info in the UpdateFireProperties function.
-simulated function AccuracyUpdate(float Velocity){}
+simulated function AccuracyUpdate(float Velocity) { }
 
 //// server propagation of firing ////
 function ServerPlayFiring()

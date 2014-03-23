@@ -21,6 +21,8 @@ class UM_BaseWeapon extends KFWeapon
 //========================================================================
 //[block] Variables
 
+const 	BaseActor = Class'UM_BaseActor';
+
 struct	AnimData
 {
 	var	name	Anim;
@@ -49,7 +51,6 @@ var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalRe
 
 var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
 var		float				TacticalReloadRate;		// Actually it's a time needed to play TacticalReloadAnim
-var		float				TacticalReloadAnimStartFrame;	
 
 //Todo: перенести эти переменные на AnimData
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
@@ -66,8 +67,6 @@ var		AnimData								TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
 var		SoundData								TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
-
-const 	BaseActor = Class'UM_BaseActor';
 
 //[end] Varibles
 //====================================================================
@@ -770,13 +769,12 @@ simulated event WeaponTick(float dt)
 					++NumLoadedThisReload;
 				}
 				
-				if ( Role == ROLE_Authority )
-					AddReloadedAmmo();
+				AddReloadedAmmo();
 
 				if ( MagAmmoRemaining >= MagCapacity || MagAmmoRemaining >= AmmoAmount(0) || 
 					 !bHoldToReload || bDoSingleReload )
 					ActuallyFinishReloading();
-				else if ( Level.NetMode != NM_Client )
+				else
 					Instigator.SetAnimAction(WeaponReloadAnim);
 			}
 		}
@@ -948,30 +946,14 @@ simulated function ClientReload()
 	}
 }
 
-simulated function ClientReloadEffects(){}
-
-// Interrupt the reload for single bullet insert weapons
-simulated function bool InterruptReload()
-{
-	if ( bAllowInterruptReload && bIsReloading )  {
-		ServerInterruptReload();
-		
-		//ToDo: Что это??? Нужно разобраться что это за условия.
-		//if ( Level.NetMode != NM_StandAlone && 
-			// (Level.NetMode != NM_ListenServer || !Instigator.IsLocallyControlled()) )
-		if ( Level.NetMode != NM_DedicatedServer )
-			ClientInterruptReload();
-
-		Return True;
-	}
-	else
-		Return False;
-}
+simulated function ClientReloadEffects() { }
 
 simulated function ServerInterruptReload()
 {
+	//[block] Server only variables
 	bDoSingleReload = False;
 	bReloadEffectDone = False;
+	//[end]
 	bIsReloading = False;
 }
 
@@ -980,6 +962,22 @@ simulated function ClientInterruptReload()
 {
 	bIsReloading = False;
 	PlayIdle();
+}
+
+// Interrupt the reload
+simulated function bool InterruptReload()
+{
+	if ( bAllowInterruptReload && bIsReloading )  {
+		// Called from the local player
+		ServerInterruptReload();
+		
+		if ( Level.NetMode != NM_DedicatedServer )
+			ClientInterruptReload();
+
+		Return True;
+	}
+	else
+		Return False;
 }
 
 // From KFWeapon.uc
@@ -1522,6 +1520,7 @@ defaultproperties
 	 bAllowAutoReload=True
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1
+	 TacticalReloadAnim=(Rate=1.000000)
 	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.200000)
 	 IdleAimAnim="Idle_Iron"
 }

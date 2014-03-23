@@ -105,12 +105,15 @@ simulated final function bool PlayOwnedSoundData( SoundData SD )
 
 //[block] Animation functions
 // Play the animation once
-simulated final function bool PlayAnimData( AnimData AD )
+simulated final function bool PlayAnimData( AnimData AD, optional float RateMult )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
 		if ( AD.Rate <= 0.0 )
 			AD.Rate = 1.0;
+		// RateMult
+		if ( RateMult > 0.0 )
+			AD.Rate *= RateMult;
 		// PlayAnim
 		PlayAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
 		// StartFrame
@@ -124,12 +127,15 @@ simulated final function bool PlayAnimData( AnimData AD )
 }
 
 // Loop the animation playback
-simulated final function bool LoopAnimData( AnimData AD )
+simulated final function bool LoopAnimData( AnimData AD, optional float RateMult )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
 		if ( AD.Rate <= 0.0 )
 			AD.Rate = 1.0;
+		// RateMult
+		if ( RateMult > 0.0 )
+			AD.Rate *= RateMult;
 		// LoopAnim
 		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
 		

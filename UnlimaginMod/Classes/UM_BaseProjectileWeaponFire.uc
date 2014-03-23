@@ -20,6 +20,64 @@ class UM_BaseProjectileWeaponFire extends KFShotgunFire
 //========================================================================
 //[block] Variables
 
+const	DefaultAnimRate = 1.000000;
+
+struct	AnimData
+{
+	var	name	Anim;
+	var	float	StartFrame;		// The frame number at which start to playing animation
+	var	float	Rate;
+	var	float	TweenTime;
+	var	int		Channel;
+};
+
+// Sound slots for weapons.
+enum ESoundSlot
+{
+	SLOT_None,
+	SLOT_Misc,
+	SLOT_Pain,
+	SLOT_Interact,
+	SLOT_Ambient,
+	SLOT_Talk,
+	SLOT_Interface,
+};
+
+struct	SoundData
+{
+	var	string		Ref;
+	var	sound		Snd;
+	var	ESoundSlot	Slot;
+	var	float		Vol;
+	var	bool		bNoOverride;
+	var	float		Radius;
+	var	float		Pitch;
+	var	bool		Attenuate;
+};
+
+// Projectile Spawn Offset
+struct	ProjSpawnData
+{
+	var	float	X;
+	var	float	Y;
+	var	float	Z;
+	var	float	AimX;
+	var	float	AimY;
+	var	float	AimZ;
+};
+
+struct	PerkProjData
+{
+	var		class<Projectile>	PerkProjClass;
+	var		int					PerkProjPerFire;
+	var		float				PerkProjSpread;
+	var		float				PerkProjMaxSpread;
+	var		class<Projectile>	SecondPerkProjClass;
+	var		int					SecondPerkProjPerFire;
+	var		float				SecondPerkProjSpread;
+	var		float				SecondPerkProjMaxSpread;
+};
+
 var				float			NextAutoReloadCheckTime;
 var				float			FirstPersonSoundVolumeScale;	// Scales sounds Volume at FirstPerson view
 
@@ -61,18 +119,6 @@ var(Movement)	float			MovingSpreadScale;		// Increases Spread when player is mov
 var				bool			bChangeProjByPerk;
 var				bool			bRecoilIgnoreZVelocity;
 
-struct	PerkProjData
-{
-	var		class<Projectile>	PerkProjClass;
-	var		int					PerkProjPerFire;
-	var		float				PerkProjSpread;
-	var		float				PerkProjMaxSpread;
-	var		class<Projectile>	SecondPerkProjClass;
-	var		int					SecondPerkProjPerFire;
-	var		float				SecondPerkProjSpread;
-	var		float				SecondPerkProjMaxSpread;
-};
-
 // Array with projectiles data. Weapon will switch projectile info from default to info 
 // from this array by PerkIndex if bChangeProjByPerk=True
 var		array< PerkProjData >	PerkProjsInfo;
@@ -87,54 +133,11 @@ var		bool					bFixedProjPerFire;	// Load = AmmoPerFire
 
 var		byte					MuzzleNum;	// Muzzle Number
 
-// Projectile Spawn Offset
-struct	ProjSpawnData
-{
-	var	float	X;
-	var	float	Y;
-	var	float	Z;
-	var	float	AimX;
-	var	float	AimY;
-	var	float	AimZ;
-};
 // ProjSpawnOffsets - array of vectors for weapons with more than 1 muzzles.
 // Used in GetProjectileSpawnOffset function. 0 index is a first muzzle, 1 index is second muzzle etc.
 // Switches between elements by MuzzleNum.
 var		array< ProjSpawnData >	ProjSpawnOffsets;
 
-const	DefaultAnimRate = 1.000000;
-struct	AnimData
-{
-	var	name	Anim;
-	var	float	StartFrame;		// The frame number at which start to playing animation
-	var	float	Rate;
-	var	float	TweenTime;
-	var	int		Channel;
-};
-
-// Sound slots for weapons.
-enum ESoundSlot
-{
-	SLOT_None,
-	SLOT_Misc,
-	SLOT_Pain,
-	SLOT_Interact,
-	SLOT_Ambient,
-	SLOT_Talk,
-	SLOT_Interface,
-};
-
-struct	SoundData
-{
-	var	string		Ref;
-	var	sound		Snd;
-	var	ESoundSlot	Slot;
-	var	float		Vol;
-	var	bool		bNoOverride;
-	var	float		Radius;
-	var	float		Pitch;
-	var	bool		Attenuate;
-};
 // Fire Animation arrays
 // Switches between elements by MuzzleNum.
 var		array< AnimData >		PreFireAnims,

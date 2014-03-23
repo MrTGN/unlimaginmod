@@ -21,6 +21,23 @@ class UM_BaseProjectile extends ROBallisticProjectile
 //========================================================================
 //[block] Variables
 
+// Constants
+const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+
+// 1 meter = 60.352 Unreal Units in Killing Floor
+// Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
+const	MeterInUU = 60.352000;
+const	SquareMeterInUU = 3642.363904;
+
+// From UT3
+const	DegToRad = 0.017453292519943296;	// Pi / 180
+const	RadToDeg = 57.295779513082321600;	// 180 / Pi
+const	UnrRotToRad = 0.00009587379924285;	// Pi / 32768
+const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
+const 	DegToUnrRot = 182.0444;
+const 	UnrRotToDeg = 0.00549316540360483;
+
+
 // Logging
 var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
@@ -62,23 +79,7 @@ var				float		MuzzleEnergy, ProjectileEnergy;
 // The energy of the bullet will drop to value = MuzzleEnergy * PenitrationEnergyReduction
 var(Ballistic)	float		PenitrationEnergyReduction;	// Standard penetration energy reduction (must be < 1.000000 )
 var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction (must be < 1.000000 )
-
-var				Class<UnlimaginMaths>	Maths;
 //[end]
-
-// Constants
-// 1 meter = 60.352 Unreal Units in Killing Floor
-// Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
-const	MeterInUU = 60.352000;
-const	SquareMeterInUU = 3642.363904;
-
-// From UT3
-const	DegToRad = 0.017453292519943296;	// Pi / 180
-const	RadToDeg = 57.295779513082321600;	// 180 / Pi
-const	UnrRotToRad = 0.00009587379924285;	// Pi / 32768
-const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
-const 	DegToUnrRot = 182.0444;
-const 	UnrRotToDeg = 0.00549316540360483;
 
 //[block] Effects
 // xEmitterTrails
@@ -106,8 +107,6 @@ var(Effects)	float						HitSoundVolume;	// Volume of Projectile hit sound. Every
 var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in which actors will hear hit sounds.
 //[end]
 
-//var				float		RandMult;
-
 //[end] Varibles
 //====================================================================
 
@@ -122,10 +121,6 @@ replication
 	
 	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SpawnLocation;
-		
-	/*
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		RandMult; */
 }
 
 //[end] Replication
@@ -593,7 +588,6 @@ simulated static function float GetRange()
 
 defaultproperties
 {
-	 Maths=Class'UnlimaginMod.UnlimaginMaths'
 	 // This projectile can take damage from something
 	 bCanBeDamaged=True
 	 // bReplicateMovement need to be True by default to replicate Velocity, Location 

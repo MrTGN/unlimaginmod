@@ -157,7 +157,7 @@ defaultproperties
 {
      MagCapacity=20
      ReloadRate=3.600000
-	 TacticalReloadRate=2.550000
+	 TacticalReloadTime=2.550000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_Fal_Acog"

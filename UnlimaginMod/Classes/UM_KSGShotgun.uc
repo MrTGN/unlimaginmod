@@ -118,7 +118,7 @@ defaultproperties
 	 ForceZoomOutOnFireTime=0.000000
      MagCapacity=14
      ReloadRate=3.160000
-	 TacticalReloadRate=2.600000
+	 TacticalReloadTime=2.600000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_KSG"

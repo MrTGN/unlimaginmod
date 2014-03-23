@@ -25,7 +25,7 @@ defaultproperties
      HudImageRef="KF_IJC_HUD.WeaponSelect.SteamPunk_Tommygun_Unselected"
      SelectedHudImageRef="KF_IJC_HUD.WeaponSelect.SteamPunk_Tommygun_Selected"
 	 ReloadRate=3.930000
-	 TacticalReloadRate=2.725000
+	 TacticalReloadTime=2.725000
      WeaponReloadAnim="Reload_IJC_spThompson_Drum"
      SleeveNum=0
      TraderInfoTexture=Texture'KF_IJC_HUD.Trader_Weapon_Icons.Trader_SteamPunk_Tommygun'

@@ -91,7 +91,7 @@ defaultproperties
 {
      MagCapacity=10
      ReloadRate=2.866000
-	 TacticalReloadRate=1.800000
+	 TacticalReloadTime=1.800000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_spSinper"

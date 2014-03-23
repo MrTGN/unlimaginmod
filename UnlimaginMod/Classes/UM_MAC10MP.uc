@@ -143,7 +143,7 @@ defaultproperties
 {
      MagCapacity=30
      ReloadRate=3.340000
-	 TacticalReloadRate=2.160000
+	 TacticalReloadTime=2.160000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_Mac10"

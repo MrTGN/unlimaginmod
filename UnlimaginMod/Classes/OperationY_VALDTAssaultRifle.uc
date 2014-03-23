@@ -143,7 +143,7 @@ defaultproperties
 	 //[end]
 	 MagCapacity=20
      ReloadRate=3.184500
-	 TacticalReloadRate=1.920000
+	 TacticalReloadTime=1.920000
      ReloadAnim="Reload"
      ReloadAnimRate=1.120000
      WeaponReloadAnim="Reload_AK47"

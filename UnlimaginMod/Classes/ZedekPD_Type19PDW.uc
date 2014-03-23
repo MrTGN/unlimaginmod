@@ -166,8 +166,8 @@ defaultproperties
 	 MagCapacity=40
      // ReloadRate = 5.400000 / 1.35
 	 ReloadRate=4.000000
-	 //TacticalReloadRate = 3.160000 / 1.35
-	 TacticalReloadRate=2.340000
+	 //TacticalReloadTime = 3.160000 / 1.35
+	 TacticalReloadTime=2.340000
      ReloadAnim="Reload"
      // ReloadAnimRate = 1.000000 * 1.35
 	 ReloadAnimRate=1.350000

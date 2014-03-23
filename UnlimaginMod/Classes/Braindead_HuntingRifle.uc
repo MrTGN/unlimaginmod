@@ -903,7 +903,7 @@ defaultproperties
      MagCapacity=10
      ReloadRate=4.108000
 	 //72.5
-	 TacticalReloadRate=2.590000
+	 TacticalReloadTime=2.590000
      ReloadAnim="Reload"
      ReloadAnimRate=1.120000
      WeaponReloadAnim="Reload_M14"

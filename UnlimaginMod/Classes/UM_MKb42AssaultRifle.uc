@@ -156,7 +156,7 @@ defaultproperties
      ReloadRate=3.000000
 	 //TODO: ѕока не прописываю, ибо анимаци€ перезар€дки не позвол€ет незаметно еЄ прервать.
 	 // јвтомат при перезар€дке задран вверх и будет видно как он резко опуститс€ вниз.
-	 //TacticalReloadRate=
+	 //TacticalReloadTime=
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_M4"

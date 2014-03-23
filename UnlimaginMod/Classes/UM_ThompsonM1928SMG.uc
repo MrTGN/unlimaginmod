@@ -26,7 +26,7 @@ defaultproperties
 	 MagCapacity=75
 	 Weight=6.000000
      ReloadRate=3.930000
-	 TacticalReloadRate=2.725000
+	 TacticalReloadTime=2.725000
      WeaponReloadAnim="Reload_IJC_spThompson_Drum"
      SleeveNum=0
      TraderInfoTexture=Texture'KF_IJC_HUD.Trader_Weapon_Icons.Trader_Thompson_Drum'

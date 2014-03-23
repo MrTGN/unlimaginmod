@@ -49,9 +49,9 @@ defaultproperties
 	 SelectedHudImageRef="UMP45LLI_A.UMP45LLI_T.UMP45LLI_selected"
 	 //[end]
 	 TacticalReloadAnim=(Anim="Reload_LLIePLLIeHb",Rate=1.250000)
-     //TacticalReloadRate=2.880000
-	 //TacticalReloadRate=2.880000 / 1.25 = 2.304000
-	 TacticalReloadRate=2.304000
+     //TacticalReloadTime=2.880000
+	 //TacticalReloadTime=2.880000 / 1.25 = 2.304000
+	 TacticalReloadTime=2.304000
 	 MagCapacity=25
 	 //ReloadRate=3.560000
 	 //ReloadRate=3.560000 / 1.25 = 2.848000

@@ -33,7 +33,7 @@ defaultproperties
      MagCapacity=10
      ReloadRate=2.266600
      ReloadAnim="Reload_Empty"
-	 TacticalReloadRate=1.866600
+	 TacticalReloadTime=1.866600
 	 TacticalReloadAnim=(Anim="Reload",Rate=1.000000)
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_Single9mm"

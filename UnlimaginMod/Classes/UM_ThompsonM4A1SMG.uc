@@ -159,7 +159,7 @@ defaultproperties
 {
      MagCapacity=30
      ReloadRate=3.600000
-	 TacticalReloadRate=2.400000
+	 TacticalReloadTime=2.400000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_Thompson"

@@ -50,7 +50,7 @@ var		bool				bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload al
 var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
 
 var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
-var		float				TacticalReloadRate;		// Actually it's a time needed to play TacticalReloadAnim
+var		float				TacticalReloadTime;		// Time needed to play TacticalReloadAnim
 
 //Todo: перенести эти переменные на AnimData
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
@@ -708,7 +708,7 @@ simulated function ClientFinishReloading()
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		bIsReloading = False;
 		PlayIdle();
-		if ( Instigator.PendingWeapon != None && Instigator.PendingWeapon != self )
+		if ( Instigator.PendingWeapon != None && Instigator.PendingWeapon != Self )
 			Instigator.Controller.ClientSwitchToBestWeapon();
 	}
 }
@@ -890,8 +890,8 @@ exec function ReloadMeNow()
 		ReloadMulti = 1.0;
 	
 	if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus && 
-		 default.TacticalReloadRate > 0.0 )
-		ReloadRate = default.TacticalReloadRate / ReloadMulti;
+		 default.TacticalReloadTime > 0.0 )
+		ReloadRate = default.TacticalReloadTime / ReloadMulti;
 	else
 		ReloadRate = default.ReloadRate / ReloadMulti;
 	ReloadTimer = Level.TimeSeconds + ReloadRate;
@@ -944,10 +944,11 @@ simulated function ClientReload()
 			
 			AnimStopLooping();
 			TacticalReloadAnim.Rate = default.TacticalReloadAnim.Rate * AnimRateMod;
-			ReloadAnimRate = default.ReloadAnimRate * AnimRateMod;
 			if ( !(bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus
-					&& PlayAnimData(TacticalReloadAnim)) && HasAnim(ReloadAnim) )
+					&& PlayAnimData(TacticalReloadAnim)) && HasAnim(ReloadAnim) )  {
+				ReloadAnimRate = default.ReloadAnimRate * AnimRateMod;
 				PlayAnim(ReloadAnim, ReloadAnimRate, 0.1);
+			}
 		}
 	}
 }
@@ -959,7 +960,6 @@ function ServerInterruptReload()
 {
 	bDoSingleReload = False;
 	bReloadEffectDone = False;
-	ClientInterruptReload();
 	bIsReloading = False;
 }
 
@@ -977,6 +977,8 @@ simulated function bool InterruptReload()
 {
 	if ( bAllowInterruptReload && bIsReloading )  {
 		ServerInterruptReload();
+		ClientInterruptReload();
+		
 		Return True;
 	}
 	else
@@ -1524,6 +1526,6 @@ defaultproperties
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1
 	 TacticalReloadAnim=(Rate=1.000000,TweenTime=0.100000)
-	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.200000)
+	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.500000)
 	 IdleAimAnim="Idle_Iron"
 }

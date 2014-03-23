@@ -476,7 +476,7 @@ defaultproperties
 	 SpotEffectClass=Class'KFMod.LaserDot'
      MagCapacity=20
      ReloadRate=3.366000
-	 TacticalReloadRate=2.400000
+	 TacticalReloadTime=2.400000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_M14"

@@ -757,7 +757,7 @@ defaultproperties
 	 SelectedHudImageRef="L96AWPLLI_A.L96AWPLLI_T.L96AWPLLI_selected"
 	 //[end]
 	 TacticalReloadAnim=(Anim="Reload_LLI",Rate=1.000000)
-     TacticalReloadRate=3.500000
+     TacticalReloadTime=3.500000
      lenseMaterialID=3
      scopePortalFOVHigh=16.000000
      scopePortalFOV=16.000000

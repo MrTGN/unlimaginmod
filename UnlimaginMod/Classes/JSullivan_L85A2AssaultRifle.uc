@@ -807,7 +807,7 @@ defaultproperties
      ZoomedDisplayFOVHigh=32.000000
      MagCapacity=30
      ReloadRate=3.233000
-	 TacticalReloadRate=1.600000
+	 TacticalReloadTime=1.600000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload"

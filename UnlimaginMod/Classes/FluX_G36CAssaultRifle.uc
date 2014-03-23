@@ -170,7 +170,7 @@ defaultproperties
 	 ToggleAnimation="FlickToggle"
      MagCapacity=30
      ReloadRate=2.640000
-	 TacticalReloadRate=1.212000
+	 TacticalReloadTime=1.212000
      ReloadAnim="Reload"
      ReloadAnimRate=0.833333
      WeaponReloadAnim="Reload_AK47"

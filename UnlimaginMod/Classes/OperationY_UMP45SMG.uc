@@ -151,7 +151,7 @@ defaultproperties
 	 //[end]
 	 MagCapacity=25
      ReloadRate=2.625000
-	 TacticalReloadRate=1.575000
+	 TacticalReloadTime=1.575000
      ReloadAnim="Reload"
      ReloadAnimRate=1.00000
      WeaponReloadAnim="Reload_MP5"

@@ -763,7 +763,7 @@ defaultproperties
      PutDownAnimRate=3.000000
      BringUpTime=1.130000
      ReloadRate=4.000000
-	 TacticalReloadRate=2.412000
+	 TacticalReloadTime=2.412000
      ReloadAnim="Reload"
      ReloadAnimRate=0.850000
      WeaponReloadAnim="Reload_M14"

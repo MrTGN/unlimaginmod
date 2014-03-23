@@ -681,12 +681,13 @@ simulated function bool StartFire(int Mode)
 }
 //[end]
 
-simulated function ActuallyFinishReloading()
+// Only Server-side function
+function ActuallyFinishReloading()
 {
    bDoSingleReload = False;
    bReloadEffectDone = False;
-   bIsReloading = False;
    ClientFinishReloading();
+   bIsReloading = False;
 }
 
 simulated function ClientFinishReloading()
@@ -728,7 +729,7 @@ simulated event WeaponTick(float dt)
 		}
 	}
 
-	// Only server-side code next
+	//[block] -- Only Server-side code next! --
 	if ( Level.NetMode == NM_Client || Instigator == None || 
 		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )
 		Return;
@@ -768,22 +769,21 @@ simulated event WeaponTick(float dt)
 						ReloadTimer = Level.TimeSeconds + ReloadRate;
 					++NumLoadedThisReload;
 				}
-				
 				AddReloadedAmmo();
-
-				if ( MagAmmoRemaining >= MagCapacity || MagAmmoRemaining >= AmmoAmount(0) || 
-					 !bHoldToReload || bDoSingleReload )
+				if ( MagAmmoRemaining >= MagCapacity || MagAmmoRemaining >= AmmoAmount(0) 
+					 || !bHoldToReload || bDoSingleReload )
 					ActuallyFinishReloading();
 				else
 					Instigator.SetAnimAction(WeaponReloadAnim);
 			}
 		}
-		else if ( bIsReloading && !bReloadEffectDone && 
-				 (ReloadTimer - Level.TimeSeconds) >= (ReloadRate / 2) )  {
+		else if ( bIsReloading && !bReloadEffectDone && (ReloadTimer - Level.TimeSeconds) >= (ReloadRate / 2) )  {
 			bReloadEffectDone = True;
+			// Function call replicated from the server to the clients
 			ClientReloadEffects();
 		}
 	}
+	//[end]
 }
 //[end]
 
@@ -948,12 +948,12 @@ simulated function ClientReload()
 
 simulated function ClientReloadEffects() { }
 
-simulated function ServerInterruptReload()
+// Only Server-side function
+function ServerInterruptReload()
 {
-	//[block] Server only variables
 	bDoSingleReload = False;
 	bReloadEffectDone = False;
-	//[end]
+	ClientInterruptReload();
 	bIsReloading = False;
 }
 
@@ -968,12 +968,7 @@ simulated function ClientInterruptReload()
 simulated function bool InterruptReload()
 {
 	if ( bAllowInterruptReload && bIsReloading )  {
-		// Called from the local player
 		ServerInterruptReload();
-		
-		if ( Level.NetMode != NM_DedicatedServer )
-			ClientInterruptReload();
-
 		Return True;
 	}
 	else

@@ -21,7 +21,7 @@ class UM_BaseWeapon extends KFWeapon
 //========================================================================
 //[block] Variables
 
-const 	BaseActor = Class'UM_BaseActor';
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 struct	AnimData
 {
@@ -92,16 +92,16 @@ simulated static function PreloadAssets(Inventory Inv, optional bool bSkipRefCou
 	else
 		UpdateDefaultMesh( BaseActor.static.LoadSkeletalMesh(default.MeshRef) );
 	
-	BaseActor.static.LoadMaterial(default.HudImageRef, default.HudImage);
-	BaseActor.static.LoadMaterial(default.SelectedHudImageRef, default.SelectedHudImage);
-	BaseActor.static.LoadSound(default.SelectSoundRef, default.SelectSound);
-	BaseActor.static.LoadSound(default.ModeSwitchSound.Ref, default.ModeSwitchSound.Snd);
+	default.HudImage = BaseActor.static.LoadMaterial(default.HudImageRef);
+	default.SelectedHudImage = BaseActor.static.LoadMaterial(default.SelectedHudImageRef);
+	default.SelectSound = BaseActor.static.LoadSound(default.SelectSoundRef);
+	default.ModeSwitchSound.Snd = BaseActor.static.LoadSound(default.ModeSwitchSound.Ref);
 	// default.Skins
 	if ( default.SkinRefs.Length > 0 )  {
 		if ( default.Skins.Length < default.SkinRefs.Length )
 			default.Skins.Length = default.SkinRefs.Length;
 		for ( i = 0; i < default.SkinRefs.Length; ++i )
-			BaseActor.static.LoadMaterial(default.SkinRefs[i], default.Skins[i]);
+			default.Skins[i] = BaseActor.static.LoadMaterial(default.SkinRefs[i]);
 	}
 
 	if ( BW != None )  {

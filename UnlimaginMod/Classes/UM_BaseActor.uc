@@ -142,117 +142,145 @@ simulated final function bool LoopAnimData( AnimData AD )
 
 //[block] DynamicLoad functions
 // DynamicLoad Class specified in the Ref string
-simulated static final function LoadClass( string Ref, out Class C, optional bool bMayFail )
+simulated static final function Class LoadClass( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		C = Class(DynamicLoadObject(Ref, class'Class', bMayFail));
+		Return Class(DynamicLoadObject(Ref, Class'Class', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Combiner specified in the Ref string
-simulated static final function LoadCombiner( string Ref, out Combiner C, optional bool bMayFail )
+simulated static final function Combiner LoadCombiner( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		C = Combiner(DynamicLoadObject(Ref, class'Combiner', bMayFail));
+		Return Combiner(DynamicLoadObject(Ref, Class'Combiner', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad FinalBlend specified in the Ref string
-simulated static final function LoadFinalBlend( string Ref, out FinalBlend FB, optional bool bMayFail )
+simulated static final function FinalBlend LoadFinalBlend( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		FB = FinalBlend(DynamicLoadObject(Ref, class'FinalBlend', bMayFail));
+		Return FinalBlend(DynamicLoadObject(Ref, Class'FinalBlend', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Font specified in the Ref string
-simulated static final function LoadFont( string Ref, out Font F, optional bool bMayFail )
+simulated static final function Font LoadFont( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		F = Font(DynamicLoadObject(Ref, class'Font', bMayFail));
+		Return Font(DynamicLoadObject(Ref, Class'Font', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Material specified in the Ref string
-simulated static final function LoadMaterial( string Ref, out Material M, optional bool bMayFail )
+simulated static final function Material LoadMaterial( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		M = Material(DynamicLoadObject(Ref, class'Material', bMayFail));
+		Return Material(DynamicLoadObject(Ref, Class'Material', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad ScriptedTexture specified in the Ref string
-simulated static final function LoadScriptedTexture( string Ref, out ScriptedTexture ST, optional bool bMayFail )
+simulated static final function ScriptedTexture LoadScriptedTexture( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		ST = ScriptedTexture(DynamicLoadObject(Ref, class'ScriptedTexture', bMayFail));
+		Return ScriptedTexture(DynamicLoadObject(Ref, Class'ScriptedTexture', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Sound specified in the Ref string
-simulated static final function LoadSound( string Ref, out Sound S, optional bool bMayFail )
+simulated static final function Sound LoadSound( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		S = Sound(DynamicLoadObject(Ref, class'Sound', bMayFail));
+		Return Sound(DynamicLoadObject(Ref, Class'Sound', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Texture specified in the Ref string
-simulated static final function LoadTexture( string Ref, out Texture T, optional bool bMayFail )
+simulated static final function Texture LoadTexture( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		T = Texture(DynamicLoadObject(Ref, class'Texture', bMayFail));
+		Return Texture(DynamicLoadObject(Ref, Class'Texture', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad Mesh specified in the Ref string
 simulated static final function Mesh LoadMesh( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		Return Mesh(DynamicLoadObject(Ref, class'Mesh', bMayFail));
-	else
-		Return None;
+		Return Mesh(DynamicLoadObject(Ref, Class'Mesh', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad SkeletalMesh specified in the Ref string
 simulated static final function SkeletalMesh LoadSkeletalMesh( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		Return SkeletalMesh(DynamicLoadObject(Ref, class'SkeletalMesh', bMayFail));
-	else
-		Return None;
+		Return SkeletalMesh(DynamicLoadObject(Ref, Class'SkeletalMesh', bMayFail));
+	
+	Return None;
 }
 
 // DynamicLoad StaticMesh specified in the Ref string
 simulated static final function StaticMesh LoadStaticMesh( string Ref, optional bool bMayFail )
 {
 	if ( Ref != "" )
-		Return StaticMesh(DynamicLoadObject(Ref, class'StaticMesh', bMayFail));
-	else
-		Return None;
+		Return StaticMesh(DynamicLoadObject(Ref, Class'StaticMesh', bMayFail));
+	
+	Return None;
 }
 
 // Actor Meshs DynamicLoad
 // DynamicLoad Actor Mesh specified in the Ref string
-simulated static final function LoadActorMesh( string Ref, Actor A, optional bool bMayFail )
+simulated static final function bool LoadActorMesh( string Ref, Actor A, optional bool bMayFail )
 {
 	if ( Ref != "" && A != None )  {
-		A.UpdateDefaultMesh( Mesh(DynamicLoadObject(Ref, class'Mesh', bMayFail)) );
+		A.UpdateDefaultMesh( Mesh(DynamicLoadObject(Ref, Class'Mesh', bMayFail)) );
 		if ( A.default.Mesh != None )
 			A.LinkMesh( A.default.Mesh );
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // DynamicLoad Actor SkeletalMesh specified in the Ref string
-simulated static final function LoadActorSkeletalMesh( string Ref, Actor A, optional bool bMayFail )
+simulated static final function bool LoadActorSkeletalMesh( string Ref, Actor A, optional bool bMayFail )
 {
 	if ( Ref != "" && A != None )  {
-		A.UpdateDefaultMesh( SkeletalMesh(DynamicLoadObject(Ref, class'SkeletalMesh', bMayFail)) );
+		A.UpdateDefaultMesh( SkeletalMesh(DynamicLoadObject(Ref, Class'SkeletalMesh', bMayFail)) );
 		if ( A.default.Mesh != None )
 			A.LinkMesh( A.default.Mesh );
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // DynamicLoad Actor StaticMesh specified in the Ref string
-simulated static final function LoadActorStaticMesh( string Ref, Actor A, optional bool bMayFail )
+simulated static final function bool LoadActorStaticMesh( string Ref, Actor A, optional bool bMayFail )
 {
 	if ( Ref != "" && A != None )  {
-		A.UpdateDefaultStaticMesh( StaticMesh(DynamicLoadObject(Ref, class'StaticMesh', bMayFail)) );
+		A.UpdateDefaultStaticMesh( StaticMesh(DynamicLoadObject(Ref, Class'StaticMesh', bMayFail)) );
 		if ( A.default.StaticMesh != None )
 			A.SetStaticMesh( A.default.StaticMesh );
+		
+		Return True;
 	}
+	
+	Return False;
 }
 //[end]
 

@@ -141,7 +141,7 @@ simulated static function bool UnloadAssets()
 
 //[block] Sound functions
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundData( SoundData SD )
+simulated final function bool PlaySoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -156,12 +156,16 @@ simulated final function PlaySoundData( SoundData SD )
 			SD.Pitch = 1.0;
 		// PlaySound
 		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD )
+simulated final function bool PlayOwnedSoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
@@ -176,13 +180,17 @@ simulated final function PlayOwnedSoundData( SoundData SD )
 			SD.Pitch = 1.0;
 		// PlayOwnedSound
 		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 //[end]
 
 //[block] Animation functions
 // Play the animation once
-simulated final function PlayAnimData( AnimData AD )
+simulated final function bool PlayAnimData( AnimData AD )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
@@ -193,11 +201,15 @@ simulated final function PlayAnimData( AnimData AD )
 		// StartFrame
 		if ( AD.StartFrame > 0.0 )
 			SetAnimFrame(AD.StartFrame, AD.Channel, 1);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 
 // Loop the animation playback
-simulated final function LoopAnimData( AnimData AD )
+simulated final function bool LoopAnimData( AnimData AD )
 {
 	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
 		// Rate
@@ -205,7 +217,11 @@ simulated final function LoopAnimData( AnimData AD )
 			AD.Rate = 1.0;
 		// LoopAnim
 		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
+		
+		Return True;
 	}
+	
+	Return False;
 }
 //[end]
 
@@ -851,8 +867,9 @@ function bool AllowReload()
 
 exec function ReloadMeNow()
 {
-	local	int		Mode;
-	local	float	ReloadMulti;
+	local	int						Mode;
+	local	float					ReloadMulti;
+	local	class<KFVeterancyTypes>	CVS;
 
 	AutoReloadRequestsNum = 0;
 	NumClicks = 0;
@@ -869,9 +886,9 @@ exec function ReloadMeNow()
 		ZoomOut(false);
 	}
 	
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && 
-		 KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
-		ReloadMulti = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
+	CVS = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill;
+	if ( CVS != None )
+		ReloadMulti = CVS.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
 	else
 		ReloadMulti = 1.0;
 	
@@ -903,8 +920,9 @@ exec function ReloadMeNow()
 
 simulated function ClientReload()
 {
-	local	int		Mode;
-	local	float	NewAnimRate;
+	local	int						Mode;
+	local	float					NewAnimRate;
+	local	class<KFVeterancyTypes>	CVS;
 
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		AutoReloadRequestsNum = 0;
@@ -921,23 +939,18 @@ simulated function ClientReload()
 		}
 		// Only LocallyControlled
 		if ( Instigator.IsLocallyControlled() )  {
-			if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && 
-				 KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
-				NewAnimRate = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
+			CVS = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill;
+			if ( CVS != None )
+				NewAnimRate = CVS.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
 			else
 				NewAnimRate = 1.0;
 			
 			AnimStopLooping();
 			if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus 
 				 && HasAnim(TacticalReloadAnim.Anim) )  {
-				if ( default.TacticalReloadAnim.Rate > 0.0 )
-					NewAnimRate *= default.TacticalReloadAnim.Rate;
-				else
-					NewAnimRate *= default.ReloadAnimRate;
+				NewAnimRate *= default.TacticalReloadAnim.Rate;
 				//PlayAnim
 				PlayAnim(TacticalReloadAnim.Anim, NewAnimRate, 0.1);
-				if ( TacticalReloadAnimStartFrame > 0.0 )
-					SetAnimFrame(TacticalReloadAnimStartFrame, , 1);
 			}
 			else if ( HasAnim(ReloadAnim) )
 				NewAnimRate *= default.ReloadAnimRate;
@@ -1337,7 +1350,7 @@ simulated function AnimEnd(int channel)
 
 // Overriden because I'm using my own functions to update Spread and AimError in FireClass
 // More info in UM_BaseProjectileWeaponFire.uc
-function AccuracyUpdate(float Velocity){}
+function AccuracyUpdate(float Velocity) { }
 
 // Overwrited to add bonus bullet in MagCapacity if MagAmmoRemaining >= TacticalReloadCapacityBonus
 function UpdateMagCapacity(PlayerReplicationInfo PRI)
@@ -1515,7 +1528,7 @@ defaultproperties
 	 bAllowAutoReload=True
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1
-	 TacticalReloadAnim=(Rate=1.000000)
+	 TacticalReloadAnim=(Rate=1.000000,TweenTime=0.100000)
 	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.200000)
 	 IdleAimAnim="Idle_Iron"
 }

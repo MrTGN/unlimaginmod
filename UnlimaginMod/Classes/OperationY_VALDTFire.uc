@@ -18,8 +18,8 @@ defaultproperties
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire",Rate=1.000000)
      RecoilRate=0.065000
-     maxVerticalRecoilAngle=258
-     maxHorizontalRecoilAngle=145
+     maxVerticalRecoilAngle=256
+     maxHorizontalRecoilAngle=144
 	 bPawnRapidFireAnim=True
      TransientSoundVolume=2.800000
      FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)

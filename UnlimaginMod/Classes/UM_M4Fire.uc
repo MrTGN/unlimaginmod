@@ -34,8 +34,8 @@ defaultproperties
 	 FireEndSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop_End_M"
      FireEndStereoSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop_End_S"
      AmbientFireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop"
-     RecoilRate=0.060400
-     maxVerticalRecoilAngle=195
+     RecoilRate=0.064500
+     maxVerticalRecoilAngle=204
      maxHorizontalRecoilAngle=105
      FireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Single_M"
      StereoFireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Single_S"

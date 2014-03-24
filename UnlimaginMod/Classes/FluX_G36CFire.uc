@@ -39,7 +39,7 @@ defaultproperties
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireLoopAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      RecoilRate=0.070000
-     maxVerticalRecoilAngle=235
+     maxVerticalRecoilAngle=234
      maxHorizontalRecoilAngle=125
      bRecoilRightOnly=True
      bRandomPitchFireSound=False

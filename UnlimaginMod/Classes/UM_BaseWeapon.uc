@@ -943,12 +943,9 @@ simulated function ClientReload()
 				AnimRateMod = 1.0;
 			
 			AnimStopLooping();
-			TacticalReloadAnim.Rate = default.TacticalReloadAnim.Rate * AnimRateMod;
 			if ( !(bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus
-					&& PlayAnimData(TacticalReloadAnim)) && HasAnim(ReloadAnim) )  {
-				ReloadAnimRate = default.ReloadAnimRate * AnimRateMod;
-				PlayAnim(ReloadAnim, ReloadAnimRate, 0.1);
-			}
+					&& PlayAnimData(TacticalReloadAnim, AnimRateMod)) && HasAnim(ReloadAnim) )
+				PlayAnim(ReloadAnim, (default.ReloadAnimRate * AnimRateMod), 0.1);
 		}
 	}
 }

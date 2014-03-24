@@ -1352,19 +1352,19 @@ function AccuracyUpdate(float Velocity) { }
 // Overwrited to add bonus bullet in MagCapacity if MagAmmoRemaining >= TacticalReloadCapacityBonus
 function UpdateMagCapacity(PlayerReplicationInfo PRI)
 {
-	local	float		NewMagCapacity;
+	local	float	NewMagCapacity;
 	
 	if ( default.MagCapacity > 1 )  {
 		if ( KFPlayerReplicationInfo(PRI) != None && KFPlayerReplicationInfo(PRI).ClientVeteranSkill != None )
-			NewMagCapacity = float(default.MagCapacity) * KFPlayerReplicationInfo(PRI).ClientVeteranSkill.Static.GetMagCapacityMod(KFPlayerReplicationInfo(PRI), self);
+			NewMagCapacity = default.MagCapacity * KFPlayerReplicationInfo(PRI).ClientVeteranSkill.Static.GetMagCapacityMod(KFPlayerReplicationInfo(PRI), self);
 		else
-			NewMagCapacity = float(default.MagCapacity);
+			NewMagCapacity = default.MagCapacity;
 		
 		if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus )
-			NewMagCapacity += float(TacticalReloadCapacityBonus);
+			NewMagCapacity += TacticalReloadCapacityBonus;
 		
 		// Need to use calculation like this because MagCapacity has always replicated to the clients
-		MagCapacity = int(NewMagCapacity);
+		MagCapacity = NewMagCapacity;
 	}
 }
 

@@ -340,9 +340,7 @@ simulated event PostBeginPlay()
 		bNowWaiting = True;
 	//[end]
 
-	if ( Weapon != None && KFWeapon(Weapon) != None )
-		KFWeap = KFWeapon(Weapon);
-
+	KFWeap = KFWeapon(Weapon);
 	SetMuzzleNum(default.MuzzleNum);
 }
 
@@ -867,7 +865,7 @@ event ModeDoFire()
 	
 	UpdateFireRate();
 	
-	bTheLastShot = MagAmmoRemaining <= AmmoPerFire;
+	bTheLastShot = KFWeap.MagAmmoRemaining <= AmmoPerFire;
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {

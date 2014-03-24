@@ -114,7 +114,7 @@ simulated event RenderOverlays( Canvas Canvas )
 defaultproperties
 {
 	 bHoldToReload=True
-	 bHasTacticalReload=False
+	 bHasTacticalReload=True
 	 //[block] Dynamic Loading vars
 	 //Mesh=SkeletalMesh'KF_Weapons_Trip.Winchester_Trip'
 	 MeshRef="KF_Weapons_Trip.Winchester_Trip"

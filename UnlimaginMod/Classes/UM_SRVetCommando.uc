@@ -109,20 +109,19 @@ static function int GetPerkProgressInt( UM_SRClientPerkRepLink StatOther, out in
 // Display enemy health bars
 static function SpecialHUDInfo(KFPlayerReplicationInfo KFPRI, Canvas C)
 {
-	local KFMonster KFEnemy;
-	local HUDKillingFloor HKF;
-	local float MaxDistance;
+	local	KFMonster			KFEnemy;
+	local	HUDKillingFloor		HKF;
+	local	float				MaxDistance;
 
-	if ( KFPRI.ClientVeteranSkillLevel > 0 )
-	{
+	if ( KFPRI.ClientVeteranSkillLevel > 0 )  {
 		HKF = HUDKillingFloor(C.ViewPort.Actor.myHUD);
-		if ( HKF == none || Pawn(C.ViewPort.Actor.ViewTarget)==none || 
-			 Pawn(C.ViewPort.Actor.ViewTarget).Health<=0 )
+		if ( HKF == None || Pawn(C.ViewPort.Actor.ViewTarget) == None 
+			 || Pawn(C.ViewPort.Actor.ViewTarget).Health <= 0 )
 			Return;
 
-		MaxDistance = 100 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 1000 units
+		MaxDistance = 126.0 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 1260 units
 		
-		foreach C.ViewPort.Actor.VisibleCollidingActors(class'KFMonster',KFEnemy,MaxDistance,C.ViewPort.Actor.CalcViewLocation)
+		foreach C.ViewPort.Actor.VisibleCollidingActors( class'KFMonster', KFEnemy, MaxDistance, C.ViewPort.Actor.CalcViewLocation )
 		{
 			if ( KFEnemy.Health > 0 && !KFEnemy.Cloaked() )
 				HKF.DrawHealthBar(C, KFEnemy, KFEnemy.Health, KFEnemy.HealthMax , 50.0);

@@ -21,15 +21,17 @@ class UM_BaseActor extends Actor
 //========================================================================
 //[block] Variables
 
+// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
 {
 	var	name	Anim;
-	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	TweenTime;
 	var	int		Channel;
 };
 
+// Read http://udn.epicgames.com/Two/SoundReference.html for more info
 struct	SoundData
 {
 	var	string		Ref;

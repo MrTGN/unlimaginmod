@@ -22,11 +22,12 @@ class UM_BaseProjectileWeaponFire extends KFShotgunFire
 
 const	DefaultAnimRate = 1.000000;
 
+// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
 {
 	var	name	Anim;
-	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	TweenTime;
 	var	int		Channel;
 };
@@ -43,6 +44,7 @@ enum ESoundSlot
 	SLOT_Interface,
 };
 
+// Read http://udn.epicgames.com/Two/SoundReference.html for more info
 struct	SoundData
 {
 	var	string		Ref;

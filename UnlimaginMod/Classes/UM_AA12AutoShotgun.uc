@@ -78,7 +78,9 @@ exec function SwitchModes()
 defaultproperties
 {
 	 MagCapacity=20
-     ReloadRate=3.133000
+	 TacticalReloadTime=2.100000
+	 TacticalReloadAnim=(Anim="Reload",Rate=1.0,StartFrame=30.00,TweenTime=0.1)
+     ReloadRate=3.100000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000
      WeaponReloadAnim="Reload_AA12"

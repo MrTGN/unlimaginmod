@@ -27,8 +27,8 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 struct	AnimData
 {
 	var	name	Anim;
-	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	Rate;
+	var	float	StartFrame;		// The frame number at which start to playing animation
 	var	float	TweenTime;
 	var	int		Channel;
 };

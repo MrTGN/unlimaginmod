@@ -46,5 +46,6 @@ defaultproperties
 	 //[end]
 	 RecoilRate=0.080000
 	 Spread=0.009000
-	 MaxSpread=0.045000
+	 // MaxSpread = Spread * 6.0
+	 MaxSpread=0.054000
 }

@@ -39,7 +39,7 @@ defaultproperties
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      RecoilRate=0.085000
-     maxVerticalRecoilAngle=1920
+     maxVerticalRecoilAngle=1900
      maxHorizontalRecoilAngle=440
      bPawnRapidFireAnim=True
      bWaitForRelease=True
@@ -52,7 +52,7 @@ defaultproperties
      FireRate=0.250000
      AmmoClass=Class'UnlimaginMod.OperationY_SVDLLIAmmo'
      AmmoPerFire=1
-     ShakeRotMag=(X=90.000000,Y=74.000000,Z=500.000000)
+     ShakeRotMag=(X=90.000000,Y=72.000000,Z=500.000000)
      ShakeRotRate=(X=10000.000000,Y=10000.000000,Z=10000.000000)
      ShakeRotTime=3.000000
      ShakeOffsetMag=(X=10.000000,Y=2.000000,Z=12.000000)

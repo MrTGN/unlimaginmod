@@ -38,16 +38,16 @@ defaultproperties
      FireRate=0.100000
      AmmoClass=Class'UnlimaginMod.OperationY_HK417Ammo'
      AmmoPerFire=1
-     ShakeRotMag=(X=85.000000,Y=62.000000,Z=476.000000)
+     ShakeRotMag=(X=84.000000,Y=62.000000,Z=475.000000)
      ShakeRotRate=(X=9500.000000,Y=9400.000000,Z=9400.000000)
      ShakeRotTime=2.000000
-     ShakeOffsetMag=(X=10.000000,Y=2.000000,Z=9.000000)
+     ShakeOffsetMag=(X=9.000000,Y=2.000000,Z=8.500000)
      ShakeOffsetRate=(X=1000.000000,Y=1000.000000,Z=1000.000000)
      ShakeOffsetTime=1.500000
 	 ProjectileClass=Class'UnlimaginMod.UM_HK417Bullet'
      BotRefireRate=0.990000
      AimError=24.000000
      Spread=0.005000
-	 MaxSpread=0.025000
+	 MaxSpread=0.028000
      SpreadStyle=SS_Random
 }

@@ -1394,10 +1394,11 @@ function AttachToPawn(Pawn P)
 		}
 		else
 			P.AttachToBone(ThirdPersonActor, LeftHandBone);
+		
+		ThirdPersonActor.bAlwaysRelevant = False;
 	}
 	
 	SpawnTacticalModule();
-	ThirdPersonActor.bAlwaysRelevant = False;
 }
 
 // Called on the server from ServerChangedWeapon function in Pawn class

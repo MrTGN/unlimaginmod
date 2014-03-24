@@ -58,6 +58,7 @@ var		float				TacticalReloadTime;		// Time needed to play TacticalReloadAnim
 var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
 var()	name				EmptySelectAnim, EmptyPutDownAnim;	// Empty weapon animation
 
+var		bool				bActuallyFinishReloading;	// Used to prevent Empty Anim playback after reloading (MagAmmoRemaining replicates with delay)
 var		bool				bAssetsLoaded;
 var		bool				bAllowAutoReload;
 var		byte				AutoReloadRequestsNum;
@@ -404,11 +405,11 @@ simulated exec function IronSightZoomIn()
 simulated function PlayIdle()
 {
 	if ( Instigator.IsLocallyControlled() )  {
-		if ( bAimingRifle && MagAmmoRemaining < 1 && HasAnim(EmptyIdleAimAnim) )
+		if ( bAimingRifle && MagAmmoRemaining < 1 && !bActuallyFinishReloading && HasAnim(EmptyIdleAimAnim) )
 			LoopAnim(EmptyIdleAimAnim, IdleAnimRate, 0.2);
 		else if ( bAimingRifle && HasAnim(IdleAimAnim) )
 			LoopAnim(IdleAimAnim, IdleAnimRate, 0.2);
-		else if ( MagAmmoRemaining < 1 && HasAnim(EmptyIdleAnim) )
+		else if ( MagAmmoRemaining < 1 && !bActuallyFinishReloading && HasAnim(EmptyIdleAnim) )
 			LoopAnim(EmptyIdleAnim, IdleAnimRate, 0.2);
 		else if ( HasAnim(IdleAnim) )
 			LoopAnim(IdleAnim, IdleAnimRate, 0.2);
@@ -706,8 +707,10 @@ function ActuallyFinishReloading()
 simulated function ClientFinishReloading()
 {
 	if ( Level.NetMode != NM_DedicatedServer )  {
+		bActuallyFinishReloading = True;	// To prevent Empty Anim playback after reloading
 		bIsReloading = False;
 		PlayIdle();
+		bActuallyFinishReloading = False;
 		if ( Instigator.PendingWeapon != None && Instigator.PendingWeapon != Self )
 			Instigator.Controller.ClientSwitchToBestWeapon();
 	}

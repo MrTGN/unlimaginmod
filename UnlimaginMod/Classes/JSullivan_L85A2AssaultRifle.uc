@@ -731,7 +731,8 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSoundData(ModeSwitchSound);
+		if ( ModeSwitchSound.Snd != None )
+			PlayOwnedSoundData(ModeSwitchSound);
 		// Case - burst fire
 		if ( FireMode[0].bWaitForRelease && JSullivan_L85A2Fire(FireMode[0]).bSetToBurst )
 		{

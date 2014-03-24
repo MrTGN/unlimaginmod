@@ -111,7 +111,8 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSoundData(ModeSwitchSound);
+		if ( ModeSwitchSound.Snd != None )
+			PlayOwnedSoundData(ModeSwitchSound);
 		
 		FireMode[0].bWaitForRelease = !FireMode[0].bWaitForRelease;
 		if ( FireMode[0].bWaitForRelease )

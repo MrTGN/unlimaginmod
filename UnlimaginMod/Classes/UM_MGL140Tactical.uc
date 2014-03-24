@@ -123,7 +123,7 @@ simulated function DoToggle()
 
 	Player = Level.GetLocalPlayerController();
 		
-	if ( Player != None )
+	if ( Player != None && ModeSwitchSound.Snd != None )
 		PlayOwnedSoundData(ModeSwitchSound);
 	
 	if ( Role < ROLE_Authority )

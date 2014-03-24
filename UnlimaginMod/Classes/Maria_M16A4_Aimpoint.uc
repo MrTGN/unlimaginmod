@@ -44,7 +44,8 @@ simulated function DoToggle ()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSoundData(ModeSwitchSound);
+		if ( ModeSwitchSound.Snd != None )
+			PlayOwnedSoundData(ModeSwitchSound);
 		
 		Maria_M16A4_AimpointFire(FireMode[0]).bSetToBurst = !Maria_M16A4_AimpointFire(FireMode[0]).bSetToBurst;
 		if ( Maria_M16A4_AimpointFire(FireMode[0]).bSetToBurst )

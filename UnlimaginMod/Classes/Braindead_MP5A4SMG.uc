@@ -71,7 +71,8 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSoundData(ModeSwitchSound);
+		if ( ModeSwitchSound.Snd != None )
+			PlayOwnedSoundData(ModeSwitchSound);
 		
 		Braindead_MP5A4Fire(FireMode[0]).bSetToBurst = !Braindead_MP5A4Fire(FireMode[0]).bSetToBurst;
 		if ( Braindead_MP5A4Fire(FireMode[0]).bSetToBurst )

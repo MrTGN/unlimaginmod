@@ -131,7 +131,8 @@ state SwitchingFireMode
 
 		Player = Level.GetLocalPlayerController();
 		if ( Player != None )  {
-			PlayOwnedSoundData(ModeSwitchSound);
+			if ( ModeSwitchSound.Snd != None )
+				PlayOwnedSoundData(ModeSwitchSound);
 			//ToDo: в дальнейшем заменить это на отдельную строку на экране и менять её содержимое
 			Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, SelectiveFireModeNum);
 		}

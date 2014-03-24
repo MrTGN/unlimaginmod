@@ -144,85 +144,61 @@ simulated static function bool UnloadAssets()
 
 //[block] Sound functions
 // Play a sound effect from SoundData struct.
-simulated final function bool PlaySoundData( SoundData SD )
+simulated final function PlaySoundData( SoundData SD )
 {
-	if (  SD.Snd != None )  {
-		// Volume
-		if ( SD.Vol <= 0.0 )
-			SD.Vol = TransientSoundVolume;
-		// Pitch
-		if ( SD.Pitch <= 0.0 )
-			SD.Pitch = 1.0;
-		// PlaySound
-		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
-		
-		Return True;
-	}
-	
-	Return False;
+	// Volume
+	if ( SD.Vol <= 0.0 )
+		SD.Vol = TransientSoundVolume;
+	// Pitch
+	if ( SD.Pitch <= 0.0 )
+		SD.Pitch = 1.0;
+	// PlaySound
+	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 }
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function bool PlayOwnedSoundData( SoundData SD )
+simulated final function PlayOwnedSoundData( SoundData SD )
 {
-	if (  SD.Snd != None )  {
-		// Volume
-		if ( SD.Vol <= 0.0 )
-			SD.Vol = TransientSoundVolume;
-		// Pitch
-		if ( SD.Pitch <= 0.0 )
-			SD.Pitch = 1.0;
-		// PlayOwnedSound
-		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
-		
-		Return True;
-	}
-	
-	Return False;
+	// Volume
+	if ( SD.Vol <= 0.0 )
+		SD.Vol = TransientSoundVolume;
+	// Pitch
+	if ( SD.Pitch <= 0.0 )
+		SD.Pitch = 1.0;
+	// PlayOwnedSound
+	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 }
 //[end]
 
 //[block] Animation functions
 // Play the animation once
-simulated final function bool PlayAnimData( AnimData AD, optional float RateMult )
+simulated final function PlayAnimData( AnimData AD, optional float RateMult )
 {
-	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
-		// Rate
-		if ( AD.Rate <= 0.0 )
-			AD.Rate = 1.0;
-		// RateMult
-		if ( RateMult > 0.0 )
-			AD.Rate *= RateMult;
-		// PlayAnim
-		PlayAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
-		// StartFrame
-		if ( AD.StartFrame > 0.0 )
-			SetAnimFrame(AD.StartFrame, AD.Channel, 1);
-		
-		Return True;
-	}
-	
-	Return False;
+	// Rate
+	if ( AD.Rate <= 0.0 )
+		AD.Rate = 1.0;
+	// RateMult
+	if ( RateMult > 0.0 )
+		AD.Rate *= RateMult;
+	// PlayAnim
+	PlayAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
+	// StartFrame
+	if ( AD.StartFrame > 0.0 )
+		SetAnimFrame(AD.StartFrame, AD.Channel, 1);
 }
 
 // Loop the animation playback
-simulated final function bool LoopAnimData( AnimData AD, optional float RateMult )
+simulated final function LoopAnimData( AnimData AD, optional float RateMult )
 {
-	if ( AD.Anim != '' && HasAnim(AD.Anim) )  {
-		// Rate
-		if ( AD.Rate <= 0.0 )
-			AD.Rate = 1.0;
-		// RateMult
-		if ( RateMult > 0.0 )
-			AD.Rate *= RateMult;
-		// LoopAnim
-		LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
-		
-		Return True;
-	}
-	
-	Return False;
+	// Rate
+	if ( AD.Rate <= 0.0 )
+		AD.Rate = 1.0;
+	// RateMult
+	if ( RateMult > 0.0 )
+		AD.Rate *= RateMult;
+	// LoopAnim
+	LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
 }
 //[end]
 
@@ -313,7 +289,7 @@ state TogglingTacticalModule
 	
 	simulated function Timer()
 	{
-		if ( Instigator.IsLocallyControlled() )
+		if ( Instigator.IsLocallyControlled() && HasAnim( TacticalModuleToggleAnim.Anim ) )
 			PlayAnimData(TacticalModuleToggleAnim);
 		
 		SetTimer(0.0, false);
@@ -946,8 +922,10 @@ simulated function ClientReload()
 				AnimRateMod = 1.0;
 			
 			AnimStopLooping();
-			if ( !(bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus
-					&& PlayAnimData(TacticalReloadAnim, AnimRateMod)) && HasAnim(ReloadAnim) )
+			if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus
+				 && HasAnim( TacticalReloadAnim.Anim ) )
+				PlayAnimData(TacticalReloadAnim, AnimRateMod)
+			else if ( HasAnim(ReloadAnim) )
 				PlayAnim(ReloadAnim, (default.ReloadAnimRate * AnimRateMod), 0.1);
 		}
 	}

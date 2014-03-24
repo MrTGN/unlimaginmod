@@ -45,7 +45,8 @@ simulated function DoToggle()
 	Player = Level.GetLocalPlayerController();
 	if ( Player != None )
 	{
-		PlayOwnedSoundData(ModeSwitchSound);
+		if ( ModeSwitchSound.Snd != None )
+			PlayOwnedSoundData(ModeSwitchSound);
 		
 		if ( bWideSpread )
 		{

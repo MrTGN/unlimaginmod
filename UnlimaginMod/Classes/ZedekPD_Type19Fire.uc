@@ -45,16 +45,16 @@ defaultproperties
      FireRate=0.075000
      AmmoClass=Class'UnlimaginMod.ZedekPD_Type19Ammo'
      AmmoPerFire=1
-     ShakeRotMag=(X=54.000000,Y=60.000000,Z=345.000000)
-     ShakeRotRate=(X=6600.000000,Y=6600.000000,Z=6400.000000)
+     ShakeRotMag=(X=54.000000,Y=62.000000,Z=340.000000)
+     ShakeRotRate=(X=6600.000000,Y=6500.000000,Z=6500.000000)
      ShakeRotTime=0.650000
-     ShakeOffsetMag=(X=6.000000,Y=3.000000,Z=7.600000)
+     ShakeOffsetMag=(X=6.000000,Y=3.000000,Z=7.500000)
      ShakeOffsetRate=(X=1000.000000,Y=1000.000000,Z=1000.000000)
      ShakeOffsetTime=1.250000
 	 ProjectileClass=Class'UnlimaginMod.UM_Type19Bullet'
      BotRefireRate=0.990000
      AimError=62.000000
      Spread=0.011000
-	 MaxSpread=0.053000
+	 MaxSpread=0.066000
      SpreadStyle=SS_Random
 }

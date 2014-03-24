@@ -23,6 +23,7 @@ class UM_BaseWeapon extends KFWeapon
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
+// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
 {
 	var	name	Anim;
@@ -32,6 +33,7 @@ struct	AnimData
 	var	int		Channel;
 };
 
+// Read http://udn.epicgames.com/Two/SoundReference.html for more info
 struct	SoundData
 {
 	var	string		Ref;
@@ -41,7 +43,7 @@ struct	SoundData
 	var	bool		bNoOverride;
 	var	float		Radius;
 	var	float		Pitch;
-	var	bool		Attenuate;
+	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
 var		SoundData			ModeSwitchSound;
@@ -145,17 +147,13 @@ simulated final function bool PlaySoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
+		if ( SD.Vol <= 0.0 )
+			SD.Vol = TransientSoundVolume;
 		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
+		if ( SD.Pitch <= 0.0 )
 			SD.Pitch = 1.0;
 		// PlaySound
-		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 		
 		Return True;
 	}
@@ -169,17 +167,13 @@ simulated final function bool PlayOwnedSoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
+		if ( SD.Vol <= 0.0 )
+			SD.Vol = TransientSoundVolume;
 		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
+		if ( SD.Pitch <= 0.0 )
 			SD.Pitch = 1.0;
 		// PlayOwnedSound
-		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 		
 		Return True;
 	}
@@ -1532,6 +1526,8 @@ defaultproperties
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1
 	 TacticalReloadAnim=(Rate=1.000000,TweenTime=0.100000)
-	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.500000)
+	 ModeSwitchSound=(Ref="Inf_Weapons_Foley.stg44.stg44_firemodeswitch01",Vol=2.2,Radius=300.0,bUse3D=True)
 	 IdleAimAnim="Idle_Iron"
+	 TransientSoundVolume=1.000000
+     TransientSoundRadius=300.000000
 }

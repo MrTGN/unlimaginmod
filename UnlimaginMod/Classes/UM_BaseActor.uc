@@ -39,7 +39,7 @@ struct	SoundData
 	var	bool		bNoOverride;
 	var	float		Radius;
 	var	float		Pitch;
-	var	bool		Attenuate;
+	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
 //[end] Varibles
@@ -60,17 +60,13 @@ simulated final function bool PlaySoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
+		if ( SD.Vol <= 0.0 )
+			SD.Vol = TransientSoundVolume;
 		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
+		if ( SD.Pitch <= 0.0 )
 			SD.Pitch = 1.0;
 		// PlaySound
-		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 		
 		Return True;
 	}
@@ -84,17 +80,13 @@ simulated final function bool PlayOwnedSoundData( SoundData SD )
 {
 	if (  SD.Snd != None )  {
 		// Volume
-		if ( SD.Vol > 0.0 )
-			SD.Vol = FClamp(SD.Vol, 0.0, 1.0);
-		else
-			SD.Vol = 1.0;
+		if ( SD.Vol <= 0.0 )
+			SD.Vol = TransientSoundVolume;
 		// Pitch
-		if ( SD.Pitch > 0.0 )
-			SD.Pitch = FClamp(SD.Pitch, 0.5, 2.0);
-		else
+		if ( SD.Pitch <= 0.0 )
 			SD.Pitch = 1.0;
 		// PlayOwnedSound
-		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.Attenuate);
+		PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
 		
 		Return True;
 	}
@@ -296,4 +288,6 @@ simulated static final function bool LoadActorStaticMesh( string Ref, Actor A, o
 
 defaultproperties
 {
+     TransientSoundVolume=1.000000
+     TransientSoundRadius=300.000000
 }

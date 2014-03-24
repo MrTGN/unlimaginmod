@@ -52,7 +52,7 @@ struct	SoundData
 	var	bool		bNoOverride;
 	var	float		Radius;
 	var	float		Pitch;
-	var	bool		Attenuate;
+	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
 // Projectile Spawn Offset

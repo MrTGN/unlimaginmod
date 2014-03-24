@@ -130,6 +130,7 @@ var		array< PerkProjData >	PerkProjsInfo;
 // If bFixedProjPerFire=False weapon will spawn (ProjPerFire * AmmoPerFire) number of projectiles per shot.
 // If bFixedProjPerFire=True weapon will spawn fixed ProjPerFire number of projectiles per shot.
 var		bool					bFixedProjPerFire;	// Load = AmmoPerFire
+var		bool					bTheLastShot;
 
 var		byte					MuzzleNum;	// Muzzle Number
 
@@ -331,7 +332,7 @@ simulated event PostBeginPlay()
 	CheckAnimArrays();
 	
 	//[block] Copeid from WeaponFire.uc with some changes
-	Load = float(AmmoPerFire);
+	Load = AmmoPerFire;
 	if ( bFireOnRelease )
 		bWaitForRelease = True;
 
@@ -622,58 +623,32 @@ function DoFireEffect()
 	else
 		SpawnCount = Max(1, (ProjPerFire * int(Load)));
 	
-    if ( SpawnCount > 1 )  {
-		switch (SpreadStyle)
-		{
-			case SS_Random:
-				VX = Vector(Aim);
-				for (p = 0; p < SpawnCount; p++)  {
-					R.Yaw = Spread * (FRand() - 0.5);
-					R.Pitch = Spread * (FRand() - 0.5);
-					R.Roll = Spread * (FRand() - 0.5);
-					SpawnProjectile(StartProj, Rotator(VX >> R));
-				}
-				Break;
-				
-			case SS_Line:
-				for (p = 0; p < SpawnCount; p++)  {
-					theta = Spread * PI / 32768 * (p - float(SpawnCount - 1) / 2.0);
-					VX.X = Cos(theta);
-					VX.Y = Sin(theta);
-					VX.Z = 0.0;
-					SpawnProjectile(StartProj, Rotator(VX >> Aim));
-				}
-				Break;
-				
-			default:
-				for (p = 0; p < SpawnCount; p++)
-					SpawnProjectile(StartProj, Aim);
-				Break;
-		}
-	}
-	else  {
-		switch (SpreadStyle)
-		{
-			case SS_Random:
-				VX = Vector(Aim);
+	switch (SpreadStyle)
+	{
+		case SS_Random:
+			VX = Vector(Aim);
+			for ( p = 0; p < SpawnCount; ++p )  {
 				R.Yaw = Spread * (FRand() - 0.5);
 				R.Pitch = Spread * (FRand() - 0.5);
 				R.Roll = Spread * (FRand() - 0.5);
 				SpawnProjectile(StartProj, Rotator(VX >> R));
-				Break;
-				
-			case SS_Line:
+			}
+			Break;
+			
+		case SS_Line:
+			for ( p = 0; p < SpawnCount; ++p )  {
 				theta = Spread * PI / 32768 * (p - float(SpawnCount - 1) / 2.0);
 				VX.X = Cos(theta);
 				VX.Y = Sin(theta);
 				VX.Z = 0.0;
 				SpawnProjectile(StartProj, Rotator(VX >> Aim));
-				Break;
-				
-			default:
+			}
+			Break;
+			
+		default:
+			for ( p = 0; p < SpawnCount; ++p )
 				SpawnProjectile(StartProj, Aim);
-				Break;
-		}
+			Break;
 	}
 }
 
@@ -826,13 +801,13 @@ simulated function bool AllowFire()
 	local	KFWeapon	KFW;
 	
 	KFW = KFWeapon(Weapon);
-	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < 1))
+	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < AmmoPerFire))
 		 || KFPawn(Instigator).SecondaryItem != None
 		 || KFPawn(Instigator).bThrowingNade
 		 || Instigator.IsProneTransitioning() )
 		Return False;
 	
-	if ( KFW.MagAmmoRemaining < 1 )  {
+	if ( KFW.MagAmmoRemaining < AmmoPerFire )  {
 		//Dry fire and auto reload
 		if ( UM_BaseWeapon(Weapon) != None && Level.TimeSeconds >= NextAutoReloadCheckTime )  {
 			NextAutoReloadCheckTime = Level.TimeSeconds + FireRate;
@@ -842,7 +817,7 @@ simulated function bool AllowFire()
 		Return False;
 	}
 
-	Return (Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
+	Return Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire;
 }
 
 // Prevents the de-synchronization between the client and the server
@@ -891,6 +866,8 @@ event ModeDoFire()
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
+	
+	bTheLastShot = MagAmmoRemaining <= AmmoPerFire;
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
@@ -960,7 +937,7 @@ event ModeDoFire()
 	// LastFireTime used for Spread bonus calculations. 
 	// More info in UpdateSpread function.
 	LastFireTime = Level.TimeSeconds;
-	Load = float(AmmoPerFire);
+	Load = AmmoPerFire;
 	HoldTime = 0;
 	ChangeMuzzleNum();
 	
@@ -1087,7 +1064,8 @@ function PlayFiring()
 	
 	if ( Weapon.Mesh != None )  {
 		// If weapon is already firing and has ammo in mag play animation with out pauses.
-		if ( FireCount > 0 && KFWeap.MagAmmoRemaining > 0 )  {
+		// MagAmmoRemaining replicates with delay. So if have one round in mag it is the last shot.
+		if ( FireCount > 0 && !bTheLastShot )  {
 			// FireAimedAnims
 			if ( KFWeap.bAimingRifle && FireAimedAnims.Length > MuzzleNum
 				 && Weapon.HasAnim( FireAimedAnims[MuzzleNum].Anim ) )
@@ -1103,7 +1081,7 @@ function PlayFiring()
 		// This is a first shot or there is no ammo left in mag
 		else  {
 			// EmptyFireAimedAnims
-			if ( KFWeap.bAimingRifle && KFWeap.MagAmmoRemaining < 1 && EmptyFireAimedAnims.Length > MuzzleNum
+			if ( KFWeap.bAimingRifle && bTheLastShot && EmptyFireAimedAnims.Length > MuzzleNum
 				 && Weapon.HasAnim( EmptyFireAimedAnims[MuzzleNum].Anim ) )
 				Weapon.PlayAnim( EmptyFireAimedAnims[MuzzleNum].Anim, 
 								 (EmptyFireAimedAnims[MuzzleNum].Rate * FireSpeedModif), 
@@ -1115,7 +1093,7 @@ function PlayFiring()
 								 (FireAimedAnims[MuzzleNum].Rate * FireSpeedModif), 
 								 FireAimedAnims[MuzzleNum].TweenTime );
 			// EmptyFireAnims
-			else if ( KFWeap.MagAmmoRemaining < 1 && EmptyFireAnims.Length > MuzzleNum
+			else if ( bTheLastShot && EmptyFireAnims.Length > MuzzleNum
 					  && Weapon.HasAnim( EmptyFireAnims[MuzzleNum].Anim ) )
 				Weapon.PlayAnim( EmptyFireAnims[MuzzleNum].Anim, 
 								 (EmptyFireAnims[MuzzleNum].Rate * FireSpeedModif), 

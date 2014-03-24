@@ -50,13 +50,13 @@ defaultproperties
      ShakeRotMag=(X=76.000000,Y=72.000000,Z=320.000000)
      ShakeRotRate=(X=12000.000000,Y=12000.000000,Z=10000.000000)
      ShakeRotTime=3.500000
-     ShakeOffsetMag=(X=6.500000,Y=3.000000,Z=8.500000)
+     ShakeOffsetMag=(X=6.600000,Y=3.000000,Z=8.500000)
      ShakeOffsetRate=(X=1000.000000,Y=1000.000000,Z=1000.000000)
      ShakeOffsetTime=2.500000
 	 ProjectileClass=Class'UnlimaginMod.UM_ColtM1911Bullet'
      BotRefireRate=0.350000
      AimError=72.000000
      Spread=0.012000
-	 MaxSpread=0.046000
+	 MaxSpread=0.050000
      SpreadStyle=SS_Random
 }

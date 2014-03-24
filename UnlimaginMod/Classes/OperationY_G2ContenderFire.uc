@@ -48,5 +48,6 @@ defaultproperties
      ProjectileClass=Class'UnlimaginMod.OperationY_G2ContenderBullet'
      BotRefireRate=3.570000
      AimError=30.000000
-     Spread=0.004000
+     Spread=0.006000
+	 MaxSpread=0.036000
 }

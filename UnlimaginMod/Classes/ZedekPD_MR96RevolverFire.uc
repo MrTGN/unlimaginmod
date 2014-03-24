@@ -36,7 +36,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_MR96RevolverBullet'
      BotRefireRate=0.650000
      AimError=60.000000
-     Spread=0.009000
-	 MaxSpread=0.035000
+     Spread=0.008000
+	 MaxSpread=0.040000
      SpreadStyle=SS_Random
 }

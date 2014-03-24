@@ -68,5 +68,6 @@ defaultproperties
      ProjectileClass=Class'UnlimaginMod.UM_MGL140StickyRMCGrenade'
      BotRefireRate=1.800000
      AimError=60.000000
-     Spread=0.015000
+     Spread=0.016000
+	 MaxSpread=0.016000
 }

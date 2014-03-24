@@ -51,7 +51,7 @@ defaultproperties
      AimErrorWithLaser=25.000000
 	 AimErrorWithOutLaser=50.000000
 	 AimError=50.000000
-     Spread=0.010000
-	 MaxSpread=0.038000
+     Spread=0.011000
+	 MaxSpread=0.046000
      SpreadStyle=SS_Random
 }

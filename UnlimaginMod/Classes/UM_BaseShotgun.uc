@@ -79,7 +79,8 @@ function float SuggestAttackStyle()
 
 defaultproperties
 {
-     bHasTacticalReload=False
+     bHasTacticalReload=True
+	 TacticalReloadCapacityBonus=1
 	 ForceZoomOutOnFireTime=0.000000
 	 bHoldToReload=True
 }

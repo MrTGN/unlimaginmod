@@ -86,6 +86,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 defaultproperties
 {
+	 bHasTacticalReload=False
 	 //[block] Dynamic Loading Vars
 	 //Mesh=SkeletalMesh'Protecta_A.Protecta_mesh'
 	 MeshRef="Protecta_A.Protecta_mesh"

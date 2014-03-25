@@ -105,7 +105,7 @@ static function float GetJumpModifier(KFPlayerReplicationInfo KFPRI)
 
 static function int GetMaxBounce(KFPlayerReplicationInfo KFPRI)
 {
-	Return Min(KFPRI.ClientVeteranSkillLevel, 3); // Can bounce if SkillLevel > 0
+	Return Min(KFPRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
 }
 
 static function float GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo KFPRI)

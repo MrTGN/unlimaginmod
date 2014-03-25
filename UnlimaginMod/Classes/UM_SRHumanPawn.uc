@@ -92,15 +92,13 @@ function bool CanMultiJump()
 function bool CanBounce()
 {
 	local	Actor		A;
-	local	Vector		HitLoc, HitNorm, TraceStart, TraceEnd, H, R;
+	local	Vector		HitLoc, HitNorm, H, R;
 	
 	BounceVictim = None;
-	if ( BounceRemaining > 0 && Level.TimeSeconds > NextBounceTime )  {
+	if ( BounceRemaining > 0 && Level.TimeSeconds >= NextBounceTime )  {
 		H = CollisionHeight * Vect(0.0, 0.0, 1.0);
 		R = (CollisionRadius + BounceCheckDistance) * Vect(1.0, 1.0, 0.0);
-		TraceStart = Location + R + H;
-		TraceEnd = Location - R;
-		foreach TraceActors( class 'Actor', A, HitLoc, HitNorm, TraceEnd, TraceStart, (R * 2.0 + H) )  {
+		foreach TraceActors( class 'Actor', A, HitLoc, HitNorm, (Location - R), (Location + R + H), (R * 2.0 + H) )  {
 			if ( A != None && A != Self && (A == Level || A.bWorldGeometry || Pawn(A) != None) )  {
 				if ( UM_KFMonster(A) != None )
 					BounceVictim = UM_KFMonster(A);
@@ -663,7 +661,7 @@ defaultproperties
 {
      BounceRemaining=0
 	 BounceCheckDistance=9.000000
-	 BounceMomentum=(X=380.000000,Z=150.000000)
+	 BounceMomentum=(X=380.000000,Z=140.000000)
 	 LowGravBounceMomentumScale=2.000000
 	 BounceDelay=0.200000
 	 LeftHandWeaponBone="WeaponL_Bone"

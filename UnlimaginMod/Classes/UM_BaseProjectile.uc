@@ -37,6 +37,38 @@ const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
 const 	DegToUnrRot = 182.0444;
 const 	UnrRotToDeg = 0.00549316540360483;
 
+/*
+// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
+struct	AnimData
+{
+	var	name	Anim;
+	var	float	Rate;
+	var	float	StartFrame;		// The frame number at which start to playing animation
+	var	float	TweenTime;
+	var	int		Channel;
+};
+
+// Read http://udn.epicgames.com/Two/SoundReference.html for more info
+struct	SoundData
+{
+	var	string		Ref;
+	var	sound		Snd;
+	var	ESoundSlot	Slot;
+	var	float		Vol;
+	var	bool		bNoOverride;
+	var	float		Radius;
+	var	float		Pitch;
+	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
+};
+*/
+
+// EmitterTrails for smoke trails and etc.
+struct	EmitterTrailData
+{
+	var	class<Emitter>	TrailClass;
+	var	bool			bAttachTrail;
+	var	Rotator			TrailRotation;
+};
 
 // Logging
 var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
@@ -86,13 +118,6 @@ var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction
 var(Effects)	array<xEmitter>				xEmitterTrails;
 var(Effects)	array< class<xEmitter> >	xEmitterTrailClasses;
 
-// EmitterTrails for smoke trails and etc.
-struct	EmitterTrailData
-{
-	var	class<Emitter>	TrailClass;
-	var	bool			bAttachTrail;
-	var	Rotator			TrailRotation;
-};
 var(Effects)	array<EmitterTrailData>		EmitterTrailsInfo;
 
 // Spawned emitters

@@ -639,6 +639,34 @@ simulated event Landed( vector HitNormal )
 	SetPhysics(PHYS_None);
 }
 
+// Server function
+function AdvancedMonsterSensor(
+					float	MonsterSearchRadius, 
+			out		bool	bMonsterDetected,
+ optional			float	FriendlyPawnSearchRadius,
+ optional	out		bool	bFriendlyPawnDetected )
+{
+	local	KFHumanPawn	HP;
+	local	KFMonster	M;
+	
+	foreach VisibleCollidingActors( Class 'KFMonster', M, MonsterSearchRadius, Location )  {
+		if ( M != None && M.Health > 0 )  {
+			bMonsterDetected = True;
+			Break;
+		}
+	}
+	
+	if ( FriendlyPawnSearchRadius > 0.0 )  {
+		foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
+			if ( HP != None && HP.Health > 0 && (HP == Instigator || (TeamGame(Level.Game) != None 
+				 && TeamGame(Level.Game).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )  {
+				bFriendlyPawnDetected = True;
+				Break;
+			}
+		}
+	}
+}
+
 //[end] Functions
 //====================================================================
 

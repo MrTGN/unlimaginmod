@@ -203,6 +203,8 @@ defaultproperties
 	 //[end]
 	 FirstPersonFlashlightOffset=(X=-25.000000,Y=-18.000000,Z=8.000000)
      MagCapacity=32
+	 TacticalReloadTime=2.100000
+	 TacticalReloadAnim=(Anim="Reload",Rate=1.0,StartFrame=28.00,TweenTime=0.1)
      ReloadRate=3.800000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000

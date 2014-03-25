@@ -640,13 +640,27 @@ simulated event Landed( vector HitNormal )
 }
 
 // Server function
-function AdvancedMonsterSensor(
+function bool FriendlyPawnIsInRadius( float FriendlyPawnSearchRadius )
+{
+	local	KFHumanPawn	HP;
+	
+	foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
+		if ( HP != None && HP.Health > 0 && (HP == Instigator || (TeamGame(Level.Game) != None 
+			 && TeamGame(Level.Game).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )  {
+			Return True;
+		}
+	}
+	
+	Return False;
+}
+
+// Server function
+function AdvancedMonsterSearch(
 					float	MonsterSearchRadius, 
 			out		bool	bMonsterDetected,
  optional			float	FriendlyPawnSearchRadius,
  optional	out		bool	bFriendlyPawnDetected )
 {
-	local	KFHumanPawn	HP;
 	local	KFMonster	M;
 	
 	foreach VisibleCollidingActors( Class 'KFMonster', M, MonsterSearchRadius, Location )  {
@@ -656,15 +670,8 @@ function AdvancedMonsterSensor(
 		}
 	}
 	
-	if ( FriendlyPawnSearchRadius > 0.0 )  {
-		foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
-			if ( HP != None && HP.Health > 0 && (HP == Instigator || (TeamGame(Level.Game) != None 
-				 && TeamGame(Level.Game).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )  {
-				bFriendlyPawnDetected = True;
-				Break;
-			}
-		}
-	}
+	if ( FriendlyPawnSearchRadius > 0.0 )
+		bFriendlyPawnDetected = FriendlyPawnIsInRadius(FriendlyPawnSearchRadius);
 }
 
 //[end] Functions

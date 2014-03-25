@@ -28,14 +28,6 @@ var		bool		bStuck;		// Grenade has stuck on something.
 
 var		float		DetectionRadius;// How far away to detect enemies
 
-struct	SoundData
-{
-	var	string	Ref;	//Dynamic Loading Sound
-	var	sound	S;		//Sound
-	var	float	V;		//Volume
-	var	float	R;		//Radius
-};
-
 var		SoundData	BeepSound, StickSound, PickupSound;
 
 var		Class<Emitter>	GrenadeLightClass;

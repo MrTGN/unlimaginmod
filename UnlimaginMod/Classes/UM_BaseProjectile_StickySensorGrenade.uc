@@ -48,44 +48,32 @@ simulated event PostNetBeginPlay()
 
 event Timer()
 {
-	local	Pawn	CheckPawn, CheckKFMonster;
+	local	bool	bFriendlyPawnDetected;
 	
 	if ( !bHidden && !bTriggered )  {
+		// Idle
 		if ( !bEnemyDetected )  {
-			bAlwaysRelevant = False;
-			foreach VisibleCollidingActors( class 'Pawn', CheckPawn, DetectionRadius, Location )  {
-				if ( KFMonster(CheckPawn) != none )  {
-					bEnemyDetected = True;
-					bAlwaysRelevant = True;
-					PlaySound(BeepSound.S,,(BeepSound.V * 1.5),,BeepSound.R);
-					SetTimer(0.2,True);
-					Break;
-				}
+			AdvancedMonsterSearch(DetectionRadius, bEnemyDetected);
+			if ( bEnemyDetected )  {
+				bAlwaysRelevant = True;
+				if ( BeepSound.Snd != None )
+					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius);
+				SetTimer(0.2,True);
 			}
 		}
+		// Armed
 		else  {
-			foreach VisibleCollidingActors( class 'Pawn', CheckPawn, DamageRadius, Location )  {
-				if ( CheckPawn == Instigator )
-					++ExplodeDelay;
-				else if ( KFMonster(CheckPawn) != None )
-					CheckKFMonster = CheckPawn;
+			AdvancedMonsterSearch(DamageRadius, bEnemyDetected, DamageRadius, bFriendlyPawnDetected);
+			if ( bEnemyDetected )  {
+				if ( !bFriendlyPawnDetected )
+					Explode(Location, vect(0,0,1));
+				else if ( BeepSound.Snd != None )
+					PlaySound(BeepSound.Snd,,BeepSound.Vol,,BeepSound.Radius);
 			}
-			
-			if ( CheckKFMonster == None )  {
-				bEnemyDetected = False;
+			else  {
+				bAlwaysRelevant = False;
 				SetTimer(ExplodeTimer, True);
-				if ( ExplodeDelay > 0 )
-					ExplodeDelay = 0;
-				
-				Return;
 			}
-			
-			if ( ExplodeDelay > 0 )  {
-				PlaySound(BeepSound.S,SLOT_Misc,BeepSound.V,,DamageRadius);
-				--ExplodeDelay;
-			}
-			else
-				Explode(Location,vect(0,0,1));
 		}
 	}
 	else

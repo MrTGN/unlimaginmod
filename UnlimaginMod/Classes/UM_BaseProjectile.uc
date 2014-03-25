@@ -23,6 +23,7 @@ class UM_BaseProjectile extends ROBallisticProjectile
 
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
@@ -37,17 +38,6 @@ const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
 const 	DegToUnrRot = 182.0444;
 const 	UnrRotToDeg = 0.00549316540360483;
 
-/*
-// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
-struct	AnimData
-{
-	var	name	Anim;
-	var	float	Rate;
-	var	float	StartFrame;		// The frame number at which start to playing animation
-	var	float	TweenTime;
-	var	int		Channel;
-};
-
 // Read http://udn.epicgames.com/Two/SoundReference.html for more info
 struct	SoundData
 {
@@ -60,7 +50,6 @@ struct	SoundData
 	var	float		Pitch;
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
-*/
 
 // EmitterTrails for smoke trails and etc.
 struct	EmitterTrailData
@@ -154,6 +143,35 @@ replication
 
 //========================================================================
 //[block] Functions
+
+//[block] Sound functions
+// Play a sound effect from SoundData struct.
+simulated final function PlaySoundData( SoundData SD )
+{
+	// Volume
+	if ( SD.Vol <= 0.0 )
+		SD.Vol = TransientSoundVolume;
+	// Pitch
+	if ( SD.Pitch <= 0.0 )
+		SD.Pitch = 1.0;
+	// PlaySound
+	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
+}
+
+// play a sound effect, but don't propagate to a remote owner
+// (he is playing the sound clientside)
+simulated final function PlayOwnedSoundData( SoundData SD )
+{
+	// Volume
+	if ( SD.Vol <= 0.0 )
+		SD.Vol = TransientSoundVolume;
+	// Pitch
+	if ( SD.Pitch <= 0.0 )
+		SD.Pitch = 1.0;
+	// PlayOwnedSound
+	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
+}
+//[end]
 
 simulated function Reset()
 {

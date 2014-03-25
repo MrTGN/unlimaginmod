@@ -23,25 +23,15 @@ class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_Grenade
 //========================================================================
 //[block] Variables
 
-var		bool		bStuck;	// Grenade has stuck on something
-var		bool		bTriggered, bTimerSet; 	// We've found an enemy. | This thing has exploded.
+var		bool			bStuck;	// Grenade has stuck on something
+var		bool			bTriggered, bTimerSet; 	// We've found an enemy. | This thing has exploded.
 
-var		float		ExplodeTimer;	// How far away to detect enemies
+var		float			ExplodeTimer;	// How far away to detect enemies
 
-struct	SoundData
-{
-	var	string	Ref;	//Dynamic Loading Sound
-	var	sound	S;		//Sound
-	var	float	V;		//Volume
-	var	float	R;		//Radius
-};
-
-var		SoundData	BeepSound, StickSound;
+var		SoundData		BeepSound, StickSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
-var		int				ExplodeDelay;
-
 var		Actor			StickActor;
 
 //[end] Varibles
@@ -71,19 +61,12 @@ replication
 //static function PreloadAssets(Projectile Proj)
 simulated static function PreloadAssets(Projectile Proj)
 {
-	if ( default.BeepSound.Ref != "" && default.BeepSound.S == None )
-		default.BeepSound.S = sound(DynamicLoadObject(default.BeepSound.Ref, class'Sound', True));
-	
-	if ( default.StickSound.Ref != "" && default.StickSound.S == None )
-		default.StickSound.S = sound(DynamicLoadObject(default.StickSound.Ref, class'Sound', True));
-	
-	if ( UM_BaseProjectile_StickyGrenade(Proj) != None )
-	{
-		if ( default.BeepSound.S != None && UM_BaseProjectile_StickyGrenade(Proj).BeepSound.S == None )
-			UM_BaseProjectile_StickyGrenade(Proj).BeepSound.S = default.BeepSound.S;
-		
-		if ( default.StickSound.S != None && UM_BaseProjectile_StickyGrenade(Proj).StickSound.S == None )
-			UM_BaseProjectile_StickyGrenade(Proj).StickSound.S = default.StickSound.S;
+	default.BeepSound.Snd = BaseActor.static.LoadSound(BeepSound.Ref);
+	default.StickSound.Snd = BaseActor.static.LoadSound(StickSound.Ref);
+
+	if ( UM_BaseProjectile_StickyGrenade(Proj) != None )  {
+		UM_BaseProjectile_StickyGrenade(Proj).BeepSound.Snd = default.BeepSound.Snd;
+		UM_BaseProjectile_StickyGrenade(Proj).StickSound.Snd = default.StickSound.Snd;
 	}
 	
 	Super.PreloadAssets(Proj);
@@ -92,11 +75,8 @@ simulated static function PreloadAssets(Projectile Proj)
 //static function bool UnloadAssets()
 simulated static function bool UnloadAssets()
 {
-	if ( default.BeepSound.S != None )
-		default.BeepSound.S = None;
-	
-	if ( default.StickSound.S != None )
-		default.StickSound.S = None;
+	default.BeepSound.Snd = None;
+	default.StickSound.Snd = None;
 	
 	Return Super.UnloadAssets();
 }
@@ -316,8 +296,8 @@ defaultproperties
 	 ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
      ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
      ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
-	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",V=2.0,R=400.0)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",V=2.2,R=400.0)
+	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0,bUse3D=True)
+	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,bUse3D=True)
 	 LifeSpan=0.000000
 	 ProjectileMass=0.230000
      //DisintegrateDamageTypes

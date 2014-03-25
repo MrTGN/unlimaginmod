@@ -61,8 +61,8 @@ replication
 //static function PreloadAssets(Projectile Proj)
 simulated static function PreloadAssets(Projectile Proj)
 {
-	default.BeepSound.Snd = BaseActor.static.LoadSound(BeepSound.Ref);
-	default.StickSound.Snd = BaseActor.static.LoadSound(StickSound.Ref);
+	default.BeepSound.Snd = BaseActor.static.LoadSound(default.BeepSound.Ref);
+	default.StickSound.Snd = BaseActor.static.LoadSound(default.StickSound.Ref);
 
 	if ( UM_BaseProjectile_StickyGrenade(Proj) != None )  {
 		UM_BaseProjectile_StickyGrenade(Proj).BeepSound.Snd = default.BeepSound.Snd;

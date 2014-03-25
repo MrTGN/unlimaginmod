@@ -53,7 +53,7 @@ event Timer()
 	if ( !bHidden && !bTriggered )  {
 		// Idle
 		if ( !bEnemyDetected )  {
-			AdvancedMonsterSearch(DetectionRadius, bEnemyDetected);
+			bEnemyDetected = MonsterIsInRadius(DetectionRadius);
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
@@ -63,7 +63,8 @@ event Timer()
 		}
 		// Armed
 		else  {
-			AdvancedMonsterSearch(DamageRadius, bEnemyDetected, DamageRadius, bFriendlyPawnDetected);
+			bEnemyDetected = MonsterIsInRadius(DamageRadius);
+			bFriendlyPawnDetected = FriendlyPawnIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
 				if ( !bFriendlyPawnDetected )
 					Explode(Location, vect(0,0,1));

@@ -186,7 +186,7 @@ defaultproperties
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 DrawScale=8.000000
 	 Damage=100.000000
-	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",V=2.2,R=400.0)
+	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0)
 	 bNetTemporary=False
 	 MyDamageType=None
 	 xEmitterTrailClasses(0)=None

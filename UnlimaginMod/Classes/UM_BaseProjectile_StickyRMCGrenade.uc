@@ -20,8 +20,6 @@ class UM_BaseProjectile_StickyRMCGrenade extends UM_BaseProjectile_StickyGrenade
 
 event Timer()
 {
-	local	Pawn	CheckPawn;
-	
 	if ( !bHidden && !bTriggered )  {
 		if ( !FriendlyPawnIsInRadius(DamageRadius) )
 			Explode(Location, vect(0,0,1));

@@ -129,9 +129,6 @@ var		array< PerkProjData >	PerkProjsInfo;
 // They have returned this variable back in the next update. Commented out.
 //var		float					LowGravKickMomentumScale;
 
-// If bFixedProjPerFire=False weapon will spawn (ProjPerFire * AmmoPerFire) number of projectiles per shot.
-// If bFixedProjPerFire=True weapon will spawn fixed ProjPerFire number of projectiles per shot.
-var		bool					bFixedProjPerFire;	// Load = AmmoPerFire
 var		bool					bTheLastShot;
 
 var		byte					MuzzleNum;	// Muzzle Number
@@ -609,7 +606,6 @@ function DoFireEffect()
     local	Vector		StartProj, VX, VY, VZ;
     local	Rotator		R, Aim;
     local	int			p;
-    local	int			SpawnCount;
     local	float		theta;
 
 	Instigator.MakeNoise(1.0);
@@ -618,16 +614,11 @@ function DoFireEffect()
 	StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
     Aim = AdjustAim(StartProj, AimError);
 	
-	if ( bFixedProjPerFire )
-		SpawnCount = Max(1, ProjPerFire);
-	else
-		SpawnCount = Max(1, (ProjPerFire * int(Load)));
-	
 	switch (SpreadStyle)
 	{
 		case SS_Random:
 			VX = Vector(Aim);
-			for ( p = 0; p < SpawnCount; ++p )  {
+			for ( p = 0; p < ProjPerFire; ++p )  {
 				R.Yaw = Spread * (FRand() - 0.5);
 				R.Pitch = Spread * (FRand() - 0.5);
 				R.Roll = Spread * (FRand() - 0.5);
@@ -636,8 +627,8 @@ function DoFireEffect()
 			Break;
 			
 		case SS_Line:
-			for ( p = 0; p < SpawnCount; ++p )  {
-				theta = Spread * PI / 32768 * (p - float(SpawnCount - 1) / 2.0);
+			for ( p = 0; p < ProjPerFire; ++p )  {
+				theta = Spread * PI / 32768 * (p - float(ProjPerFire - 1) / 2.0);
 				VX.X = Cos(theta);
 				VX.Y = Sin(theta);
 				VX.Z = 0.0;
@@ -646,7 +637,7 @@ function DoFireEffect()
 			Break;
 			
 		default:
-			for ( p = 0; p < SpawnCount; ++p )
+			for ( p = 0; p < ProjPerFire; ++p )
 				SpawnProjectile(StartProj, Aim);
 			Break;
 	}
@@ -867,7 +858,7 @@ event ModeDoFire()
 	
 	UpdateFireRate();
 	
-	bTheLastShot = KFWeap.MagAmmoRemaining <= AmmoPerFire;
+	bTheLastShot = (KFWeap.MagAmmoRemaining <= AmmoPerFire);
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {

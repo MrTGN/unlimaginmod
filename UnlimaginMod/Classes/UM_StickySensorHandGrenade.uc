@@ -22,18 +22,16 @@ class UM_StickySensorHandGrenade extends UM_BaseProjectile_HandGrenade;
 //========================================================================
 //[block] Variables
 
-var		bool		bEnemyDetected; // We've found an enemy
-var		bool		bTriggered; // This thing has exploded
-var		bool		bStuck;		// Grenade has stuck on something.
+var		bool			bEnemyDetected; // We've found an enemy
+var		bool			bTriggered; // This thing has exploded
+var		bool			bStuck;		// Grenade has stuck on something.
 
-var		float		DetectionRadius;// How far away to detect enemies
+var		float			DetectionRadius;	// How far away to detect enemies
 
-var		SoundData	BeepSound, StickSound, PickupSound;
+var		SoundData		BeepSound, StickSound, PickupSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
-var		int				ExplodeDelay;
-
 var		Actor			StickActor;
 
 //[end] Varibles
@@ -62,25 +60,14 @@ replication
 //static function PreloadAssets(Projectile Proj)
 simulated static function PreloadAssets(Projectile Proj)
 {
-	if ( default.BeepSound.Ref != "" && default.BeepSound.S == None )
-		default.BeepSound.S = sound(DynamicLoadObject(default.BeepSound.Ref, class'Sound', True));
+	default.BeepSound.Snd = BaseActor.static.LoadSound(default.BeepSound.Ref);
+	default.StickSound.Snd = BaseActor.static.LoadSound(default.StickSound.Ref);
+	default.PickupSound.Snd = BaseActor.static.LoadSound(default.PickupSound.Ref);
 	
-	if ( default.StickSound.Ref != "" && default.StickSound.S == None )
-		default.StickSound.S = sound(DynamicLoadObject(default.StickSound.Ref, class'Sound', True));
-	
-	if ( default.PickupSound.Ref != "" && default.PickupSound.S == None )
-		default.PickupSound.S = sound(DynamicLoadObject(default.PickupSound.Ref, class'Sound', True));
-	
-	if ( UM_StickySensorHandGrenade(Proj) != None )
-	{
-		if ( default.BeepSound.S != None && UM_StickySensorHandGrenade(Proj).BeepSound.S == None )
-			UM_StickySensorHandGrenade(Proj).BeepSound.S = default.BeepSound.S;
-		
-		if ( default.StickSound.S != None && UM_StickySensorHandGrenade(Proj).StickSound.S == None )
-			UM_StickySensorHandGrenade(Proj).StickSound.S = default.StickSound.S;
-		
-		if ( default.PickupSound.S != None && UM_StickySensorHandGrenade(Proj).PickupSound.S == None )
-			UM_StickySensorHandGrenade(Proj).PickupSound.S = default.PickupSound.S;
+	if ( UM_StickySensorHandGrenade(Proj) != None )  {
+		UM_StickySensorHandGrenade(Proj).BeepSound.Snd = default.BeepSound.Snd;
+		UM_StickySensorHandGrenade(Proj).StickSound.Snd = default.StickSound.Snd;
+		UM_StickySensorHandGrenade(Proj).PickupSound.Snd = default.PickupSound.Snd;
 	}
 	
 	Super.PreloadAssets(Proj);
@@ -89,14 +76,9 @@ simulated static function PreloadAssets(Projectile Proj)
 //static function bool UnloadAssets()
 simulated static function bool UnloadAssets()
 {
-	if ( default.BeepSound.S != None )
-		default.BeepSound.S = None;
-	
-	if ( default.StickSound.S != None )
-		default.StickSound.S = None;
-	
-	if ( default.PickupSound.S != None )
-		default.PickupSound.S = None;
+	default.BeepSound.Snd = None;
+	default.StickSound.Snd = None;
+	default.PickupSound.Snd = None;
 
 	Return Super.UnloadAssets();
 }
@@ -197,53 +179,32 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 
 event Timer()
 {
-	local	Pawn		CheckPawn;
-	local	Pawn		CheckKFMonster;
+	local	bool	bFriendlyPawnDetected;
 	
-	if( !bHidden && !bTriggered )
-	{
-		if( !bEnemyDetected )
-		{
-			bAlwaysRelevant = False;
-			foreach VisibleCollidingActors( class 'Pawn', CheckPawn, DetectionRadius, Location )
-			{
-				if( KFMonster(CheckPawn) != None )
-				{
-					bEnemyDetected = True;
-					bAlwaysRelevant = True;
-					PlaySound(BeepSound.S,,(BeepSound.V * 1.5),,BeepSound.R);
-					SetTimer(0.2,True);
-					Break;
-				}
+	if ( !bHidden && !bTriggered )  {
+		// Idle
+		if ( !bEnemyDetected )  {
+			AdvancedMonsterSearch(DetectionRadius, bEnemyDetected);
+			if ( bEnemyDetected )  {
+				bAlwaysRelevant = True;
+				if ( BeepSound.Snd != None )
+					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius);
+				SetTimer(0.2,True);
 			}
 		}
-		else
-		{
-			foreach VisibleCollidingActors( class 'Pawn', CheckPawn, DamageRadius, Location )
-			{
-				if( CheckPawn == Instigator )
-					ExplodeDelay++;
-				else if( KFMonster(CheckPawn) != None )
-					CheckKFMonster = CheckPawn;
+		// Armed
+		else  {
+			AdvancedMonsterSearch(DamageRadius, bEnemyDetected, DamageRadius, bFriendlyPawnDetected);
+			if ( bEnemyDetected )  {
+				if ( !bFriendlyPawnDetected )
+					Explode(Location, vect(0,0,1));
+				else if ( BeepSound.Snd != None )
+					PlaySound(BeepSound.Snd,,BeepSound.Vol,,BeepSound.Radius);
 			}
-			
-			if ( CheckKFMonster == None )
-			{
-				bEnemyDetected = False;
+			else  {
+				bAlwaysRelevant = False;
 				SetTimer(ExplodeTimer, True);
-				if( ExplodeDelay > 0)
-					ExplodeDelay = 0;
-				
-				Return;
 			}
-			
-			if ( ExplodeDelay > 0 )
-			{
-				PlaySound(BeepSound.S,SLOT_Misc,BeepSound.V,,DamageRadius);
-				ExplodeDelay--;
-			}
-			else
-				Explode(Location,vect(0,0,1));
 		}
 	}
 	else
@@ -277,7 +238,7 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 	else
 		SetBase(StickActor);
 
-	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.S, StickSound.V, StickSound.R);
+	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.Snd, StickSound.Vol, StickSound.Radius);
 
 	if ( Base == None )
 	{
@@ -332,7 +293,8 @@ state Stuck
 					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )
 				{
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
-					PlaySound(PickupSound.S, SLOT_Pain,PickupSound.V,,PickupSound.R);
+					if ( PickupSound.Snd != None )
+						PlaySound(PickupSound.Snd, SLOT_Pain, PickupSound.Vol,, PickupSound.Radius);
 					Break;
 				}
 			}
@@ -390,9 +352,9 @@ defaultproperties
 	 ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
      ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
      ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
-	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",V=2.0,R=400.0)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",V=2.2,R=400.0)
-	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",V=2.2,R=400.0)
+	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0)
+	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0)
+	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0)
 	 DetectionRadius=170.000000
 	 DamageRadius=380.000000
 	 LifeSpan=0.000000

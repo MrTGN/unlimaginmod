@@ -199,7 +199,7 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 	else
 		SetBase(StickActor);
 	
-	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.S, StickSound.V, StickSound.R);
+	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.Snd, StickSound.Vol, StickSound.Radius);
 	
 	if ( Base == None )
 	{

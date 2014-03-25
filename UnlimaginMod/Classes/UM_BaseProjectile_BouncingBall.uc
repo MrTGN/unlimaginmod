@@ -22,15 +22,6 @@ class UM_BaseProjectile_BouncingBall extends UM_BaseProjectile_Bullet
 //[block] Variables
 
 var		float		BounceBonus;
-
-struct	SoundData
-{
-	var	string	Ref;	//Dynamic Loading Sound
-	var	sound	S;		//Sound
-	var	float	V;		//Volume
-	var	float	R;		//Radius
-};
-
 var		SoundData	PickupSound;
 
 //[end] Varibles
@@ -143,7 +134,8 @@ state NoEnergy
 					 KFWeapon(Inv).AmmoAmount(0) < KFWeapon(Inv).MaxAmmo(0) )
 				{
 					KFWeapon(Inv).AddAmmo(1,0);
-					PlaySound(PickupSound.S, SLOT_Pain,PickupSound.V,,PickupSound.R);
+					if ( PickupSound.Snd != None )
+						PlaySound(PickupSound.Snd, SLOT_Pain, PickupSound.Vol,, PickupSound.Radius);
 					Break;
 				}
 			}

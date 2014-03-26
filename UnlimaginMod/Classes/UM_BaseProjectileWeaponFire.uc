@@ -80,7 +80,9 @@ struct	PerkProjData
 	var		float				SecondPerkProjMaxSpread;
 };
 
-var				float			NextAutoReloadCheckTime;
+var				UM_BaseWeapon	UMW;
+var				bool			bCanDryFire;
+
 var				float			FirstPersonSoundVolumeScale;	// Scales sounds Volume at FirstPerson view
 
 var(Recoil)		float			RecoilVelocityScale;	// How much to scale the recoil by based on how fast the player is moving
@@ -328,6 +330,8 @@ simulated event PostBeginPlay()
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(Level, self);
 	
+	KFWeap = KFWeapon(Weapon);
+	UMW = UM_BaseWeapon(Weapon);
 	CheckAnimArrays();
 	
 	//[block] Copeid from WeaponFire.uc with some changes
@@ -339,7 +343,6 @@ simulated event PostBeginPlay()
 		bNowWaiting = True;
 	//[end]
 
-	KFWeap = KFWeapon(Weapon);
 	SetMuzzleNum(default.MuzzleNum);
 }
 
@@ -387,7 +390,6 @@ simulated function InitEffects()
 
 simulated function DrawMuzzleFlash(Canvas Canvas)
 {
-	local	UM_BaseWeapon	UMW;
 	local	Vector			EffectStart;
 	
 	// don't even spawn on server
@@ -396,7 +398,6 @@ simulated function DrawMuzzleFlash(Canvas Canvas)
 		Return;
 	
 	if ( !bAttachSmokeEmitter || !bAttachFlashEmitter )  {
-		UMW = UM_BaseWeapon(Weapon);
 		if ( UMW != None )
 			EffectStart = UMW.GetFireModeEffectStart(ThisModeNum);
 		else
@@ -787,31 +788,41 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 	}
 }
 
+//ToDo: переписать эту функцию для работ с SoundData
+simulated function PlayNoAmmoSound()
+{
+	if ( NoAmmoSound != None )
+		Weapon.PlayOwnedSound(NoAmmoSound, SLOT_None, TransientSoundVolume);
+}
+
+// Dry fire and auto reload
+simulated function DryFire()
+{
+	if ( bCanDryFire )
+		PlayNoAmmoSound();
+	
+	if ( UMW != None && UMW.default.MagCapacity > 1 )  {
+		// Bots and other AI
+		if ( AIController(Instigator.Controller) != None )
+			UMW.ReloadMeNow();
+		// Player
+		else if ( UMW.bAllowAutoReload )
+			UMW.RequestAutoReload();
+	}
+}
+
 simulated function bool AllowFire()
 {
-	local	KFWeapon	KFW;
-	
-	KFW = KFWeapon(Weapon);
-	if ( (KFW.bIsReloading && (!KFW.bHoldToReload || KFW.MagAmmoRemaining < AmmoPerFire))
+	if ( (KFWeap.bIsReloading && (!KFWeap.bHoldToReload || KFWeap.MagAmmoRemaining < AmmoPerFire))
 		 || KFPawn(Instigator).SecondaryItem != None
 		 || KFPawn(Instigator).bThrowingNade
 		 || Instigator.IsProneTransitioning() )
 		Return False;
 	
-	if ( KFW.MagAmmoRemaining < AmmoPerFire || Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire )  {
-		//Dry fire and auto reload
-		if ( UM_BaseWeapon(Weapon) != None && Level.TimeSeconds >= NextAutoReloadCheckTime )  {
-			NextAutoReloadCheckTime = Level.TimeSeconds + FireRate;
-			UM_BaseWeapon(Weapon).DryFire(ThisModeNum);
-			//log(Self$": No Ammo!");
-		}
-		
-		// Stop firing dude. There is no ammo!
-		if ( Weapon.Role == ROLE_Authority )
-			Weapon.ServerStopFire(ThisModeNum);
-		else
-			Weapon.StopFire(ThisModeNum);
-		
+	if ( Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire || KFWeap.MagAmmoRemaining < AmmoPerFire )  {
+		DryFire();
+		// Stop firing dude! There is no ammo!
+		Weapon.StopFire(ThisModeNum);
 		Return False;
 	}
 
@@ -957,53 +968,51 @@ simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteranc
 	local	float				AdjustedSpeed;
 
 	KFPC = KFPlayerController(Instigator.Controller);
-	if ( Instigator != None && KFPC != None && !KFPC.bFreeCamera )  {
-		if ( Weapon.GetFireMode(ThisModeNum).bIsFiring )  {
-          	// Aiming bonuses
-			if ( KFWeap.bAimingRifle )  {
-				maxVerticalRecoilAngle = default.maxVerticalRecoilAngle * AimingVerticalRecoilBonus;
-				maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle * AimingHorizontalRecoilBonus;
+	if ( KFPC != None && !KFPC.bFreeCamera )  {
+		// Aiming bonuses
+		if ( KFWeap.bAimingRifle )  {
+			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle * AimingVerticalRecoilBonus;
+			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle * AimingHorizontalRecoilBonus;
+		}
+		else  {
+			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
+			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
+		}
+		NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
+		NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
+
+		if ( !bRecoilRightOnly && Rand(2) == 1 )
+			NewRecoilRotation.Yaw *= -1.0;
+
+		if ( RecoilVelocityScale > 0.0 )  {
+			AdjustedVelocity = Instigator.Velocity;
+			if ( Instigator.Physics == PHYS_Falling &&
+				Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
+				// Ignore Z velocity in low grav so we don't get massive recoil
+				AdjustedVelocity.Z = 0.0;
+				AdjustedSpeed = VSize(AdjustedVelocity);
+				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
+				// Reduce the falling recoil in low grav
+				NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale * 0.5);
+				NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale * 0.5);
 			}
 			else  {
-				maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
-				maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
-			}
-			NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
-         	NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
-
-          	if ( !bRecoilRightOnly && Rand(2) == 1 )
-				NewRecoilRotation.Yaw *= -1.0;
-
-            if ( RecoilVelocityScale > 0.0 )  {
-				AdjustedVelocity = Instigator.Velocity;
-				if ( Instigator.Physics == PHYS_Falling &&
-					Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
-					// Ignore Z velocity in low grav so we don't get massive recoil
+				if ( bRecoilIgnoreZVelocity )
 					AdjustedVelocity.Z = 0.0;
-					AdjustedSpeed = VSize(AdjustedVelocity);
-					//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
-					// Reduce the falling recoil in low grav
-					NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale * 0.5);
-					NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale * 0.5);
-				}
-				else  {
-					if ( bRecoilIgnoreZVelocity )
-						AdjustedVelocity.Z = 0.0;
-					AdjustedSpeed = VSize(AdjustedVelocity);
-					//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
-					NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale);
-					NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
-				}
+				AdjustedSpeed = VSize(AdjustedVelocity);
+				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
+				NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale);
+				NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
 			}
-			// Recoil based on how much Health the player have
-    	    NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
-    	    NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
-    	    // Perk bouns
-			if ( KFPRI != None && SRVT != None )
-				NewRecoilRotation *= SRVT.static.GetRecoilModifier( KFPRI, Self );
+		}
+		// Recoil based on how much Health the player have
+		NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
+		NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
+		// Perk bouns
+		if ( KFPRI != None && SRVT != None )
+			NewRecoilRotation *= SRVT.static.GetRecoilModifier( KFPRI, Self );
 
- 		    KFPC.SetRecoil(NewRecoilRotation, (RecoilRate * FireSpeedModif));
-    	}
+		KFPC.SetRecoil(NewRecoilRotation, (RecoilRate * FireSpeedModif));
  	}
 }
 
@@ -1149,6 +1158,7 @@ function PlayFireEnd()
 
 defaultproperties
 {
+	 bCanDryFire=True
 	 MuzzleNum=0
 	 bDoFiringEffects=True
 	 //[block] Fire Effects

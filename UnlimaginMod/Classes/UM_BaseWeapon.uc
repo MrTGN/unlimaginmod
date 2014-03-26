@@ -309,34 +309,19 @@ function ServerRequestAutoReload()
 	++NumClicks;
 }
 
-// AutoReload requesting on Client-side
-simulated function ClientRequestAutoReload()
+// AutoReload requesting
+simulated function RequestAutoReload()
 {
 	if ( AutoReloadRequestsNum > 0 )  {
 		AutoReloadRequestsNum = 0;
-		//Calling server function
+		// Calling server function
 		ReloadMeNow();
 		Return;
 	}
 	++AutoReloadRequestsNum;
 }
 
-simulated function DryFire(byte Mode)
-{
-	//Dry fire sound
-	if ( bModeZeroCanDryFire )
-		PlayOwnedSound(FireMode[Mode].NoAmmoSound, SLOT_None, FireMode[Mode].TransientSoundVolume,,,, false);
-	
-	if ( default.MagCapacity > 1 )  {
-		//Bots and other AI
-		if ( AIController(Instigator.Controller) != None )
-			ReloadMeNow();
-		else if ( bAllowAutoReload )
-			ClientRequestAutoReload();
-	}
-}
-
-simulated function Fire(float F){}
+simulated function Fire(float F) { }
 
 simulated exec function ToggleIronSights()
 {

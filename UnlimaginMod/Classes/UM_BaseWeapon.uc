@@ -309,8 +309,7 @@ function ServerRequestAutoReload()
 	++NumClicks;
 }
 
-// Added Mode var for the future multi-reload weapons
-//simulated function ClientRequestAutoReload(byte Mode)
+// AutoReload requesting on Client-side
 simulated function ClientRequestAutoReload()
 {
 	if ( AutoReloadRequestsNum > 0 )  {
@@ -328,12 +327,13 @@ simulated function DryFire(byte Mode)
 	if ( bModeZeroCanDryFire )
 		PlayOwnedSound(FireMode[Mode].NoAmmoSound, SLOT_None, FireMode[Mode].TransientSoundVolume,,,, false);
 	
-	//Bots and other AI
-	if ( AIController(Instigator.Controller) != None )
-		ReloadMeNow();
-	else if ( bAllowAutoReload )
-		ClientRequestAutoReload();
-		//ClientRequestAutoReload(Mode);
+	if ( default.MagCapacity > 1 )  {
+		//Bots and other AI
+		if ( AIController(Instigator.Controller) != None )
+			ReloadMeNow();
+		else if ( bAllowAutoReload )
+			ClientRequestAutoReload();
+	}
 }
 
 simulated function Fire(float F){}
@@ -875,12 +875,14 @@ exec function ReloadMeNow()
 		ReloadRate = default.ReloadRate / ReloadMulti;
 	ReloadTimer = Level.TimeSeconds + ReloadRate;
 	
-	if ( bHoldToReload )
-		NumLoadedThisReload = 0;
-	else if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus )
-		MagAmmoRemaining = TacticalReloadCapacityBonus;
-	else
-		MagAmmoRemaining = 0;
+	if ( default.MagCapacity > 1 )  {
+		if ( bHoldToReload )
+			NumLoadedThisReload = 0;
+		else if ( bHasTacticalReload && MagAmmoRemaining >= TacticalReloadCapacityBonus )
+			MagAmmoRemaining = TacticalReloadCapacityBonus;
+		else
+			MagAmmoRemaining = 0;
+	}
 	
 	bIsReloading = True;
 	ClientReload();

@@ -798,17 +798,24 @@ simulated function bool AllowFire()
 		 || Instigator.IsProneTransitioning() )
 		Return False;
 	
-	if ( KFW.MagAmmoRemaining < AmmoPerFire )  {
+	if ( KFW.MagAmmoRemaining < AmmoPerFire || Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire )  {
 		//Dry fire and auto reload
 		if ( UM_BaseWeapon(Weapon) != None && Level.TimeSeconds >= NextAutoReloadCheckTime )  {
 			NextAutoReloadCheckTime = Level.TimeSeconds + FireRate;
 			UM_BaseWeapon(Weapon).DryFire(ThisModeNum);
 			//log(Self$": No Ammo!");
 		}
+		
+		// Stop firing dude. There is no ammo!
+		if ( Weapon.Role == ROLE_Authority )
+			Weapon.ServerStopFire(ThisModeNum);
+		else
+			Weapon.StopFire(ThisModeNum);
+		
 		Return False;
 	}
 
-	Return Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire;
+	Return True;
 }
 
 // Prevents the de-synchronization between the client and the server
@@ -1173,7 +1180,6 @@ defaultproperties
 	 RandomPitchAdjustAmt=0.050000
 	 //Booleans
 	 bFiringDoesntAffectMovement=False
-	 bFixedProjPerFire=False
 	 bLeadTarget=True
      bInstantHit=False
 	 bModeExclusive=True

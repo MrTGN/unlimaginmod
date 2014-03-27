@@ -851,6 +851,11 @@ function ChangeMuzzleNum()
 	Use SetMuzzleNum() function to set the new MuzzleNum. */
 }
 
+function Set()
+{
+	
+}
+
 // Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
@@ -965,7 +970,7 @@ event ModeDoFire()
 // Cleaning up the old function
 simulated function HandleRecoil(float Rec) { }
 
-simulated function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
+function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	Rotator				NewRecoilRotation;
 	local	KFPlayerController	KFPC;

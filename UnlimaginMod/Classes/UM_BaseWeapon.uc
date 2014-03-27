@@ -309,7 +309,7 @@ function ServerRequestAutoReload()
 	++NumClicks;
 }
 
-// AutoReload requesting
+// AutoReload requesting on the Client-side
 simulated function ClientRequestAutoReload()
 {
 	if ( bAllowAutoReload && Role < ROLE_Authority )  {

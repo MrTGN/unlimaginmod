@@ -82,6 +82,7 @@ struct	PerkProjData
 
 var				UM_BaseWeapon	UMW;
 var				bool			bCanDryFire;
+var				float			NextDryFireTime;
 
 var				float			FirstPersonSoundVolumeScale;	// Scales sounds Volume at FirstPerson view
 
@@ -346,6 +347,7 @@ simulated event PostBeginPlay()
 	SetMuzzleNum(default.MuzzleNum);
 }
 
+// Called from Weapon simulated event Timer()
 simulated function InitEffects()
 {
     local	byte	i;
@@ -388,7 +390,35 @@ simulated function InitEffects()
 	}
 }
 
-simulated function DrawMuzzleFlash(Canvas Canvas)
+// Called from Weapon simulated event Timer()
+simulated function DestroyEffects()
+{
+	local	byte	i;
+	
+	while ( SmokeEmitters.Length > 0 )  {
+		i = SmokeEmitters.Length - 1;
+		if ( SmokeEmitters[i] != None )
+			SmokeEmitters[i].Destroy();
+		SmokeEmitters.Remove(i,1);
+	}
+	
+	while ( FlashEmitters.Length > 0 )  {
+		i = FlashEmitters.Length - 1;
+		if ( FlashEmitters[i] != None )
+			FlashEmitters[i].Destroy();
+		FlashEmitters.Remove(i,1);
+	}
+	
+	while ( ShellEjectEmitters.Length > 0 )  {
+		i = ShellEjectEmitters.Length - 1;
+		if ( ShellEjectEmitters[i] != None )
+			ShellEjectEmitters[i].Destroy();
+		ShellEjectEmitters.Remove(i,1);
+	}
+}
+
+// Called from weapon simulated event RenderOverlays
+function DrawMuzzleFlash(Canvas Canvas)
 {
 	local	Vector			EffectStart;
 	
@@ -425,51 +455,25 @@ simulated function DrawMuzzleFlash(Canvas Canvas)
 		Canvas.DrawActor( ShellEjectEmitters[0], false, false, Weapon.DisplayFOV );
 }
 
-simulated function FlashMuzzleFlash()
+function FlashMuzzleFlash()
 {
 	if ( FlashEmitters.Length > MuzzleNum && FlashEmitters[MuzzleNum] != None )
 		FlashEmitters[MuzzleNum].Trigger(Weapon, Instigator);
 }
 
-simulated function StartMuzzleSmoke()
+function StartMuzzleSmoke()
 {
 	if ( !Level.bDropDetail && SmokeEmitters.Length > MuzzleNum && SmokeEmitters[MuzzleNum] != None )
 		SmokeEmitters[MuzzleNum].Trigger(Weapon, Instigator);
 }
 
-simulated function EjectShell()
+function EjectShell()
 {
 	if ( ShellEjectEmitters.Length > MuzzleNum && ShellEjectEmitters[MuzzleNum] != None )
 		ShellEjectEmitters[MuzzleNum].Trigger(Weapon, Instigator);
 	// If this weapon have more than one muzzle, but only one ShellEjectBone and ShellEjectEmitter
 	else if ( ShellEjectEmitters.Length > 0 && ShellEjectEmitters[0] != None )
 		ShellEjectEmitters[0].Trigger(Weapon, Instigator);
-}
-
-simulated function DestroyEffects()
-{
-	local	byte	i;
-	
-	while ( SmokeEmitters.Length > 0 )  {
-		i = SmokeEmitters.Length - 1;
-		if ( SmokeEmitters[i] != None )
-			SmokeEmitters[i].Destroy();
-		SmokeEmitters.Remove(i,1);
-	}
-	
-	while ( FlashEmitters.Length > 0 )  {
-		i = FlashEmitters.Length - 1;
-		if ( FlashEmitters[i] != None )
-			FlashEmitters[i].Destroy();
-		FlashEmitters.Remove(i,1);
-	}
-	
-	while ( ShellEjectEmitters.Length > 0 )  {
-		i = ShellEjectEmitters.Length - 1;
-		if ( ShellEjectEmitters[i] != None )
-			ShellEjectEmitters[i].Destroy();
-		ShellEjectEmitters.Remove(i,1);
-	}
 }
 
 // Delivered this code into a separate function because
@@ -590,18 +594,6 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 }
 //[end]
 
-function AddKickMomentum()
-{
-	if ( Instigator != None && !bNoKickMomentum )  {
-		if ( !bOnlyLowGravKickMomentum )
-            Instigator.AddVelocity(KickMomentum >> Instigator.GetViewRotation());
-		else if ( Instigator.Physics == PHYS_Falling &&	
-				  Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )
-            Instigator.AddVelocity((KickMomentum * LowGravKickMomentumScale) >> Instigator.GetViewRotation());
-	}
-}
-
-// Copied from KFShotgunFire with some changes
 function DoFireEffect()
 {
     local	Vector		StartProj, VX, VY, VZ;
@@ -641,6 +633,17 @@ function DoFireEffect()
 			for ( p = 0; p < ProjPerFire; ++p )
 				SpawnProjectile(StartProj, Aim);
 			Break;
+	}
+}
+
+function AddKickMomentum()
+{
+	if ( Instigator != None && !bNoKickMomentum )  {
+		if ( !bOnlyLowGravKickMomentum )
+            Instigator.AddVelocity(KickMomentum >> Instigator.GetViewRotation());
+		else if ( Instigator.Physics == PHYS_Falling &&	
+				  Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )
+            Instigator.AddVelocity((KickMomentum * LowGravKickMomentumScale) >> Instigator.GetViewRotation());
 	}
 }
 
@@ -789,25 +792,29 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 }
 
 //ToDo: переписать эту функцию для работ с SoundData
-simulated function PlayNoAmmoSound()
+function PlayNoAmmoSound()
 {
 	if ( NoAmmoSound != None )
 		Weapon.PlayOwnedSound(NoAmmoSound, SLOT_None, TransientSoundVolume);
 }
 
+// ToDo: Переписать!
 // Dry fire and auto reload
-simulated function DryFire()
+function DryFire()
 {
-	if ( bCanDryFire )
-		PlayNoAmmoSound();
-	
-	if ( UMW != None && UMW.default.MagCapacity > 1 )  {
-		// Bots and other AI
-		if ( AIController(Instigator.Controller) != None )
-			UMW.ReloadMeNow();
-		// Player
-		else if ( UMW.bAllowAutoReload )
-			UMW.RequestAutoReload();
+	if ( Level.TimeSeconds >= NextDryFireTime )  {
+		NextDryFireTime = Level.TimeSeconds + FireRate;
+		if ( bCanDryFire )
+			PlayNoAmmoSound();
+		
+		if ( UMW != None && UMW.default.MagCapacity > 1 )  {
+			// Player
+			if ( PlayerController(Instigator.Controller) != None )
+				UMW.ClientRequestAutoReload();
+			// Bots and other AI
+			else if ( AIController(Instigator.Controller) != None )
+				UMW.ReloadMeNow();
+		}
 	}
 }
 
@@ -821,8 +828,6 @@ simulated function bool AllowFire()
 	
 	if ( Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire || KFWeap.MagAmmoRemaining < AmmoPerFire )  {
 		DryFire();
-		// Stop firing dude! There is no ammo!
-		Weapon.StopFire(ThisModeNum);
 		Return False;
 	}
 
@@ -830,7 +835,7 @@ simulated function bool AllowFire()
 }
 
 // Prevents the de-synchronization between the client and the server
-simulated function CheckClientMuzzleNum()
+function CheckClientMuzzleNum()
 {
 	local	UM_BaseWeaponAttachment		UMWA;
 	
@@ -840,7 +845,7 @@ simulated function CheckClientMuzzleNum()
 }
 
 
-simulated function ChangeMuzzleNum()
+function ChangeMuzzleNum()
 {
 	/* Put your logic to Change MuzzleNum into this function.
 	Use SetMuzzleNum() function to set the new MuzzleNum. */
@@ -1029,22 +1034,6 @@ function float MaxRange()
 // More info in the UpdateFireProperties function.
 simulated function AccuracyUpdate(float Velocity) { }
 
-//// server propagation of firing ////
-function ServerPlayFiring()
-{
-	local	float	RandPitch;
-	
-	if ( FireSound != None )  {
-		if ( bRandomPitchFireSound )  {
-            RandPitch = FRand() * RandomPitchAdjustAmt;
-            if ( FRand() < 0.5 )
-                RandPitch *= -1.0;
-        }
-        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),false);
-	}
-}
-
-
 //// client animation ////
 function PlayPreFire()
 {
@@ -1063,7 +1052,22 @@ function PlayPreFire()
 	}
 }
 
-function PlayStartHold(){}
+function PlayStartHold() { }
+
+//// server propagation of firing ////
+function ServerPlayFiring()
+{
+	local	float	RandPitch;
+	
+	if ( FireSound != None )  {
+		if ( bRandomPitchFireSound )  {
+            RandPitch = FRand() * RandomPitchAdjustAmt;
+            if ( FRand() < 0.5 )
+                RandPitch *= -1.0;
+        }
+        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),false);
+	}
+}
 
 function PlayFiring()
 {

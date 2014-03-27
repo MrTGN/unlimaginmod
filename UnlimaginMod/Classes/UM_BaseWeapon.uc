@@ -310,15 +310,17 @@ function ServerRequestAutoReload()
 }
 
 // AutoReload requesting
-simulated function RequestAutoReload()
+simulated function ClientRequestAutoReload()
 {
-	if ( AutoReloadRequestsNum > 0 )  {
-		AutoReloadRequestsNum = 0;
-		// Calling server function
-		ReloadMeNow();
-		Return;
+	if ( bAllowAutoReload && Role < ROLE_Authority )  {
+		if ( AutoReloadRequestsNum > 0 )  {
+			AutoReloadRequestsNum = 0;
+			// Calling server function
+			ReloadMeNow();
+			Return;
+		}
+		++AutoReloadRequestsNum;
 	}
-	++AutoReloadRequestsNum;
 }
 
 simulated function Fire(float F) { }
@@ -610,7 +612,6 @@ simulated function bool ReadyToFire(int Mode)
 	Return True;
 }
 
-// Copied from Weapon.uc with some changes
 simulated function bool StartFire(int Mode)
 {
 	local int	alt;
@@ -653,6 +654,78 @@ simulated function bool StartFire(int Mode)
 	//[end]
 
 	Return True;
+}
+
+event ServerStartFire(byte Mode)
+{
+	if ( Instigator != None && Instigator.Weapon != Self )  {
+		if ( Instigator.Weapon == None )
+			Instigator.ServerChangedWeapon(None, self);
+		else
+			Instigator.Weapon.SynchronizeWeapon(self);
+		
+		Return;
+	}
+
+    if ( FireMode[Mode].NextFireTime <= (Level.TimeSeconds + FireMode[Mode].PreFireTime)
+		&& StartFire(Mode) )  {
+        FireMode[Mode].ServerStartFireTime = Level.TimeSeconds;
+        FireMode[Mode].bServerDelayStartFire = False;
+    }
+    else if ( FireMode[Mode].AllowFire() )
+        FireMode[Mode].bServerDelayStartFire = True;
+	else
+		ClientForceAmmoUpdate(Mode, AmmoAmount(Mode));
+}
+
+simulated event ClientStartFire(int Mode)
+{
+	if ( Pawn(Owner).Controller.IsInState('GameEnded') || Pawn(Owner).Controller.IsInState('RoundEnded') )
+		Return;
+	
+	if ( Role < ROLE_Authority )  {
+		if ( StartFire(Mode) )
+			ServerStartFire(Mode);
+	}
+	else
+		StartFire(Mode);
+}
+
+simulated event StopFire(int Mode)
+{
+	if ( FireMode[Mode].bIsFiring )  {
+	    FireMode[Mode].bInstantStop = True;
+		FireMode[Mode].bIsFiring = False;
+		if ( Instigator.IsLocallyControlled() && !FireMode[Mode].bFireOnRelease )
+			FireMode[Mode].PlayFireEnd();		
+		
+		FireMode[Mode].StopFiring();
+		if ( !FireMode[Mode].bFireOnRelease )
+			ZeroFlashCount(Mode);
+	}
+}
+
+function ServerStopFire(byte Mode)
+{
+	// if a stop was received on the same frame as a start then we need to delay the stop for one frame
+	if ( FireMode[Mode].bServerDelayStartFire 
+		 || FireMode[Mode].ServerStartFireTime == Level.TimeSeconds )  {
+		//log("Stop Delayed");
+		FireMode[Mode].bServerDelayStopFire = True;
+	}
+	else  {
+		//Log("ServerStopFire"@Level.TimeSeconds);
+		StopFire(Mode);
+	}
+}
+
+simulated event ClientStopFire(int Mode)
+{
+    if ( Role < ROLE_Authority )  {
+        //Log("ClientStopFire"@Level.TimeSeconds);
+        StopFire(Mode);
+    }
+	ServerStopFire(Mode);
 }
 //[end]
 
@@ -1206,84 +1279,6 @@ simulated function bool PutDown()
 	Return True; // return false if preventing weapon switch
 }
 
-//[block] Client function from Weapon.uc
-simulated event ClientStartFire(int Mode)
-{
-	if ( Pawn(Owner).Controller.IsInState('GameEnded') 
-		 || Pawn(Owner).Controller.IsInState('RoundEnded') )
-		Return;
-	
-	if ( Role < ROLE_Authority )  {
-		if ( StartFire(Mode) )
-			ServerStartFire(Mode);
-	}
-	else
-		StartFire(Mode);
-}
-
-simulated event ClientStopFire(int Mode)
-{
-    if ( Role < ROLE_Authority )  {
-        //Log("ClientStopFire"@Level.TimeSeconds);
-        StopFire(Mode);
-    }
-	ServerStopFire(Mode);
-}
-//[end]
-
-//[block] Server functions from Weapon.uc
-event ServerStartFire(byte Mode)
-{
-	if ( Instigator != None && Instigator.Weapon != Self )  {
-		if ( Instigator.Weapon == None )
-			Instigator.ServerChangedWeapon(None, self);
-		else
-			Instigator.Weapon.SynchronizeWeapon(self);
-		
-		Return;
-	}
-
-    if ( FireMode[Mode].NextFireTime <= (Level.TimeSeconds + FireMode[Mode].PreFireTime)
-		&& StartFire(Mode) )  {
-        FireMode[Mode].ServerStartFireTime = Level.TimeSeconds;
-        FireMode[Mode].bServerDelayStartFire = False;
-    }
-    else if ( FireMode[Mode].AllowFire() )
-        FireMode[Mode].bServerDelayStartFire = True;
-	else
-		ClientForceAmmoUpdate(Mode, AmmoAmount(Mode));
-}
-
-function ServerStopFire(byte Mode)
-{
-	// if a stop was received on the same frame as a start then we need to delay the stop for one frame
-	if ( FireMode[Mode].bServerDelayStartFire 
-		 || FireMode[Mode].ServerStartFireTime == Level.TimeSeconds )  {
-		//log("Stop Delayed");
-		FireMode[Mode].bServerDelayStopFire = True;
-	}
-	else  {
-		//Log("ServerStopFire"@Level.TimeSeconds);
-		StopFire(Mode);
-	}
-}
-//[end]
-
-simulated event StopFire(int Mode)
-{
-	if ( FireMode[Mode].bIsFiring )  {
-	    FireMode[Mode].bInstantStop = True;
-		FireMode[Mode].bIsFiring = False;
-		if ( Instigator.IsLocallyControlled() && !FireMode[Mode].bFireOnRelease )
-			FireMode[Mode].PlayFireEnd();		
-		
-		FireMode[Mode].StopFiring();
-		if ( !FireMode[Mode].bFireOnRelease )
-			ZeroFlashCount(Mode);
-	}
-}
-
-
 simulated function AnimEnd(int channel)
 {
 	local	name	anim;
@@ -1342,15 +1337,11 @@ function AttachToPawn(Pawn P)
 	if ( AttachmentClass != None )  {
 		if ( ThirdPersonActor == None )  {
 			ThirdPersonActor = Spawn(AttachmentClass, Owner);
-			if ( ThirdPersonActor != None )  {
-				ThirdPersonActor.bAlwaysRelevant = True;
+			if ( ThirdPersonActor != None )
 				InventoryAttachment(ThirdPersonActor).InitFor(Self);
-			}
 		}
-		else  {
-			ThirdPersonActor.bAlwaysRelevant = True;
+		else
 			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1;
-		}
 		
 		LeftHandBone = P.GetWeaponBoneFor(Self);
 		if ( LeftHandBone == '' )  {
@@ -1359,8 +1350,6 @@ function AttachToPawn(Pawn P)
 		}
 		else
 			P.AttachToBone(ThirdPersonActor, LeftHandBone);
-		
-		ThirdPersonActor.bAlwaysRelevant = False;
 	}
 	
 	SpawnTacticalModule();

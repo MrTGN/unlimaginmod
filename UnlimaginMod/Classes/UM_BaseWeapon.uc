@@ -368,6 +368,8 @@ simulated exec function IronSightZoomIn()
 simulated function PlayIdle()
 {
 	if ( Instigator.IsLocallyControlled() )  {
+		//Todo: возможно bActuallyFinishReloading можно убрать, ибо € теперь обновл€ю
+		// на клиенте количество птаронов обойме пр€мо в функции ClientForceKFAmmoUpdate
 		if ( bAimingRifle && MagAmmoRemaining < 1 && !bActuallyFinishReloading && HasAnim(EmptyIdleAimAnim) )
 			LoopAnim(EmptyIdleAimAnim, IdleAnimRate, 0.2);
 		else if ( bAimingRifle && HasAnim(IdleAimAnim) )
@@ -837,11 +839,7 @@ simulated event WeaponTick(float dt)
 // Add the ammo for this reload
 function AddReloadedAmmo()
 {
-	if ( bHoldToReload )  {
-		if ( AmmoAmount(0) > 0 )
-			++MagAmmoRemaining;
-	}
-	else  {
+	if ( !bHoldToReload )  {
 		if ( AmmoAmount(0) >= MagCapacity )
 			MagAmmoRemaining = MagCapacity;
 		else
@@ -849,6 +847,8 @@ function AddReloadedAmmo()
 		
 		ClientForceKFAmmoUpdate(MagAmmoRemaining, AmmoAmount(0));
 	}
+	else if ( AmmoAmount(0) > 0 )
+		++MagAmmoRemaining;
 }
 
 simulated function ClientForceAmmoUpdate(int Mode, int NewAmount)
@@ -862,11 +862,12 @@ simulated function ClientForceAmmoUpdate(int Mode, int NewAmount)
 
 simulated function ClientForceKFAmmoUpdate(int NewMagAmmoRemaining, int TotalAmmoRemaining)
 {
+	if ( Role < ROLE_Authority )
+		MagAmmoRemaining = NewMagAmmoRemaining;
 	//log(self$" ClientForceKFAmmoUpdate NewMagAmmoRemaining "$NewMagAmmoRemaining$" TotalAmmoRemaining "$TotalAmmoRemaining);
 	ClientForceAmmoUpdate(0, TotalAmmoRemaining);
 }
 
-//[block] Copied from KFWeapon with some changes
 function bool AllowReload()
 {
 	local	int		Mode;
@@ -894,7 +895,6 @@ function bool AllowReload()
 	
 	Return True;
 }
-//[end]
 
 exec function ReloadMeNow()
 {
@@ -1322,6 +1322,7 @@ function UpdateMagCapacity(PlayerReplicationInfo PRI)
 		
 		// Need to use calculation like this because MagCapacity has always replicated to the clients
 		MagCapacity = NewMagCapacity;
+		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 }
 

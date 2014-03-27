@@ -812,7 +812,7 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 	}
 }
 
-//ToDo: переписать эту функцию для работ с SoundData
+//ToDo: переписать эту функцию для работы с SoundData
 function PlayNoAmmoSound()
 {
 	if ( NoAmmoSound != None )
@@ -822,8 +822,10 @@ function PlayNoAmmoSound()
 // Dry fire and auto reload
 function DryFire()
 {
-	if ( Level.TimeSeconds >= NextDryFireTime )  {
+	if ( bCanDryFire && Level.TimeSeconds >= NextDryFireTime )  {
 		bCanDryFire = False;
+		NextDryFireTime = Level.TimeSeconds + FireRate;
+		Weapon.StopFire(ThisModeNum);
 		PlayNoAmmoSound();
 		if ( UMW != None && UMW.default.MagCapacity > 1 )  {
 			// Player
@@ -846,9 +848,7 @@ simulated function bool AllowFire()
 		Return False;
 	
 	if ( Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire || KFWeap.MagAmmoRemaining < AmmoPerFire )  {
-		if ( bCanDryFire )
-			DryFire();
-		
+		DryFire();
 		Return False;
 	}
 

@@ -74,6 +74,19 @@ var		bool									bTacticalModuleIsActive;
 //====================================================================
 
 //========================================================================
+//[block] Replication
+
+replication
+{
+	// Server to clients
+	reliable if ( Role == ROLE_Authority )
+		ClientForceMagAmmoUpdate;
+}
+
+//[end] Replication
+//====================================================================
+
+//========================================================================
 //[block] Functions
 
 //[block] Dynamic Loading
@@ -308,17 +321,24 @@ function ServerRequestAutoReload()
 	++NumClicks;
 }
 
-// AutoReload requesting on the Client-side
-simulated function ClientRequestAutoReload()
+// Request an auto reload
+simulated function RequestAutoReload( byte Mode )
 {
-	if ( bAllowAutoReload && Role < ROLE_Authority )  {
-		if ( AutoReloadRequestsNum > 0 )  {
-			AutoReloadRequestsNum = 0;
-			// Calling server function
-			ReloadMeNow();
-			Return;
+	if ( bAllowAutoReload )  {
+		if ( Role < ROLE_Authority )  {
+			//if ( FireMode[Mode].bIsFiring )
+				//StopFire(Mode);
+			// AutoReloadRequests
+			if ( AutoReloadRequestsNum > 0 )  {
+				AutoReloadRequestsNum = 0;
+				// Calling server function
+				ReloadMeNow();
+				Return;
+			}
+			++AutoReloadRequestsNum;
 		}
-		++AutoReloadRequestsNum;
+		//else if ( FireMode[Mode].bIsFiring )
+			//ServerStopFire(Mode);
 	}
 }
 
@@ -540,7 +560,8 @@ simulated event RenderOverlays( Canvas Canvas )
 	bDrawingFirstPerson = False;
 }
 
-simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmountNeededIsMax )
+//simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmountNeededIsMax )
+function bool ConsumeAmmo( int Mode, float Load, optional bool bAmountNeededIsMax )
 {
 	local	Inventory	Inv;
 	local	bool		bOutOfAmmo;
@@ -551,6 +572,8 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 			MagAmmoRemaining -= int(Load); // Big thanks to Poosh for this fix
 			if ( MagAmmoRemaining < 0 )
 				MagAmmoRemaining = 0;
+			
+			NetUpdateTime = Level.TimeSeconds - 1;
 		}
 
 		if ( FireMode[Mode].AmmoPerFire > 0 && InventoryGroup > 0
@@ -580,8 +603,6 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 				PlayerController(Instigator.Controller).Speech('AUTO', 3, "");
 		}
 		
-		NetUpdateTime = Level.TimeSeconds - 1;
-		
 		Return True;
 	}
 
@@ -589,7 +610,24 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 }
 //[end]
 
+simulated function ClientForceMagAmmoUpdate( int NewMagAmmoRemaining, int Mode, int NewAmount )
+{
+	if ( Role < ROLE_Authority )
+		MagAmmoRemaining = NewMagAmmoRemaining;
+	
+	if ( bNoAmmoInstances )
+		AmmoCharge[Mode] = NewAmount;
+	else if ( Ammo[Mode] != None )
+		Ammo[Mode].AmmoAmount = NewAmount;
+}
+
+// Clearing this ****!
+simulated function ClientForceKFAmmoUpdate(int NewMagAmmoRemaining, int TotalAmmoRemaining) { }
+
 //[block] Copied from Engine/Weapon.uc with some optimizations
+// Clearing the old function
+simulated function ClientForceAmmoUpdate(int Mode, int NewAmount) { }
+
 simulated function bool ReadyToFire(int Mode)
 {
 	local int	alt;
@@ -671,7 +709,7 @@ event ServerStartFire(byte Mode)
     else if ( FireMode[Mode].AllowFire() )
         FireMode[Mode].bServerDelayStartFire = True;
 	else
-		ClientForceAmmoUpdate(Mode, AmmoAmount(Mode));
+		ClientForceMagAmmoUpdate( MagAmmoRemaining, Mode, AmmoAmount(Mode) );
 }
 
 simulated event ClientStartFire(int Mode)
@@ -774,7 +812,12 @@ simulated event WeaponTick(float dt)
 	}
 
 	//[block] -- Only Server-side code next! --
+	/*
 	if ( Level.NetMode == NM_Client || Instigator == None || 
+		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )
+		Return;
+	*/
+	if ( Role < ROLE_Authority || Instigator == None || 
 		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )
 		Return;
 
@@ -840,27 +883,10 @@ function AddReloadedAmmo()
 		else
 			MagAmmoRemaining = AmmoAmount(0);
 		
-		ClientForceKFAmmoUpdate(MagAmmoRemaining, AmmoAmount(0));
+		ClientForceMagAmmoUpdate( MagAmmoRemaining, 0, AmmoAmount(0) );
 	}
 	else if ( AmmoAmount(0) > 0 )
 		++MagAmmoRemaining;
-}
-
-simulated function ClientForceAmmoUpdate(int Mode, int NewAmount)
-{
-	//log(self$" ClientForceAmmoUpdate mode "$Mode$" newamount "$NewAmount);
-	if ( bNoAmmoInstances )
-		AmmoCharge[Mode] = NewAmount;
-	else if ( Ammo[Mode] != None )
-		Ammo[Mode].AmmoAmount = NewAmount;
-}
-
-simulated function ClientForceKFAmmoUpdate(int NewMagAmmoRemaining, int TotalAmmoRemaining)
-{
-	if ( Role < ROLE_Authority )
-		MagAmmoRemaining = NewMagAmmoRemaining;
-	//log(self$" ClientForceKFAmmoUpdate NewMagAmmoRemaining "$NewMagAmmoRemaining$" TotalAmmoRemaining "$TotalAmmoRemaining);
-	ClientForceAmmoUpdate(0, TotalAmmoRemaining);
 }
 
 function bool AllowReload()
@@ -1317,7 +1343,7 @@ function UpdateMagCapacity(PlayerReplicationInfo PRI)
 		
 		// Need to use calculation like this because MagCapacity has always replicated to the clients
 		MagCapacity = NewMagCapacity;
-		NetUpdateTime = Level.TimeSeconds - 1;
+		//NetUpdateTime = Level.TimeSeconds - 1;
 	}
 }
 

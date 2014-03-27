@@ -825,12 +825,11 @@ function DryFire()
 	if ( bCanDryFire && Level.TimeSeconds >= NextDryFireTime )  {
 		bCanDryFire = False;
 		NextDryFireTime = Level.TimeSeconds + FireRate;
-		Weapon.StopFire(ThisModeNum);
 		PlayNoAmmoSound();
 		if ( UMW != None && UMW.default.MagCapacity > 1 )  {
 			// Player
 			if ( PlayerController(Instigator.Controller) != None )
-				UMW.ClientRequestAutoReload();
+				UMW.RequestAutoReload(ThisModeNum);
 			// Bots and other AI
 			else if ( AIController(Instigator.Controller) != None )
 				UMW.ReloadMeNow();
@@ -907,9 +906,9 @@ event ModeDoFire()
     if ( Weapon.Role == ROLE_Authority )  {
 		// Updating spread and projectile info. 
 		UpdateFireProperties( KFPRI, SRVT );
+		Weapon.ConsumeAmmo(ThisModeNum, Load);
 		DoFireEffect();
 		AddKickMomentum();
-		Weapon.ConsumeAmmo(ThisModeNum, Load);
 		HoldTime = 0;	// if bot decides to stop firing, HoldTime must be reset first
 
 		if ( AIController(Instigator.Controller) != None )

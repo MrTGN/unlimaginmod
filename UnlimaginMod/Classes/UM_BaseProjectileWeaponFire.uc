@@ -887,7 +887,6 @@ event ModeDoFire()
 		HoldTime = FMin(HoldTime, MaxHoldTime);
 	
 	bTheLastShot = (KFWeap.MagAmmoRemaining <= AmmoPerFire);
-	
 	// Storing InstigatorMovingSpeed
 	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
 		if ( Instigator.bIsCrouched )

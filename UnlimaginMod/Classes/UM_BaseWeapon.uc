@@ -324,21 +324,17 @@ function ServerRequestAutoReload()
 // Request an auto reload
 simulated function RequestAutoReload( byte Mode )
 {
-	if ( bAllowAutoReload )  {
-		if ( Role < ROLE_Authority )  {
-			//if ( FireMode[Mode].bIsFiring )
-				//StopFire(Mode);
-			// AutoReloadRequests
-			if ( AutoReloadRequestsNum > 0 )  {
-				AutoReloadRequestsNum = 0;
-				// Calling server function
-				ReloadMeNow();
-				Return;
-			}
-			++AutoReloadRequestsNum;
+	if ( bAllowAutoReload && Role < ROLE_Authority )  {
+		if ( FireMode[Mode].bIsFiring )
+			ClientStopFire(Mode);
+		// AutoReloadRequests
+		if ( AutoReloadRequestsNum > 0 )  {
+			AutoReloadRequestsNum = 0;
+			// Calling server function
+			ReloadMeNow();
+			Return;
 		}
-		//else if ( FireMode[Mode].bIsFiring )
-			//ServerStopFire(Mode);
+		++AutoReloadRequestsNum;
 	}
 }
 
@@ -569,10 +565,7 @@ function bool ConsumeAmmo( int Mode, float Load, optional bool bAmountNeededIsMa
 
 	if ( Super(Weapon).ConsumeAmmo(Mode, Load, bAmountNeededIsMax) )  {
 		if ( Load > 0.0 && (Mode == 0 || bReduceMagAmmoOnSecondaryFire) )  {
-			MagAmmoRemaining -= int(Load); // Big thanks to Poosh for this fix
-			if ( MagAmmoRemaining < 0 )
-				MagAmmoRemaining = 0;
-			
+			MagAmmoRemaining = Max(0, (MagAmmoRemaining - int(Load)));
 			NetUpdateTime = Level.TimeSeconds - 1;
 		}
 

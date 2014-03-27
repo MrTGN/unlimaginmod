@@ -419,7 +419,7 @@ simulated function DestroyEffects()
 }
 
 // Called from weapon simulated event RenderOverlays
-function DrawMuzzleFlash(Canvas Canvas)
+simulated function DrawMuzzleFlash(Canvas Canvas)
 {
 	local	Vector			EffectStart;
 	

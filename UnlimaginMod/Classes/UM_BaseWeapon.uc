@@ -545,7 +545,7 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 {
 	local	Inventory	Inv;
 	local	bool		bOutOfAmmo;
-	local	KFWeapon	KFWeap;
+	local	KFWeapon	KFW;
 
 	if ( Super(Weapon).ConsumeAmmo(Mode, Load, bAmountNeededIsMax) )  {
 		if ( Load > 0.0 && (Mode == 0 || bReduceMagAmmoOnSecondaryFire) )  {
@@ -554,29 +554,24 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 				MagAmmoRemaining = 0;
 		}
 
-		NetUpdateTime = Level.TimeSeconds - 1;
-
-		if ( FireMode[Mode].AmmoPerFire > 0 && InventoryGroup > 0 && 
-			 !bMeleeWeapon && bConsumesPhysicalAmmo &&
-			 (Ammo[0] == None || FireMode[0] == None || FireMode[0].AmmoPerFire <= 0 || 
-				 Ammo[0].AmmoAmount < FireMode[0].AmmoPerFire) &&
-			 (Ammo[1] == None || FireMode[1] == None || FireMode[1].AmmoPerFire <= 0 || 
-				 Ammo[1].AmmoAmount < FireMode[1].AmmoPerFire) )  
-		{
+		if ( FireMode[Mode].AmmoPerFire > 0 && InventoryGroup > 0
+			 && !bMeleeWeapon && bConsumesPhysicalAmmo
+			 && (Ammo[0] == None || FireMode[0] == None || FireMode[0].AmmoPerFire <= 0
+				 || Ammo[0].AmmoAmount < FireMode[0].AmmoPerFire)
+			 && (Ammo[1] == None || FireMode[1] == None || FireMode[1].AmmoPerFire <= 0
+				 || Ammo[1].AmmoAmount < FireMode[1].AmmoPerFire) )  {
 			bOutOfAmmo = True;
-
+			
 			for ( Inv = Instigator.Inventory; Inv != None; Inv = Inv.Inventory )  {
-				KFWeap = KFWeapon(Inv);
-
-				if ( Inv.InventoryGroup > 0 && KFWeap != None && 
-					 !KFWeap.bMeleeWeapon && KFWeap.bConsumesPhysicalAmmo &&
-					 ( (KFWeap.Ammo[0] != None && KFWeap.FireMode[0] != None && 
-						 KFWeap.FireMode[0].AmmoPerFire > 0 && 
-						 KFWeap.Ammo[0].AmmoAmount >= KFWeap.FireMode[0].AmmoPerFire) ||
-					 (KFWeap.Ammo[1] != None && KFWeap.FireMode[1] != None && 
-						 KFWeap.FireMode[1].AmmoPerFire > 0 && 
-						 KFWeap.Ammo[1].AmmoAmount >= KFWeap.FireMode[1].AmmoPerFire)) )
-				{
+				KFW = KFWeapon(Inv);
+				if ( KFW != None && Inv.InventoryGroup > 0
+					 && !KFW.bMeleeWeapon && KFW.bConsumesPhysicalAmmo
+					 && ( (KFW.Ammo[0] != None && KFW.FireMode[0] != None
+						 && KFW.FireMode[0].AmmoPerFire > 0
+						 && KFW.Ammo[0].AmmoAmount >= KFW.FireMode[0].AmmoPerFire)
+					 || (KFW.Ammo[1] != None && KFW.FireMode[1] != None
+						 && KFW.FireMode[1].AmmoPerFire > 0
+						 && KFW.Ammo[1].AmmoAmount >= KFW.FireMode[1].AmmoPerFire)) )  {
 					bOutOfAmmo = False;
 					Break;
 				}
@@ -585,6 +580,8 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 			if ( bOutOfAmmo )
 				PlayerController(Instigator.Controller).Speech('AUTO', 3, "");
 		}
+		
+		NetUpdateTime = Level.TimeSeconds - 1;
 		
 		Return True;
 	}

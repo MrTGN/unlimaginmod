@@ -464,7 +464,7 @@ function FlashMuzzleFlash()
 
 function StartMuzzleSmoke()
 {
-	if ( !Level.bDropDetail && SmokeEmitters.Length > MuzzleNum && SmokeEmitters[MuzzleNum] != None )
+	if ( SmokeEmitters.Length > MuzzleNum && SmokeEmitters[MuzzleNum] != None )
 		SmokeEmitters[MuzzleNum].Trigger(Weapon, Instigator);
 }
 
@@ -922,7 +922,7 @@ event ModeDoFire()
 		CheckClientMuzzleNum();
 		PlayFiring();
 		ShakePlayerView( KFPRI, SRVT );
-		if ( bDoFiringEffects )  {
+		if ( bDoFiringEffects && !Level.bDropDetail )  {
 			FlashMuzzleFlash();
 			StartMuzzleSmoke();
 			EjectShell();
@@ -935,20 +935,6 @@ event ModeDoFire()
 
 	//ThirdPerson FireEffects
 	Weapon.IncrementFlashCount(ThisModeNum);
-	
-	// Set the next firing time. 
-	// Must be careful here so client and server do not get out of sync.
-	if ( bFireOnRelease )  {
-		if ( bIsFiring )
-			NextFireTime += MaxHoldTime + FireRate;
-		else
-			NextFireTime = Level.TimeSeconds + FireRate;
-	}
-	else
-		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
-	
-	if ( bTheLastShot )
-		NextDryFireTime = NextFireTime;
 	
 	// Affect on the Instigator movement
 	if ( !bFiringDoesntAffectMovement && Instigator.Physics != PHYS_Falling
@@ -969,6 +955,20 @@ event ModeDoFire()
 			Instigator.Velocity.Y *= FirstShotMovingSpeedScale;
 		}
 	}
+	
+	// Set the next firing time. 
+	// Must be careful here so client and server do not get out of sync.
+	if ( bFireOnRelease )  {
+		if ( bIsFiring )
+			NextFireTime += MaxHoldTime + FireRate;
+		else
+			NextFireTime = Level.TimeSeconds + FireRate;
+	}
+	else
+		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
+	
+	if ( bTheLastShot )
+		NextDryFireTime = NextFireTime;
 	
 	// LastFireTime used for Spread bonus calculations. 
 	// More info in UpdateSpread function.

@@ -325,7 +325,7 @@ function ServerRequestAutoReload()
 simulated function RequestAutoReload( byte Mode )
 {
 	if ( bAllowAutoReload && Role < ROLE_Authority )  {
-		if ( FireMode[Mode].bIsFiring )
+		if ( !FireMode[Mode].bWaitForRelease && FireMode[Mode].bIsFiring )
 			ClientStopFire(Mode);
 		// AutoReloadRequests
 		if ( AutoReloadRequestsNum > 0 )  {
@@ -1336,7 +1336,6 @@ function UpdateMagCapacity(PlayerReplicationInfo PRI)
 		
 		// Need to use calculation like this because MagCapacity has always replicated to the clients
 		MagCapacity = NewMagCapacity;
-		//NetUpdateTime = Level.TimeSeconds - 1;
 	}
 }
 

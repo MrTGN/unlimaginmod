@@ -82,6 +82,7 @@ struct	PerkProjData
 
 var				UM_BaseWeapon	UMW;
 var				bool			bCanDryFire;
+var				bool			bIsDryFiring;
 var				float			NextDryFireTime;
 
 var				float			FirstPersonSoundVolumeScale;	// Scales sounds Volume at FirstPerson view
@@ -534,30 +535,6 @@ function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 }
 
 //[block] Copied from BaseProjectileFire
-// Convenient place to perform changes to a newly spawned projectile
-function PostSpawnProjectile(Projectile P)
-{
-    //P.Damage *= DamageAtten;
-}
-
-function Projectile SpawnProjectile(Vector Start, Rotator Dir)
-{
-    local	Projectile	P;
-
-	if ( ProjectileClass != None )
-		P = Weapon.Spawn(ProjectileClass, Instigator,, Start, Dir);
-	
-	if ( P == None )
-		P = ForceSpawnProjectile(Start,Dir);
-	
-	if ( P != None )
-		PostSpawnProjectile(P);
-	else
-		Return None;
-	
-	Return P;
-}
-
 // Accessor function that returns the type of projectile 
 // we want this weapon to fire right now
 function class<Projectile> GetDesiredProjectileClass()
@@ -592,6 +569,30 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 
     Return P;
 }
+
+// Convenient place to perform changes to a newly spawned projectile
+function PostSpawnProjectile(Projectile P)
+{
+    //P.Damage *= DamageAtten;
+}
+
+function Projectile SpawnProjectile(Vector Start, Rotator Dir)
+{
+    local	Projectile	P;
+
+	if ( ProjectileClass != None )
+		P = Weapon.Spawn(ProjectileClass, Instigator,, Start, Dir);
+	
+	if ( P == None )
+		P = ForceSpawnProjectile(Start,Dir);
+	
+	if ( P != None )
+		PostSpawnProjectile(P);
+	else
+		Return None;
+	
+	Return P;
+}
 //[end]
 
 function DoFireEffect()
@@ -611,26 +612,46 @@ function DoFireEffect()
 	{
 		case SS_Random:
 			VX = Vector(Aim);
-			for ( p = 0; p < ProjPerFire; ++p )  {
+			if ( ProjPerFire > 1 )  {
+				for ( p = 0; p < ProjPerFire; ++p )  {
+					R.Yaw = Spread * (FRand() - 0.5);
+					R.Pitch = Spread * (FRand() - 0.5);
+					R.Roll = Spread * (FRand() - 0.5);
+					SpawnProjectile(StartProj, Rotator(VX >> R));
+				}
+			}
+			else  {
 				R.Yaw = Spread * (FRand() - 0.5);
 				R.Pitch = Spread * (FRand() - 0.5);
 				R.Roll = Spread * (FRand() - 0.5);
 				SpawnProjectile(StartProj, Rotator(VX >> R));
-			}
+			}			
 			Break;
 			
 		case SS_Line:
-			for ( p = 0; p < ProjPerFire; ++p )  {
-				theta = Spread * PI / 32768 * (p - float(ProjPerFire - 1) / 2.0);
-				VX.X = Cos(theta);
-				VX.Y = Sin(theta);
+			if ( ProjPerFire > 1 )  {
+				for ( p = 0; p < ProjPerFire; ++p )  {
+					theta = Spread * PI / 32768 * (p - float(ProjPerFire - 1) / 2.0);
+					VX.X = Cos(theta);
+					VX.Y = Sin(theta);
+					VX.Z = 0.0;
+					SpawnProjectile(StartProj, Rotator(VX >> Aim));
+				}
+			}
+			else  {
+				VX.X = 1.0; // Cos(0.0)
+				VX.Y = 0.0;	// Sin(0.0)
 				VX.Z = 0.0;
 				SpawnProjectile(StartProj, Rotator(VX >> Aim));
 			}
 			Break;
 			
 		default:
-			for ( p = 0; p < ProjPerFire; ++p )
+			if ( ProjPerFire > 1 )  {
+				for ( p = 0; p < ProjPerFire; ++p )
+					SpawnProjectile(StartProj, Aim);
+			}
+			else
 				SpawnProjectile(StartProj, Aim);
 			Break;
 	}
@@ -798,15 +819,12 @@ function PlayNoAmmoSound()
 		Weapon.PlayOwnedSound(NoAmmoSound, SLOT_None, TransientSoundVolume);
 }
 
-// ToDo: Переписать!
 // Dry fire and auto reload
 function DryFire()
 {
 	if ( Level.TimeSeconds >= NextDryFireTime )  {
-		NextDryFireTime = Level.TimeSeconds + FireRate;
-		if ( bCanDryFire )
-			PlayNoAmmoSound();
-		
+		bCanDryFire = False;
+		PlayNoAmmoSound();
 		if ( UMW != None && UMW.default.MagCapacity > 1 )  {
 			// Player
 			if ( PlayerController(Instigator.Controller) != None )
@@ -815,6 +833,7 @@ function DryFire()
 			else if ( AIController(Instigator.Controller) != None )
 				UMW.ReloadMeNow();
 		}
+		bCanDryFire = default.bCanDryFire;
 	}
 }
 
@@ -827,7 +846,9 @@ simulated function bool AllowFire()
 		Return False;
 	
 	if ( Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire || KFWeap.MagAmmoRemaining < AmmoPerFire )  {
-		DryFire();
+		if ( bCanDryFire )
+			DryFire();
+		
 		Return False;
 	}
 
@@ -851,11 +872,6 @@ function ChangeMuzzleNum()
 	Use SetMuzzleNum() function to set the new MuzzleNum. */
 }
 
-function Set()
-{
-	
-}
-
 // Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
@@ -869,6 +885,8 @@ event ModeDoFire()
 	
 	if ( MaxHoldTime > 0.0 )
 		HoldTime = FMin(HoldTime, MaxHoldTime);
+	
+	bTheLastShot = (KFWeap.MagAmmoRemaining <= AmmoPerFire);
 	
 	// Storing InstigatorMovingSpeed
 	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
@@ -885,8 +903,6 @@ event ModeDoFire()
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
-	
-	bTheLastShot = (KFWeap.MagAmmoRemaining <= AmmoPerFire);
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
@@ -932,6 +948,9 @@ event ModeDoFire()
 	}
 	else
 		NextFireTime = FMax((NextFireTime + FireRate), Level.TimeSeconds);
+	
+	if ( bTheLastShot )
+		NextDryFireTime = NextFireTime;
 	
 	// Affect on the Instigator movement
 	if ( !bFiringDoesntAffectMovement && Instigator.Physics != PHYS_Falling

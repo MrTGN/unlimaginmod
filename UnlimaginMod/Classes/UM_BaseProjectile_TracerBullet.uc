@@ -22,7 +22,7 @@ defaultproperties
 {
      HeadShotDamageMult=1.100000
 	 Damage=30.000000
-	 xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_IncBulletTracer'
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 LightType=LT_Steady
      LightHue=255
      LightSaturation=64

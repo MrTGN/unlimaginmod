@@ -52,11 +52,16 @@ struct	SoundData
 };
 
 // EmitterTrails for smoke trails and etc.
-struct	EmitterTrailData
+struct	TrailData
 {
-	var	class<Emitter>	TrailClass;
-	var	bool			bAttachTrail;
-	var	Rotator			TrailRotation;
+	// xEmitter
+	var	Class< xEmitter >	xEmitterClass;
+	var	xEmitter			xEmitterEffect;
+	var	Rotator				xEmitterRotation;
+	// Emitter
+	var	Class< Emitter >	EmitterClass;
+	var	Emitter				EmitterEffect;
+	var	Rotator				EmitterRotation;
 };
 
 // Logging
@@ -75,7 +80,6 @@ var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time
 var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
 
 //[block] Ballistic performance
-
 // EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
 // MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
 var(Ballistic)	float		EffectiveRange, MaxEffectiveRangeScale;
@@ -92,7 +96,7 @@ var				float		FullStopSpeedCoefficient;	// If Speed <= (MaxSpeed * FullStopSpeed
 var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
-// [!] Do not set/change this variables defaults value! 
+// [!] Do not set/change this variables default value!
 // MuzzleEnergy and ProjectileEnergy Calculates automaticly in PreBeginPlay() function.
 var				float		MuzzleEnergy, ProjectileEnergy;
 
@@ -103,17 +107,9 @@ var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction
 //[end]
 
 //[block] Effects
-// xEmitterTrails
-var(Effects)	array<xEmitter>				xEmitterTrails;
-var(Effects)	array< class<xEmitter> >	xEmitterTrailClasses;
-
-var(Effects)	array<EmitterTrailData>		EmitterTrailsInfo;
-
-// Spawned emitters
-var(Effects)	array<Emitter>				SpawnedEmitterTrails;
-
-var				bool						bTrailsSpawned;
-var				bool						bTrailsDestroyed;	//Trails has been destroyed.
+var(Effects)	TrailData					Trail;
+var				bool						bTrailSpawned;
+var				bool						bTrailDestroyed;	// Trail have been destroyed.
 
 // HitEffects
 var(Effects)	class<UM_BaseHitEffects>	HitEffectsClass;
@@ -278,35 +274,34 @@ simulated event PreBeginPlay()
 //[block] Dynamic Loading
 simulated static function PreloadAssets(Projectile Proj)
 {
-	//[block] Loading Defaults
-	if ( default.AmbientSoundRef != "" )
-		default.AmbientSound = sound(DynamicLoadObject(default.AmbientSoundRef, class'Sound', true));
+	default.AmbientSound = BaseActor.static.LoadSound( default.AmbientSoundRef );
 	
-	if ( default.DrawType == DT_Mesh && default.MeshRef != "" )
-		UpdateDefaultMesh(Mesh(DynamicLoadObject(default.MeshRef, class'Mesh', true)));
-	else if ( default.DrawType == DT_StaticMesh && default.StaticMeshRef != "" )
-		UpdateDefaultStaticMesh(StaticMesh(DynamicLoadObject(default.StaticMeshRef, class'StaticMesh', true)));
-	//[end]
-	
-	if ( UM_BaseProjectile(Proj) != None )  {
-		if ( default.DrawType == DT_Mesh && default.Mesh != None )
-			Proj.LinkMesh(default.Mesh);
-		else if ( default.DrawType == DT_StaticMesh && default.StaticMesh != None )
-			Proj.SetStaticMesh(default.StaticMesh);
-		
-		if ( default.AmbientSound != None && UM_BaseProjectile(Proj).AmbientSound == None )
-			UM_BaseProjectile(Proj).AmbientSound = default.AmbientSound;
+	if ( default.DrawType == DT_Mesh )  {
+		if ( Proj != None )
+			BaseActor.static.LoadActorMesh( default.MeshRef, Proj );
+		else
+			UpdateDefaultMesh( BaseActor.static.LoadMesh(default.MeshRef) );
 	}
+	else if ( default.DrawType == DT_StaticMesh )  {
+		if ( Proj != None )
+			BaseActor.static.LoadActorStaticMesh( default.StaticMeshRef, Proj );
+		else
+			UpdateDefaultStaticMesh( BaseActor.static.LoadStaticMesh(default.StaticMeshRef) );
+	}
+	
+	if ( UM_BaseProjectile(Proj) != None )
+			UM_BaseProjectile(Proj).AmbientSound = default.AmbientSound;
+	
 	default.bAssetsLoaded = True;
 }
 
 simulated static function bool UnloadAssets()
 {
-	if ( default.AmbientSound != None )
-		default.AmbientSound = None;
-	if ( default.DrawType == DT_Mesh && default.Mesh != None )
+	default.AmbientSound = None;
+	
+	if ( default.DrawType == DT_Mesh )
 		UpdateDefaultMesh(None);
-	else if ( default.DrawType == DT_StaticMesh && default.StaticMesh != None )
+	else if ( default.DrawType == DT_StaticMesh )
 		UpdateDefaultStaticMesh(None);
 	
 	default.bAssetsLoaded = False;
@@ -316,77 +311,60 @@ simulated static function bool UnloadAssets()
 //[end]
 
 //simulated function used to Spawn trails on client side
-simulated function SpawnTrails()
+simulated function SpawnTrail()
 {
-	local	int		i;
-	
-	if ( !bTrailsSpawned )  {
-		bTrailsSpawned = True;
+	if ( !bTrailSpawned )  {
+		bTrailSpawned = True;
 		
 		if ( Level.NetMode != NM_DedicatedServer && !PhysicsVolume.bWaterVolume )  {
-			for ( i = 0; i < xEmitterTrailClasses.Length; i++ )  {
-				if ( xEmitterTrailClasses[i] != None )  {
-					xEmitterTrails[i] = Spawn(xEmitterTrailClasses[i], self);
-					if ( xEmitterTrails[i] != None )
-						xEmitterTrails[i].Lifespan = Lifespan;
+			// xEmitter
+			if ( Trail.xEmitterClass != None )  {
+				Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
+				if ( Trail.xEmitterEffect != None )  {
+					Trail.xEmitterEffect.Lifespan = Lifespan;
+					// Rotation
+					if ( Trail.xEmitterRotation != Rot(0, 0, 0) )
+						Trail.xEmitterEffect.SetRelativeRotation( Trail.xEmitterRotation );
 				}
 			}
-			
-			for ( i = 0; i < EmitterTrailsInfo.Length; i++ )  {
-				if ( EmitterTrailsInfo[i].TrailClass != None )  {
-					SpawnedEmitterTrails[i] = Spawn(EmitterTrailsInfo[i].TrailClass,Self);
-					if ( SpawnedEmitterTrails[i] != None )  {
-						if ( EmitterTrailsInfo[i].bAttachTrail )
-							SpawnedEmitterTrails[i].SetBase(self);
-						
-						if ( EmitterTrailsInfo[i].TrailRotation.Pitch > 0
-							 || EmitterTrailsInfo[i].TrailRotation.Yaw > 0 
-							 || EmitterTrailsInfo[i].TrailRotation.Roll > 0 )
-							SpawnedEmitterTrails[i].SetRelativeRotation(EmitterTrailsInfo[i].TrailRotation);
-					}
+			// Emitter
+			if ( Trail.EmitterClass != None )  {
+				Trail.EmitterEffect = Spawn( Trail.EmitterClass, Self );
+				if ( Trail.EmitterEffect != None )  {
+					Trail.EmitterEffect.SetBase(Self);
+					// Rotation
+					if ( Trail.EmitterRotation != Rot(0, 0, 0) )
+						Trail.EmitterEffect.SetRelativeRotation( Trail.EmitterRotation );
 				}
 			}
 		}
 		
-		if ( bTrailsDestroyed )
-			bTrailsDestroyed = False;
+		if ( bTrailDestroyed )
+			bTrailDestroyed = False;
 	}
 }
 
-simulated function DestroyTrails()
+simulated function DestroyTrail()
 {
-	local	int		i;
-		
-	if ( bTrailsSpawned && !bTrailsDestroyed )  {
-		bTrailsDestroyed = True;
+	if ( bTrailSpawned && !bTrailDestroyed )  {
+		bTrailDestroyed = True;
 		
 		if ( Level.NetMode != NM_DedicatedServer )  {
-			while ( xEmitterTrails.Length > 0 )  {
-				i = xEmitterTrails.Length - 1;
-				if ( xEmitterTrails[i] != None )  {
-					xEmitterTrails[i].mRegen = False;
-					xEmitterTrails[i].SetPhysics(PHYS_None);
-				}
-				xEmitterTrails.Remove(i,1);
+			// xEmitter
+			if ( Trail.xEmitterEffect != None )  {
+				Trail.xEmitterEffect.mRegen = False;
+				Trail.xEmitterEffect.SetPhysics(PHYS_None);
 			}
-		
-			while ( SpawnedEmitterTrails.Length > 0 )  {
-				i = SpawnedEmitterTrails.Length - 1;
-				if ( SpawnedEmitterTrails[i] != None )  {
-					if ( EmitterTrailsInfo[i].bAttachTrail )
-						SpawnedEmitterTrails[i].SetBase(None);
-					SpawnedEmitterTrails[i].Kill();
-					SpawnedEmitterTrails[i].SetPhysics(PHYS_None);
-				}
-				SpawnedEmitterTrails.Remove(i,1);
-			}
+			// Emitter
+			if ( Trail.EmitterEffect != None )
+				Trail.EmitterEffect.Kill();
 		}
 		
-		bTrailsSpawned = False;
+		bTrailSpawned = False;
 	}
 }
 
-simulated function AdjustVelocity()
+simulated function SetInitialVelocity()
 {
 	// Assign Velocity
 	if ( Speed > 0.0 )  {
@@ -411,9 +389,9 @@ simulated event PostBeginPlay()
 	Super(Projectile).PostBeginPlay();
 	
 	// Assign Velocity
-	AdjustVelocity();
-	// Spawning Trails
-	SpawnTrails();
+	SetInitialVelocity();
+	// Spawning the Trail
+	SpawnTrail();
 
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
@@ -423,7 +401,7 @@ state InTheWater
 {
 	simulated event BeginState()
 	{
-		DestroyTrails();
+		DestroyTrail();
 		if ( Speed > 0.0 && Velocity != Vect(0.0,0.0,0.0) && SpeedDropInWaterCoefficient > 0.0 )
 			Acceleration = Speed * SpeedDropInWaterCoefficient * -Normal(Velocity);
 	}
@@ -451,7 +429,7 @@ state InTheWater
 		if ( !Volume.bWaterVolume && PhysicsVolume.bWaterVolume )  {
 			if ( Acceleration != Vect(0.0,0.0,0.0) )
 				Acceleration = Vect(0.0,0.0,0.0);
-			SpawnTrails();
+			SpawnTrail();
 			GotoState('');
 		}
 	}
@@ -492,7 +470,7 @@ simulated function ProjectileHasLostAllEnergy()
 	SetPhysics(PHYS_Falling);
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
-	DestroyTrails();
+	DestroyTrail();
 }
 
 // Called when the projectile loses some of it's energy
@@ -612,7 +590,7 @@ simulated function Explode(vector HitLocation, vector HitNormal){}
 
 simulated event Destroyed()
 {
-	DestroyTrails();
+	DestroyTrail();
 	Super.Destroyed();
 }
 

@@ -189,7 +189,6 @@ defaultproperties
 	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0)
 	 bNetTemporary=False
 	 MyDamageType=None
-	 xEmitterTrailClasses(0)=None
 	 CollisionRadius=3.00000
      CollisionHeight=6.000000
 }

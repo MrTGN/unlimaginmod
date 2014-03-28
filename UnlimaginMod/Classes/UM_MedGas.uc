@@ -275,7 +275,7 @@ defaultproperties
 	 Damage=16.000000
 	 DamageRadius=120.000000
      GasCloudEmitterClass=Class'UnlimaginMod.UM_MedGasCloud'
-	 EmitterTrailsInfo(0)=(TrailClass=Class'UnlimaginMod.UM_MedGasTrail',bAttachTrail=True,TrailRotation=(Pitch=32768))
+	 Trail=(EmitterClass=Class'UnlimaginMod.UM_MedGasTrail',EmitterRotation=(Pitch=32768))
 	 //DrawType=DT_StaticMesh
 	 //StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 //DrawScale=20.000000

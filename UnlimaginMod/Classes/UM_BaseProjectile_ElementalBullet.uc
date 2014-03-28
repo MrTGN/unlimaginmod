@@ -136,7 +136,7 @@ defaultproperties
 	 MaxEffectiveRangeScale=1.200000
 	 bBounce=False
 	 //Trail
-	 xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_BulletTracer'
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects
 	 //You can use this varible to set new hit sound volume and radius
 	 //HitSoundVolume=1.000000

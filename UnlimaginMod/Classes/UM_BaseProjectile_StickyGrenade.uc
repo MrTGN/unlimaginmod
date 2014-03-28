@@ -82,10 +82,10 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
-simulated function SpawnTrails()
+simulated function SpawnTrail()
 {
 	if ( !bStuck )
-		Super.SpawnTrails();
+		Super.SpawnTrail();
 }
 
 simulated event PostBeginPlay()
@@ -107,8 +107,8 @@ simulated event PostNetReceive()
 	else if ( bTriggered && !bHasExploded )
         Explode(Location,vect(0,0,1));
 	
-	if ( bStuck && bTrailsSpawned && !bTrailsDestroyed )
-		DestroyTrails();
+	if ( bStuck && bTrailSpawned && !bTrailDestroyed )
+		DestroyTrail();
 }
 
 simulated function Explode(vector HitLocation, vector HitNormal)
@@ -188,7 +188,7 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 	
 	bCollideWorld = False;
 	SetPhysics(PHYS_None);
-	DestroyTrails();
+	DestroyTrail();
 	StickActor = HitActor;
 
 	if ( Pawn(StickActor) != None )
@@ -262,7 +262,7 @@ state Stuck
 
 simulated event Destroyed()
 {
-	DestroyTrails();
+	DestroyTrail();
 	
 	if( !bHasExploded && !bHidden && bTriggered )
 		Explode(Location,vect(0,0,1));

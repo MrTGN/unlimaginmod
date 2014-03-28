@@ -23,8 +23,7 @@ defaultproperties
 {
      bIgnoreSameClassProj=True
 	 ShrapnelClass=None
-	 //xEmitterTrailClasses
-	 xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_IncBulletTracer'
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 ///ImpactDamage
 	 ImpactDamage=50.000000
 	 HeadShotImpactDamageMult=1.100000

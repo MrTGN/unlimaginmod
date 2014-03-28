@@ -24,7 +24,7 @@ defaultproperties
      bIgnoreSameClassProj=True
 	 ShrapnelClass=None
 	 //Trail
-	 xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_BulletTracer'
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 HeadShotImpactDamageMult=1.100000
 	 //StaticMesh
 	 DrawScale=1.000000

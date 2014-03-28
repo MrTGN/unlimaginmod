@@ -30,7 +30,7 @@ defaultproperties
 	 Damage=14.500000
 	 DamageRadius=160.000000
      GasCloudEmitterClass=Class'UnlimaginMod.UM_MedGasCloud'
-	 EmitterTrailsInfo(0)=(TrailClass=Class'UnlimaginMod.UM_MedGasTrail',bAttachTrail=True,TrailRotation=(Pitch=32768))
+	 Trail=(EmitterClass=Class'UnlimaginMod.UM_MedGasTrail',EmitterRotation=(Pitch=32768))
      MyDamageType=Class'UnlimaginMod.UM_DamTypeFlameThrowerMedGas'
 	 LifeSpan=4.000000
 }

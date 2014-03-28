@@ -110,7 +110,7 @@ simulated function float CalcBounceBonus(float EnergyLoss)
 // Called when projectile has lost all energy
 simulated function ProjectileHasLostAllEnergy()
 {
-	DestroyTrails();
+	DestroyTrail();
 	Destroy();
 }
 
@@ -370,7 +370,7 @@ defaultproperties
 	 // EST_Poop		MaxBounceAngle=5.00 deg
 	 SurfaceTypeDataArray(19)=(CosMaxBounceAngle=0.996194,MaxEnergyLoss=160.000000)
 	 //Trail
-	 xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_BulletTracer'
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects
 	 //You can use this varible to set new hit sound volume and radius
 	 //HitSoundVolume=1.000000

@@ -21,5 +21,5 @@ defaultproperties
 {
      Damage=150.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM79BouncingBall'
-	 xEmitterTrailClasses(0)=Class'KFMod.NailGunTracer'
+	 Trail=(xEmitterClass=Class'KFMod.NailGunTracer')
 }

@@ -38,7 +38,7 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function AdjustVelocity()
+simulated function SetInitialVelocity()
 {
 	if ( Role == ROLE_Authority && Speed > 0.0 )
     {
@@ -151,7 +151,7 @@ simulated event Landed( vector HitNormal )
 		PrePivot.Z = -1.5;
 		if ( Physics != PHYS_None )
 			SetPhysics(PHYS_None);
-		DestroyTrails();
+		DestroyTrail();
 	}
 }
 

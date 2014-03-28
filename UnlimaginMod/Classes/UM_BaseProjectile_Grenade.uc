@@ -81,8 +81,8 @@ defaultproperties
 	 SpeedFudgeScale=1.000000
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
-	 //EmitterTrails
-	 EmitterTrailsInfo(0)=(TrailClass=Class'UnlimaginMod.UM_PanzerfaustTrail',bAttachTrail=True,TrailRotation=(Pitch=32768))
+	 //Trail
+	 Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
 	 //HitEffects
 	 HitSoundVolume=1.250000
      //HitSoundRadius=200.000000

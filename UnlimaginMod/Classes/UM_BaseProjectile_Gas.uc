@@ -50,10 +50,10 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function SpawnTrails()
+simulated function SpawnTrail()
 {
 	if ( !bStopped )
-		Super.SpawnTrails();
+		Super.SpawnTrail();
 }
 
 simulated function SpawnGasCloud()
@@ -82,9 +82,9 @@ simulated function SpawnGasCloud()
 	}
 }
 
-simulated function AdjustVelocity()
+simulated function SetInitialVelocity()
 {
-	Super.AdjustVelocity();
+	Super.SetInitialVelocity();
 	
 	if ( Speed > 0.0 && !bInitialAcceleration )  {
 		default.bInitialAcceleration = True;
@@ -100,8 +100,8 @@ simulated function AdjustVelocity()
 simulated event PostNetReceive()
 {
 	if ( bStopped )  {
-		if ( bTrailsSpawned && !bTrailsDestroyed )
-			DestroyTrails();
+		if ( bTrailSpawned && !bTrailDestroyed )
+			DestroyTrail();
 		
 		if ( !bGasCloudSpawned )
 			SpawnGasCloud();
@@ -119,7 +119,7 @@ simulated event Tick(float DeltaTime)
 			Velocity = Vect(0.0,0.0,0.0);
 			Speed = 0.0;
 			SpawnGasCloud();
-			DestroyTrails();
+			DestroyTrail();
 			if ( Physics != PHYS_None )
 				SetPhysics(PHYS_None);
 			
@@ -144,7 +144,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			Velocity = Vect(0.0,0.0,0.0);
 			Speed = 0.0;
 			SpawnGasCloud();
-			DestroyTrails();
+			DestroyTrail();
 			if ( Physics != PHYS_None )
 				SetPhysics(PHYS_None);
 			
@@ -165,7 +165,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			Velocity = Vect(0.0,0.0,0.0);
 			Speed = 0.0;
 			SpawnGasCloud();
-			DestroyTrails();
+			DestroyTrail();
 			if ( Physics != PHYS_None )
 				SetPhysics(PHYS_None);
 			

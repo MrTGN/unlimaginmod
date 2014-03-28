@@ -15,7 +15,7 @@
 class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 
 
-simulated function AdjustVelocity()
+simulated function SetInitialVelocity()
 {
 	if ( Role == ROLE_Authority && Speed > 0.0 )
     {
@@ -47,7 +47,7 @@ defaultproperties
 	 BallisticRandPercent=20.000000
      //MuzzleVelocity
      MuzzleVelocity=26.000000	// m/sec
-	 xEmitterTrailClasses(0)=Class'KFTracer'
+	 Trail=(xEmitterClass=Class'KFTracer')
 	 //Mesh
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 DrawScale=5.000000

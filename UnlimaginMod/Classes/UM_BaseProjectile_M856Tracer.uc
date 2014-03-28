@@ -21,7 +21,7 @@ class UM_BaseProjectile_M856Tracer extends UM_BaseProjectile_TracerBullet
 
 defaultproperties
 {
-     xEmitterTrailClasses(0)=Class'UnlimaginMod.UM_IncBulletTracer'
+     Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 //Ballistic
 	 BallisticCoefficient=0.318000
 	 BallisticRandPercent=30.000000

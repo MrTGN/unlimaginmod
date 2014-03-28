@@ -52,7 +52,7 @@ defaultproperties
      ShakeOffsetTime=1.250000
 	 ProjectileClass=Class'UnlimaginMod.UM_SPThompsonM1928Bullet'
      AimError=78.000000
-     Spread=0.011000
-	 MaxSpread=0.067000
+     Spread=0.012000
+	 MaxSpread=0.076000
      SpreadStyle=SS_Random
 }

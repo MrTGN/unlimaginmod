@@ -39,7 +39,7 @@ defaultproperties
 	 //Movement
 	 CrouchedMovingBonus=0.650000
 	 MaxMoveShakeScale=1.100000
-	 MovingAimErrorScale=4.000000
+	 MovingAimErrorScale=4.500000
 	 MovingSpreadScale=0.001200
 	 //[end]
 	 bWaitForRelease=True

@@ -55,6 +55,6 @@ defaultproperties
      BotRefireRate=0.990000
      AimError=62.000000
      Spread=0.011000
-	 MaxSpread=0.066000
+	 MaxSpread=0.072000
      SpreadStyle=SS_Random
 }

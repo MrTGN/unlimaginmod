@@ -55,7 +55,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_MP5A4Bullet'
      AimError=72.000000
 	 Spread=0.010000
-	 MaxSpread=0.065000
+	 MaxSpread=0.070000
      SpreadStyle=SS_Random
      AmbientFireSoundRadius=500.000000
      AmbientFireVolume=255

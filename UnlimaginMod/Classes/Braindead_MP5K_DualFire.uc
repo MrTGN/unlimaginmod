@@ -66,7 +66,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_MP5KBullet'
      BotRefireRate=0.250000
      AimError=80.000000
-     Spread=0.012000
-	 MaxSpread=0.068000
+     Spread=0.011000
+	 MaxSpread=0.078000
      SpreadStyle=SS_Random
 }

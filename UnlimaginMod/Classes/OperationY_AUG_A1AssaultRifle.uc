@@ -729,8 +729,8 @@ defaultproperties
      bHasScope=True
      ZoomedDisplayFOVHigh=50.000000
      MagCapacity=42
-	 TacticalReloadTime=1.460000
-	 TacticalReloadAnim=(Anim="Reload",Rate=1.0,StartFrame=69.00,TweenTime=0.1)
+	 TacticalReloadTime=1.950000
+	 TacticalReloadAnim=(Anim="Reload",Rate=0.75,StartFrame=69.00,TweenTime=0.1)
      ReloadRate=3.900000
      ReloadAnim="Reload"
      ReloadAnimRate=1.000000

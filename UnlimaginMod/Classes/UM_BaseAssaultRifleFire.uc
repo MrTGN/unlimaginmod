@@ -41,7 +41,7 @@ defaultproperties
 	 //Movement
 	 CrouchedMovingBonus=0.650000
 	 MaxMoveShakeScale=1.050000
-	 MovingAimErrorScale=3.800000
+	 MovingAimErrorScale=3.850000
 	 // InstigatorMovingSpeed = 200
 	 // Total MaxSpread = MaxSpread + (200 * MovingSpreadScale)
 	 MovingSpreadScale=0.000850

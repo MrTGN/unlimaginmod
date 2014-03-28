@@ -60,7 +60,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_G36CBullet'
      BotRefireRate=0.990000
      AimError=76.000000
-     Spread=0.011000
-	 MaxSpread=0.064000
+     Spread=0.010000
+	 MaxSpread=0.070000
      SpreadStyle=SS_Random
 }

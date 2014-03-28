@@ -52,7 +52,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_M16A4_IronSightBullet'
      BotRefireRate=0.990000
      AimError=76.000000
-     Spread=0.008000
-	 MaxSpread=0.048000
+     Spread=0.008500
+	 MaxSpread=0.060000
      SpreadStyle=SS_Random
 }

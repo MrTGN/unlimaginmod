@@ -1245,6 +1245,8 @@ defaultproperties
 	 CrouchedMovingBonus=0.650000
 	 MaxMoveShakeScale=1.100000
 	 MovingAimErrorScale=4.000000
+	 // Max InstigatorMovingSpeed (GroundSpeed) = 200
+	 // Total MaxSpread = MaxSpread + (200 * MovingSpreadScale)
 	 MovingSpreadScale=0.001000
 	 //[end]
      //Fire properties

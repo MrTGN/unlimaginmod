@@ -54,7 +54,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_SCARMK17Bullet'
      BotRefireRate=0.990000
      AimError=62.000000
-     Spread=0.008000
-	 MaxSpread=0.048000
+     Spread=0.007500
+	 MaxSpread=0.052000
      SpreadStyle=SS_Random
 }

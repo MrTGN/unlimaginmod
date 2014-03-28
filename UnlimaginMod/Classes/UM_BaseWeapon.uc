@@ -805,6 +805,7 @@ simulated event WeaponTick(float dt)
 	}
 
 	//[block] -- Only Server-side code next! --
+	//ToDo: протеститровать. Если все ок, то удалить закомментированный блок.
 	/*
 	if ( Level.NetMode == NM_Client || Instigator == None || 
 		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )

@@ -21,8 +21,7 @@ class UM_BaseProjectile_Grenade extends UM_BaseExplosiveProjectile
 //========================================================================
 //[block] Variables
 
-// This variables used to decrease the load on the CPU
-var		float		TickUpdateDelay, NextTickUpdateTime;
+var		float		FlyingTime, TimeToStartFalling;
 
 //[end] Varibles
 //====================================================================
@@ -36,26 +35,42 @@ var		float		TickUpdateDelay, NextTickUpdateTime;
 //========================================================================
 //[block] Functions
 
+simulated function CalcDefaultProperties()
+{
+	Super.CalcDefaultProperties();
+	
+	// FlyingTime
+	if ( default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
+		default.FlyingTime = default.MaxEffectiveRange / default.MaxSpeed;
+		if ( bTrueBallistics )  {
+			default.FlyingTime += 1.0 - FMin(default.BallisticCoefficient, 1.0);
+			if ( bInitialAcceleration )
+				default.FlyingTime += default.InitialAccelerationTime;
+		}
+		FlyingTime = default.FlyingTime;
+	}
+}
+
+simulated function SetInitialVelocity()
+{
+	if ( FlyingTime > 0.0 )
+		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
+	
+	Super.SetInitialVelocity();
+}
+
 simulated event Tick( float DeltaTime )
 {
-	local	float	FlyDist;
-	
 	Super.Tick(DeltaTime);
-	
-	if ( (Physics == default.Physics || Physics == PHYS_Falling) &&
-		 Level.TimeSeconds > NextTickUpdateTime )
-	{
-		if ( Physics == default.Physics )
-		{
-			FlyDist = VSize(SpawnLocation - Location);
-			if ( FlyDist >= MaxEffectiveRange )
-			{
-				//bTrueBallistics = False;
-				SetPhysics(PHYS_Falling);
-			}
-		}
-		SetRotation(Rotator(Normal(Velocity)));
-		NextTickUpdateTime = Level.TimeSeconds + TickUpdateDelay;
+
+	if ( (Physics == default.Physics || Physics == PHYS_Falling)
+		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
+		// Updating Projectile
+		UpdateProjectilePerformance();
+		// Time to start falling
+		if ( Physics == default.Physics && TimeToStartFalling > 0.0 
+			 && Level.TimeSeconds >= TimeToStartFalling )
+			SetPhysics(PHYS_Falling);
 	}
 }
 
@@ -64,8 +79,9 @@ simulated event Tick( float DeltaTime )
 
 defaultproperties
 {
-     bReplicateSpawnLocation=True
-	 TickUpdateDelay=0.050000
+	 //Physics
+	 Physics=PHYS_Projectile
+	 UpdateTimeDelay=0.100000
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000
      MaxSpeed=0.000000

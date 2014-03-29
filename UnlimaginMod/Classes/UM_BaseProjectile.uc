@@ -196,14 +196,13 @@ simulated final function float GetRandMultByPercent(float RandRangePercent)
 
 simulated function CalcDefaultProperties()
 {
-	//[block] MaxEffectiveRange
+	// MaxEffectiveRange
 	if ( default.MaxEffectiveRange <= 0.0 && default.EffectiveRange > 0.0 )  {
 		default.MaxEffectiveRange = default.EffectiveRange * MeterInUU * MaxEffectiveRangeScale;
 		MaxEffectiveRange = default.MaxEffectiveRange;  // Randoming MaxEffectiveRange for this Projectile
 	}
-	//[end]
 	
-	//[block] Speed
+	// Speed
 	if ( (default.Speed <= 0.0 || default.MaxSpeed <= 0.0) && default.MuzzleVelocity > 0.0 )  {
 		// Assign Speed defaults
 		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
@@ -211,22 +210,17 @@ simulated function CalcDefaultProperties()
 		default.Speed = default.MaxSpeed;
 		Speed = default.MaxSpeed;
 	}
-	//[end]
 	
-	//[block] LifeSpan
 	// Calculating LifeSpan
-	if ( bAutoLifeSpan && MaxEffectiveRange > 0.0 && MaxSpeed > 0.0 )  {
+	if ( bAutoLifeSpan && default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
+		default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
 		if ( bTrueBallistics )  {
+			default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
 			if ( bInitialAcceleration )
-				default.LifeSpan = (MaxEffectiveRange / MaxSpeed) + InitialAccelerationTime + (1.0 - FMin(BallisticCoefficient, 1.0));
-			else
-				default.LifeSpan = (MaxEffectiveRange / MaxSpeed) + (1.0 - FMin(BallisticCoefficient, 1.0));
+				default.LifeSpan += default.InitialAccelerationTime;
 		}
-		else
-			default.LifeSpan = MaxEffectiveRange / MaxSpeed;
 		LifeSpan = default.LifeSpan;
 	}
-	//[end]
 	
 	// Calculating MuzzleEnergy and ProjectileEnergy
 	// Divide on (2 * SquareMeterInUU) because we need to convert 
@@ -490,6 +484,7 @@ simulated function UpdateProjectilePerformance(
 	local	float	NewEnergyLoss;
 	
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
+	// Rotation Update
 	if ( NewVelocity != Vect(0.0,0.0,0.0) )
 		SetRotation(Rotator(Normal(NewVelocity)));
 	else

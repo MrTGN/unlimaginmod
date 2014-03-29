@@ -66,11 +66,11 @@ var		string				ImpactSoundRef;
 var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
-var		float		SafeRange;	//In this range Projectile will not Explode
+var		float				SafeRange;	//In this range Projectile will not Explode
 
 //DramaticEvents
-var		float		SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
-var		int			SmallDramaticEventKills, MediumDramaticEvenKills, LongDramaticEventKills;
+var		float				SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
+var		int					SmallDramaticEventKills, MediumDramaticEvenKills, LongDramaticEventKills;
 
 
 // How much damage to do when this Projectile impacts something before exploding

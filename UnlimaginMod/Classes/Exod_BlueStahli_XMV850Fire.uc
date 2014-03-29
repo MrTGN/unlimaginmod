@@ -86,7 +86,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_XMV850Bullet'
      BotRefireRate=0.990000
      AimError=100.000000
-     Spread=0.024000
-	 MaxSpread=0.136000
+     Spread=0.025000
+	 MaxSpread=0.152000
      SpreadStyle=SS_Random
 }

@@ -1107,6 +1107,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	local 	int 				Mode;
 	local	KFPlayerController	Player;
 	local	float				NewSelectAnimRate;
+	local	bool				bBringUpAfterGrenade;
 
 	HandleSleeveSwapping();
 
@@ -1180,6 +1181,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 		ClientState = WS_BringUp;
         if ( ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
+			bBringUpAfterGrenade = (ClientGrenadeState == GN_BringUp);
 			ClientGrenadeState = GN_None;
 			SetTimer(QuickBringUpTime, false);
 		}
@@ -1197,7 +1199,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 	if ( PrevWeapon != None && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch )
 		OldWeapon = PrevWeapon;
-	else
+	else if ( !bBringUpAfterGrenade )
 		OldWeapon = None;
 }
 
@@ -1269,9 +1271,9 @@ simulated function bool PutDown()
 			SetTimer(DownDelay, false);
 		else  {
 			if ( ClientGrenadeState == GN_TempDown )
-			   SetTimer(QuickPutDownTime, false);
+				SetTimer(QuickPutDownTime, false);
 			else
-			   SetTimer(PutDownTime, false);
+				SetTimer(PutDownTime, false);
 		}
 	}
 	
@@ -1286,7 +1288,8 @@ simulated function bool PutDown()
 	}
 	
 	Instigator.AmbientSound = None;
-	OldWeapon = None;
+	if ( ClientGrenadeState != GN_TempDown )
+		OldWeapon = None;
 	
 	Return True; // return false if preventing weapon switch
 }

@@ -39,8 +39,8 @@ defaultproperties
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireLoopAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      RecoilRate=0.070000
-     maxVerticalRecoilAngle=234
-     maxHorizontalRecoilAngle=125
+     maxVerticalRecoilAngle=232
+     maxHorizontalRecoilAngle=124
      bRecoilRightOnly=True
      bRandomPitchFireSound=False
      bPawnRapidFireAnim=True
@@ -60,7 +60,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_G36CBullet'
      BotRefireRate=0.990000
      AimError=76.000000
-     Spread=0.010000
-	 MaxSpread=0.070000
+     Spread=0.008000
+	 MaxSpread=0.061000
      SpreadStyle=SS_Random
 }

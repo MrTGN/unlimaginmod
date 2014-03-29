@@ -119,7 +119,7 @@ static function SpecialHUDInfo(KFPlayerReplicationInfo KFPRI, Canvas C)
 			 || Pawn(C.ViewPort.Actor.ViewTarget).Health <= 0 )
 			Return;
 
-		MaxDistance = 126.0 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 1260 units
+		MaxDistance = 120.0 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 1200 units
 		
 		foreach C.ViewPort.Actor.VisibleCollidingActors( class'KFMonster', KFEnemy, MaxDistance, C.ViewPort.Actor.CalcViewLocation )
 		{
@@ -137,7 +137,7 @@ static function bool ShowStalkers(KFPlayerReplicationInfo KFPRI)
 static function float GetStalkerViewDistanceMulti(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel > 0 )
-		Return (0.125 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));
+		Return (0.15 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 1.5 * 800 unreal units
 	
 	Return 0.0625; // 25%
 }

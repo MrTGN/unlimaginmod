@@ -54,7 +54,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_AK47Bullet'
      BotRefireRate=0.990000
      AimError=92.000000
-     Spread=0.013000
-	 MaxSpread=0.092000
+     Spread=0.014000
+	 MaxSpread=0.096000
      SpreadStyle=SS_Random
 }

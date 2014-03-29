@@ -656,6 +656,53 @@ function bool CanCarry( float Weight )
 	Return ( (CurrentWeight + Weight) <= MaxCarryWeight );
 }
 
+function ThrowGrenade()
+{
+	local	Inventory	Inv;
+
+	if ( AllowGrenadeTossing() )  {
+		for ( Inv = Inventory; Inv != None; Inv = Inv.Inventory )  {
+			if ( Frag(Inv) != None && Frag(Inv).HasAmmo() && !bThrowingNade
+				 && KFWeapon(Weapon) != None 
+				 && (!KFWeapon(Weapon).bIsReloading || KFWeapon(Weapon).InterruptReload())
+				 && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) <= 0.1 )  {
+				KFWeapon(Weapon).ClientGrenadeState = GN_TempDown;
+				Weapon.PutDown();
+				break;
+			}
+		}
+	}
+}
+
+function WeaponDown()
+{
+    local	Inventory	Inv;
+
+    for( Inv = Inventory; Inv != None; Inv = Inv.Inventory )  {
+        if ( Frag(Inv) != None && Frag(Inv).HasAmmo() )  {
+            SecondaryItem = Frag(Inv);
+            Frag(Inv).StartThrow();
+        }
+    }
+}
+
+simulated function ThrowGrenadeFinished()
+{
+	SecondaryItem = None;
+	KFWeapon(Weapon).ClientGrenadeState = GN_BringUp;
+	Weapon.BringUp();
+	bThrowingNade = false;
+}
+
+exec function SwitchToLastWeapon()
+{
+    if ( Weapon != None && Weapon.OldWeapon != None )  {
+        PendingWeapon = Weapon.OldWeapon;
+        Weapon.PutDown();
+    }
+}
+
+
 
 defaultproperties
 {

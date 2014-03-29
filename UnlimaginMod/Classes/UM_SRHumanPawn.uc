@@ -9,7 +9,7 @@ var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		Vector						BounceMomentum;
 var		float						LowGravBounceMomentumScale, NextBounceTime, BounceDelay, BounceCheckDistance;
 var		int							BounceRemaining;
-var		UM_KFMonster				BounceVictim;
+var		Pawn						BounceVictim;
 
 
 replication
@@ -100,8 +100,7 @@ function bool CanBounce()
 		R = (CollisionRadius + BounceCheckDistance) * Vect(1.0, 1.0, 0.0);
 		foreach TraceActors( class 'Actor', A, HitLoc, HitNorm, (Location - R), (Location + R + H), (R * 2.0 + H) )  {
 			if ( A != None && A != Self && (A == Level || A.bWorldGeometry || Pawn(A) != None) )  {
-				if ( UM_KFMonster(A) != None )
-					BounceVictim = UM_KFMonster(A);
+				BounceVictim = Pawn(A);
 				Return True;
 			}
 		}
@@ -132,8 +131,12 @@ function DoBounce( bool bUpdating, float JumpModif )
 	Velocity = NewVel;
 	
 	if ( BounceVictim != None )  {
-		NewVel = -NewVel * FMin((Mass / BounceVictim.Mass), 1.25);
-		BounceVictim.PushAwayZombie(NewVel);
+		NewVel = -NewVel * FClamp((Mass / BounceVictim.Mass), 0.25, 1.25);
+		if ( UM_KFMonster(BounceVictim) != None )
+			UM_KFMonster(BounceVictim).PushAwayZombie(NewVel);
+		else
+			BounceVictim.AddVelocity(NewVel);
+		
 		BounceVictim = None;
 	}
 	

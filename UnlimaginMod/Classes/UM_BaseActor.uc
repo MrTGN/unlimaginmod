@@ -58,11 +58,11 @@ struct	SoundData
 
 //[block] Sound functions
 // Play a sound effect from SoundData struct.
-simulated final function PlaySoundData( SoundData SD )
+simulated final function PlaySoundData( SoundData SD, optional float VolMult )
 {
-	// Volume
-	if ( SD.Vol <= 0.0 )
-		SD.Vol = TransientSoundVolume;
+	// VolMult
+	if ( VolMult > 0.0 )
+		SD.Vol *= VolMult;
 	// PitchRange
 	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
 		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
@@ -74,11 +74,11 @@ simulated final function PlaySoundData( SoundData SD )
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD )
+simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMult )
 {
-	// Volume
-	if ( SD.Vol <= 0.0 )
-		SD.Vol = TransientSoundVolume;
+	// VolMult
+	if ( VolMult > 0.0 )
+		SD.Vol *= VolMult;
 	// PitchRange
 	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
 		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();

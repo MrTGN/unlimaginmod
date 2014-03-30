@@ -158,7 +158,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius,,True);
+					PlaySoundData(BeepSound, 1.5);
 				SetTimer(0.2,True);
 			}
 		}
@@ -265,7 +265,7 @@ state Stuck
 				{
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
-						PlaySound(PickupSound.Snd, SLOT_Pain, PickupSound.Vol,, PickupSound.Radius);
+						PlaySoundData(PickupSound);
 					Break;
 				}
 			}
@@ -323,7 +323,7 @@ defaultproperties
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=400.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0,bUse3D=True)
 	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
-	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
+	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Slot=SLOT_Pain,Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 DetectionRadius=170.000000
 	 DamageRadius=380.000000
 	 LifeSpan=0.000000

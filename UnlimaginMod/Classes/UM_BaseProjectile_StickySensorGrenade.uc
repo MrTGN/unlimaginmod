@@ -57,7 +57,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius);
+					PlaySoundData(BeepSound, 1.5);
 				SetTimer(0.2,True);
 			}
 		}
@@ -69,7 +69,7 @@ event Timer()
 				if ( !bFriendlyPawnDetected )
 					Explode(Location, vect(0,0,1));
 				else if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd,,BeepSound.Vol,,BeepSound.Radius);
+					PlaySoundData(BeepSound);
 			}
 			else  {
 				bAlwaysRelevant = False;

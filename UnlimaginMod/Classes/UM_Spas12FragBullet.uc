@@ -19,7 +19,7 @@ class UM_Spas12FragBullet extends UM_BaseProjectile_ShotgunExpBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=2.300000
+     TransientSoundVolume=2.300000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSpas12FragImpact'
      ImpactDamage=200.000000
 	 //MuzzleVelocity

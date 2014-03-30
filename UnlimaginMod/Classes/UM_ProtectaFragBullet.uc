@@ -19,7 +19,7 @@ class UM_ProtectaFragBullet extends UM_BaseProjectile_ShotgunExpBullet;
 
 defaultproperties
 {
-	 SoundEffectsVolume=1.800000
+	 TransientSoundVolume=1.800000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeProtectaFragImpact'
      ImpactDamage=90.000000
 	 //MuzzleVelocity

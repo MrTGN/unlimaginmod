@@ -17,7 +17,7 @@ class UM_AA12IncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=1.500000
+     TransientSoundVolume=1.500000
      ImpactDamageType=Class'UnlimaginMod.UM_DamTypeAA12IncImpact'
      ImpactDamage=80.000000
 	 //MuzzleVelocity

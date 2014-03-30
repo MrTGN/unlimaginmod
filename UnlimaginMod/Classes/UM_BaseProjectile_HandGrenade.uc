@@ -237,15 +237,9 @@ defaultproperties
      FearMarkerClass=Class'AvoidMarker'
 	 DisintegrateChance=0.950000
 	 //Sounds
-	 SoundEffectsVolume=2.000000
-	 //DisintegrateSounds(0)=Sound'Inf_Weapons.panzerfaust60.faust_explode_distant02'
-	 //DisintegrateSounds(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-     //ExplodeSounds(0)=SoundGroup'KF_GrenadeSnd.Nade_Explode_1'
-     //ExplodeSounds(1)=SoundGroup'KF_GrenadeSnd.Nade_Explode_2'
-     //ExplodeSounds(2)=SoundGroup'KF_GrenadeSnd.Nade_Explode_3'
-	 //ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
-     //ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
-     //ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
+	 TransientSoundVolume=2.000000
+	 DisintegrateSound=(Vol=2.0,Radius=400.0,bUse3D=True)
+	 ExplodeSound=(Vol=2.0,Radius=400.0,bUse3D=True)
 	 //ExplodeTimer	 
 	 ExplodeTimer=2.000000
 	 //Shrapnel
@@ -268,7 +262,7 @@ defaultproperties
      //HitSoundRadius=200.000000
 	 HitEffectsClass=Class'UnlimaginMod.UM_BulletHitEffects'
 	 //Damages
-     Damage=300.000000
+     Damage=320.000000
      DamageRadius=420.000000
 	 MomentumTransfer=100000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenade'

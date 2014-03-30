@@ -17,7 +17,7 @@ class UM_BenelliM4IncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=1.800000
+     TransientSoundVolume=1.800000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM4IncImpact'
      ImpactDamage=100.000000
 	 //MuzzleVelocity

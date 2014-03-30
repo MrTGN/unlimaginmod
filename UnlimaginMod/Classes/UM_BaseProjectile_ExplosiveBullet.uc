@@ -37,13 +37,9 @@ defaultproperties
 	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
 	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Sound Effects
-	 SoundEffectsVolume=2.000000
-	 //DisintegrateSoundsRef
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 //ExplodeSoundsRef
-	 ExplodeSoundsRef(0)="KF_GrenadeSnd.NadeBase.40mm_Explode01"
-     ExplodeSoundsRef(1)="KF_GrenadeSnd.NadeBase.40mm_Explode02"
-     ExplodeSoundsRef(2)="KF_GrenadeSnd.NadeBase.40mm_Explode03"
+	 TransientSoundVolume=2.000000
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=200.0,bUse3D=True)
+	 ExplodeSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=2.0,Radius=200.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'UnlimaginMod.UM_ExpBulletExplosionEffect'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'

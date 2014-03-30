@@ -646,6 +646,7 @@ defaultproperties
 	 //UpdateTimeDelay - prevents from non-stopping (looping) updates
 	 InitialUpdateTimeDelay=0.100000
 	 UpdateTimeDelay=0.100000
+	 ImpactSound=None
 	 //[end]
 	 //Replication
 	 bNetTemporary=True

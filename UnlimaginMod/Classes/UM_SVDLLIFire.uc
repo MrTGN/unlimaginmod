@@ -22,9 +22,10 @@ defaultproperties
      ProjSpawnOffsets(0)=(X=0.000000,Y=-3.000000,Z=0.000000)
 	 //[block] Dynamic Loading Vars
 	 //FireSound=Sound'SVDLLI_A.SVDLLI_Snd.SVDLLI_shot'
-	 FireSoundRef="UnlimaginMod_Snd.SVD.SVD_shot_M"
+	 //FireSoundRef="UnlimaginMod_Snd.SVD.SVD_shot_M"
+	 FireSoundRef="SVDLLI_A.SVDLLI_Snd.SVDLLI_shot"
 	 //StereoFireSound=Sound'SVDLLI_A.SVDLLI_Snd.SVDLLI_shot'
-     StereoFireSoundRef="UnlimaginMod_Snd.SVD.SVD_shot_S"
+     //StereoFireSoundRef="UnlimaginMod_Snd.SVD.SVD_shot_S"
 	 //NoAmmoSound=Sound'SVDLLI_A.SVDLLI_Snd.SVDLLI_empty'
 	 NoAmmoSoundRef="SVDLLI_A.SVDLLI_Snd.SVDLLI_empty"
 	 //[end]

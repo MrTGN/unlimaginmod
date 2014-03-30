@@ -126,50 +126,22 @@ simulated event PostNetReceive()
 
 simulated function Explode(vector HitLocation, vector HitNormal)
 {
-	local	int		i;
-
 	//log(self$": Grenade is Exploading.");
 	bHasExploded = True;
-	BlowUp(HitLocation);
-	
 	bTriggered = True;
 	
-	if ( Role == ROLE_Authority )
-	{
+	// Deactivating Timer and destroying projectile on the server-side
+	if ( Role == ROLE_Authority )  {
+		BlowUp(HitLocation);
 		SetTimer(0.1, false);
 		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	
-	if ( !Level.bDropDetail && Level.NetMode != NM_DedicatedServer )
-	{
-		if ( ExplodeSounds.length > 1 )
-			PlaySound(ExplodeSounds[Rand(ExplodeSounds.length)],, SoundEffectsVolume);
-		else if ( ExplodeSounds.length == 1 )
-			PlaySound(ExplodeSounds[0],, SoundEffectsVolume);
-		
-		if ( EffectIsRelevant(Location, False) )
-		{
-			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
-			
-			if ( ExplosionDecal != None )
-				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
-		}
-	}
-	
+	PlayExplosionEffects( HitLocation, HitNormal );
 	// Shrapnel
-	if ( Role == ROLE_Authority && ShrapnelClass != None && MaxShrapnelAmount > 0 )
-	{
-		if ( MaxShrapnelAmount > 1 )
-		{
-			for ( i = Rand(Max((MaxShrapnelAmount - MinShrapnelAmount), 2)); i < MaxShrapnelAmount; i++ )
-			{
-				Spawn(ShrapnelClass, Instigator,, Location, RotRand(True));
-			}
-		}
-		else
-			Spawn(ShrapnelClass, Instigator,, Location, RotRand(True));
-	}
+	if ( Role == ROLE_Authority )
+		SpawnShrapnel();
+	
 	// Shake nearby players screens
 	ShakePlayersView();
 	
@@ -349,13 +321,11 @@ defaultproperties
 	 MaxShrapnelAmount=10
 	 MinShrapnelAmount=5
 	 //Sounds
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
-     ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
-     ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
-	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0)
-	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0)
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
+	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=400.0,bUse3D=True)
+	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0,bUse3D=True)
+	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,bUse3D=True)
+	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0,bUse3D=True)
 	 DetectionRadius=170.000000
 	 DamageRadius=380.000000
 	 LifeSpan=0.000000

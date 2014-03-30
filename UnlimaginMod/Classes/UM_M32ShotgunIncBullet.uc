@@ -17,7 +17,7 @@ class UM_M32ShotgunIncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-	 SoundEffectsVolume=1.500000
+	 TransientSoundVolume=1.500000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM32ShotgunIncImpact'
      ImpactDamage=50.000000
 	 //MuzzleVelocity

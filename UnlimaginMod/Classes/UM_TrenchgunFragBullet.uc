@@ -17,7 +17,7 @@ class UM_TrenchgunFragBullet extends UM_BaseProjectile_ShotgunExpBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=2.200000
+     TransientSoundVolume=2.200000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeTrenchgunFragImpact'
      ImpactDamage=200.000000
 	 //MuzzleVelocity

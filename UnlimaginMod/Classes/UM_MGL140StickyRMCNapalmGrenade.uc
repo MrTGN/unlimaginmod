@@ -25,11 +25,9 @@ defaultproperties
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 //Sounds
-	 SoundEffectsVolume=2.200000
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 ExplodeSoundsRef(0)="KF_GrenadeSnd.FlameNade_Explode"
-	 ExplodeSoundsRef(1)=
-     ExplodeSoundsRef(2)=
+	 TransientSoundVolume=2.000000
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=360.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_GrenadeSnd.FlameNade_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 Damage=80.000000
      DamageRadius=380.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeMGL140StickyRMCNapalmGrenade'

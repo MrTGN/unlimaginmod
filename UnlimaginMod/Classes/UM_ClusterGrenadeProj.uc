@@ -38,10 +38,8 @@ defaultproperties
 {
      bIgnoreSameClassProj=True
 	 //Sounds
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
-     ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
-     ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=350.0,bUse3D=True)
+	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
 	 //ExplodeTimer
 	 ExplodeTimer=2.000000
 	 BallisticRandPercent=20.000000

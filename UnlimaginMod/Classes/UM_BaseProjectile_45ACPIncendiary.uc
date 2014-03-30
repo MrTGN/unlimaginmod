@@ -38,11 +38,9 @@ defaultproperties
 	 MyDamageType=None
 	 MomentumTransfer=10000.000000
 	 //Sound Effects
-	 SoundEffectsVolume=1.000000
-	 //DisintegrateSoundsRef
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 //ExplodeSoundsRef
-	 ExplodeSoundsRef(0)="KF_EnemiesFinalSnd.Husk.Husk_FireImpact"
+	 TransientSoundVolume=1.000000
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=200.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=200.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFMod.FlameImpact_Weak'
 	 ExplosionDecal=Class'KFMod.FlameThrowerBurnMark_Small'

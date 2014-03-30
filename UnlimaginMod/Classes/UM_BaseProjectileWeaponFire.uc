@@ -807,8 +807,7 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 		ShakeRotMag.Y = default.ShakeRotMag.Y * ShakeScaler;
 		ShakeRotMag.Z = default.ShakeRotMag.Z * ShakeScaler;
 		
-		P.WeaponShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime, 
-						ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
+		P.WeaponShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime, ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
 	}
 }
 

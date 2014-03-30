@@ -62,7 +62,7 @@ function PostSpawnProjectile(Projectile P)
 
 defaultproperties
 {
-     ProjectileClass=Class'UnlimaginMod.UM_StandardHandGrenadeProj'
+     ProjectileClass=Class'UnlimaginMod.UM_StandardHandGrenade'
 	 //Field Medic
 	 PerkProjectileClass(0)=Class'KFMod.MedicNade'
 	 //Support Specialist

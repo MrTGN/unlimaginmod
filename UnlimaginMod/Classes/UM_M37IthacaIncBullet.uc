@@ -19,7 +19,7 @@ class UM_M37IthacaIncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=2.000000
+     TransientSoundVolume=2.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM37IthacaIncImpact'
      ImpactDamage=100.000000
 	 //MuzzleVelocity

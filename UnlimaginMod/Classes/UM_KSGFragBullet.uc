@@ -16,7 +16,7 @@ class UM_KSGFragBullet extends UM_BaseProjectile_ShotgunExpBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=2.400000
+     TransientSoundVolume=2.400000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeKSGFragImpact'
      ImpactDamage=200.000000
 	 //MuzzleVelocity

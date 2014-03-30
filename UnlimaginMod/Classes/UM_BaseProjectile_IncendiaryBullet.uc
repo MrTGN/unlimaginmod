@@ -38,12 +38,10 @@ defaultproperties
 	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
 	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Sound Effects
-	 SoundEffectsVolume=1.000000
+	 TransientSoundVolume=1.000000
 	 AmbientSoundRef="KF_BaseHusk.husk_fireball_loop"
-	 //DisintegrateSoundsRef
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 //ExplodeSoundsRef
-	 ExplodeSoundsRef(0)="KF_EnemiesFinalSnd.Husk.Husk_FireImpact"
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.5,Radius=200.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=200.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFMod.FlameImpact_Weak'
 	 ExplosionDecal=Class'KFMod.FlameThrowerBurnMark_Small'

@@ -19,7 +19,7 @@ class UM_Spas12IncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     SoundEffectsVolume=2.000000
+     TransientSoundVolume=2.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSpas12IncImpact'
      ImpactDamage=100.000000
 	 //MuzzleVelocity

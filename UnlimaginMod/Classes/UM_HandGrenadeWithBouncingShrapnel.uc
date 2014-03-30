@@ -22,10 +22,8 @@ defaultproperties
 	 MaxShrapnelAmount=30
 	 MinShrapnelAmount=20
 	 //Sounds
-	 DisintegrateSoundsRef(0)="Inf_Weapons.panzerfaust60.faust_explode_distant02"
-	 ExplodeSoundsRef(0)="KF_GrenadeSnd.Nade_Explode_1"
-     ExplodeSoundsRef(1)="KF_GrenadeSnd.Nade_Explode_2"
-     ExplodeSoundsRef(2)="KF_GrenadeSnd.Nade_Explode_3"
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=390.0,bUse3D=True)
+	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=390.0,bUse3D=True)
 	 //Damage
 	 Damage=300.000000
      DamageRadius=300.000000

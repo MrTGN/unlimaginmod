@@ -24,7 +24,7 @@ event Timer()
 		if ( !FriendlyPawnIsInRadius(DamageRadius) )
 			Explode(Location, vect(0,0,1));
 		else if ( BeepSound.Snd != None )
-			PlaySound(BeepSound.Snd,,BeepSound.Vol,,BeepSound.Radius);
+			PlaySound(BeepSound.Snd,, BeepSound.Vol,, BeepSound.Radius);
 	}
 	else
 		Destroy();
@@ -33,13 +33,12 @@ event Timer()
 function Activate()
 {
 	if ( BeepSound.Snd != None )
-		PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius);
-	SetTimer(ExplodeTimer, False);
+		PlaySound(BeepSound.Snd,, (BeepSound.Vol * 1.5),, BeepSound.Radius);
+	SetTimer(ExplodeTimer, True);
 }
 
 defaultproperties
 {
-     //SafeRange=300.000000
 	 ExplodeTimer=0.150000
 	 Damage=280.000000
 	 DamageRadius=330.000000

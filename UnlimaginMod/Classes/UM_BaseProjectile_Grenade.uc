@@ -64,7 +64,8 @@ simulated event Tick( float DeltaTime )
 	Super.Tick(DeltaTime);
 
 	if ( (Physics == default.Physics || Physics == PHYS_Falling)
-		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
+		 && Level.TimeSeconds > NextProjectileUpdateTime
+		 && Velocity != Vect(0.0, 0.0, 0.0) )  {
 		// Updating Projectile
 		UpdateProjectilePerformance();
 		// Time to start falling

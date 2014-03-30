@@ -27,7 +27,7 @@ defaultproperties
 	 //Sounds
 	 TransientSoundVolume=2.000000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=360.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_GrenadeSnd.FlameNade_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_GrenadeSnd.FlameNade_Explode",Vol=2.8,Radius=360.0,bUse3D=True)
 	 Damage=80.000000
      DamageRadius=380.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeMGL140StickyRMCNapalmGrenade'

@@ -94,8 +94,7 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	
-	if ( Level.NetMode != NM_DedicatedServer && GrenadeLightClass != None )
-    {
+	if ( Level.NetMode != NM_DedicatedServer && GrenadeLightClass != None )  {
         GrenadeLight = Spawn(GrenadeLightClass, Self);
 		if ( GrenadeLight != None )
 			GrenadeLight.SetBase(Self);
@@ -106,8 +105,7 @@ simulated event PostNetBeginPlay()
 {
 	Super(UM_BaseExplosiveProjectile).PostNetBeginPlay();
 	
-	if ( Role == ROLE_Authority && !bTimerSet )
-	{
+	if ( Role == ROLE_Authority && !bTimerSet )  {
 		SetTimer(ExplodeTimer, True);
 		bTimerSet = True;
 	}
@@ -160,7 +158,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius);
+					PlaySound(BeepSound.Snd,,(BeepSound.Vol * 1.5),,BeepSound.Radius,,True);
 				SetTimer(0.2,True);
 			}
 		}
@@ -172,7 +170,7 @@ event Timer()
 				if ( !bFriendlyPawnDetected )
 					Explode(Location, vect(0,0,1));
 				else if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd,,BeepSound.Vol,,BeepSound.Radius);
+					PlaySoundData(BeepSound);
 			}
 			else  {
 				bAlwaysRelevant = False;
@@ -324,8 +322,8 @@ defaultproperties
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=400.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0,bUse3D=True)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,bUse3D=True)
-	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0,bUse3D=True)
+	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
+	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 DetectionRadius=170.000000
 	 DamageRadius=380.000000
 	 LifeSpan=0.000000

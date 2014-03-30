@@ -39,8 +39,8 @@ defaultproperties
 	 MomentumTransfer=10000.000000
 	 //Sound Effects
 	 TransientSoundVolume=1.000000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=200.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=200.0,bUse3D=True)
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=220.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=220.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFMod.FlameImpact_Weak'
 	 ExplosionDecal=Class'KFMod.FlameThrowerBurnMark_Small'

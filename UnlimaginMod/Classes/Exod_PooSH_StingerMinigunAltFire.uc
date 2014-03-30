@@ -34,7 +34,7 @@ defaultproperties
      //FireLoopAnimRate=2.000000
      FireRate=0.366667
      AmmoClass=Class'UnlimaginMod.Exod_PooSH_StingerMinigunAmmo'
-     ProjPerFire=1
+     ProjPerFire=3
 	 AmmoPerFire=3
      ShakeRotMag=(X=75.000000,Y=60.000000,Z=360.000000)
      ShakeRotRate=(X=7500.000000,Y=7500.000000,Z=7500.000000)

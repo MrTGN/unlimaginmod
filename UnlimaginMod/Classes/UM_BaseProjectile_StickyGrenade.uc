@@ -258,7 +258,7 @@ defaultproperties
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=360.0,bUse3D=True)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=360.0,bUse3D=True)
+	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=360.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 LifeSpan=0.000000
 	 ProjectileMass=0.230000
      //DisintegrateDamageTypes

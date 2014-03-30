@@ -23,16 +23,14 @@ class UM_BaseHitEffects extends UM_BaseEffect
 
 struct HitEffectData
 {
-	var		class<ProjectedDecal>	HitDecal;
-	var		class<Emitter>			HitEffect;
-	var		sound					HitSound;
-	var		float					HitSoundVolume;
-	var		float					HitSoundRadius;
+	var	class<ProjectedDecal>	HitDecal;
+	var	class<Emitter>			HitEffect;
+	var	sound					HitSound;
+	var	float					HitSoundVolume;
+	var	float					HitSoundRadius;
 };
 
-var()	HitEffectData		HitEffects[20];
-var		float				DefaultHitSoundVolume;
-var		float				DefaultHitSoundRadius;
+var()	HitEffectData			HitEffects[20];
 
 //[end] Varibles
 //====================================================================
@@ -84,18 +82,18 @@ simulated function PlayHitEffects(
 				if ( HitEffects[SoundSurfaceType].HitSoundVolume > 0.0 )
 					NewHitSoundVolume = HitEffects[SoundSurfaceType].HitSoundVolume;
 				else
-					NewHitSoundVolume = DefaultHitSoundVolume;
+					NewHitSoundVolume = TransientSoundVolume;
 			}
 			
 			if ( NewHitSoundRadius <= 0.0 )  {
 				if ( HitEffects[SoundSurfaceType].HitSoundRadius > 0.0 )
 					NewHitSoundRadius = HitEffects[SoundSurfaceType].HitSoundRadius;
 				else
-					NewHitSoundRadius = DefaultHitSoundRadius;
+					NewHitSoundRadius = TransientSoundRadius;
 			}
 			
 			if ( NewHitSoundVolume > 0.0 )
-				PlaySound(NewHitSound, SLOT_None, NewHitSoundVolume, false, NewHitSoundRadius);
+				PlaySound(NewHitSound, SLOT_None, NewHitSoundVolume, False, NewHitSoundRadius,, True);
 		}
 
 		if ( HitEffects[SurfaceType].HitEffect != None )  {
@@ -122,6 +120,6 @@ simulated function PlayHitEffects(
 
 defaultproperties
 {
-	 DefaultHitSoundVolume=1.000000
-     DefaultHitSoundRadius=200.000000
+	 TransientSoundVolume=1.250000
+	 TransientSoundRadius=200.000000
 }

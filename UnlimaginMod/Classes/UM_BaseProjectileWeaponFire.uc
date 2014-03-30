@@ -21,6 +21,7 @@ class UM_BaseProjectileWeaponFire extends KFShotgunFire
 //[block] Variables
 
 const	DefaultAnimRate = 1.000000;
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 // Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
@@ -53,7 +54,7 @@ struct	SoundData
 	var	float		Vol;
 	var	bool		bNoOverride;
 	var	float		Radius;
-	var	float		Pitch;
+	var	Range		PitchRange;	// Random pitching within this range
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
@@ -815,7 +816,7 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 function PlayNoAmmoSound()
 {
 	if ( NoAmmoSound != None )
-		Weapon.PlayOwnedSound(NoAmmoSound, SLOT_None, TransientSoundVolume);
+		Weapon.PlayOwnedSound(NoAmmoSound, SLOT_None, TransientSoundVolume,, 300.0,, True);
 }
 
 // Dry fire and auto reload
@@ -1086,7 +1087,7 @@ function ServerPlayFiring()
             if ( FRand() < 0.5 )
                 RandPitch *= -1.0;
         }
-        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),false);
+        Weapon.PlayOwnedSound(FireSound, SLOT_Interact, TransientSoundVolume,, TransientSoundRadius, (1.0 + RandPitch), True);
 	}
 }
 
@@ -1145,7 +1146,7 @@ function PlayFiring()
             if ( FRand() < 0.5 )
                 RandPitch *= -1.0;
         }
-        Weapon.PlayOwnedSound(StereoFireSound,SLOT_Interact,(TransientSoundVolume * FirstPersonSoundVolumeScale),,TransientSoundRadius,(1.0 + RandPitch),false);
+        Weapon.PlayOwnedSound(StereoFireSound,SLOT_Interact,(TransientSoundVolume * FirstPersonSoundVolumeScale),,TransientSoundRadius,(1.0 + RandPitch),True);
     }
     else if ( FireSound != None )  {
         if ( bRandomPitchFireSound )  {
@@ -1153,7 +1154,7 @@ function PlayFiring()
             if( FRand() < 0.5 )
                 RandPitch *= -1.0;
         }
-        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),false);
+        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),True);
     }
     ClientPlayForceFeedback(FireForce);  // jdf
 
@@ -1211,7 +1212,7 @@ defaultproperties
 	 //Sounds
 	 FirstPersonSoundVolumeScale=0.860000
 	 TransientSoundVolume=0.500000
-     TransientSoundRadius=400.000000
+     TransientSoundRadius=300.000000
 	 RandomPitchAdjustAmt=0.050000
 	 //Booleans
 	 bFiringDoesntAffectMovement=False

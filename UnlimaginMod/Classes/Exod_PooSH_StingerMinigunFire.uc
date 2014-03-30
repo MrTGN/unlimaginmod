@@ -45,7 +45,7 @@ defaultproperties
 	 ProjectileClass=Class'UnlimaginMod.UM_StingerMinigunBullet'
      BotRefireRate=0.990000
      AimError=90.000000
-     Spread=0.024000
-	 MaxSpread=0.156000
+     Spread=0.025000
+	 MaxSpread=0.175000
      SpreadStyle=SS_Random
 }

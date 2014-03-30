@@ -47,7 +47,7 @@ struct	SoundData
 	var	float		Vol;
 	var	bool		bNoOverride;
 	var	float		Radius;
-	var	float		Pitch;
+	var	Range		PitchRange;	// Random pitching within range
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
@@ -147,11 +147,13 @@ simulated final function PlaySoundData( SoundData SD )
 	// Volume
 	if ( SD.Vol <= 0.0 )
 		SD.Vol = TransientSoundVolume;
-	// Pitch
-	if ( SD.Pitch <= 0.0 )
-		SD.Pitch = 1.0;
+	// PitchRange
+	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
+		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
+	else
+		SD.PitchRange.Max = 1.0;
 	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
+	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
 }
 
 // play a sound effect, but don't propagate to a remote owner
@@ -161,11 +163,13 @@ simulated final function PlayOwnedSoundData( SoundData SD )
 	// Volume
 	if ( SD.Vol <= 0.0 )
 		SD.Vol = TransientSoundVolume;
-	// Pitch
-	if ( SD.Pitch <= 0.0 )
-		SD.Pitch = 1.0;
+	// PitchRange
+	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
+		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
+	else
+		SD.PitchRange.Max = 1.0;
 	// PlayOwnedSound
-	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.Pitch, SD.bUse3D);
+	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
 }
 //[end]
 

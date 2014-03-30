@@ -46,8 +46,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		Return;
 
 	// KFBulletWhipAttachment/ROBulletWhipAttachment - Collision for projectiles whip sounds. We need to do a HitPointTrace.
-	if ( KFBulletWhipAttachment(Other) != None || ROBulletWhipAttachment(Other) != None )
-	{
+	if ( KFBulletWhipAttachment(Other) != None || ROBulletWhipAttachment(Other) != None )  {
 		TraceEnd = HitLocation + (MaxEffectiveRange * Vector(Rotation));
 		Victim = Pawn(Instigator.HitPointTrace(TempHitLocation, HitNormal, TraceEnd, HitPoints, HitLocation,, 1));
 		if ( HitPoints.Length < 1 )
@@ -60,9 +59,10 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		Victim = Pawn(Other);
 	
 	// Do not damage a friendly Pawn
-	if ( Victim == None || Victim.bDeleteMe ||
-		 (Instigator != Victim && Instigator.GetTeamNum() == Victim.GetTeamNum() &&
-			TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0) )
+	if ( Victim == None || Victim.bDeleteMe
+		 || (Instigator != Victim && TeamGame(Level.Game) != None
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0
+			 && Instigator.GetTeamNum() == Victim.GetTeamNum()) )
 		Return;
 	
 	// Updating bullet Performance before hit the victim
@@ -70,13 +70,11 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 	if ( Level.TimeSeconds > NextProjectileUpdateTime )
 		UpdateProjectilePerformance();
 	
-	if ( Role == ROLE_Authority && ImpactDamageType != None && ImpactDamage > 0.0 )
-	{
+	if ( Role == ROLE_Authority && ImpactDamageType != None && ImpactDamage > 0.0 )  {
 		X = Normal(Velocity);
 		if ( KFPawn(Victim) != None )
 			KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
-        else
-        {
+        else  {
             if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
                 Victim.TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
             else

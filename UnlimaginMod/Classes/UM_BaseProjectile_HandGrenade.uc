@@ -86,7 +86,7 @@ simulated function ProjectileHasLostAllEnergy()
 
 simulated function ProcessTouch( actor Other, vector HitLocation )
 {
-	local	Vector		TempHitLocation, HitNormal, X/*, VNorm*/;
+	local	Vector		TempHitLocation, HitNormal, X;
 	local	array<int>	HitPoints;
     local	KFPawn		HitPawn;
 	
@@ -223,9 +223,9 @@ simulated event Destroyed()
 
 event Timer()
 {
-	if ( !bHidden )
-		Explode(Location, vect(0,0,1));
-	else
+	//if ( !bHidden )
+		//Explode(Location, vect(0,0,1));
+	//else
 		Destroy();
 }
 

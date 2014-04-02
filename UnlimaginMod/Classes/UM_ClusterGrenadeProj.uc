@@ -30,7 +30,9 @@ simulated function SetInitialVelocity()
 
 simulated event PostBeginPlay()
 {
-	ExplodeTimer = default.ExplodeTimer * (0.50 + FRand());
+	if ( Role == ROLE_Authority )
+		ExplodeTimer = default.ExplodeTimer * (0.50 + FRand());
+	
 	Super(UM_BaseProjectile).PostBeginPlay();
 }
 

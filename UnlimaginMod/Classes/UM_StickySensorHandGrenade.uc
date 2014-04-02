@@ -158,7 +158,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySoundData(BeepSound, 1.5);
+					ServerPlaySoundData(BeepSound, 1.5);
 				SetTimer(0.2,True);
 			}
 		}
@@ -170,7 +170,7 @@ event Timer()
 				if ( !bFriendlyPawnDetected )
 					Explode(Location, vect(0,0,1));
 				else if ( BeepSound.Snd != None )
-					PlaySoundData(BeepSound);
+					ServerPlaySoundData(BeepSound);
 			}
 			else  {
 				bAlwaysRelevant = False;
@@ -265,7 +265,7 @@ state Stuck
 				{
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
-						PlaySoundData(PickupSound);
+						ServerPlaySoundData(PickupSound);
 					Break;
 				}
 			}

@@ -331,9 +331,10 @@ function BlowUp(vector HitLocation)
 
 simulated function PlayExplosionEffects( vector HitLocation, vector HitNormal )
 {
+	if ( ExplodeSound.Snd != None )
+		ClientPlaySoundData(ExplodeSound);
+	
 	if ( !Level.bDropDetail && Level.NetMode != NM_DedicatedServer )  {
-		if ( ExplodeSound.Snd != None )
-			PlaySoundData(ExplodeSound);
 		// VFX
 		if ( EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
@@ -438,18 +439,15 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 		SetTimer(0.1, false);
 		NetUpdateTime = Level.TimeSeconds - 1;
 	}
+	
+	if ( DisintegrateSound.Snd != None )
+		ClientPlaySoundData(DisintegrateSound);
 
-	if ( !Level.bDropDetail && Level.NetMode != NM_DedicatedServer )  {
-		if ( DisintegrateSound.Snd != None )
-			PlaySoundData(DisintegrateSound);
-
-		if ( EffectIsRelevant(Location, False) && DisintegrationVisualEffect != None )
-			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
-	}
+	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
+		 && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
+		Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
 }
 
-// Shoot nades in mid-air
-// Alex
 event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	local	int		i;
@@ -477,10 +475,10 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 simulated event Destroyed()
 {
 	if ( !bHasExploded && !bHidden )
-		Explode(Location,vect(0,0,1));
+		Explode(Location, vect(0,0,1));
 	
 	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location,vect(0,0,1));
+		Disintegrate(Location, vect(0,0,1));
 	
 	Super.Destroyed();
 }
@@ -549,13 +547,13 @@ function bool MonsterIsInRadius( float MonsterSearchRadius )
 defaultproperties
 {
      bCanBeDamaged=True
-	 bIgnoreSameClassProj=False
+	 bIgnoreSameClassProj=True
 	 DisintegrateDamageScale=0.100000
 	 ImpactDamageRadius=0.00000
 	 TransientSoundVolume=2.000000
 	 //Sounds
-	 DisintegrateSound=(PitchRange=(Min=0.92,Max=1.08),bUse3D=True)
-	 ExplodeSound=(PitchRange=(Min=0.92,Max=1.08),bUse3D=True)
+	 DisintegrateSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
+	 ExplodeSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 //Shrapnel
 	 MaxShrapnelAmount=10
 	 MinShrapnelAmount=5

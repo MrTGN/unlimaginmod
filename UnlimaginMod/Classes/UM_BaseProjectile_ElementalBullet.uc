@@ -20,11 +20,35 @@ class UM_BaseProjectile_ElementalBullet extends UM_BaseElementalProjectile
 //========================================================================
 //[block] Variables
 
+var		bool		bCanDisintegrate;
+
 //[end] Varibles
 //====================================================================
 
+
+//========================================================================
+//[block] Replication
+
+replication
+{
+	reliable if ( RemoteRole == ROLE_SimulatedProxy && bNetInitial )
+		bCanDisintegrate;
+}
+
+//[end] Replication
+//====================================================================
+
+
 //========================================================================
 //[block] Functions
+
+simulated event PostBeginPlay()
+{
+	if ( Role == ROLE_Authority )
+		bCanDisintegrate = (FRand() <= DisintegrateChance);
+	
+	Super.PostBeginPlay();
+}
 
 // Called when the projectile loses some of it's energy
 simulated function ChangeOtherProjectilePerformance(float NewScale)
@@ -41,7 +65,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 	// Don't let it hit this player, or blow up on another player
 	// Don't collide with bullet whip attachments
 	// Don't allow hits on poeple on the same team
-	if ( Instigator == None || Other == None || Other == Instigator ||
+	if ( Other == None || Other.bDeleteMe || Instigator == None || Other == Instigator ||
 		 Other.Base == Instigator || !Other.bBlockHitPointTraces )
 		Return;
 
@@ -59,10 +83,8 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		Victim = Pawn(Other);
 	
 	// Do not damage a friendly Pawn
-	if ( Victim == None || Victim.bDeleteMe
-		 || (Instigator != Victim && TeamGame(Level.Game) != None
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-			 && Instigator.GetTeamNum() == Victim.GetTeamNum()) )
+	if ( Victim == None || (Instigator != Victim && TeamGame(Level.Game) != None
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == Victim.GetTeamNum()) )
 		Return;
 	
 	// Updating bullet Performance before hit the victim
@@ -91,6 +113,53 @@ simulated event Landed( vector HitNormal )
 	Explode(Location, HitNormal);
 }
 
+// Make the projectile distintegrate, instead of explode
+simulated function Disintegrate(vector HitLocation, vector HitNormal)
+{
+	bDisintegrated = True;
+	bHidden = True;
+	
+	if ( Role == ROLE_Authority )  {
+		Damage *= DisintegrateDamageScale;
+		MomentumTransfer *= DisintegrateDamageScale;
+		BlowUp(HitLocation);
+	}
+	
+	if ( DisintegrateSound.Snd != None )
+		ClientPlaySoundData(DisintegrateSound);
+
+	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
+		 && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
+		Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+	
+	Destroy();
+}
+
+// TakeDamage must be simulated because it is a bNetTemporary actor
+simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+{
+	local	int		i;
+
+	if ( Monster(InstigatedBy) != None || InstigatedBy == Instigator ||
+		 (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0) )  {
+		// Disintegrate this Projectile instead of simple detonation
+		if ( DisintegrateDamageTypes.Length > 0 )  {
+			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
+				if ( damageType == DisintegrateDamageTypes[i] )  {
+					if ( bCanDisintegrate )  {
+						bCanBeDamaged = False;
+						Disintegrate(HitLocation, vect(0.0, 0.0, 1.0));
+					}
+					Return;
+				}
+			}
+		}
+		
+		bCanBeDamaged = False;
+		Explode(HitLocation, vect(0.0, 0.0, 1.0));
+	}
+}
+
 //[end] Functions
 //====================================================================
 
@@ -98,6 +167,7 @@ defaultproperties
 {
      bIgnoreSameClassProj=True
 	 ShrapnelClass=None
+	 bCanDisintegrate=True
 	 // Explosion camera shakes
 	 ShakeRadiusScale=2.200000
 	 MaxEpicenterShakeScale=1.500000
@@ -122,7 +192,7 @@ defaultproperties
      InitialAccelerationTime=0.100000
      TossZ=0.000000
 	 //[end]
-	 //Speed Must be 0.00 becuse we use MuzzleVelocity
+	 //Speed Must be 0.00 because we use MuzzleVelocity
 	 Speed=0.000000
 	 MaxSpeed=0.000000
 	 //MuzzleVelocity
@@ -151,6 +221,8 @@ defaultproperties
 	 bNetTemporary=True
 	 bReplicateInstigator=True
      bNetInitialRotation=True
+	 bReplicateMovement=True
+	 bUpdateSimulatedPosition=False
 	 //Light
 	 AmbientGlow=30		// Ambient brightness, or 255=pulsing.
 	 bUnlit=True		// Lights don't affect actor.

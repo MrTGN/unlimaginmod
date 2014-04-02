@@ -1146,7 +1146,7 @@ function PlayFiring()
             if ( FRand() < 0.5 )
                 RandPitch *= -1.0;
         }
-        Weapon.PlayOwnedSound(StereoFireSound,SLOT_Interact,(TransientSoundVolume * FirstPersonSoundVolumeScale),,TransientSoundRadius,(1.0 + RandPitch),True);
+        Weapon.PlayOwnedSound(StereoFireSound,SLOT_Interact,(TransientSoundVolume * FirstPersonSoundVolumeScale),,TransientSoundRadius,(1.0 + RandPitch), False);
     }
     else if ( FireSound != None )  {
         if ( bRandomPitchFireSound )  {
@@ -1154,7 +1154,7 @@ function PlayFiring()
             if( FRand() < 0.5 )
                 RandPitch *= -1.0;
         }
-        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch),True);
+        Weapon.PlayOwnedSound(FireSound,SLOT_Interact,TransientSoundVolume,,TransientSoundRadius,(1.0 + RandPitch), True);
     }
     ClientPlayForceFeedback(FireForce);  // jdf
 

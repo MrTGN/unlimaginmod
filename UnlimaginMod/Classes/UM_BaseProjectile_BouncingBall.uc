@@ -135,7 +135,7 @@ state NoEnergy
 				{
 					KFWeapon(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
-						PlaySoundData(PickupSound);
+						ServerPlaySoundData(PickupSound);
 					Break;
 				}
 			}

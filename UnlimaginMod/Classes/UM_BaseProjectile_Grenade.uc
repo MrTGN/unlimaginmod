@@ -29,6 +29,13 @@ var		float		FlyingTime, TimeToStartFalling;
 //========================================================================
 //[block] Replication
 
+replication
+{
+	// Synchronization between server and clients if network is not overloaded.
+	unreliable if ( RemoteRole == ROLE_SimulatedProxy && bNetInitial )
+		TimeToStartFalling;
+}
+
 //[end] Replication
 //====================================================================
 
@@ -42,11 +49,8 @@ simulated function CalcDefaultProperties()
 	// FlyingTime
 	if ( default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
 		default.FlyingTime = default.MaxEffectiveRange / default.MaxSpeed;
-		if ( bTrueBallistics )  {
-			default.FlyingTime += 1.0 - FMin(default.BallisticCoefficient, 1.0);
-			if ( bInitialAcceleration )
-				default.FlyingTime += default.InitialAccelerationTime;
-		}
+		if ( default.bInitialAcceleration )
+			default.FlyingTime += default.InitialAccelerationTime;
 		FlyingTime = default.FlyingTime;
 	}
 }

@@ -119,7 +119,7 @@ function RandomizeMonsterSizes()
 	else if ( RandMult > 1.0 )
 		PrePivot.Z = default.PrePivot.Z + FMax(default.PrePivot.Z, 1.0) * RandMult;
 	*/
-	PrePivot.Z = default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z);
+	PrePivot.Z = default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z) - (OnlineHeadshotScale - default.OnlineHeadshotScale);
 	
 	bRandomSizeAdjusted = True;
 }

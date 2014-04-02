@@ -103,23 +103,13 @@ function RandomizeMonsterSizes()
 	ColRadius *= RandomSizeMult;
 	ColHeight *= RandomSizeMult;
 	ColOffset.Z *= RandomSizeMult;
-	OnlineHeadshotOffset.Z *= RandomSizeMult;
 	OnlineHeadshotScale *= RandomSizeMult;
+	OnlineHeadshotOffset.Z *= RandomSizeMult;
 	BaseEyeHeight *= RandomSizeMult;
 	EyeHeight *= RandomSizeMult;
 	CrouchHeight *= RandomSizeMult;
 	CrouchRadius *= RandomSizeMult;
-	/*
-	if ( RandMult < 1.0 )
-		PrePivot.Z = default.PrePivot.Z * RandMult * 0.50;
-	else if ( RandMult > 1.0 )
-		PrePivot.Z = default.PrePivot.Z * RandMult / 0.55;
-	if ( RandMult < 1.0 )
-		PrePivot.Z = default.PrePivot.Z - FMax(default.PrePivot.Z, 1.0) / RandMult;
-	else if ( RandMult > 1.0 )
-		PrePivot.Z = default.PrePivot.Z + FMax(default.PrePivot.Z, 1.0) * RandMult;
-	*/
-	PrePivot.Z = default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z) - (OnlineHeadshotScale - default.OnlineHeadshotScale);
+	PrePivot.Z = (default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z)) + (default.OnlineHeadshotScale - OnlineHeadshotScale) * 0.5;
 	
 	bRandomSizeAdjusted = True;
 }

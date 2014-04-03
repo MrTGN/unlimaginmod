@@ -494,11 +494,11 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 {
 	local	KFPlayerReplicationInfo		KFPRI;
 	
+	if ( Controller != None && Controller.bGodMode )
+		Return;
+	
 	//server
 	if ( Role == ROLE_Authority )  {
-		if ( Controller != None && Controller.bGodMode )
-			Return;
-
 		if ( KFMonster(InstigatedBy) != None )
 			KFMonster(InstigatedBy).bDamagedAPlayer = True;
 
@@ -510,43 +510,38 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 		LastHitDamType = damageType;
 		LastDamagedBy = InstigatedBy;
 
-		Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, damageType);
+		Super(Pawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, damageType);
 
 		healthtoGive -= 5;
 
 		KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
 
 		// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-		if ( KFPRI != None &&  KFPRI.ClientVeteranSkill != None &&
-			 KFPRI.ClientVeteranSkill.Static.ReduceDamage(KFPRI, self, KFMonster(InstigatedBy), Damage, DamageType) <= 0 )
+		if ( KFPRI != None &&  KFPRI.ClientVeteranSkill != None
+			 && KFPRI.ClientVeteranSkill.Static.ReduceDamage(KFPRI, self, KFMonster(InstigatedBy), Damage, DamageType) < 1 )
 				Return;
 
-		if ( class<DamTypeBurned>(damageType) != None || class<DamTypeFlamethrower>(damageType) != None )
-		{
-			if ( TeamGame(Level.Game) != None &&
-				 TeamGame(Level.Game).FriendlyFireScale == 0 &&
-				 InstigatedBy != None && InstigatedBy != Self &&
-				 InstigatedBy.GetTeamNum() == GetTeamNum() )
+		if ( class<DamTypeBurned>(damageType) != None || class<DamTypeFlamethrower>(damageType) != None )  {
+			// FriendlyFire
+			if ( InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
+				 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum() )
 				Return;
 
 			// Do burn damage if the damage was significant enough
-			if( Damage > 2 )
-			{
+			if ( Damage > 2 )  {
 				// If we are already burning, and this damage is more than our current burn amount, add more burn time
-				if( BurnDown > 0 && Damage > LastBurnDamage )
-				{
+				if ( BurnDown > 0 && Damage > LastBurnDamage )  {
 					BurnDown = 5;
 					BurnInstigator = InstigatedBy;
 				}
 
 				LastBurnDamage = Damage;
 
-				if ( BurnDown <= 0 )
-				{
-					bBurnified = true;
+				if ( BurnDown <= 0 )  {
+					bBurnified = True;
 					BurnDown = 5;
 					BurnInstigator = InstigatedBy;
-					SetTimer(1.5,true);
+					SetTimer(1.5, True);
 				}
 			}
 		}
@@ -554,35 +549,27 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 		if ( Controller == None || PlayerController(Controller) == None )
 			Return;
 
-		if ( Class<DamTypeVomit>(DamageType) != None )
-		{
+		if ( Class<DamTypeVomit>(DamageType) != None )  {
 			BileCount = 7;
 			BileInstigator = InstigatedBy;
-			if ( NextBileTime< Level.TimeSeconds )
+			if ( NextBileTime < Level.TimeSeconds )
 				NextBileTime = Level.TimeSeconds + BileFrequency;
 
-			if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && 
-				 KFPlayerController(Controller) != None && !KFPlayerController(Controller).bVomittedOn )
-			{
+			if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 
+				 && KFPlayerController(Controller) != None && !KFPlayerController(Controller).bVomittedOn )  {
 				KFPlayerController(Controller).bVomittedOn = True;
 				KFPlayerController(Controller).VomittedOnTime = Level.TimeSeconds;
-
 				if ( Controller.TimerRate == 0.0 )
 					Controller.SetTimer(10.0, false);
 			}
 		}
-		else if ( Class<SirenScreamDamage>(DamageType) != None )
-		{
-			if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && 
-				 KFPlayerController(Controller) != None &&
-				 !KFPlayerController(Controller).bScreamedAt )
-			{
-				KFPlayerController(Controller).bScreamedAt = true;
-				KFPlayerController(Controller).ScreamTime = Level.TimeSeconds;
-
-				if ( Controller.TimerRate == 0.0 )
-					Controller.SetTimer(10.0, false);
-			}
+		else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+				 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 
+				 && KFPlayerController(Controller) != None && !KFPlayerController(Controller).bScreamedAt )  {
+			KFPlayerController(Controller).bScreamedAt = True;
+			KFPlayerController(Controller).ScreamTime = Level.TimeSeconds;
+			if ( Controller.TimerRate == 0.0 )
+				Controller.SetTimer(10.0, false);
 		}
 		//[end] Codes From KFPawn
 	}
@@ -592,8 +579,7 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 		SetOverlayMaterial(InjuredOverlay, 0, true);
 
 	//server
-	if ( Role == ROLE_Authority && Level.Game.NumPlayers > 1 
-		 && Health < (HealthMax * 0.25) 
+	if ( Role == ROLE_Authority && Level.Game.NumPlayers > 1 && Health < (HealthMax * 0.25) 
 		 && (Level.TimeSeconds - LastDyingMessageTime) > DyingMessageDelay )  {
 		// Tell everyone we're dying
 		PlayerController(Instigator.Controller).Speech('AUTO', 6, "");
@@ -601,6 +587,32 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 	}
 }
 //[end]
+
+function TakeBileDamage()
+{
+	local	vector	BileVect, HitMomentum;
+	local	int		RandBileDamage, ActualDamage;
+
+	RandBileDamage = 2 + Rand(3);
+    Super(Pawn).TakeDamage(RandBileDamage, BileInstigator, Location, vect(0,0,0), LastBileDamagedByType);
+    
+	healthToGive -= 5;
+
+    HitMomentum = vect(0,0,0);
+    ActualDamage = Level.Game.ReduceDamage(RandBileDamage, self, BileInstigator, Location, HitMomentum, LastBileDamagedByType);
+
+    if ( ActualDamage <= 0 || Controller == None || PlayerController(Controller) == None || Controller.bGodMode )
+        Return;
+
+	BileVect.X = FRand();
+	BileVect.Y = FRand();
+	BileVect.Z = FRand();
+
+	if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
+		DoHitCamEffects( BileVect, 0.25, 0.75, 0.5 );
+	else
+		DoHitCamEffects( BileVect, 0.35, 2.0,1.0 );
+}
 
 
 function ExtendedCreateInventoryVeterancy(

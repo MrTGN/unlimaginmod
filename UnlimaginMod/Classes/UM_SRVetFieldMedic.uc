@@ -97,8 +97,8 @@ static function int ReduceDamage(KFPlayerReplicationInfo KFPRI, KFPawn Injured, 
 {
 	if ( DmgType == class'DamTypeVomit' )
 		Return float(InDamage) * (0.95 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10)))); // 75% decrease in damage from Bloat's Bile
-	else if ( KFHumanPawn(Injured).ShieldStrength > 0 && DmgType == class'SirenScreamDamage' 
-				&& KFPRI.ClientVeteranSkillLevel > 0 )
+	else if ( KFPRI.ClientVeteranSkillLevel > 0 && KFHumanPawn(Injured).ShieldStrength > 0
+			  && (DmgType == Class'UM_ZombieDamType_SirenScream' || DmgType == class'SirenScreamDamage') )
 		Return float(InDamage) * (1.00 - (0.03 * float(Min(KFPRI.ClientVeteranSkillLevel,10))));
 
 	Return InDamage;

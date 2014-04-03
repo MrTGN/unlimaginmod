@@ -233,9 +233,9 @@ simulated function CalcDefaultProperties()
 	// Calculating LifeSpan
 	if ( bAutoLifeSpan && default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
 		default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
-		if ( bTrueBallistics )  {
+		if ( default.bTrueBallistics )  {
 			default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
-			if ( bInitialAcceleration )
+			if ( default.bInitialAcceleration )
 				default.LifeSpan += default.InitialAccelerationTime;
 		}
 		LifeSpan = default.LifeSpan;

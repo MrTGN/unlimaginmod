@@ -266,7 +266,7 @@ static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, Weapon
 			 || UM_BaseBattleRifleFire(WF) != None 
 			 || UM_BaseHandgunFire(WF) != None
 			 || UM_BaseSniperRifleFire(WF) != None) )
-		Return 1.00 - (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 60% bonus
+		Return 1.00 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 70% bonus
 	
 	Return 1.0;
 }
@@ -278,7 +278,7 @@ static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFi
 			 || UM_BaseBattleRifleFire(WF) != None 
 			 || UM_BaseHandgunFire(WF) != None
 			 || UM_BaseSniperRifleFire(WF) != None) )
-		Return 1.00 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 70% bonus
+		Return 1.000 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 70% bonus
 	
 	Return 1.0;
 }

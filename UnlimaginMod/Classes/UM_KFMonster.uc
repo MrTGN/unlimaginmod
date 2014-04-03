@@ -91,25 +91,26 @@ function RandomizeMonsterSizes()
 	local	float	RandomSizeMult;
 	
 	RandomSizeMult = GetRandMult( MinMonsterSizeScale, MaxMonsterSizeScale, ExtraSizesChance, MaxExtraSizeScale, MinExtraSizeScale );
-	EnergyToPenetrateHead *= RandomSizeMult * GetRandMult(0.9, 1.1);
-	EnergyToPenetrateBody *= RandomSizeMult * GetRandMult(0.9, 1.1);
-	MeleeRange *= RandomSizeMult * GetRandMult(MinMeleeRangeScale, MaxMeleeRangeScale);
+	EnergyToPenetrateHead = default.EnergyToPenetrateHead * RandomSizeMult * GetRandMult(0.9, 1.1);
+	EnergyToPenetrateBody = default.EnergyToPenetrateBody * RandomSizeMult * GetRandMult(0.9, 1.1);
+	MeleeRange = default.MeleeRange * RandomSizeMult * GetRandMult(MinMeleeRangeScale, MaxMeleeRangeScale);
 	// Sizes
 	SetDrawScale(default.DrawScale * RandomSizeMult);
-	SeveredArmAttachScale *= RandomSizeMult;
-	SeveredLegAttachScale *= RandomSizeMult;
-	SeveredHeadAttachScale *= RandomSizeMult;
-	Mass *= RandomSizeMult;
-	ColRadius *= RandomSizeMult;
-	ColHeight *= RandomSizeMult;
-	ColOffset.Z *= RandomSizeMult;
-	OnlineHeadshotScale *= RandomSizeMult;
-	OnlineHeadshotOffset.Z *= RandomSizeMult;
-	BaseEyeHeight *= RandomSizeMult;
-	EyeHeight *= RandomSizeMult;
-	CrouchHeight *= RandomSizeMult;
-	CrouchRadius *= RandomSizeMult;
-	PrePivot.Z = (default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z)) + (default.OnlineHeadshotScale - OnlineHeadshotScale) * 0.5;
+	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
+	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
+	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
+	Mass = default.Mass * RandomSizeMult;
+	ColRadius = default.ColRadius * RandomSizeMult;
+	ColHeight = default.ColHeight * RandomSizeMult;
+	ColOffset = default.ColOffset * RandomSizeMult;
+	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
+	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
+	HeadHeight = default.HeadHeight * RandomSizeMult;
+	BaseEyeHeight = default.BaseEyeHeight * RandomSizeMult;
+	EyeHeight = default.EyeHeight * RandomSizeMult;
+	CrouchHeight = default.CrouchHeight * RandomSizeMult;
+	CrouchRadius = default.CrouchRadius * RandomSizeMult;
+	PrePivot.Z = default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z);
 	
 	bRandomSizeAdjusted = True;
 }
@@ -863,6 +864,87 @@ function PushAwayZombie(vector PushAwayDirection, float PushAwayPower)
 			Controller.SetFall();
 	}
 } */
+
+// Overridden so that anims don't get interrupted on the server if one is already playing
+function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
+{
+	local coords C;
+	local vector HeadLoc, B, M, diff;
+	local float t, DotMM, Distance;
+	local int look;
+	local bool bUseAltHeadShotLocation;
+	local bool bWasAnimating;
+
+	if ( HeadBone == '' )
+		Return False;
+
+	// If we are a dedicated server estimate what animation is most likely playing on the client
+	if ( Level.NetMode == NM_DedicatedServer )  {
+		if ( Physics == PHYS_Falling )
+			PlayAnim(AirAnims[0], 1.0, 0.0);
+		else if ( Physics == PHYS_Walking )  {
+			// Only play the idle anim if we're not already doing a different anim.
+			// This prevents anims getting interrupted on the server and borking things up - Ramm
+			if ( !IsAnimating(0) && !IsAnimating(1) )  {
+				if ( bIsCrouched )
+					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
+				else
+					bUseAltHeadShotLocation = True;
+			}
+			else
+				bWasAnimating = True;
+
+			if ( bDoTorsoTwist )  {
+				SmoothViewYaw = Rotation.Yaw;
+				SmoothViewPitch = ViewPitch;
+				look = (256 * ViewPitch) & 65535;
+				if ( look > 32768 )
+					look -= 65536;
+				SetTwistLook(0, look);
+			}
+		}
+		else if ( Physics == PHYS_Swimming )
+			PlayAnim(SwimAnims[0], 1.0, 0.0);
+
+		if( !bWasAnimating )
+			SetAnimFrame(0.5);
+	}
+
+	if( bUseAltHeadShotLocation )  {
+		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
+		AdditionalScale *= OnlineHeadshotScale;
+	}
+	else  {
+		C = GetBoneCoords(HeadBone);
+		HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
+	}
+	//ServerHeadLocation = HeadLoc;
+
+	// Express snipe trace line in terms of B + tM
+	B = loc;
+	M = ray * (2.0 * CollisionHeight + 2.0 * CollisionRadius);
+
+	// Find Point-Line Squared Distance
+	diff = HeadLoc - B;
+	t = M Dot diff;
+	if ( t > 0 )  {
+		DotMM = M dot M;
+		if ( t < DotMM )  {
+			t = t / DotMM;
+			diff = diff - (t * M);
+		}
+		else  {
+			t = 1;
+			diff -= M;
+		}
+	}
+	else
+		t = 0;
+
+	Distance = Sqrt(diff Dot diff);
+
+	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
+}
 
 function Dazzle(float TimeScale)
 {

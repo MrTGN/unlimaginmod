@@ -49,8 +49,9 @@ simulated function CalcDefaultProperties()
 	// FlyingTime
 	if ( default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
 		default.FlyingTime = default.MaxEffectiveRange / default.MaxSpeed;
-		if ( default.bInitialAcceleration )
+		if ( default.bTrueBallistics && default.bInitialAcceleration )
 			default.FlyingTime += default.InitialAccelerationTime;
+		
 		FlyingTime = default.FlyingTime;
 	}
 }
@@ -67,9 +68,9 @@ simulated event Tick( float DeltaTime )
 {
 	Super.Tick(DeltaTime);
 
-	if ( (Physics == default.Physics || Physics == PHYS_Falling)
-		 && Level.TimeSeconds > NextProjectileUpdateTime
-		 && Velocity != Vect(0.0, 0.0, 0.0) )  {
+	if ( Velocity != Vect(0.0, 0.0, 0.0)
+		 && (Physics == default.Physics || Physics == PHYS_Falling)
+		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
 		// Updating Projectile
 		UpdateProjectilePerformance();
 		// Time to start falling

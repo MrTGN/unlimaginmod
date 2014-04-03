@@ -22,7 +22,7 @@ defaultproperties
 {
      bAutoLifeSpan=True
 	 BallisticCoefficient=0.150000
-	 ArmingRange=3.000000
+	 ArmingRange=5.000000
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000
@@ -45,8 +45,7 @@ defaultproperties
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 //StaticMesh
      DrawType=DT_StaticMesh
-	 //StaticMesh=StaticMesh'kf_generic_sm.40mm_Warhead'
-	 StaticMeshRef="kf_generic_sm.40mm_Warhead"
+	 StaticMesh=StaticMesh'kf_generic_sm.40mm_Warhead'
 	 //Collision
 	 bCollideActors=True
      bCollideWorld=True

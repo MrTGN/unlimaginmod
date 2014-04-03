@@ -136,6 +136,9 @@ simulated event PostNetReceive()
 // Detonator is armed
 simulated function bool IsArmed()
 {
+	if ( bHidden || bShouldExplode )
+		Return False;
+	
 	Return True;
 }
 
@@ -202,8 +205,10 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			dir = dir / dist;
 			damageScale = 1 - FMax( 0, ((dist - Victims.CollisionRadius) / DamageRadius) );
 			
-			if ( Instigator == None || Instigator.Controller == None )
+			if ( Instigator == None || Instigator.Controller == None )  {
 				Victims.SetDelayedDamageInstigatorController( InstigatorController );
+				Continue;
+			}
 				
 			if ( Victims == LastTouched )
 				LastTouched = None;
@@ -294,8 +299,10 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		if ( damageScale <= 0.0 )
 			Return;
 		
-		if ( Instigator == None || Instigator.Controller == None )
-			Victims.SetDelayedDamageInstigatorController(InstigatorController);
+		if ( Instigator == None || Instigator.Controller == None )  {
+			Victims.SetDelayedDamageInstigatorController( InstigatorController );
+			Return;
+		}
 		
 		VictimHitLocation = Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir;
 		Victims.TakeDamage(
@@ -397,7 +404,7 @@ simulated function ShakePlayersView()
 
 event Timer()
 {
-	if ( !bHidden && !bShouldExplode )
+	if ( IsArmed() )
 		Explode(Location, vect(0,0,1));
 	else
 		Destroy();
@@ -500,8 +507,8 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	if ( Level.TimeSeconds > NextProjectileUpdateTime )
 		UpdateProjectilePerformance();
 	
-	if ( Role == ROLE_Authority && ImpactDamageType != None && ImpactDamage > 0.0 )  {
-		if ( !Wall.bStatic && !Wall.bWorldGeometry )  {
+	if ( Role == ROLE_Authority )  {
+		if ( ImpactDamageType != None && ImpactDamage > 0.0 && !Wall.bStatic && !Wall.bWorldGeometry )  {
 			if ( Instigator == None || Instigator.Controller == None )
 				Wall.SetDelayedDamageInstigatorController(InstigatorController);
 
@@ -512,10 +519,10 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 
 			HurtWall = Wall;
 		}
+		
+		if ( IsArmed() )
+			Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	}
-	
-	if ( IsArmed() )
-		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	
 	HurtWall = None;
 	ProjectileHasLostAllEnergy();

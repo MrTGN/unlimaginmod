@@ -31,7 +31,7 @@ var		Class<AvoidMarker>		FearMarkerClass;
 
 replication
 {
-    reliable if ( bNetDirty && Role == ROLE_Authority )
+    reliable if ( Role == ROLE_Authority && bNetDirty )
         ExplodeTimer;
 }
 

@@ -23,6 +23,7 @@ class UM_BaseProjectile_Grenade extends UM_BaseExplosiveProjectile
 
 var		float		FlyingTime, TimeToStartFalling; 
 var		float		ArmingDelay, ArmingTime;
+var		bool		bDisarmed;
 
 //[end] Varibles
 //====================================================================
@@ -32,9 +33,11 @@ var		float		ArmingDelay, ArmingTime;
 
 replication
 {
-	// Synchronization between server and clients if network is not overloaded.
-	unreliable if ( Role == ROLE_Authority && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetInitial )
 		TimeToStartFalling, ArmingTime;
+
+	reliable if ( Role == ROLE_Authority && bNetDirty )
+		bDisarmed;
 }
 
 //[end] Replication
@@ -49,10 +52,13 @@ simulated function CalcDefaultProperties()
 	
 	if ( default.MaxSpeed > 0.0 )  {
 		// FlyingTime
-		if ( default.MaxEffectiveRange > 0.0 )  {
-			default.FlyingTime = default.MaxEffectiveRange / default.MaxSpeed;
-			if ( default.bTrueBallistics && default.bInitialAcceleration )
-				default.FlyingTime += default.InitialAccelerationTime;
+		if ( default.EffectiveRange > 0.0 )  {
+			default.FlyingTime = default.EffectiveRange / default.MaxSpeed;
+			if ( default.bTrueBallistics )  {
+				default.FlyingTime += 1.0 - FMin(default.BallisticCoefficient, 1.0);
+				if ( default.bInitialAcceleration )
+					default.FlyingTime += default.InitialAccelerationTime;
+			}
 			
 			FlyingTime = default.FlyingTime;
 		}
@@ -78,12 +84,18 @@ simulated function SetInitialVelocity()
 	Super.SetInitialVelocity();
 }
 
+simulated function ProjectileHasLostAllEnergy()
+{
+	bBounce = False;
+	Super.ProjectileHasLostAllEnergy();
+}
+
 simulated function bool IsArmed()
 {
-	if ( Level.TimeSeconds < ArmingTime )
+	if ( bDisarmed || Level.TimeSeconds < ArmingTime )
 		Return False;
 	
-	Return True;
+	Return Super.IsArmed();
 }
 
 simulated event Tick( float DeltaTime )
@@ -100,6 +112,44 @@ simulated event Tick( float DeltaTime )
 			 && Level.TimeSeconds >= TimeToStartFalling )
 			SetPhysics(PHYS_Falling);
 	}
+}
+
+function Disarm()
+{
+	if ( !bDisarmed )  {
+		bDisarmed = True;
+		NetUpdateTime = Level.TimeSeconds - 1;
+	}
+}
+
+simulated singular event HitWall(vector HitNormal, actor Wall)
+{
+	// Updating bullet Performance before hit the victim
+	// Needed because bullet lose Speed and ImpactDamage while flying
+	if ( Level.TimeSeconds > NextProjectileUpdateTime )
+		UpdateProjectilePerformance();
+	
+	if ( Role == ROLE_Authority )  {
+		if ( ImpactDamageType != None && ImpactDamage > 0.0 && !Wall.bStatic && !Wall.bWorldGeometry )  {
+			if ( Instigator == None || Instigator.Controller == None )
+				Wall.SetDelayedDamageInstigatorController(InstigatorController);
+
+			Wall.TakeDamage(ImpactDamage, Instigator, Location, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
+
+			if ( ImpactDamageRadius > 0.0 && Vehicle(Wall) != None && Vehicle(Wall).Health > 0 )
+				Vehicle(Wall).DriverRadiusDamage(ImpactDamage, ImpactDamageRadius, InstigatorController, ImpactDamageType, ImpactMomentumTransfer, Location);
+
+			HurtWall = Wall;
+		}
+		
+		if ( IsArmed() )
+			Explode((Location + ExploWallOut * HitNormal), HitNormal);
+		else
+			Disarm();
+	}
+	
+	HurtWall = None;
+	ProjectileHasLostAllEnergy();
 }
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
@@ -157,6 +207,8 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		
 		if ( IsArmed() )
 			Explode(HitLocation, Normal(HitLocation - Other.Location));
+		else
+			Disarm();
     }
 	
 	// Stop the grenade in its tracks if it hits an enemy.

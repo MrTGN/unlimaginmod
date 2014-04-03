@@ -50,7 +50,7 @@ defaultproperties
      ShakeRotMag=(X=3.000000,Y=4.000000,Z=2.000000)
      ShakeRotRate=(X=10000.000000,Y=10000.000000,Z=10000.000000)
      ShakeOffsetMag=(X=3.000000,Y=3.000000,Z=3.000000)
-     ProjectileClass=Class'KFMod.M203GrenadeProjectile'
+     ProjectileClass=Class'UnlimaginMod.UM_M203M381Grenade'
      BotRefireRate=1.800000
      AimError=60.000000
      Spread=0.015000

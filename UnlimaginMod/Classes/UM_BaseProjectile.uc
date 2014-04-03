@@ -126,10 +126,10 @@ var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in 
 
 replication
 {
-    reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetDirty && bNetInitial )
+    reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
 		SpawnTime;
 	
-	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetDirty && bNetInitial )
+	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetInitial )
 		SpawnLocation;
 }
 

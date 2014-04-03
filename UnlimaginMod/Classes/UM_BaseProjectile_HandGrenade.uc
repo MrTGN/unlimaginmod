@@ -105,14 +105,10 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 	if ( Other.IsA('NetKActor') )
 		KAddImpulse(Velocity,HitLocation,);
 		
-	if ( Role == ROLE_Authority && ImpactDamage > 0.0 && ImpactDamageType != None )
-	{
+	if ( Role == ROLE_Authority && ImpactDamage > 0.0 && ImpactDamageType != None )  {
 		X = Normal(Velocity);
-		
-		if ( ROBulletWhipAttachment(Other) != None )
-		{
-			if ( !Other.Base.bDeleteMe )
-			{
+		if ( ROBulletWhipAttachment(Other) != None )  {
+			if ( !Other.Base.bDeleteMe )  {
 				Other = Instigator.HitPointTrace(TempHitLocation, HitNormal, HitLocation + (200 * Vector(Rotation)), HitPoints, HitLocation,, 1);
 				if ( Other == None || HitPoints.Length == 0 )
 					Return;
@@ -122,13 +118,10 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 					HitPawn.ProcessLocationalDamage(ImpactDamage, Instigator, TempHitLocation, (ImpactMomentumTransfer * X), ImpactDamageType, HitPoints);
 			}
     	}
-        else
-        {
-            if ( Pawn(Other) != None && Pawn(Other).IsHeadShot(HitLocation, X, 1.0) )
-				Pawn(Other).TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-            else
-                Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-		}
+        else if ( Pawn(Other) != None && Pawn(Other).IsHeadShot(HitLocation, X, 1.0) )
+			Pawn(Other).TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
+		else
+			Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
     }
 	
 	// Stop the grenade in its tracks if it hits an enemy.
@@ -253,7 +246,7 @@ defaultproperties
      //HitSoundRadius=200.000000
 	 HitEffectsClass=Class'UnlimaginMod.UM_BulletHitEffects'
 	 //Damages
-     Damage=320.000000
+     Damage=340.000000
      DamageRadius=420.000000
 	 MomentumTransfer=100000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenade'

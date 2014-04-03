@@ -58,7 +58,7 @@ var		SoundData			DisintegrateSound, ExplodeSound;
 var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
-var		float				SafeRange;	//In this range Projectile will not Explode
+var		float				ArmingRange;	// Detonator will be armed after this distance
 
 //DramaticEvents
 var		float				SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
@@ -133,12 +133,10 @@ simulated event PostNetReceive()
 		Explode(Location, vect(0,0,1));
 }
 
-simulated function bool InSafeRange()
+// Detonator is armed
+simulated function bool IsArmed()
 {
-	if ( VSize(Instigator.Location - Location) > SafeRange )
-		Return False;
-	else
-		Return True;
+	Return True;
 }
 
 // Called when projectile has lost all energy
@@ -516,8 +514,11 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 		}
 	}
 	
-	Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	if ( IsArmed() )
+		Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	
 	HurtWall = None;
+	ProjectileHasLostAllEnergy();
 }
 
 

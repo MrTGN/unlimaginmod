@@ -1,27 +1,24 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_DamTypeHandGrenade
+//	Class name:		 UM_DamTypeM203M381Grenade
 //	Parent class:	 UM_BaseDamType_Explosive
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
+//	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
 //	Also some parts of the code with some changes copied from: 
 //	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
 //	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 10.07.2013 23:54
+//	Creation date:	 03.04.2014 21:18
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_DamTypeHandGrenade extends UM_BaseDamType_Explosive
+class UM_DamTypeM203M381Grenade extends UM_BaseDamType_Explosive
 	Abstract;
 
 
 defaultproperties
 {
-     DeathOverlayMaterial=Combiner'Effects_Tex.GoreDecals.PlayerDeathOverlay'
-     DeathOverlayTime=999.000000
-	 HumanObliterationThreshhold=150
-	 WeaponClass=Class'UnlimaginMod.UM_Weapon_HandGrenade'
+     WeaponClass=Class'UnlimaginMod.UM_M4203AssaultRifle'
 }

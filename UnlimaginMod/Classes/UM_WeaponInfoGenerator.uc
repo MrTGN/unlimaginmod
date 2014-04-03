@@ -452,10 +452,6 @@ simulated function RebalansDefaultClasses()
 	class'M203Ammo'.default.MaxAmmo = 10;
 	class'M4203Ammo'.default.InitialAmount = 200;
 	class'M4203Ammo'.default.AmmoPickupAmount = 30;
-	//M203GrenadeProjectile
-	class'M203GrenadeProjectile'.default.Damage = 350.000000;
-	class'M203GrenadeProjectile'.default.DamageRadius = 390.000000;
-	class'M203GrenadeProjectile'.default.ImpactDamage = 200;
 	//--------------------
 	//MKb42AssaultRifle
 	//------------------

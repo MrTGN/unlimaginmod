@@ -227,11 +227,7 @@ defaultproperties
 	 StaticMesh=StaticMesh'kf_generic_sm.40mm_Warhead'
 	 GrenadeLightClass=Class'UnlimaginMod.UM_StickyGrenadeLight'
 	 //StaticMeshRef="kf_generic_sm.40mm_Warhead"
-	 //Booleans
-     bBlockHitPointTraces=False
-     bUnlit=False
-	 bBounce=True
-     //bFixedRotationDir=True
+	 //bFixedRotationDir=True
 	 bUpdateSimulatedPosition=True
 	 bNetTemporary=False
 	 bNetNotify=True

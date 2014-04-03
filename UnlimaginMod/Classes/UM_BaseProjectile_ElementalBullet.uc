@@ -140,8 +140,8 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		Victim = Pawn(Other);
 	
 	// Do not damage a friendly Pawn
-	if ( Victim == None || (Instigator != Victim && TeamGame(Level.Game) != None
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == Victim.GetTeamNum()) )
+	if ( Victim != None && Instigator != Victim && TeamGame(Level.Game) != None
+		 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == Victim.GetTeamNum() )
 		Return;
 	
 	// Updating bullet Performance before hit the victim
@@ -151,14 +151,18 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 	
 	if ( Role == ROLE_Authority && ImpactDamageType != None && ImpactDamage > 0.0 )  {
 		X = Normal(Velocity);
-		if ( KFPawn(Victim) != None )
-			KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
-        else  {
-            if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
-                Victim.TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
-            else
-                Victim.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
-        }
+		if ( Victim != None )  {
+			if ( KFPawn(Victim) != None )
+				KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
+			else  {
+				if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
+					Victim.TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
+				else
+					Victim.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
+			}
+		}
+		else
+			Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
     }
 	
 	Explode(HitLocation, Normal(HitLocation - Other.Location));

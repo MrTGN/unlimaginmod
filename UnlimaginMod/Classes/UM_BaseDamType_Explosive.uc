@@ -15,7 +15,7 @@
 class UM_BaseDamType_Explosive extends UM_BaseWeaponDamageType
 	Abstract;
 
-/*
+
 static function GetHitEffects(out class<xEmitter> HitEffects[4], int VictimHealth)
 {
 	HitEffects[0] = class'HitSmoke';
@@ -23,7 +23,8 @@ static function GetHitEffects(out class<xEmitter> HitEffects[4], int VictimHealt
 		HitEffects[1] = class'KFHitFlame';
 	else if ( FRand() < 0.8 )
 		HitEffects[1] = class'KFHitFlame';
-} */
+}
+
 
 defaultproperties
 {
@@ -40,4 +41,7 @@ defaultproperties
      KDamageImpulse=2500.000000
      KDeathVel=300.000000
      KDeathUpKick=200.000000
+	 DeathOverlayMaterial=Combiner'Effects_Tex.GoreDecals.PlayerDeathOverlay'
+     DeathOverlayTime=999.000000
+	 HumanObliterationThreshhold=150
 }

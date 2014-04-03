@@ -20,7 +20,7 @@ class UM_BaseProjectile_StickyRMCGrenade extends UM_BaseProjectile_StickyGrenade
 
 event Timer()
 {
-	if ( !bHidden && !bTriggered )  {
+	if ( !bHidden && !bShouldExplode )  {
 		if ( !FriendlyPawnIsInRadius(DamageRadius) )
 			Explode(Location, vect(0,0,1));
 		else if ( BeepSound.Snd != None )

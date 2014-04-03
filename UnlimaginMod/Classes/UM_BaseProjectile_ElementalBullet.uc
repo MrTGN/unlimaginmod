@@ -56,6 +56,63 @@ simulated function ChangeOtherProjectilePerformance(float NewScale)
 	ImpactDamage *= NewScale;
 }
 
+simulated function Explode(vector HitLocation, vector HitNormal)
+{
+	bCanBeDamaged = False;
+	bHasExploded = True;
+	bShouldExplode = True;
+	
+	if ( Role == ROLE_Authority )
+		BlowUp(HitLocation);
+	
+	// Explode effects
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( ExplodeSound.Snd != None )
+			ClientPlaySoundData(ExplodeSound);
+		// VFX
+		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
+			if ( ExplosionVisualEffect != None )
+				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+			if ( ExplosionDecal != None )
+				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
+		}
+	}
+	
+	// Shrapnel
+	if ( Role == ROLE_Authority )
+		SpawnShrapnel();
+	
+	// Shake nearby players screens
+	ShakePlayersView();
+	
+	Destroy();
+}
+
+// Make the projectile distintegrate, instead of explode
+simulated function Disintegrate(vector HitLocation, vector HitNormal)
+{
+	bCanBeDamaged = False;
+	bDisintegrated = True;
+	bHidden = True;
+	
+	if ( Role == ROLE_Authority )  {
+		Damage *= DisintegrateDamageScale;
+		MomentumTransfer *= DisintegrateDamageScale;
+		BlowUp(HitLocation);
+	}
+	
+	// Disintegrate effects
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( DisintegrateSound.Snd != None )
+			ClientPlaySoundData(DisintegrateSound);
+		// VFX
+		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
+			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+	}
+
+	Destroy();
+}
+
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
 {
 	local	Vector		TempHitLocation, HitNormal, X, TraceEnd;
@@ -113,28 +170,6 @@ simulated event Landed( vector HitNormal )
 	Explode(Location, HitNormal);
 }
 
-// Make the projectile distintegrate, instead of explode
-simulated function Disintegrate(vector HitLocation, vector HitNormal)
-{
-	bDisintegrated = True;
-	bHidden = True;
-	
-	if ( Role == ROLE_Authority )  {
-		Damage *= DisintegrateDamageScale;
-		MomentumTransfer *= DisintegrateDamageScale;
-		BlowUp(HitLocation);
-	}
-	
-	if ( DisintegrateSound.Snd != None )
-		ClientPlaySoundData(DisintegrateSound);
-
-	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
-		 && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
-		Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
-	
-	Destroy();
-}
-
 // TakeDamage must be simulated because it is a bNetTemporary actor
 simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
@@ -146,16 +181,14 @@ simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, V
 		if ( DisintegrateDamageTypes.Length > 0 )  {
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
 				if ( damageType == DisintegrateDamageTypes[i] )  {
-					if ( bCanDisintegrate )  {
-						bCanBeDamaged = False;
+					if ( bCanDisintegrate )
 						Disintegrate(HitLocation, vect(0.0, 0.0, 1.0));
-					}
+					
 					Return;
 				}
 			}
 		}
 		
-		bCanBeDamaged = False;
 		Explode(HitLocation, vect(0.0, 0.0, 1.0));
 	}
 }
@@ -223,6 +256,7 @@ defaultproperties
      bNetInitialRotation=True
 	 bReplicateMovement=True
 	 bUpdateSimulatedPosition=False
+	 bNetNotify=False
 	 //Light
 	 AmbientGlow=30		// Ambient brightness, or 255=pulsing.
 	 bUnlit=True		// Lights don't affect actor.

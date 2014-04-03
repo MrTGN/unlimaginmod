@@ -220,14 +220,6 @@ simulated event Destroyed()
 	Super.Destroyed();
 }
 
-event Timer()
-{
-	//if ( !bHidden )
-		//Explode(Location, vect(0,0,1));
-	//else
-		Destroy();
-}
-
 //[end] Functions
 //====================================================================
 

@@ -50,7 +50,7 @@ event Timer()
 {
 	local	bool	bFriendlyPawnDetected;
 	
-	if ( !bHidden && !bTriggered )  {
+	if ( !bHidden && !bShouldExplode )  {
 		// Idle
 		if ( !bEnemyDetected )  {
 			bEnemyDetected = MonsterIsInRadius(DetectionRadius);

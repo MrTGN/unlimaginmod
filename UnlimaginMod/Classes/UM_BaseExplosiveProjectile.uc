@@ -127,8 +127,10 @@ simulated static function bool UnloadAssets()
 
 simulated event PostNetReceive()
 {
-    if ( bHidden && !bDisintegrated )
+	if ( bHidden && !bDisintegrated )
 		Disintegrate(Location, vect(0,0,1));
+	else if ( bShouldExplode && !bHidden && !bHasExploded )
+		Explode(Location, vect(0,0,1));
 }
 
 simulated function bool InSafeRange()
@@ -146,7 +148,7 @@ simulated function ProjectileHasLostAllEnergy()
 	ImpactDamage = 0.0;
 }
 
-// Called when the projectile loses some of it's energy
+// Called when the projectile loses some of the energy
 simulated function ChangeOtherProjectilePerformance(float NewScale)
 {
 	ImpactDamage *= NewScale;
@@ -328,12 +330,8 @@ function DelayedHurtRadius( float DamageAmount, float DamageRadius, class<Damage
 
 function BlowUp(vector HitLocation)
 {
-	if ( bCanBeDamaged )
-		bCanBeDamaged = False;
-	//DelayedHurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
 	HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
-	//if ( Role == ROLE_Authority )
-		MakeNoise(1.0);
+	MakeNoise(1.0);
 }
 
 // Server-side only
@@ -401,17 +399,20 @@ simulated function ShakePlayersView()
 
 event Timer()
 {
-	Destroy();
+	if ( !bHidden && !bShouldExplode )
+		Explode(Location, vect(0,0,1));
+	else
+		Destroy();
 }
 
 simulated function Explode(vector HitLocation, vector HitNormal)
 {
 	bCanBeDamaged = False;
 	bHasExploded = True;
+	bShouldExplode = True;
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
-		bShouldExplode = True;
 		BlowUp(HitLocation);
 		SetTimer(0.1, false);
 		NetUpdateTime = Level.TimeSeconds - 1;
@@ -447,10 +448,10 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 {
 	bCanBeDamaged = False;
 	bDisintegrated = True;
+	bHidden = True;
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
-		bHidden = True;
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
 		BlowUp(HitLocation);
@@ -513,7 +514,6 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 
 			HurtWall = Wall;
 		}
-		MakeNoise(1.0);
 	}
 	
 	Explode((Location + ExploWallOut * HitNormal), HitNormal);
@@ -530,7 +530,7 @@ simulated event Destroyed()
 {
 	if ( bHidden && !bDisintegrated )
 		Disintegrate(Location, vect(0,0,1));
-	else if ( !bHasExploded && !bHidden )
+	else if ( bShouldExplode && !bHidden && !bHasExploded )
 		Explode(Location, vect(0,0,1));
 	
 	Super.Destroyed();

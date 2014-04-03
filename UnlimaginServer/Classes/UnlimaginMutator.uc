@@ -185,7 +185,6 @@ event PostBeginPlay()
 			T = Texture(DynamicLoadObject(SmileyTags[i].IconTexture,class'Texture',true));
 			if( T==None )
 				continue;
-			ImplementPackage(T.Outer.Name);
 			SmileyMsgs.Length = j+1;
 			SmileyMsgs[j].SmileyTex = T;
 			if( SmileyTags[i].bCaseInsensitive )

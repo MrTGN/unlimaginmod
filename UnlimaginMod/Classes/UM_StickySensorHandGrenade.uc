@@ -23,7 +23,6 @@ class UM_StickySensorHandGrenade extends UM_BaseProjectile_HandGrenade;
 //[block] Variables
 
 var		bool			bEnemyDetected; // We've found an enemy
-var		bool			bTriggered; // This thing has exploded
 var		bool			bStuck;		// Grenade has stuck on something.
 
 var		float			DetectionRadius;	// How far away to detect enemies
@@ -43,9 +42,8 @@ var		Actor			StickActor;
 replication
 {
 	reliable if ( bNetDirty && Role == ROLE_Authority )
-		bTriggered, bStuck;
+		bStuck;
 	
-	//Передача только в том случае, если не забит канал
 	unreliable if ( bNetDirty && Role == ROLE_Authority )
 		StickActor;
 }
@@ -113,45 +111,17 @@ simulated event PostNetBeginPlay()
 
 simulated event PostNetReceive()
 {
-	if ( bHidden && !bDisintegrated )
-        Disintegrate(Location,vect(0,0,1));
-	else if ( bTriggered && !bHasExploded )
-        Explode(Location,vect(0,0,1));
-
 	if ( bStuck && bTrailSpawned && !bTrailDestroyed )
 		DestroyTrail();
-}
-
-simulated function Explode(vector HitLocation, vector HitNormal)
-{
-	//log(self$": Grenade is Exploading.");
-	bHasExploded = True;
-	bTriggered = True;
 	
-	// Deactivating Timer and destroying projectile on the server-side
-	if ( Role == ROLE_Authority )  {
-		BlowUp(HitLocation);
-		SetTimer(0.1, false);
-		NetUpdateTime = Level.TimeSeconds - 1;
-	}
-	
-	PlayExplosionEffects( HitLocation, HitNormal );
-	// Shrapnel
-	if ( Role == ROLE_Authority )
-		SpawnShrapnel();
-	
-	// Shake nearby players screens
-	ShakePlayersView();
-	
-	if ( Role < ROLE_Authority )
-		Destroy();
+	Super.PostNetReceive();
 }
 
 event Timer()
 {
 	local	bool	bFriendlyPawnDetected;
 	
-	if ( !bHidden && !bTriggered )  {
+	if ( !bHidden && !bShouldExplode )  {
 		// Idle
 		if ( !bEnemyDetected )  {
 			bEnemyDetected = MonsterIsInRadius(DetectionRadius);
@@ -287,21 +257,13 @@ state Stuck
 
 simulated event Destroyed()
 {
-	DestroyTrail();
-	
-	if( !bHasExploded && !bHidden && bTriggered )
-		Explode(Location,vect(0,0,1));
-	
-	if( bHidden && !bDisintegrated )
-		Disintegrate(Location,vect(0,0,1));
-	
-	if( GrenadeLight != None )
+	if ( GrenadeLight != None )
         GrenadeLight.Destroy();
 	
 	if ( FearMarker != None )
 		FearMarker.Destroy();
 
-	Super(Projectile).Destroyed();
+	Super.Destroyed();
 }
 
 //[end] Functions

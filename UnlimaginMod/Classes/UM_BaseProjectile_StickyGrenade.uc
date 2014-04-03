@@ -24,9 +24,8 @@ class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_Grenade
 //[block] Variables
 
 var		bool			bStuck;	// Grenade has stuck on something
-var		bool			bTriggered, bTimerSet; 	// We've found an enemy. | This thing has exploded.
-
-var		float			ExplodeTimer;	// How far away to detect enemies
+var		bool			bTimerSet;
+var		float			ExplodeTimer;
 
 var		SoundData		BeepSound, StickSound;
 
@@ -42,12 +41,10 @@ var		Actor			StickActor;
 
 replication
 {
-	//Обязательная передача
-	reliable if ( bNetDirty && Role == ROLE_Authority )
-		/*ExplodeTimer,*/ bTriggered, bStuck;
+	reliable if ( Role == ROLE_Authority && bNetDirty )
+		ExplodeTimer, bStuck;
 	
-	//Передача только в том случае, если не забит канал
-	unreliable if ( bNetDirty && Role == ROLE_Authority )
+	unreliable if ( Role == ROLE_Authority && bNetDirty )
 		StickActor;
 }
 
@@ -101,46 +98,10 @@ simulated event PostBeginPlay()
 
 simulated event PostNetReceive()
 {
-	if ( bHidden && !bDisintegrated )
-        Disintegrate(Location,vect(0,0,1));
-	else if ( bTriggered && !bHasExploded )
-        Explode(Location,vect(0,0,1));
-	
 	if ( bStuck && bTrailSpawned && !bTrailDestroyed )
 		DestroyTrail();
-}
-
-simulated function Explode(vector HitLocation, vector HitNormal)
-{
-	//log(self$": Grenade is Exploading.");
-	bHasExploded = True;
-	bTriggered = True;
 	
-	// Deactivating Timer and destroying projectile on the server-side
-	if ( Role == ROLE_Authority )  {
-		BlowUp(HitLocation);
-		SetTimer(0.1, False);
-		NetUpdateTime = Level.TimeSeconds - 1;
-	}
-	
-	PlayExplosionEffects( HitLocation, HitNormal );
-	// Shrapnel
-	if ( Role == ROLE_Authority )
-		SpawnShrapnel();
-	
-	// Shake nearby players screens
-	ShakePlayersView();
-	
-	if ( Role < ROLE_Authority )
-		Destroy();
-}
-
-event Timer()
-{
-	if( !bHidden && !bTriggered )
-		Explode(Location, vect(0,0,1));
-	else
-		Destroy();
+	Super.PostNetReceive();
 }
 
 simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
@@ -225,18 +186,10 @@ state Stuck
 
 simulated event Destroyed()
 {
-	DestroyTrail();
-	
-	if( !bHasExploded && !bHidden && bTriggered )
-		Explode(Location,vect(0,0,1));
-	
-	if( bHidden && !bDisintegrated )
-		Disintegrate(Location,vect(0,0,1));
-	
-	if( GrenadeLight != None )
-        GrenadeLight.Destroy();
+	if ( GrenadeLight != None )
+		GrenadeLight.Destroy();
 		
-	Super(Projectile).Destroyed();
+	Super.Destroyed();
 }
 
 //[end] Functions

@@ -46,7 +46,7 @@ var		int					MaxShrapnelAmount, MinShrapnelAmount;
 
 //[block] Effects
 var		bool				bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
-var		bool				bHasExploded; 	// This Projectile has Exploded.
+var		bool				bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
 
 var		float				DisintegrateChance;	// Chance of this projectile to Disintegrate
 var		float				DisintegrateDamageScale; // Scale damage by this multiplier when projectile disintegrating
@@ -73,6 +73,18 @@ var		class<DamageType>	ImpactDamageType;	// Damagetype of this Projectile hittin
 
 
 //[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
+
+replication
+{
+	reliable if ( Role == ROLE_Authority && bNetDirty )
+		bShouldExplode;
+}
+
+//[end] Replication
 //====================================================================
 
 //========================================================================
@@ -138,11 +150,6 @@ simulated function ProjectileHasLostAllEnergy()
 simulated function ChangeOtherProjectilePerformance(float NewScale)
 {
 	ImpactDamage *= NewScale;
-}
-
-event Timer()
-{
-	Destroy();
 }
 
 // HurtRadius()
@@ -329,22 +336,6 @@ function BlowUp(vector HitLocation)
 		MakeNoise(1.0);
 }
 
-simulated function PlayExplosionEffects( vector HitLocation, vector HitNormal )
-{
-	if ( ExplodeSound.Snd != None )
-		ClientPlaySoundData(ExplodeSound);
-	
-	if ( !Level.bDropDetail && Level.NetMode != NM_DedicatedServer )  {
-		// VFX
-		if ( EffectIsRelevant(Location, False) )  {
-			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
-			if ( ExplosionDecal != None )
-				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
-		}
-	}
-}
-
 // Server-side only
 function SpawnShrapnel()
 {
@@ -408,14 +399,37 @@ simulated function ShakePlayersView()
 	}
 }
 
+event Timer()
+{
+	Destroy();
+}
+
 simulated function Explode(vector HitLocation, vector HitNormal)
 {
+	bCanBeDamaged = False;
 	bHasExploded = True;
 	
-	if ( Role == ROLE_Authority )
+	// Send update to the clients and destroy
+	if ( Role == ROLE_Authority )  {
+		bShouldExplode = True;
 		BlowUp(HitLocation);
+		SetTimer(0.1, false);
+		NetUpdateTime = Level.TimeSeconds - 1;
+	}
 	
-	PlayExplosionEffects( HitLocation, HitNormal );
+	// Explode effects
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( ExplodeSound.Snd != None )
+			ClientPlaySoundData(ExplodeSound);
+		// VFX
+		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
+			if ( ExplosionVisualEffect != None )
+				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+			if ( ExplosionDecal != None )
+				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
+		}
+	}
+	
 	// Shrapnel
 	if ( Role == ROLE_Authority )
 		SpawnShrapnel();
@@ -423,16 +437,20 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	// Shake nearby players screens
 	ShakePlayersView();
 	
-	Destroy();
+	// Destroying on client-side
+	if ( Role < ROLE_Authority )
+		Destroy();
 }
 
 // Make the projectile distintegrate, instead of explode
 simulated function Disintegrate(vector HitLocation, vector HitNormal)
 {
+	bCanBeDamaged = False;
 	bDisintegrated = True;
-	bHidden = True;
 	
+	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		bHidden = True;
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
 		BlowUp(HitLocation);
@@ -440,12 +458,18 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	
-	if ( DisintegrateSound.Snd != None )
-		ClientPlaySoundData(DisintegrateSound);
+	// Disintegrate effects
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( DisintegrateSound.Snd != None )
+			ClientPlaySoundData(DisintegrateSound);
+		// VFX
+		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
+			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+	}
 
-	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
-		 && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
-		Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+	// Destroying on client-side
+	if ( Role < ROLE_Authority )
+		Destroy();
 }
 
 event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
@@ -458,29 +482,16 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		if ( DisintegrateDamageTypes.Length > 0 )  {
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
 				if ( damageType == DisintegrateDamageTypes[i] )  {
-					if ( FRand() <= DisintegrateChance )  {
-						bCanBeDamaged = False;
+					if ( FRand() <= DisintegrateChance )
 						Disintegrate(HitLocation, vect(0.0, 0.0, 1.0));
-					}
+					
 					Return;
 				}
 			}
 		}
 		
-		bCanBeDamaged = False;
 		Explode(HitLocation, vect(0.0, 0.0, 1.0));
 	}
-}
-
-simulated event Destroyed()
-{
-	if ( !bHasExploded && !bHidden )
-		Explode(Location, vect(0,0,1));
-	
-	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, vect(0,0,1));
-	
-	Super.Destroyed();
 }
 
 simulated singular event HitWall(vector HitNormal, actor Wall)
@@ -513,6 +524,16 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 simulated event Landed( vector HitNormal )
 {
 	SetPhysics(PHYS_None);
+}
+
+simulated event Destroyed()
+{
+	if ( bHidden && !bDisintegrated )
+		Disintegrate(Location, vect(0,0,1));
+	else if ( !bHasExploded && !bHidden )
+		Explode(Location, vect(0,0,1));
+	
+	Super.Destroyed();
 }
 
 // Server function
@@ -583,9 +604,12 @@ defaultproperties
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 //Replication
+	 bNetTemporary=False
 	 bReplicateInstigator=True
      bNetInitialRotation=True
 	 bNetNotify=True
+	 bReplicateMovement=True
+	 bUpdateSimulatedPosition=False
 	 //Light
 	 bUnlit=True
 	 //Collision

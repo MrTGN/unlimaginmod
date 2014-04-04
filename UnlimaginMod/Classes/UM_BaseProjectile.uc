@@ -24,7 +24,7 @@ class UM_BaseProjectile extends ROBallisticProjectile
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	MinProjectileMass = 0.00001;		// kilograms
+const	MinProjectileMass = 0.001;		// kilograms (1 gr)
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
@@ -54,8 +54,9 @@ struct	SoundData
 
 struct SurfaceTypeImpactData
 {
-	var	float	CosBounceImpactAngle;	// Cosine of the impact angle at which will be a ricochet
-	var	float	NormalEnergyLoss;		// Projectile energy loss with MinProjectileMass at the Normal ImpactAngle
+	var	float	BounceImpactAngle;		// Impact angle at which will be a ricochet (Degrees).
+	var	float	CosBounceImpactAngle;	// Cosine of the impact angle at which will be a ricochet. Will be calculated automatically.
+	var	float	NormalEnergyLoss;		// Projectile energy (Joules) loss with MinProjectileMass at the Normal ImpactAngle by penetrating 1 uu3 of the material
 };
 
 // EmitterTrails for smoke trails and etc.
@@ -87,7 +88,7 @@ var				float		SpawnTime;	// The time when this projectile was spawned
 var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time from server in SpawnTime variable
 
 //[block] Ballistic performance
-var				SurfaceTypeImpactData		ImpactSurfaces[ESurfaceTypes];
+var				SurfaceTypeImpactData		ImpactSurfaces[20];
 
 // EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
 // MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
@@ -604,7 +605,29 @@ simulated function SpawnHitEffects(
 
 simulated function ProcessSurfaceImpact( vector ImpactNormal )
 {
+	local	vector			HitLoc, HitNorm, TraceEnd;
+	local	Material		HitMat;
+	local	ESurfaceTypes	ST;
+	local	float			EnergyLoss, CosImpactAngle;
 	
+	if ( !bBounce || ArrayCount(ImpactSurfaces) < 1 )  {
+		SpawnHitEffects(Location, HitNormal);
+		if ( Instigator != None && Level.NetMode != NM_Client )
+			MakeNoise(0.3);
+		ProjectileHasLostAllEnergy();
+		Return;
+	}
+	else  {
+		Trace(HitLoc, HitNorm, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
+		if ( HitMat == None )
+			ST = EST_Default;
+		else
+			ST = ESurfaceTypes(HitMat.SurfaceType);
+		
+		CosImpactAngle = Abs(Maths.static.CosBetweenVectors(Velocity, HitNormal));
+		//Todo: дописать!
+		if (  )
+	}
 }
 
 simulated function ProcessMonsterImpact( KFMonster M )
@@ -648,26 +671,26 @@ simulated static function float GetRange()
 
 defaultproperties
 {
-	 ImpactSurfaces(EST_Default)=()
-	 ImpactSurfaces(EST_Rock)=()
-	 ImpactSurfaces(EST_Dirt)=()
-	 ImpactSurfaces(EST_Metal)=()
-	 ImpactSurfaces(EST_Wood)=()
-	 ImpactSurfaces(EST_Plant)=()
-	 ImpactSurfaces(EST_Flesh)=()
-	 ImpactSurfaces(EST_Ice)=()
-	 ImpactSurfaces(EST_Snow)=()
-	 ImpactSurfaces(EST_Water)=()
-	 ImpactSurfaces(EST_Glass)=()
-	 ImpactSurfaces(EST_Gravel)=()
-	 ImpactSurfaces(EST_Concrete)=()
-	 ImpactSurfaces(EST_HollowWood)=()
-	 ImpactSurfaces(EST_Mud)=()
-	 ImpactSurfaces(EST_MetalArmor)=()
-	 ImpactSurfaces(EST_Paper)=()
-	 ImpactSurfaces(EST_Cloth)=()
-	 ImpactSurfaces(EST_Rubber)=()
-	 ImpactSurfaces(EST_Poop)=()
+	 ImpactSurfaces(EST_Default)=(BounceImpactAngle=50.0,NormalEnergyLoss=100.0)
+	 ImpactSurfaces(EST_Rock)=(BounceImpactAngle=50.0,NormalEnergyLoss=100.0)
+	 ImpactSurfaces(EST_Dirt)=(BounceImpactAngle=0.0,NormalEnergyLoss=20.0)
+	 ImpactSurfaces(EST_Metal)=(BounceImpactAngle=48.0,NormalEnergyLoss=65.0)
+	 ImpactSurfaces(EST_Wood)=(BounceImpactAngle=80.0,NormalEnergyLoss=15.0)
+	 ImpactSurfaces(EST_Plant)=(BounceImpactAngle=0.0,NormalEnergyLoss=2.0)
+	 ImpactSurfaces(EST_Flesh)=(BounceImpactAngle=0.0,NormalEnergyLoss=10.0)
+	 ImpactSurfaces(EST_Ice)=(BounceImpactAngle=52.0,NormalEnergyLoss=30.0)
+	 ImpactSurfaces(EST_Snow)=(BounceImpactAngle=0.0,NormalEnergyLoss=1.0)
+	 ImpactSurfaces(EST_Water)=(BounceImpactAngle=0.0,NormalEnergyLoss=8.0)
+	 ImpactSurfaces(EST_Glass)=(BounceImpactAngle=55.0,NormalEnergyLoss=12.0)
+	 ImpactSurfaces(EST_Gravel)=(BounceImpactAngle=75.0,NormalEnergyLoss=50.0)
+	 ImpactSurfaces(EST_Concrete)=(BounceImpactAngle=52.0,NormalEnergyLoss=90.0)
+	 ImpactSurfaces(EST_HollowWood)=(BounceImpactAngle=0.0,NormalEnergyLoss=10.0)
+	 ImpactSurfaces(EST_Mud)=(BounceImpactAngle=0.0,NormalEnergyLoss=6.0)
+	 ImpactSurfaces(EST_MetalArmor)=(BounceImpactAngle=60.0,NormalEnergyLoss=70.0)
+	 ImpactSurfaces(EST_Paper)=(BounceImpactAngle=0.0,NormalEnergyLoss=5.0)
+	 ImpactSurfaces(EST_Cloth)=(BounceImpactAngle=85.0,NormalEnergyLoss=5.0)
+	 ImpactSurfaces(EST_Rubber)=(BounceImpactAngle=75.0,NormalEnergyLoss=25.0)
+	 ImpactSurfaces(EST_Poop)=(BounceImpactAngle=0.0,NormalEnergyLoss=4.0)
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
 	 // bEnableLogging. I'm using logging for the simple debug =)

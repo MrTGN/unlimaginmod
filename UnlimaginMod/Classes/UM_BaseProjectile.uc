@@ -52,7 +52,11 @@ struct	SoundData
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
-//struct SurfaceTypeData
+struct SurfaceTypeImpactData
+{
+	var	float	CosBounceImpactAngle;	// Cosine of the impact angle at which will be a ricochet
+	var	float	NormalEnergyLoss;		// Projectile energy loss with MinProjectileMass at the Normal ImpactAngle
+};
 
 // EmitterTrails for smoke trails and etc.
 struct	TrailData
@@ -67,6 +71,9 @@ struct	TrailData
 	var	Rotator				EmitterRotation;
 };
 
+// Dynamic Loading vars
+var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
+
 // Logging
 var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
@@ -79,10 +86,9 @@ var				bool		bReplicateSpawnLocation; // Storing and replicate projectile spawn 
 var				float		SpawnTime;	// The time when this projectile was spawned
 var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time from server in SpawnTime variable
 
-// Dynamic Loading vars
-var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
-
 //[block] Ballistic performance
+var				SurfaceTypeImpactData		ImpactSurfaces[20];
+
 // EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
 // MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
 var(Ballistic)	float		EffectiveRange, MaxEffectiveRangeScale;

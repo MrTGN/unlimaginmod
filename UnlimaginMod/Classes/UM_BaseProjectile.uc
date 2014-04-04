@@ -87,7 +87,7 @@ var				float		SpawnTime;	// The time when this projectile was spawned
 var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time from server in SpawnTime variable
 
 //[block] Ballistic performance
-var				SurfaceTypeImpactData		ImpactSurfaces[20];
+var				SurfaceTypeImpactData		ImpactSurfaces[ESurfaceTypes];
 
 // EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
 // MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
@@ -602,6 +602,21 @@ simulated function SpawnHitEffects(
 	}
 }
 
+simulated function ProcessSurfaceImpact( vector ImpactNormal )
+{
+	
+}
+
+simulated function ProcessMonsterImpact( KFMonster M )
+{
+	
+}
+
+simulated function ProcessHumanPawnImpact( KFHumanPawn HP )
+{
+	
+}
+
 simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 {
 	if ( Volume.bWaterVolume && !PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
@@ -633,6 +648,26 @@ simulated static function float GetRange()
 
 defaultproperties
 {
+	 ImpactSurfaces(EST_Default)=()
+	 ImpactSurfaces(EST_Rock)=()
+	 ImpactSurfaces(EST_Dirt)=()
+	 ImpactSurfaces(EST_Metal)=()
+	 ImpactSurfaces(EST_Wood)=()
+	 ImpactSurfaces(EST_Plant)=()
+	 ImpactSurfaces(EST_Flesh)=()
+	 ImpactSurfaces(EST_Ice)=()
+	 ImpactSurfaces(EST_Snow)=()
+	 ImpactSurfaces(EST_Water)=()
+	 ImpactSurfaces(EST_Glass)=()
+	 ImpactSurfaces(EST_Gravel)=()
+	 ImpactSurfaces(EST_Concrete)=()
+	 ImpactSurfaces(EST_HollowWood)=()
+	 ImpactSurfaces(EST_Mud)=()
+	 ImpactSurfaces(EST_MetalArmor)=()
+	 ImpactSurfaces(EST_Paper)=()
+	 ImpactSurfaces(EST_Cloth)=()
+	 ImpactSurfaces(EST_Rubber)=()
+	 ImpactSurfaces(EST_Poop)=()
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
 	 // bEnableLogging. I'm using logging for the simple debug =)

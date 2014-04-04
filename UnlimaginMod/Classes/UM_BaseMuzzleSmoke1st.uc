@@ -32,7 +32,7 @@ defaultproperties
          ColorScale(0)=(Color=(B=255,G=255,R=255,A=255))
          ColorScale(1)=(RelativeTime=1.000000,Color=(B=255,G=255,R=255,A=218))
          Opacity=0.220000
-         MaxParticles=60
+         MaxParticles=100
          StartLocationOffset=(X=5.000000)
          StartLocationRange=(X=(Max=10.000000))
 		 UseRotationFrom=PTRS_Actor
@@ -65,7 +65,7 @@ defaultproperties
          ColorScale(0)=(Color=(B=255,G=255,R=255,A=255))
          ColorScale(1)=(RelativeTime=1.000000,Color=(B=255,G=255,R=255,A=218))
          Opacity=0.220000
-         MaxParticles=60
+         MaxParticles=100
          StartLocationOffset=(X=5.000000)
          StartLocationRange=(X=(Max=10.000000))
 		 UseRotationFrom=PTRS_Actor

@@ -24,6 +24,7 @@ class UM_BaseProjectile extends ROBallisticProjectile
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+const	MinProjectileMass = 0.00001;		// kilograms
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
@@ -50,6 +51,8 @@ struct	SoundData
 	var	Range		PitchRange;	// Random pitching within range
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
+
+//struct SurfaceTypeData
 
 // EmitterTrails for smoke trails and etc.
 struct	TrailData

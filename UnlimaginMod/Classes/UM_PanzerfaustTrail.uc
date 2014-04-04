@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_PanzerfaustTrail
-//	Parent class:	 PanzerfaustTrail
+//	Parent class:	 UM_BaseEmitter
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,21 +14,20 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_PanzerfaustTrail extends PanzerfaustTrail;
+class UM_PanzerfaustTrail extends UM_BaseEmitter;
 
 simulated function HandleOwnerDestroyed()
 {
     Emitters[0].ParticlesPerSecond = 0;
     Emitters[0].InitialParticlesPerSecond = 0;
-    Emitters[0].RespawnDeadParticles=false;
+    Emitters[0].RespawnDeadParticles = False;
 
     Emitters[1].ParticlesPerSecond = 0;
     Emitters[1].InitialParticlesPerSecond = 0;
-    Emitters[1].RespawnDeadParticles=false;
+    Emitters[1].RespawnDeadParticles = False;
 
-    AutoDestroy=true;
+    AutoDestroy = True;
 }
-
 
 simulated event Destroyed()
 {
@@ -50,7 +49,7 @@ defaultproperties
          ColorScale(0)=(Color=(B=255,G=255,R=255,A=255))
          ColorScale(1)=(RelativeTime=1.000000,Color=(B=255,G=255,R=255,A=255))
          FadeOutStartTime=0.950000
-         MaxParticles=200
+         MaxParticles=100
          UseRotationFrom=PTRS_Actor
          SpinsPerSecondRange=(X=(Min=-0.075000,Max=0.075000))
          SizeScale(0)=(RelativeSize=1.000000)
@@ -58,8 +57,8 @@ defaultproperties
          SizeScale(2)=(RelativeTime=0.370000,RelativeSize=2.200000)
          SizeScale(3)=(RelativeTime=1.000000,RelativeSize=4.000000)
          StartSizeRange=(X=(Min=15.000000,Max=30.000000))
-         ParticlesPerSecond=25.000000
-         InitialParticlesPerSecond=25.000000
+         ParticlesPerSecond=20.000000
+         InitialParticlesPerSecond=20.000000
          DrawStyle=PTDS_AlphaBlend
          Texture=Texture'Effects_Tex.explosions.DSmoke_2'
          LifetimeRange=(Max=5.000000)
@@ -85,7 +84,7 @@ defaultproperties
          ColorScale(0)=(Color=(B=60,G=60,R=60,A=255))
          ColorScale(1)=(RelativeTime=1.000000,Color=(B=117,G=117,R=117,A=255))
          FadeOutStartTime=1.200000
-         MaxParticles=200
+         MaxParticles=100
          AutoResetTimeRange=(Min=5.000000,Max=10.000000)
          UseRotationFrom=PTRS_Actor
          SpinsPerSecondRange=(X=(Min=-0.075000,Max=0.075000))
@@ -94,8 +93,8 @@ defaultproperties
          SizeScale(2)=(RelativeTime=0.370000,RelativeSize=2.200000)
          SizeScale(3)=(RelativeTime=1.000000,RelativeSize=3.000000)
          StartSizeRange=(X=(Min=11.000000,Max=21.000000))
-         ParticlesPerSecond=25.000000
-         InitialParticlesPerSecond=25.000000
+         ParticlesPerSecond=20.000000
+         InitialParticlesPerSecond=20.000000
          DrawStyle=PTDS_AlphaBlend
          Texture=Texture'Effects_Tex.explosions.DSmoke_2'
          StartVelocityRange=(X=(Min=40.000000,Max=80.000000),Y=(Min=-45.000000,Max=45.000000),Z=(Min=-45.000000,Max=45.000000))

@@ -34,10 +34,11 @@ var		bool		bDisarmed;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetInitial )
-		TimeToStartFalling, ArmingTime;
+		TimeToStartFalling;
+	/*	TimeToStartFalling, ArmingTime;
 
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bDisarmed;
+		bDisarmed; */
 }
 
 //[end] Replication
@@ -87,10 +88,14 @@ simulated function SetInitialVelocity()
 simulated function ProjectileHasLostAllEnergy()
 {
 	bBounce = False;
+	if ( Role == ROLE_Authority )
+		Disarm();
+	
 	Super.ProjectileHasLostAllEnergy();
 }
 
-simulated function bool IsArmed()
+// Detonator is armed
+function bool IsArmed()
 {
 	if ( bDisarmed || Level.TimeSeconds < ArmingTime )
 		Return False;
@@ -118,7 +123,7 @@ function Disarm()
 {
 	if ( !bDisarmed )  {
 		bDisarmed = True;
-		NetUpdateTime = Level.TimeSeconds - 1;
+		//NetUpdateTime = Level.TimeSeconds - 1;
 	}
 }
 
@@ -144,8 +149,6 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 		
 		if ( IsArmed() )
 			Explode((Location + ExploWallOut * HitNormal), HitNormal);
-		else
-			Disarm();
 	}
 	
 	HurtWall = None;
@@ -207,8 +210,6 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		
 		if ( IsArmed() )
 			Explode(HitLocation, Normal(HitLocation - Other.Location));
-		else
-			Disarm();
     }
 	
 	// Stop the grenade in its tracks if it hits an enemy.

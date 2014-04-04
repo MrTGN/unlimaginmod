@@ -134,12 +134,39 @@ simulated event PostNetReceive()
 }
 
 // Detonator is armed
-simulated function bool IsArmed()
+function bool IsArmed()
 {
 	if ( bHidden || bShouldExplode )
 		Return False;
 	
 	Return True;
+}
+
+// Check for friendly Pawns within radius
+function bool FriendlyPawnIsInRadius( float FriendlyPawnSearchRadius )
+{
+	local	KFHumanPawn	HP;
+	
+	foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
+		if ( HP != None && HP.Health > 0 && (HP == Instigator || (TeamGame(Level.Game) != None 
+				 && TeamGame(Level.Game).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )
+			Return True;
+	}
+	
+	Return False;
+}
+
+// Check for KFMonster within radius
+function bool MonsterIsInRadius( float MonsterSearchRadius )
+{
+	local	KFMonster	M;
+	
+	foreach VisibleCollidingActors( Class 'KFMonster', M, MonsterSearchRadius, Location )  {
+		if ( M != None && M.Health > 0 )
+			Return True;
+	}
+	
+	Return False;
 }
 
 // Called when projectile has lost all energy
@@ -335,8 +362,8 @@ function DelayedHurtRadius( float DamageAmount, float DamageRadius, class<Damage
 
 function BlowUp(vector HitLocation)
 {
-	HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
 	MakeNoise(1.0);
+	HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
 }
 
 // Server-side only
@@ -542,32 +569,6 @@ simulated event Destroyed()
 		Explode(Location, vect(0,0,1));
 	
 	Super.Destroyed();
-}
-
-// Server function
-function bool FriendlyPawnIsInRadius( float FriendlyPawnSearchRadius )
-{
-	local	KFHumanPawn	HP;
-	
-	foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
-		if ( HP != None && HP.Health > 0 && (HP == Instigator || (TeamGame(Level.Game) != None 
-				 && TeamGame(Level.Game).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )
-			Return True;
-	}
-	
-	Return False;
-}
-
-function bool MonsterIsInRadius( float MonsterSearchRadius )
-{
-	local	KFMonster	M;
-	
-	foreach VisibleCollidingActors( Class 'KFMonster', M, MonsterSearchRadius, Location )  {
-		if ( M != None && M.Health > 0 )
-			Return True;
-	}
-	
-	Return False;
 }
 
 //[end] Functions

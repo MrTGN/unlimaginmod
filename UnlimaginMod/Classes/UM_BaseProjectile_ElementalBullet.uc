@@ -51,7 +51,7 @@ simulated event PostBeginPlay()
 }
 
 // Called when the projectile loses some of it's energy
-simulated function ChangeOtherProjectilePerformance(float NewScale)
+simulated function ScaleProjectilePerformance(float NewScale)
 {
 	ImpactDamage *= NewScale;
 }

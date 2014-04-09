@@ -170,14 +170,14 @@ function bool MonsterIsInRadius( float MonsterSearchRadius )
 }
 
 // Called when projectile has lost all energy
-simulated function ProjectileHasLostAllEnergy()
+simulated function LostAllEnergy()
 {
-	Super.ProjectileHasLostAllEnergy();
+	Super.LostAllEnergy();
 	ImpactDamage = 0.0;
 }
 
 // Called when the projectile loses some of the energy
-simulated function ChangeOtherProjectilePerformance(float NewScale)
+simulated function ScaleProjectilePerformance(float NewScale)
 {
 	ImpactDamage *= NewScale;
 }
@@ -232,10 +232,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			dir = dir / dist;
 			damageScale = 1 - FMax( 0, ((dist - Victims.CollisionRadius) / DamageRadius) );
 			
-			if ( Instigator == None || Instigator.Controller == None )  {
+			if ( Instigator == None || Instigator.Controller == None )
 				Victims.SetDelayedDamageInstigatorController( InstigatorController );
-				Continue;
-			}
 				
 			if ( Victims == LastTouched )
 				LastTouched = None;
@@ -244,9 +242,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			P = Pawn(Victims);
 			if ( P != None )  {
 				// Do not damage a friendly Pawn
-				if ( P != Instigator && TeamGame(Level.Game) != None 
-					 && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-					 && Instigator.GetTeamNum() == P.GetTeamNum() )
+				if ( Instigator != None && P != Instigator && TeamGame(Level.Game) != None 
+					 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum() )
 					Continue;
 				
 				for ( i = 0; i < CheckedPawns.Length; ++i )  {
@@ -291,17 +288,16 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 	}
 	
-	if ( LastTouched != None && LastTouched != Self && 
-		 LastTouched.Role == ROLE_Authority && !LastTouched.IsA('FluidSurfaceInfo') )  {
+	if ( LastTouched != None && LastTouched != Self && LastTouched.Role == ROLE_Authority 
+		 && !LastTouched.IsA('FluidSurfaceInfo') )  {
 		Victims = LastTouched;
 		LastTouched = None;
 		
 		P = Pawn(Victims);
 		// Do not damage a friendly Pawn
 		if ( (bIgnoreSameClassProj && Victims.Class == Class) 
-			 || (P != None && P != Instigator && TeamGame(Level.Game) != None 
-				 && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-				 && Instigator.GetTeamNum() == Pawn(Victims).GetTeamNum()) )
+			 || (Instigator != None && P != None && P != Instigator && TeamGame(Level.Game) != None 
+				 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum()) )
 			Return;
 				
 		if ( IgnoreVictims.Length > 0 )  {
@@ -326,10 +322,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		if ( damageScale <= 0.0 )
 			Return;
 		
-		if ( Instigator == None || Instigator.Controller == None )  {
+		if ( Instigator == None || Instigator.Controller == None )
 			Victims.SetDelayedDamageInstigatorController( InstigatorController );
-			Return;
-		}
 		
 		VictimHitLocation = Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir;
 		Victims.TakeDamage(
@@ -552,7 +546,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	}
 	
 	HurtWall = None;
-	ProjectileHasLostAllEnergy();
+	LostAllEnergy();
 }
 
 

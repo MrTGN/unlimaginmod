@@ -28,7 +28,7 @@ const	MinProjectileMass = 0.001;		// kilograms (1 gr)
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
-const	MeterInUU = 60.352000;
+const	MeterInUU = 60.352;
 const	SquareMeterInUU = 3642.363904;
 
 // From UT3
@@ -54,9 +54,10 @@ struct	SoundData
 
 struct SurfaceTypeImpactData
 {
-	var	float	BounceImpactAngle;		// Impact angle at which will be a ricochet (Degrees).
-	var	float	CosBounceImpactAngle;	// Cosine of the impact angle at which will be a ricochet. Will be calculated automatically.
-	var	float	NormalEnergyLoss;		// Projectile energy (Joules) loss with MinProjectileMass at the Normal ImpactAngle by penetrating 1 uu3 of the material
+	var	float	ImpactStrength;			// J / mm2
+	var	float	ProjectileEnergyToStuck;
+	var	float	FrictionCoefficient;	// Surface material friction coefficient. 1.0 - no friction. 0.0 - 100% friction.
+	var	float	PlasticityCoefficient;	// Plasticity coefficient of the surface material. 1.0 - not plastic material. 0.0 - 100% plastic material.
 };
 
 // EmitterTrails for smoke trails and etc.
@@ -90,6 +91,13 @@ var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time
 //[block] Ballistic performance
 var				SurfaceTypeImpactData		ImpactSurfaces[20];
 
+// Projectile Expansion Coefficient.
+// For FMJ bullets ExpansionCoefficient less then 1.01 (approximately 1.0)
+// For JHP and HP bullets ExpansionCoefficient more then 1.4
+var(Ballistic)	float		ExpansionCoefficient;
+var(Ballistic)	float		ProjectileDiameter;		// Projectile diameter in mm
+var				float		ProjectileCrossSectionalArea;	// Projectile cross-sectional area in mm2. Calculated automatically.
+
 // EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
 // MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
 var(Ballistic)	float		EffectiveRange, MaxEffectiveRangeScale;
@@ -107,8 +115,9 @@ var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
 // [!] Do not set/change this variables default value!
-// MuzzleEnergy and ProjectileEnergy Calculates automaticly in PreBeginPlay() function.
+// MuzzleEnergy and ProjectileEnergy Calculates automatically in PreBeginPlay() function.
 var				float		MuzzleEnergy, ProjectileEnergy;
+var				float		ProjectileEnergyConst;		// ProjectileMass / (2 * SquareMeterInUU)
 
 // This var used for pawns, who don't have GetPenetrationEnergyLoss function
 // The energy of the bullet will drop to value = MuzzleEnergy * PenitrationEnergyReduction
@@ -225,6 +234,22 @@ simulated final function float GetRandMultByPercent(float RandRangePercent)
 
 simulated function CalcDefaultProperties()
 {
+	local	int		i;
+	
+	if ( default.ProjectileDiameter > 0.0 )  {
+		default.ProjectileCrossSectionalArea = Pi * default.ProjectileDiameter * default.ProjectileDiameter / 4.0;
+		ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
+		// ImpactSurfaces
+		for ( i = 0; i < ArrayCount(ImpactSurfaces); ++i )  {
+			// Surfaces ImpactStrength for this projectile
+			default.ImpactSurfaces[i].ImpactStrength *= default.ProjectileCrossSectionalArea;
+			ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
+			// ProjectileEnergyToStuck
+			default.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ImpactStrength * default.ProjectileDiameter / 2.0;
+			ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
+		}
+	}
+	
 	// MaxEffectiveRange
 	if ( default.MaxEffectiveRange <= 0.0 && default.EffectiveRange > 0.0 )  {
 		default.MaxEffectiveRange = default.EffectiveRange * MeterInUU * MaxEffectiveRangeScale;
@@ -240,25 +265,31 @@ simulated function CalcDefaultProperties()
 		Speed = default.MaxSpeed;
 	}
 	
-	// Calculating LifeSpan
-	if ( bAutoLifeSpan && default.MaxSpeed > 0.0 && default.MaxEffectiveRange > 0.0 )  {
-		default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
-		if ( default.bTrueBallistics )  {
-			default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
-			if ( default.bInitialAcceleration )
-				default.LifeSpan += default.InitialAccelerationTime;
+	if ( default.MaxSpeed > 0.0 )  {
+		// Calculating LifeSpan
+		if ( bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
+			default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
+			if ( default.bTrueBallistics )  {
+				default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
+				if ( default.bInitialAcceleration )
+					default.LifeSpan += default.InitialAccelerationTime;
+			}
+			LifeSpan = default.LifeSpan;
 		}
-		LifeSpan = default.LifeSpan;
-	}
-	
-	// Calculating MuzzleEnergy and ProjectileEnergy
-	// Divide on (2 * SquareMeterInUU) because we need to convert 
-	// speed square from uu/sec to meter/sec
-	if ( default.ProjectileMass > 0.0 && (default.MuzzleEnergy <= 0.0 || default.ProjectileEnergy <= 0.0)  )  {
-		default.MuzzleEnergy = (default.ProjectileMass * Speed * Speed) / (2 * SquareMeterInUU);
-		MuzzleEnergy = default.MuzzleEnergy;
-		default.ProjectileEnergy = default.MuzzleEnergy;
-		ProjectileEnergy = default.MuzzleEnergy;
+		
+		// Calculating MuzzleEnergy and ProjectileEnergy
+		// Divide on (2 * SquareMeterInUU) because we need to convert 
+		// speed square from uu/sec to meter/sec
+		if ( default.ProjectileMass > 0.0 )  {
+			default.ProjectileEnergyConst = default.ProjectileMass / (2 * SquareMeterInUU);
+			ProjectileEnergyConst = default.ProjectileEnergyConst;
+			// MuzzleEnergy
+			default.MuzzleEnergy = default.MaxSpeed * default.MaxSpeed * default.ProjectileEnergyConst;
+			MuzzleEnergy = default.MuzzleEnergy;
+			// ProjectileEnergy
+			default.ProjectileEnergy = default.MuzzleEnergy;
+			ProjectileEnergy = default.MuzzleEnergy;
+		}
 	}
 	
 	// Logging
@@ -439,7 +470,7 @@ state InTheWater
 			if ( Speed > 0.0 && Speed <= (MaxSpeed * FullStopSpeedCoefficient) )  {
 				Acceleration = Vect(0.0,0.0,0.0);
 				if ( ProjectileEnergy > 0.0 )
-					ProjectileHasLostAllEnergy();
+					LostAllEnergy();
 				else  {
 					Velocity = Vect(0.0,0.0,0.0);
 					Speed = 0.0;
@@ -475,30 +506,31 @@ function DelayedHurtRadius(
  vector				HitLocation )
 { }
 
-// Calculates projectile bounce energy loss by applying bonuses
-simulated function float CalcBounceBonus(float EnergyLoss)
+//Todo: переписать эти функции.
+// Calculates bounce projectile energy loss by applying bonuses
+simulated function float ApplyBounceBonus(float EnergyLoss)
 {
 	Return EnergyLoss;
 }
 
-// Calculates projectile penitration energy loss by applying bonuses
-simulated function float CalcPenitrationBonus(float EnergyLoss)
+// Calculates penetration projectile energy loss by applying bonuses
+simulated function float ApplyPenitrationBonus(float EnergyLoss)
 {
 	Return EnergyLoss;
 }
 
 // Called when the projectile has lost all energy
-simulated function ProjectileHasLostAllEnergy()
+simulated function LostAllEnergy()
 {
+	DestroyTrail();
 	Velocity = Vect(0.0, 0.0, 0.0);
 	SetPhysics(PHYS_Falling);
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
-	DestroyTrail();
 }
 
 // Called when the projectile loses some of it's energy
-simulated function ChangeOtherProjectilePerformance(float NewScale)
+simulated function ScaleProjectilePerformance(float NewScale)
 {
 	/* 
 	Damage *= NewScale;
@@ -524,21 +556,21 @@ simulated function UpdateProjectilePerformance(
 		PrevProjectileEnergy = ProjectileEnergy;
 		if ( EnergyLoss > 0.0 || Victim != None )  {
 			if ( EnergyLoss > 0.0 && Victim == None )
-				NewEnergyLoss = CalcBounceBonus(EnergyLoss);
+				NewEnergyLoss = ApplyBounceBonus(EnergyLoss);
 			else if ( EnergyLoss > 0.0 && Pawn(Victim) != None )
-				NewEnergyLoss = CalcPenitrationBonus(EnergyLoss);
+				NewEnergyLoss = ApplyPenitrationBonus(EnergyLoss);
 			else if ( Pawn(Victim) != None )
-				NewEnergyLoss = CalcPenitrationBonus(MuzzleEnergy * (1.0 - PenitrationEnergyReduction));
+				NewEnergyLoss = ApplyPenitrationBonus(MuzzleEnergy * (1.0 - PenitrationEnergyReduction));
 			else
-				NewEnergyLoss = CalcBounceBonus(MuzzleEnergy * (1.0 - BounceEnergyReduction));
+				NewEnergyLoss = ApplyBounceBonus(MuzzleEnergy * (1.0 - BounceEnergyReduction));
 				
 			if ( NewEnergyLoss >= ProjectileEnergy )
-				ProjectileHasLostAllEnergy();
+				LostAllEnergy();
 			else  {
 				ProjectileEnergy -= NewEnergyLoss;
 				Speed = Sqrt(ProjectileEnergy * 2 / ProjectileMass) * MeterInUU;
 				Velocity = Speed * Vector(Rotation);
-				ChangeOtherProjectilePerformance(ProjectileEnergy / PrevProjectileEnergy);
+				ScaleProjectilePerformance(ProjectileEnergy / PrevProjectileEnergy);
 			}
 		}
 		else  {
@@ -548,7 +580,7 @@ simulated function UpdateProjectilePerformance(
 			// Divide on (2 * SquareMeterInUU) because we need to convert 
 			// speed square from uu/sec to meter/sec
 			ProjectileEnergy = (ProjectileMass * Speed * Speed) / (2 * SquareMeterInUU);
-			ChangeOtherProjectilePerformance(ProjectileEnergy / PrevProjectileEnergy);
+			ScaleProjectilePerformance(ProjectileEnergy / PrevProjectileEnergy);
 		}
 	}
 	else  {
@@ -603,41 +635,70 @@ simulated function SpawnHitEffects(
 	}
 }
 
-simulated function ProcessSurfaceImpact( vector ImpactNormal )
+simulated function ProcessHitPawn( Pawn P, float DamageAmount, class<DamageType> DamageType, vector HitLocation )
 {
-	local	vector			HitLoc, HitNorm, TraceEnd;
+	
+}
+
+simulated singular event Touch( Actor Other )
+{
+	local	vector	HitLocation, HitNormal;
+
+	if ( Other != None && !Other.bDeleteMe && (Other.bProjTarget || Other.bBlockActors) )  {
+		LastTouched = Other;
+		if ( Velocity == vect(0.0, 0.0, 0.0) || Other.IsA('Mover') )
+			ProcessTouch(Other, Location);
+		else if ( Other.TraceThisActor(HitLocation, HitNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )  {
+			//Todo: разобраться и переписать этот блок
+			// перенести сюда все проверки из ProcessTouch
+			HitLocation = Location;
+			ProcessTouch(Other, HitLocation);
+		}
+		LastTouched = None;
+	}
+}
+
+
+simulated function ProcessHitWall( vector HitNormal )
+{
+	local	vector			VectVelDotNorm, TraceNorm;
 	local	Material		HitMat;
 	local	ESurfaceTypes	ST;
-	local	float			EnergyLoss, CosImpactAngle;
+	local	float			f, EnergyByNormal;
 	
-	if ( !bBounce || ArrayCount(ImpactSurfaces) < 1 )  {
-		SpawnHitEffects(Location, HitNormal);
-		if ( Instigator != None && Level.NetMode != NM_Client )
-			MakeNoise(0.3);
-		ProjectileHasLostAllEnergy();
-		Return;
-	}
-	else  {
-		Trace(HitLoc, HitNorm, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
-		if ( HitMat == None )
-			ST = EST_Default;
-		else
+	SpawnHitEffects(Location, HitNormal);
+	if ( Role == ROLE_Authority )
+		MakeNoise(0.3);
+	
+	if ( bBounce )  {
+		Trace(VectVelDotNorm, TraceNorm, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
+		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
+		else
+			ST = EST_Default;
 		
-		CosImpactAngle = Abs(Maths.static.CosBetweenVectors(Velocity, HitNormal));
-		//Todo: дописать!
-		if (  )
+		// Speed by HitNormal
+		f = Velocity Dot HitNormal;
+		VectVelDotNorm = HitNormal * f;
+		EnergyByNormal = f * f * ProjectileEnergyConst;
+		
+		if ( EnergyByNormal < ImpactSurfaces[ST].ImpactStrength )  {
+			// Mirroring Velocity Vector By Normal with lossy
+			// b = a - 2 * a Dot Nromal * Nromal
+			Velocity = Velocity - (VectVelDotNorm * ImpactSurfaces[ST].FrictionCoefficient + VectVelDotNorm * ImpactSurfaces[ST].PlasticityCoefficient);
+			
+			Return;
+		}
+		// Projectile has entered into the surface but not stuck into it. So projectile should lose more speed.
+		else if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
+			f = EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
+			Velocity = Velocity - (VectVelDotNorm * ImpactSurfaces[ST].FrictionCoefficient * f + VectVelDotNorm * ImpactSurfaces[ST].PlasticityCoefficient * f);
+			
+			Return;
+		}
 	}
-}
-
-simulated function ProcessMonsterImpact( KFMonster M )
-{
 	
-}
-
-simulated function ProcessHumanPawnImpact( KFHumanPawn HP )
-{
-	
+	LostAllEnergy();
 }
 
 simulated event PhysicsVolumeChange( PhysicsVolume Volume )
@@ -671,29 +732,36 @@ simulated static function float GetRange()
 
 defaultproperties
 {
-	 ImpactSurfaces(EST_Default)=(BounceImpactAngle=50.0,NormalEnergyLoss=100.0)
-	 ImpactSurfaces(EST_Rock)=(BounceImpactAngle=50.0,NormalEnergyLoss=100.0)
-	 ImpactSurfaces(EST_Dirt)=(BounceImpactAngle=0.0,NormalEnergyLoss=20.0)
-	 ImpactSurfaces(EST_Metal)=(BounceImpactAngle=48.0,NormalEnergyLoss=65.0)
-	 ImpactSurfaces(EST_Wood)=(BounceImpactAngle=80.0,NormalEnergyLoss=15.0)
-	 ImpactSurfaces(EST_Plant)=(BounceImpactAngle=0.0,NormalEnergyLoss=2.0)
-	 ImpactSurfaces(EST_Flesh)=(BounceImpactAngle=0.0,NormalEnergyLoss=10.0)
-	 ImpactSurfaces(EST_Ice)=(BounceImpactAngle=52.0,NormalEnergyLoss=30.0)
-	 ImpactSurfaces(EST_Snow)=(BounceImpactAngle=0.0,NormalEnergyLoss=1.0)
-	 ImpactSurfaces(EST_Water)=(BounceImpactAngle=0.0,NormalEnergyLoss=8.0)
-	 ImpactSurfaces(EST_Glass)=(BounceImpactAngle=55.0,NormalEnergyLoss=12.0)
-	 ImpactSurfaces(EST_Gravel)=(BounceImpactAngle=75.0,NormalEnergyLoss=50.0)
-	 ImpactSurfaces(EST_Concrete)=(BounceImpactAngle=52.0,NormalEnergyLoss=90.0)
-	 ImpactSurfaces(EST_HollowWood)=(BounceImpactAngle=0.0,NormalEnergyLoss=10.0)
-	 ImpactSurfaces(EST_Mud)=(BounceImpactAngle=0.0,NormalEnergyLoss=6.0)
-	 ImpactSurfaces(EST_MetalArmor)=(BounceImpactAngle=60.0,NormalEnergyLoss=70.0)
-	 ImpactSurfaces(EST_Paper)=(BounceImpactAngle=0.0,NormalEnergyLoss=5.0)
-	 ImpactSurfaces(EST_Cloth)=(BounceImpactAngle=85.0,NormalEnergyLoss=5.0)
-	 ImpactSurfaces(EST_Rubber)=(BounceImpactAngle=75.0,NormalEnergyLoss=25.0)
-	 ImpactSurfaces(EST_Poop)=(BounceImpactAngle=0.0,NormalEnergyLoss=4.0)
+	 //Todo: допрописать везде ImpactStrength и корректно перевести найденные значения
+	 // в Дж/мм2. Обычно они указываются в Дж/см2, что означает, что это значение нужно
+	 // разделить на 100 (10*10)
+	 // По значнию ImpactStrength можно как раз узновать пробъет или отскочит снаряд.
+	 // Для этого нужно будет взять модуль вектора скорости по норма к поверхности.
+	 // Перевести его в энергию снаряда и поделить на площадь сечения пули, или контактную площадь.
+	 // Измеряется в Дж/мм2.
+	 // При столкновении сравнить, если Дж/мм2 пули меньше ImpactStrength, то пуля отрикошетит.
+	 ImpactSurfaces(EST_Default)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(EST_Rock)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.9)
+	 ImpactSurfaces(EST_Dirt)=(ImpactStrength=0.01,FrictionCoefficient=0.65,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(EST_Metal)=(ImpactStrength=0.8,FrictionCoefficient=0.95,PlasticityCoefficient=0.8)
+	 ImpactSurfaces(EST_Wood)=(ImpactStrength=0.08,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(EST_Plant)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(EST_Flesh)=(ImpactStrength=0.025,FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(EST_Ice)=(ImpactStrength=0.1,FrictionCoefficient=0.98,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(EST_Snow)=(ImpactStrength=0.01,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(EST_Water)=(ImpactStrength=0.005,FrictionCoefficient=0.85,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(EST_Glass)=(ImpactStrength=0.5,FrictionCoefficient=0.9,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(EST_Gravel)=(ImpactStrength=0.5,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(EST_Concrete)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.75)
+	 ImpactSurfaces(EST_HollowWood)=(ImpactStrength=0.07,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(EST_Mud)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(EST_MetalArmor)=(ImpactStrength=1.2,FrictionCoefficient=0.9,PlasticityCoefficient=0.75)
+	 ImpactSurfaces(EST_Paper)=(ImpactStrength=0.04,FrictionCoefficient=0.75,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(EST_Cloth)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(EST_Rubber)=(ImpactStrength=0.05,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
+	 ImpactSurfaces(EST_Poop)=(ImpactStrength=0.0005,FrictionCoefficient=0.8,PlasticityCoefficient=0.1)
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
-	 // bEnableLogging. I'm using logging for the simple debug =)
 	 bEnableLogging=False
 	 bAutoLifeSpan=False
 	 bReplicateSpawnTime=False
@@ -712,6 +780,7 @@ defaultproperties
 	 FullStopSpeedCoefficient=0.085000
 	 Speed=0.000000
 	 MaxSpeed=0.000000
+	 ProjectileDiameter=10.0
 	 //EffectiveRange in Meters
 	 EffectiveRange=500.000000
 	 MaxEffectiveRangeScale=1.000000

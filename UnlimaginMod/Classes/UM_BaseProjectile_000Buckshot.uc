@@ -12,7 +12,9 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 21.08.2013 17:22
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 
+//	Comments:		 Pellet diameter: 9.14 mm (0.360"). Pellet weight: 70 grains (4.5359 grams).
+//					 8 pellets in buckshot shell.
+//					 ProjectileMass increased by 8.5 to save buckshot penetration.
 //================================================================================
 class UM_BaseProjectile_000Buckshot extends UM_BaseProjectile_Buckshot
 	Abstract;
@@ -24,7 +26,7 @@ defaultproperties
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=910.000000
 	 MaxEffectiveRangeScale=1.000000
-	 ProjectileMass=0.037454
+	 ProjectileMass=0.038554
 	 MuzzleVelocity=380.000000
      PenitrationEnergyReduction=0.720000
      HeadShotDamageMult=1.500000

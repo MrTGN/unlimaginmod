@@ -79,43 +79,37 @@ simulated event PostBeginPlay()
 		log(self$": PostBeginPlay LifeSpan="$LifeSpan);
 } */
 
-simulated function float CalcPenitrationBonus(float EnergyLoss)
+simulated function float ApplyPenitrationBonus(float EnergyLoss)
 {
-	local	float	Result;
-	
 	if ( ExpansionCoefficient > 1.0 )  {
-		Result = EnergyLoss * ExpansionCoefficient;
+		EnergyLoss *= ExpansionCoefficient;
 		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
 		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
-		Return Result;
 	}
-	else
-		Return EnergyLoss;
+
+	Return EnergyLoss;
 }
 
-simulated function float CalcBounceBonus(float EnergyLoss)
+simulated function float ApplyBounceBonus(float EnergyLoss)
 {
-	local	float	Result;
-	
 	if ( ExpansionCoefficient > 1.0 )  {
-		Result = EnergyLoss * ExpansionCoefficient;
+		EnergyLoss *= ExpansionCoefficient;
 		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
 		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
-		Return Result;
 	}
-	else
-		Return EnergyLoss;
+	
+	Return EnergyLoss;
 }
 
 // Called when projectile has lost all energy
-simulated function ProjectileHasLostAllEnergy()
+simulated function LostAllEnergy()
 {
 	DestroyTrail();
 	Destroy();
 }
 
 // Called when the projectile loses some of it's energy
-simulated function ChangeOtherProjectilePerformance(float NewScale)
+simulated function ScaleProjectilePerformance(float NewScale)
 {
 	Damage *= NewScale;
 }
@@ -218,7 +212,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			if ( Instigator != None )
 				MakeNoise(1.0);
 		}
-		ProjectileHasLostAllEnergy();
+		LostAllEnergy();
 		Return;
 	}
 	
@@ -226,7 +220,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 		SpawnHitEffects(Location, HitNormal);
 		if ( Instigator != None && Level.NetMode != NM_Client )
 			MakeNoise(0.3);
-		ProjectileHasLostAllEnergy();
+		LostAllEnergy();
 		Return;
 	}
 	else {
@@ -281,7 +275,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			SpawnHitEffects(Location, HitNormal);
 			if ( Instigator != None && Level.NetMode != NM_Client )
 				MakeNoise(0.3);
-			ProjectileHasLostAllEnergy();
+			LostAllEnergy();
 		}
 	}
 	HurtWall = None;

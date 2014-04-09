@@ -19,7 +19,7 @@
 class UM_BaseProjectile_Buckshot extends UM_BaseProjectile_Bullet
 	Abstract;
 
-simulated function float CalcPenitrationBonus(float EnergyLoss)
+simulated function float ApplyPenitrationBonus(float EnergyLoss)
 {
 	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 		Return (EnergyLoss * ExpansionCoefficient / (KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.static.GetShotgunPenetrationDamageMulti(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo),default.PenitrationEnergyReduction) / default.PenitrationEnergyReduction));

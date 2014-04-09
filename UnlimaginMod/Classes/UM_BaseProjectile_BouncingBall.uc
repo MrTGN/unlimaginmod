@@ -31,20 +31,20 @@ var		SoundData	PickupSound;
 //========================================================================
 //[block] Functions
 
-simulated function float CalcPenitrationBonus(float EnergyLoss)
+simulated function float ApplyPenitrationBonus(float EnergyLoss)
 {
 	Return (EnergyLoss * ExpansionCoefficient);
 }
 
-simulated function float CalcBounceBonus(float EnergyLoss)
+simulated function float ApplyBounceBonus(float EnergyLoss)
 {
 	Return (EnergyLoss * ExpansionCoefficient / BounceBonus);
 }
 
 // Called when projectile has lost all energy
-simulated function ProjectileHasLostAllEnergy()
+simulated function LostAllEnergy()
 {
-	Super(UM_BaseProjectile).ProjectileHasLostAllEnergy();
+	Super(UM_BaseProjectile).LostAllEnergy();
 	GotoState('NoEnergy');
 }
 

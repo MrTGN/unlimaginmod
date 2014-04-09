@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 27.04.2013 02:19
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Pellet diameter: .30" (7.6 mm). Pellet weight: 40 grains (2.5920 grams).
+//	Comments:		 Pellet diameter: 7.62 mm (0.300"). Pellet weight: 40.5 grains (2.6244 grams).
 //					 10-15 pellets in buckshot shell.
 //					 ProjectileMass increased by 8.5 to save buckshot penetration.
 //================================================================================
@@ -25,7 +25,7 @@ defaultproperties
      BallisticCoefficient=0.041000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=760.000000
-	 ProjectileMass=0.022032
+	 ProjectileMass=0.022300
 	 MuzzleVelocity=380.000000
      PenitrationEnergyReduction=0.420000
 	 // Damage for 10 pellets

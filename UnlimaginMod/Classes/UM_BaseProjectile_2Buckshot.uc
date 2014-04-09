@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 27.04.2013 02:29
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Pellet diameter: .27" (6.9 mm). Pellet weight: 29.4 grains (1.9051 grams).
+//	Comments:		 Pellet diameter: 6.86 mm (0.270"). Pellet weight: 29.4 grains (1.9051 grams).
 //					 15-18 pellets in buckshot shell.
 //					 ProjectileMass increased by 8.5 to save buckshot penetration.
 //================================================================================

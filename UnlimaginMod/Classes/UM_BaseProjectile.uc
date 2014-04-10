@@ -674,6 +674,11 @@ simulated function ProcessHitPawn(
 	UpdateProjectilePerformance(True, EnergyLoss);
 }
 
+simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation )
+{
+	
+}
+
 simulated singular event Touch( Actor Other )
 {
 	local	vector	HitLocation, HitNormal;

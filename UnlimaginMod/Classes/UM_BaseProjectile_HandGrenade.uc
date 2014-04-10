@@ -77,9 +77,9 @@ simulated event PostNetBeginPlay()
 	}
 }
 
-simulated function LostAllEnergy()
+simulated function ProjectileLostAllEnergy()
 {
-	Super.LostAllEnergy();
+	Super.ProjectileLostAllEnergy();
 	bBounce = False;
 }
 
@@ -127,7 +127,7 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 	// Stop the grenade in its tracks if it hits an enemy.
 	if ( Speed > 0.0 && !Other.bWorldGeometry && 
 		 ( (Other != Instigator && Other.Base != Instigator) || bCanHitOwner ) )
-		LostAllEnergy();
+		ProjectileLostAllEnergy();
 }
 
 simulated event Landed( vector HitNormal )

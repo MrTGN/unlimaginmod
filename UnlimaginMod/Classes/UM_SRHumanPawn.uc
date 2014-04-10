@@ -132,8 +132,8 @@ function DoBounce( bool bUpdating, float JumpModif )
 	
 	if ( BounceVictim != None )  {
 		NewVel = -NewVel * FClamp((Mass / BounceVictim.Mass), 0.25, 1.25);
-		if ( UM_KFMonster(BounceVictim) != None )
-			UM_KFMonster(BounceVictim).PushAwayZombie(NewVel);
+		if ( UM_Monster(BounceVictim) != None )
+			UM_Monster(BounceVictim).PushAwayZombie(NewVel);
 		else
 			BounceVictim.AddVelocity(NewVel);
 		

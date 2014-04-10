@@ -170,9 +170,9 @@ function bool MonsterIsInRadius( float MonsterSearchRadius )
 }
 
 // Called when projectile has lost all energy
-simulated function LostAllEnergy()
+simulated function ProjectileLostAllEnergy()
 {
-	Super.LostAllEnergy();
+	Super.ProjectileLostAllEnergy();
 	ImpactDamage = 0.0;
 }
 
@@ -205,16 +205,14 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		P = None;
 		KFMonsterVictim = None;
 		
-		// don't let blast damage affect fluid - VisibleCollisingActors doesn't really work for them - jag
-		if ( Victims != None && !Victims.bDeleteMe && Victims != Self && Victims != Hurtwall && 
-			 Victims.Role == ROLE_Authority && !Victims.IsA('FluidSurfaceInfo') &&
-			 ExtendedZCollision(Victims) == None )  {
+		if ( Victims != None && !Victims.bDeleteMe && Victims != Self && Victims != Hurtwall
+			 && !Victims.IsA('FluidSurfaceInfo') && ExtendedZCollision(Victims) == None )  {
+			// Ignore projectile with the same class
 			if ( bIgnoreSameClassProj && Victims.Class == Class )
 				Continue;
 			
 			if ( IgnoreVictims.Length > 0 )  {
 				bIgnoreThisVictim = False;
-				
 				for ( i = 0; i < IgnoreVictims.Length; ++i )  {
 					if ( Victims.IsA(IgnoreVictims[i]) )  {
 						bIgnoreThisVictim = True;
@@ -282,14 +280,12 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				Vehicle(Victims).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
 				
 			// Calculating number of victims
-			if ( Role == ROLE_Authority && KFMonsterVictim != None && 
-				 KFMonsterVictim.Health <= 0 )
+			if ( KFMonsterVictim != None && KFMonsterVictim.Health <= 0 )
 				NumKilled++;
 		}
 	}
 	
-	if ( LastTouched != None && LastTouched != Self && LastTouched.Role == ROLE_Authority 
-		 && !LastTouched.IsA('FluidSurfaceInfo') )  {
+	if ( LastTouched != None && LastTouched != Self && !LastTouched.IsA('FluidSurfaceInfo') )  {
 		Victims = LastTouched;
 		LastTouched = None;
 		
@@ -302,7 +298,6 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				
 		if ( IgnoreVictims.Length > 0 )  {
 			bIgnoreThisVictim = False;
-			
 			for ( i = 0; i < IgnoreVictims.Length; ++i )  {
 				if ( Victims.IsA(IgnoreVictims[i]) )  {
 					bIgnoreThisVictim = True;
@@ -335,14 +330,12 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Vehicle(Victims).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
 	}
 
-	if ( Role == ROLE_Authority )  {
-		if ( NumKilled >= LongDramaticEventKills )
-			KFGameType(Level.Game).DramaticEvent(0.08, LongDramaticEventDuration);
-		else if ( NumKilled >= MediumDramaticEvenKills )
-			KFGameType(Level.Game).DramaticEvent(0.05, MediumDramaticEventDuration);
-		else if ( NumKilled >= SmallDramaticEventKills )
-			KFGameType(Level.Game).DramaticEvent(0.03, SmallDramaticEventDuration);
-	}
+	if ( NumKilled >= LongDramaticEventKills )
+		KFGameType(Level.Game).DramaticEvent(0.08, LongDramaticEventDuration);
+	else if ( NumKilled >= MediumDramaticEvenKills )
+		KFGameType(Level.Game).DramaticEvent(0.05, MediumDramaticEventDuration);
+	else if ( NumKilled >= SmallDramaticEventKills )
+		KFGameType(Level.Game).DramaticEvent(0.03, SmallDramaticEventDuration);
 	
 	bHurtEntry = False;
 }
@@ -546,7 +539,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	}
 	
 	HurtWall = None;
-	LostAllEnergy();
+	ProjectileLostAllEnergy();
 }
 
 

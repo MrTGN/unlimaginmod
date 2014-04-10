@@ -28,7 +28,7 @@ defaultproperties
 	 ProjectileMass=0.011664		//kilograms
 	 // Barrel > 4"
 	 MuzzleVelocity=295.000000		//Meter/sec
-     PenitrationEnergyReduction=0.25000
+     PenetrationEnergyReduction=0.25000
      HeadShotDamageMult=1.250000
    	 Damage=42.500000
 	 MomentumTransfer=30500.000000

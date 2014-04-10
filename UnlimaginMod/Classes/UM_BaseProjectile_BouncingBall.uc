@@ -31,20 +31,15 @@ var		SoundData	PickupSound;
 //========================================================================
 //[block] Functions
 
-simulated function float ApplyPenitrationBonus(float EnergyLoss)
+simulated function float GetBounceBonus()
 {
-	Return (EnergyLoss * ExpansionCoefficient);
-}
-
-simulated function float ApplyBounceBonus(float EnergyLoss)
-{
-	Return (EnergyLoss * ExpansionCoefficient / BounceBonus);
+	Return BounceBonus;
 }
 
 // Called when projectile has lost all energy
-simulated function LostAllEnergy()
+simulated function ProjectileLostAllEnergy()
 {
-	Super(UM_BaseProjectile).LostAllEnergy();
+	Super(UM_BaseProjectile).ProjectileLostAllEnergy();
 	GotoState('NoEnergy');
 }
 
@@ -162,7 +157,7 @@ state NoEnergy
 
 defaultproperties
 {
-     BounceBonus=5.000000
+     BounceBonus=1.500000
 	 bAutoLifeSpan=False
 	 LifeSpan=120.000000
 	 //[block] Ballistic performance
@@ -178,7 +173,7 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 //[end]
 	 HeadShotDamageMult=1.100000
-	 PenitrationEnergyReduction=0.800000
+	 PenetrationEnergyReduction=0.800000
 	 bBounce=True
 	 Physics=PHYS_Projectile
 	 //Trail

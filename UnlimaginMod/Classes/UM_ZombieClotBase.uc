@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieClotBase
-//	Parent class:	 UM_KFMonster
+//	Parent class:	 UM_Monster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:06
 //================================================================================
-class UM_ZombieClotBase extends UM_KFMonster;
+class UM_ZombieClotBase extends UM_Monster;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_Freaks_Trip.ukx

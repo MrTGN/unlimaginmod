@@ -22,11 +22,6 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 
 const	CosMinBounceAngle = 0.999847;
 
-//[block] Hedshot vars
-var(Hedshots)	class<DamageType>	DamageTypeHeadShot;	// Headshot damage type
-var(Hedshots)	float				HeadShotDamageMult;	// Headshot damage multiplication
-//[end]
-
 //[block] Ballistic performance
 
 // Bullet Expansion Coefficient.
@@ -36,7 +31,7 @@ var(Ballistic)	float		ExpansionCoefficient;
 var(Ballistic)	float		BounceChance;	// Chance to bounse. Ranged from 0.01 to 1.00
 //[end]
 
-var				Pawn		IgnoreImpactPawn; // Used for penitrations
+var				Pawn		IgnoreImpactPawn; // Used for penetrations
 
 struct SurfaceTypeData
 {
@@ -79,30 +74,8 @@ simulated event PostBeginPlay()
 		log(self$": PostBeginPlay LifeSpan="$LifeSpan);
 } */
 
-simulated function float ApplyPenitrationBonus(float EnergyLoss)
-{
-	if ( ExpansionCoefficient > 1.0 )  {
-		EnergyLoss *= ExpansionCoefficient;
-		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
-		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
-	}
-
-	Return EnergyLoss;
-}
-
-simulated function float ApplyBounceBonus(float EnergyLoss)
-{
-	if ( ExpansionCoefficient > 1.0 )  {
-		EnergyLoss *= ExpansionCoefficient;
-		ExpansionCoefficient = FMax(1.05, (ExpansionCoefficient * 0.75));
-		BallisticCoefficient = default.BallisticCoefficient * (ExpansionCoefficient / default.ExpansionCoefficient);
-	}
-	
-	Return EnergyLoss;
-}
-
 // Called when projectile has lost all energy
-simulated function LostAllEnergy()
+simulated function ProjectileLostAllEnergy()
 {
 	DestroyTrail();
 	Destroy();
@@ -114,6 +87,7 @@ simulated function ScaleProjectilePerformance(float NewScale)
 	Damage *= NewScale;
 }
 
+//Todo: переписать!
 simulated function ProcessTouch(Actor Other, vector HitLocation)
 {
 	local	Vector		X, TraceEnd, TempHitLocation, HitNormal;
@@ -165,20 +139,20 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 	else {
 		if ( Victim.IsHeadShot(HitLocation, X, 1.0) )  {
 			// Finding out HeadShot penetration EnergyLoss
-			if ( UM_KFMonster(Victim) != None )
-				PEL = UM_KFMonster(Victim).GetPenetrationEnergyLoss(True);
+			if ( UM_Monster(Victim) != None )
+				PEL = UM_Monster(Victim).GetPenetrationEnergyLoss(True);
 		
 			if ( Role == ROLE_Authority )  {
-				if ( DamageTypeHeadShot != None )
-					Victim.TakeDamage((Damage * HeadShotDamageMult), Instigator, HitLocation, (MomentumTransfer * X), DamageTypeHeadShot);
+				if ( HeadShotDamageType != None )
+					Victim.TakeDamage((Damage * HeadShotDamageMult), Instigator, HitLocation, (MomentumTransfer * X), HeadShotDamageType);
 				else
 					Victim.TakeDamage((Damage * HeadShotDamageMult), Instigator, HitLocation, (MomentumTransfer * X), MyDamageType);
 			}
 		}
 		else {
 			// Finding out penetration EnergyLoss
-			if ( UM_KFMonster(IgnoreImpactPawn) != None )
-				PEL = UM_KFMonster(IgnoreImpactPawn).GetPenetrationEnergyLoss(False);
+			if ( UM_Monster(IgnoreImpactPawn) != None )
+				PEL = UM_Monster(IgnoreImpactPawn).GetPenetrationEnergyLoss(False);
 			
 			if ( Role == ROLE_Authority )
 				Victim.TakeDamage(Damage, Instigator, HitLocation, (MomentumTransfer * X), MyDamageType);
@@ -212,7 +186,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			if ( Instigator != None )
 				MakeNoise(1.0);
 		}
-		LostAllEnergy();
+		ProjectileLostAllEnergy();
 		Return;
 	}
 	
@@ -220,7 +194,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 		SpawnHitEffects(Location, HitNormal);
 		if ( Instigator != None && Level.NetMode != NM_Client )
 			MakeNoise(0.3);
-		LostAllEnergy();
+		ProjectileLostAllEnergy();
 		Return;
 	}
 	else {
@@ -275,7 +249,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			SpawnHitEffects(Location, HitNormal);
 			if ( Instigator != None && Level.NetMode != NM_Client )
 				MakeNoise(0.3);
-			LostAllEnergy();
+			ProjectileLostAllEnergy();
 		}
 	}
 	HurtWall = None;
@@ -321,7 +295,7 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 //[end]
 	 HeadShotDamageMult=1.100000
-	 PenitrationEnergyReduction=0.800000
+	 PenetrationEnergyReduction=0.800000
 	 bBounce=False
 	 // EST_Default	MaxBounceAngle=60.00 deg
 	 SurfaceTypeDataArray(0)=(CosMaxBounceAngle=0.500000,MaxEnergyLoss=1000.000000)

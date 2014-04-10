@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBloatBase
-//	Parent class:	 UM_KFMonster
+//	Parent class:	 UM_Monster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 22:54
 //================================================================================
-class UM_ZombieBloatBase extends UM_KFMonster;
+class UM_ZombieBloatBase extends UM_Monster;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd.uax

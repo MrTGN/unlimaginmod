@@ -22,7 +22,7 @@ defaultproperties
 {
 	 BounceChance=0.850000
 	 HeadShotDamageMult=2.500000
-	 PenitrationEnergyReduction=0.900000
+	 PenetrationEnergyReduction=0.900000
 	 bBounce=True
 	 //You can use this varible to set new hit sound volume and radius
 	 HitSoundVolume=1.400000

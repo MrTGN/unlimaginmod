@@ -23,7 +23,7 @@ defaultproperties
 {
      bBounce=True
 	 BounceChance=0.800000
-	 PenitrationEnergyReduction=0.860000
+	 PenetrationEnergyReduction=0.860000
 	 //Ballistic
 	 BallisticCoefficient=0.876000
 	 BallisticRandPercent=5.000000

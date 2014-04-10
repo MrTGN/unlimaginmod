@@ -46,7 +46,7 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 	local vector dir;
 	local int NumDazzled;
 	local KFMonster KFMonsterVictim;
-	local UM_KFMonster UM_KFMonsterVictim;
+	local UM_Monster UM_KFMonsterVictim;
 	local Controller KFMVictimController;
 	local Pawn P;
 	//local KFPawn KFP;
@@ -100,7 +100,7 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 
                 KFMonsterVictim = KFMonster(Victims);
 				KFMVictimController = KFMonsterVictim.Controller;
-				UM_KFMonsterVictim = UM_KFMonster(Victims);
+				UM_KFMonsterVictim = UM_Monster(Victims);
 
     			if( KFMonsterVictim != none && KFMonsterVictim.Health <= 0 )
     			{

@@ -19,12 +19,15 @@
 class UM_BaseProjectile_Buckshot extends UM_BaseProjectile_Bullet
 	Abstract;
 
-simulated function float ApplyPenitrationBonus(float EnergyLoss)
+simulated function float GetPenetrationBonus()
 {
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
-		Return (EnergyLoss * ExpansionCoefficient / (KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.static.GetShotgunPenetrationDamageMulti(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo),default.PenitrationEnergyReduction) / default.PenitrationEnergyReduction));
-	else
-		Return (EnergyLoss * ExpansionCoefficient);
+	local 	KFPlayerReplicationInfo		KFPRI;
+	
+	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
+		Return KFPRI.ClientVeteranSkill.static.GetShotgunPenetrationDamageMulti(KFPRI, default.PenetrationEnergyReduction) / default.PenetrationEnergyReduction;
+	
+	Return 1.0;
 }
 
 defaultproperties
@@ -39,7 +42,7 @@ defaultproperties
 	 MaxEffectiveRangeScale=1.000000
 	 ProjectileMass=0.037454
 	 MuzzleVelocity=380.000000
-     PenitrationEnergyReduction=0.720000
+     PenetrationEnergyReduction=0.720000
      HeadShotDamageMult=1.500000
 	 // Damage for 7 pellets
 	 Damage=40.000000

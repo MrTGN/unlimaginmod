@@ -654,9 +654,8 @@ simulated function SpawnHitEffects(
 	}
 }
 
-simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
-
 simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
+
 
 simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWhipAttachment )
 {
@@ -673,10 +672,8 @@ simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWh
 
 simulated function bool CanHurtPawn( Pawn P )
 {
-	if ( P == None || Instigator == None
-		 || (!bCanHurtOwner && (P == Instigator || P.Base == Instigator))
-		 || (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-			 && Instigator.GetTeamNum() == P.GetTeamNum()) )
+	if ( P == None || Instigator != None && ((!bCanHurtOwner && (P == Instigator || P.Base == Instigator))
+			|| (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum())) )
 		Return False;
 		
 	Return True;
@@ -701,7 +698,9 @@ simulated function ProcessHitActor(
 	VelNormal = Normal(Velocity);
 	
 	P = CastTouchedActorToPawn(A);
+	// If it is a Pawn actor
 	if ( P != None )  {
+		// Do not damage a friendly Pawn
 		if ( !CanHurtPawn(P) )
 			Return;
 		
@@ -720,13 +719,23 @@ simulated function ProcessHitActor(
 		else
 			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
 
-		if ( Role == ROLE_Authority )
+		if ( Role == ROLE_Authority )  {
+			if ( Instigator == None || Instigator.Controller == None )
+				A.SetDelayedDamageInstigatorController( InstigatorController );
+			// Hurt this actor
 			P.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
+			MakeNoise(1.0);
+		}
 
 		UpdateProjectilePerformance(True, EnergyLoss);
 	}
-	else if ( Role == ROLE_Authority )
+	else if ( Role == ROLE_Authority )  {
+		if ( Instigator == None || Instigator.Controller == None )
+			A.SetDelayedDamageInstigatorController( InstigatorController );
+		// Hurt this actor
 		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
+		MakeNoise(1.0);
+	}
 	
 	// Decreasing performance
 	if ( bTrueBallistics )
@@ -735,9 +744,8 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
-		 && (A.bProjTarget || A.bBlockActors || A.bBlockHitPointTraces) )  {
-		LastTouched = A;
+	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched && !A.bStatic
+		 && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors || A.bBlockHitPointTraces) )  {
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
 			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
 			TouchLocation = Location;
@@ -748,15 +756,21 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 	Return False;
 }
 
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
+{
+	LastTouched = A;
+	ProcessHitActor(Other, TouchLocation, Damage, MomentumTransfer, MyDamageType);
+	LastTouched = None;
+}
+
 simulated singular event Touch( Actor Other )
 {
 	local	Vector	TouchLocation;
 
-	if ( CanTouchThisActor(Other, TouchLocation) )  {
-		ProcessHitActor( Other, TouchLocation, Damage, MomentumTransfer, MyDamageType );
-		LastTouched = None;
-	}
+	if ( CanTouchThisActor(Other, TouchLocation) )
+		ProcessTouch(Other, TouchLocation);
 }
+
 
 simulated function ProcessHitWall( vector HitNormal )
 {
@@ -765,6 +779,9 @@ simulated function ProcessHitWall( vector HitNormal )
 	local	ESurfaceTypes	ST;
 	local	float			f, EnergyByNormal;
 	
+	// Updating bullet performance before hit the wall
+	// Needed because bullet lose Speed and Damage while flying
+	UpdateProjectilePerformance();
 	SpawnHitEffects(Location, HitNormal);
 	if ( Role == ROLE_Authority )
 		MakeNoise(0.3);
@@ -802,6 +819,22 @@ simulated function ProcessHitWall( vector HitNormal )
 	}
 	
 	ProjectileLostAllEnergy();
+}
+
+simulated singular event HitWall( vector HitNormal, actor Wall )
+{
+	local	Vector	HitLocation;
+
+	if ( CanTouchThisActor(Wall, HitLocation) )
+		ProcessTouch(Wall, HitLocation);
+	
+	ProcessHitWall(HitNormal);
+	HurtWall = None;
+}
+
+simulated event Landed( vector HitNormal )
+{
+	SetPhysics(PHYS_None);
 }
 
 simulated event Destroyed()
@@ -884,7 +917,10 @@ defaultproperties
 	 // If it's True server will replicate Velocity, Location 
 	 // and etc all of the life time of this projectile.
      bUpdateSimulatedPosition=False
-     //Physics
+     // Physics options.
+	 // Orient in the direction of current velocity.
+	 bOrientToVelocity=False
+	 bIgnoreOutOfWorld=False
 	 Physics=PHYS_Projectile
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy

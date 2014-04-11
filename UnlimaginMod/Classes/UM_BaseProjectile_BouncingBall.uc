@@ -73,38 +73,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 		Return;
 	}
 	
-	if ( !bBounce || ArrayCount(SurfaceTypeDataArray) <= 0 )
-	{
-		SpawnHitEffects(Location, HitNormal);
-		if( Instigator != None && Level.NetMode != NM_Client )
-			MakeNoise(0.3);
-		
-		Destroy();
-		Return;
-	}
-	else
-	{
-		TraceEnd = Location + Vector(Rotation) * 20;
-		Trace(HitLoc, HitNorm, TraceEnd, Location, false,, HitMat);
-		if ( HitMat == None )
-			ST = EST_Default;
-		else
-			ST = ESurfaceTypes(HitMat.SurfaceType);
-
-		CosBA = FMax((1.0 - Abs(Maths.static.CosBetweenVectors(Velocity, HitNormal))), 0.25);
-		//log(self$": Cos of the BounceAngle="$CosBA);
-	
-		// 0.5 = Cos(60 deg)
-		EL = SurfaceTypeDataArray[ST].MaxEnergyLoss * (0.5 / CosBA);
-		// Updating Bullet Performance after hit the wall
-					
-		//Velocity = MirrorVectorByNormal(Velocity, HitNormal);
-		UpdateProjectilePerformance(EL,,MirrorVectorByNormal(Velocity, HitNormal));
-			
-		SpawnHitEffects(Location, HitNormal);
-		if( Instigator != None && Level.NetMode != NM_Client )
-			MakeNoise(0.3);
-	}
+	ProcessHitWall(HitNormal);
 	
 	HurtWall = None;
 }

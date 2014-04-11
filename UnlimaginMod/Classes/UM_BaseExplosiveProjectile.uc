@@ -240,8 +240,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			P = Pawn(Victims);
 			if ( P != None )  {
 				// Do not damage a friendly Pawn
-				if ( Instigator != None && P != Instigator && TeamGame(Level.Game) != None 
-					 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum() )
+				if ( !CanHurtPawn(P) )
 					Continue;
 				
 				for ( i = 0; i < CheckedPawns.Length; ++i )  {
@@ -291,9 +290,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		
 		P = Pawn(Victims);
 		// Do not damage a friendly Pawn
-		if ( (bIgnoreSameClassProj && Victims.Class == Class) 
-			 || (Instigator != None && P != None && P != Instigator && TeamGame(Level.Game) != None 
-				 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum()) )
+		if ( (bIgnoreSameClassProj && Victims.Class == Class) || !CanHurtPawn(P) )
 			Return;
 				
 		if ( IgnoreVictims.Length > 0 )  {

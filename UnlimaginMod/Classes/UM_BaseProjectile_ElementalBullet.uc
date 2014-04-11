@@ -113,6 +113,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	Destroy();
 }
 
+//Todo: Переписать!
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
 {
 	local	Vector		TempHitLocation, HitNormal, X, TraceEnd;

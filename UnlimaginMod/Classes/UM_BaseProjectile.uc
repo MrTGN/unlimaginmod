@@ -327,7 +327,10 @@ simulated event PreBeginPlay()
 	if ( !default.bDefaultPropertiesCalculated )
 		CalcDefaultProperties();
 
-    if ( Pawn(Owner) != None )
+    // Prevents from touching owner at spawn
+	LastTouched = Owner;
+	
+	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
 	
 	// Forcing to not call UpdateBulletPerformance() at the InitialAccelerationTime
@@ -464,6 +467,16 @@ simulated event PostBeginPlay()
 		GotoState('InTheWater');
 }
 
+simulated static function float GetRange()
+{
+	if ( default.MaxEffectiveRange > 0.0 )
+		Return default.MaxEffectiveRange;
+	else if ( default.LifeSpan <= 0.0 || default.MaxSpeed <= 0.0 )
+		Return 15000.0;
+	else
+		Return default.MaxSpeed * default.LifeSpan;
+}
+
 state InTheWater
 {
 	simulated event BeginState()
@@ -502,13 +515,19 @@ state InTheWater
 	}
 }
 
+simulated event PhysicsVolumeChange( PhysicsVolume Volume )
+{
+	if ( Volume.bWaterVolume && !PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
+		GotoState('InTheWater');
+}
+
 function HurtRadius( 
  float				DamageAmount, 
  float				DamageRadius,
  class<DamageType>	DamageType, 
  float				Momentum, 
  vector				HitLocation )
-{ }
+{}
 
 function DelayedHurtRadius( 
  float				DamageAmount, 
@@ -516,7 +535,12 @@ function DelayedHurtRadius(
  class<DamageType>	DamageType, 
  float				Momentum, 
  vector				HitLocation )
-{ }
+{}
+
+function BlowUp(vector HitLocation) {}
+
+simulated function Explode(vector HitLocation, vector HitNormal) {}
+
 
 simulated function float GetBounceBonus()
 {
@@ -550,14 +574,16 @@ simulated function UpdateProjectilePerformance(
  optional	bool		bForceUpdate,
  optional	float		EnergyLoss )
 {
+	local	vector	VelNormal;
 	local	float	LastProjectileEnergy;
 	
 	if ( !bForceUpdate && Level.TimeSeconds < NextProjectileUpdateTime )
 		Return;
 		
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
+	VelNormal = Normal(Velocity);
 	// Rotation Update
-	SetRotation(Rotator(Normal(Velocity)));
+	SetRotation(Rotator(VelNormal));
 	// Performance update
 	if ( ProjectileEnergy > 0.0 )  {
 		LastProjectileEnergy = ProjectileEnergy;
@@ -566,7 +592,7 @@ simulated function UpdateProjectilePerformance(
 			if ( EnergyLoss < ProjectileEnergy )  {
 				ProjectileEnergy -= EnergyLoss;
 				Speed = Sqrt(ProjectileEnergy * EnergyToSpeedSquared);
-				Velocity = Speed * Vector(Rotation);
+				Velocity = Speed * VelNormal;
 			}
 			// Lose all Energy
 			else
@@ -577,7 +603,6 @@ simulated function UpdateProjectilePerformance(
 			Speed = VSize(Velocity);
 			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
 		}
-		
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}
 	else
@@ -629,8 +654,36 @@ simulated function SpawnHitEffects(
 	}
 }
 
-simulated function ProcessHitPawn( 
-			Pawn				P, 
+simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
+
+simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
+
+simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWhipAttachment )
+{
+	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
+	// ExtendedZCollision is a Killing Floor hack for a large zombies.
+	// This collisions is attached to Pawn owners.
+	if ( (!bIgnoreWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
+		Return Pawn(A.Owner);
+	else if ( Pawn(A) != None )
+		Return Pawn(A);
+	else
+		Return Pawn(A.Base);
+}
+
+simulated function bool CanHurtPawn( Pawn P )
+{
+	if ( P == None || Instigator == None
+		 || (!bCanHurtOwner && (P == Instigator || P.Base == Instigator))
+		 || (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0
+			 && Instigator.GetTeamNum() == P.GetTeamNum()) )
+		Return False;
+		
+	Return True;
+}
+
+simulated function ProcessHitActor( 
+			Actor				A, 
 			vector				HitLocation, 
 			float				DamageAmount, 
 			float				MomentumAmount,
@@ -639,65 +692,75 @@ simulated function ProcessHitPawn(
 {
 	local	vector	VelNormal;
 	local	float	EnergyLoss;
-	
-	if ( P == None || Instigator == None || P.bDeleteMe || (!bCanHurtOwner && P == Instigator)
-		 || (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-			 && Instigator.GetTeamNum() == P.GetTeamNum()) )
-		Return;
+	local	Pawn	P;
 	
 	// Updating bullet Performance before hit the victim
 	// Needed because bullet lose Speed and Damage while flying
 	UpdateProjectilePerformance();
-	SpawnHitEffects(Location, Normal(HitLocation - P.Location), , , P);
+	SpawnHitEffects(Location, Normal(HitLocation - A.Location), , , A);
 	VelNormal = Normal(Velocity);
 	
-	if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
-		DamageAmount *= HeadShotDamageMult;
-		if ( HeadShotDmgType != None )
-			DmgType = HeadShotDmgType;
-		// HeadShot EnergyLoss
-		if ( UM_Monster(P) != None )
-			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * ExpansionCoefficient / GetPenetrationBonus();
+	P = CastTouchedActorToPawn(A);
+	if ( P != None )  {
+		if ( !CanHurtPawn(P) )
+			Return;
+		
+		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
+			DamageAmount *= HeadShotDamageMult;
+			if ( HeadShotDmgType != None )
+				DmgType = HeadShotDmgType;
+			// HeadShot EnergyLoss
+			if ( UM_Monster(P) != None )
+				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * ExpansionCoefficient / GetPenetrationBonus();
+			else
+				EnergyLoss = EnergyToPenetratePawnHead * ExpansionCoefficient / GetPenetrationBonus();
+		}
+		else if ( UM_Monster(P) != None )
+			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * ExpansionCoefficient / GetPenetrationBonus();
 		else
-			EnergyLoss = EnergyToPenetratePawnHead * ExpansionCoefficient / GetPenetrationBonus();
+			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
+
+		if ( Role == ROLE_Authority )
+			P.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
+
+		UpdateProjectilePerformance(True, EnergyLoss);
 	}
-	else if ( UM_Monster(P) != None )
-		EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * ExpansionCoefficient / GetPenetrationBonus();
-	else
-		EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
-	
-	if ( Role == ROLE_Authority )
-		P.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
+	else if ( Role == ROLE_Authority )
+		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
 	
 	// Decreasing performance
-	BallisticCoefficient = FMax((BallisticCoefficient * 0.85), (default.BallisticCoefficient * 0.5));
-	UpdateProjectilePerformance(True, EnergyLoss);
+	if ( bTrueBallistics )
+		BallisticCoefficient = FMax((BallisticCoefficient * 0.85), (default.BallisticCoefficient * 0.5));
 }
 
-simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation )
+simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
+	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
+		 && (A.bProjTarget || A.bBlockActors || A.bBlockHitPointTraces) )  {
+		LastTouched = A;
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
+			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
+			TouchLocation = Location;
+		
+		Return True;
+	}
 	
+	Return False;
 }
 
 simulated singular event Touch( Actor Other )
 {
-	local	vector	HitLocation, HitNormal;
+	local	Vector	TouchLocation;
 
-	if ( Other != None Other != LastTouched && !Other.bDeleteMe && (Other.bProjTarget || Other.bBlockActors) )  {
-		LastTouched = Other;
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || Other.IsA('Mover') 
-			 || Other.TraceThisActor(HitLocation, HitNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
-			HitLocation = Location;
-		
-		ProcessTouch(Other, HitLocation);
+	if ( CanTouchThisActor(Other, TouchLocation) )  {
+		ProcessHitActor( Other, TouchLocation, Damage, MomentumTransfer, MyDamageType );
 		LastTouched = None;
 	}
 }
 
-
 simulated function ProcessHitWall( vector HitNormal )
 {
-	local	vector			VectVelDotNorm, TraceNorm;
+	local	Vector			VectVelDotNorm, TraceNorm;
 	local	Material		HitMat;
 	local	ESurfaceTypes	ST;
 	local	float			f, EnergyByNormal;
@@ -729,9 +792,11 @@ simulated function ProcessHitWall( vector HitNormal )
 			
 			// Mirroring Velocity Vector by HitNormal with lossy
 			Velocity -= VectVelDotNorm * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.99) + VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.98);
-			// Decreasing performance
-			BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
 			UpdateProjectilePerformance(True);
+			// Decreasing performance
+			if ( bTrueBallistics )
+				BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
+			
 			Return;
 		}
 	}
@@ -739,30 +804,10 @@ simulated function ProcessHitWall( vector HitNormal )
 	ProjectileLostAllEnergy();
 }
 
-simulated event PhysicsVolumeChange( PhysicsVolume Volume )
-{
-	if ( Volume.bWaterVolume && !PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
-		GotoState('InTheWater');
-}
-
-function BlowUp(vector HitLocation) { }
-
-simulated function Explode(vector HitLocation, vector HitNormal) { }
-
 simulated event Destroyed()
 {
 	DestroyTrail();
 	Super.Destroyed();
-}
-
-simulated static function float GetRange()
-{
-	if ( default.MaxEffectiveRange > 0.0 )
-		Return default.MaxEffectiveRange;
-	else if ( default.LifeSpan == 0.0 || default.MaxSpeed == 0.0 )
-		Return 15000;
-	else
-		Return default.MaxSpeed * default.LifeSpan;
 }
 
 //[end] Functions

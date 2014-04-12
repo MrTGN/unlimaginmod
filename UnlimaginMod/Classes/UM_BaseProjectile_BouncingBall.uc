@@ -143,7 +143,7 @@ defaultproperties
 	 HeadShotDamageMult=1.100000
 	 PenetrationEnergyReduction=0.800000
 	 bBounce=True
-	 bCanBounce=True
+	 bCanRebound=True
 	 Physics=PHYS_Projectile
 	 //Trail
 	 DrawType=DT_StaticMesh

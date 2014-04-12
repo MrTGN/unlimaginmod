@@ -83,7 +83,7 @@ var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
-var				bool		bCanBounce;		// This projectile can bounce (ricochet) from the wall/floor
+var				bool		bCanRebound;		// This projectile can bounce (ricochet) from the wall/floor
 
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
@@ -792,7 +792,7 @@ simulated function ProcessHitWall( vector HitNormal )
 	if ( Role == ROLE_Authority )
 		MakeNoise(0.3);
 	
-	if ( bCanBounce )  {
+	if ( bCanRebound )  {
 		// Finding out surface material
 		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )

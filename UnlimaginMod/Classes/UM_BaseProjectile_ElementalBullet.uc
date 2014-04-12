@@ -192,11 +192,6 @@ defaultproperties
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 MaxEffectiveRangeScale=1.200000
-	 // If bBounce=True call HitWal() instead of Landed()
-	 // when the actor has finished falling (Physics was PHYS_Falling).
-	 bBounce=True
-	 bOrientToVelocity=True	// Orient in the direction of current velocity.
-	 bCanBounce=False
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects
@@ -229,6 +224,11 @@ defaultproperties
 	 bCollideActors=True
      bCollideWorld=True
      bUseCylinderCollision=True
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bOrientToVelocity=True	// Orient in the direction of current velocity.
+	 bCanRebound=False
 	 //Physics
 	 Physics=PHYS_Projectile
 	 //RemoteRole

@@ -22,7 +22,7 @@ defaultproperties
 {
 	 HeadShotDamageMult=2.500000
 	 PenetrationEnergyReduction=0.900000
-	 bCanBounce=True
+	 bCanRebound=True
 	 //You can use this varible to set new hit sound volume and radius
 	 HitSoundVolume=1.400000
 	 //Ballistic

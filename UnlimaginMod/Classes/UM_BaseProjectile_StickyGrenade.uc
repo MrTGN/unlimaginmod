@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseProjectile_StickyGrenade
-//	Parent class:	 UM_BaseProjectile_Grenade
+//	Parent class:	 UM_BaseProjectile_LowVelocityGrenade
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_Grenade
+class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_LowVelocityGrenade
 	Abstract;
 
 #exec OBJ LOAD FILE=ProjectileSounds.uax

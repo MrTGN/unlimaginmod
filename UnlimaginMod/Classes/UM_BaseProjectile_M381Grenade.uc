@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseProjectile_M381Grenade
-//	Parent class:	 UM_BaseProjectile_Grenade
+//	Parent class:	 UM_BaseProjectile_LowVelocityGrenade
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 http://www.inetres.com/gp/military/infantry/grenade/40mm_ammo.html
 //================================================================================
-class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_Grenade
+class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_LowVelocityGrenade
 	Abstract;
 
 

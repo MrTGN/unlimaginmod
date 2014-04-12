@@ -1,7 +1,7 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_BaseProjectile_Grenade
+//	Class name:		 UM_BaseProjectile_LowVelocityGrenade
 //	Parent class:	 UM_BaseExplosiveProjectile
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseProjectile_Grenade extends UM_BaseExplosiveProjectile
+class UM_BaseProjectile_LowVelocityGrenade extends UM_BaseExplosiveProjectile
 	Abstract;
 
 
@@ -235,6 +235,11 @@ defaultproperties
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 //Physics
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bOrientToVelocity=True	// Orient in the direction of current velocity.
+	 bCanRebound=True
 	 Physics=PHYS_Projectile
 	 UpdateTimeDelay=0.100000
 	 MuzzleVelocity=70.000000	//m/s
@@ -261,7 +266,6 @@ defaultproperties
 	 //Booleans
      bBlockHitPointTraces=False
      bUnlit=False
-	 bBounce=True
 	 bUpdateSimulatedPosition=True
 	 bNetTemporary=False
 	 bNetNotify=True

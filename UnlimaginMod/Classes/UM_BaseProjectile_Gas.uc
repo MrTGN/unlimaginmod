@@ -113,7 +113,7 @@ simulated event Tick(float DeltaTime)
 	if ( Level.TimeSeconds > NextProjectileUpdateTime && !bStopped 
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
 		UpdateProjectilePerformance();
-		if ( Speed <= (MaxSpeed * FullStopSpeedCoefficient) )  {
+		if ( Speed < MinSpeed )  {
 			bStopped = True;
 			Acceleration = Vect(0.0,0.0,0.0);
 			Velocity = Vect(0.0,0.0,0.0);

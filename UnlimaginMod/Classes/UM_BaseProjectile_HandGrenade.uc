@@ -77,9 +77,9 @@ simulated event PostNetBeginPlay()
 	}
 }
 
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
-	Super.ProjectileLostAllEnergy();
+	Super.ZeroProjectileEnergy();
 	bBounce = False;
 }
 
@@ -127,13 +127,14 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 	// Stop the grenade in its tracks if it hits an enemy.
 	if ( Speed > 0.0 && !Other.bWorldGeometry && 
 		 ( (Other != Instigator && Other.Base != Instigator) || bCanHitOwner ) )
-		ProjectileLostAllEnergy();
+		ZeroProjectileEnergy();
 }
 
+//Todo: Переписать
 simulated event Landed( vector HitNormal )
 {
 	UpdateProjectilePerformance();
-	if ( bBounce && Speed > (MaxSpeed * FullStopSpeedCoefficient) )
+	if ( bBounce && Speed > MinSpeed )
 		HitWall(HitNormal, None);
 	else
 	{
@@ -147,6 +148,7 @@ simulated event Landed( vector HitNormal )
 	}
 }
 
+//Todo: переписать!
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
 	local	float	CosBA, EL;
@@ -185,17 +187,15 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	DesiredRotation.Roll = 0;
 	RotationRate.Roll = 0;
 
-	if ( Speed > (MaxSpeed * FullStopSpeedCoefficient) )
-    {
+	if ( Speed > MinSpeed )  {
 		SpawnHitEffects(Location, HitNormal);
 		bFixedRotationDir = False;
 		bRotateToDesired = True;
 		DesiredRotation.Pitch = 0;
 		RotationRate.Pitch = 50000;
     }
-	else
-	{
-		bBounce = False;
+	else  {
+		bBounce = False;	// убрать это
 		DesiredRotation = Rotation;
 		DesiredRotation.Roll = 0;
 		DesiredRotation.Pitch = 0;

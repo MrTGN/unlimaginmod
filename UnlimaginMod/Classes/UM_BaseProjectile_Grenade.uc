@@ -85,13 +85,13 @@ simulated function SetInitialVelocity()
 	Super.SetInitialVelocity();
 }
 
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
 	bBounce = False;
 	if ( Role == ROLE_Authority )
 		Disarm();
 	
-	Super.ProjectileLostAllEnergy();
+	Super.ZeroProjectileEnergy();
 }
 
 // Detonator is armed
@@ -152,7 +152,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	}
 	
 	HurtWall = None;
-	ProjectileLostAllEnergy();
+	ZeroProjectileEnergy();
 }
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
@@ -214,7 +214,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 	
 	// Stop the grenade in its tracks if it hits an enemy.
 	if ( Speed > 0.0 && !Other.bWorldGeometry && Other != Instigator && Other.Base != Instigator )
-		ProjectileLostAllEnergy();
+		ZeroProjectileEnergy();
 }
 
 //[end] Functions

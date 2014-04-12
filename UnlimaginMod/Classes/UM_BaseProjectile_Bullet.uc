@@ -65,7 +65,7 @@ simulated event PostBeginPlay()
 } */
 
 // Called when projectile has lost all energy
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
 	DestroyTrail();
 	Destroy();
@@ -100,16 +100,11 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			if ( Instigator != None )
 				MakeNoise(1.0);
 		}
-		ProjectileLostAllEnergy();
+		ZeroProjectileEnergy();
 		Return;
 	}
 	ProcessHitWall(HitNormal);
 	HurtWall = None;
-}
-
-simulated event Landed(vector HitNormal)
-{
-	HitWall(HitNormal, None);
 }
 
 //[end] Functions
@@ -118,7 +113,7 @@ simulated event Landed(vector HitNormal)
 defaultproperties
 {
      // Orient in the direction of current velocity.
-	 bOrientToVelocity=False
+	 bOrientToVelocity=True
 	 // Simple not-elemental bullets don't need to take damage from something
 	 bCanBeDamaged=False
 	 //bEnableLogging=True
@@ -150,7 +145,7 @@ defaultproperties
 	 //[end]
 	 HeadShotDamageMult=1.100000
 	 PenetrationEnergyReduction=0.800000
-	 bBounce=False
+	 bBounce=True
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects

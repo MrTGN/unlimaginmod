@@ -37,9 +37,9 @@ simulated function float GetBounceBonus()
 }
 
 // Called when projectile has lost all energy
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
-	Super(UM_BaseProjectile).ProjectileLostAllEnergy();
+	Super(UM_BaseProjectile).ZeroProjectileEnergy();
 	GotoState('NoEnergy');
 }
 

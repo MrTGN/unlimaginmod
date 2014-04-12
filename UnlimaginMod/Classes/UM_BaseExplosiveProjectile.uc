@@ -170,9 +170,9 @@ function bool MonsterIsInRadius( float MonsterSearchRadius )
 }
 
 // Called when projectile has lost all energy
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
-	Super.ProjectileLostAllEnergy();
+	Super.ZeroProjectileEnergy();
 	ImpactDamage = 0.0;
 }
 
@@ -536,7 +536,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	}
 	
 	HurtWall = None;
-	ProjectileLostAllEnergy();
+	ZeroProjectileEnergy();
 }
 
 

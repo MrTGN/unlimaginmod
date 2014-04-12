@@ -24,7 +24,6 @@ class UM_BaseProjectile extends ROBallisticProjectile
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	MinProjectileMass = 0.001;		// kilograms (1 gr)
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
@@ -84,6 +83,7 @@ var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
+var				bool		bCanBounce;		// This projectile can bounce (ricochet) from the wall
 
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
@@ -114,18 +114,20 @@ var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic p
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
 
-var				float		SpeedDropInWaterCoefficient;	// The projectile speed reduction in the water
-var				float		FullStopSpeedCoefficient;	// If Speed <= (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
+var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
+var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
+var				float		MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
 
 // This variables used to decrease the load on the CPU
 var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
-// [!] Do not set/change this variables default value!
-// MuzzleEnergy and ProjectileEnergy Calculates automatically in PreBeginPlay() function.
+// [!] Do not set/change default values of this variables!
+// MuzzleEnergy and ProjectileEnergy Calculates automatically.
 var				float		MuzzleEnergy, ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
 var				float		EnergyToSpeedSquared;		// 2.0 / (ProjectileMass * SquareMeterInUU)
+var				bool		bHasLostAllEnergy;
 
 // This var used for pawns, who don't have GetPenetrationEnergyLoss function
 // The energy of the bullet will drop to value = MuzzleEnergy * PenetrationEnergyReduction
@@ -274,6 +276,11 @@ simulated function CalcDefaultProperties()
 	}
 	
 	if ( default.MaxSpeed > 0.0 )  {
+		if ( default.MinSpeed <= 0.0 )  {
+			default.MinSpeed = default.MaxSpeed * FullStopSpeedCoefficient;
+			MinSpeed = default.MinSpeed;
+		}
+		
 		// Calculating LifeSpan
 		if ( bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
 			default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
@@ -488,14 +495,13 @@ state InTheWater
 	
 	simulated event Tick( float DeltaTime )
 	{
-		if ( Level.TimeSeconds > NextProjectileUpdateTime &&
-			 (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )
-		{
+		if ( Level.TimeSeconds > NextProjectileUpdateTime
+			 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
 			UpdateProjectilePerformance();			
-			if ( Speed > 0.0 && Speed <= (MaxSpeed * FullStopSpeedCoefficient) )  {
+			if ( Speed > 0.0 && Speed < MinSpeed )  {
 				Acceleration = Vect(0.0,0.0,0.0);
 				if ( ProjectileEnergy > 0.0 )
-					ProjectileLostAllEnergy();
+					ZeroProjectileEnergy();
 				else  {
 					Velocity = Vect(0.0,0.0,0.0);
 					Speed = 0.0;
@@ -553,9 +559,11 @@ simulated function float GetPenetrationBonus()
 }
 
 // Called when the projectile has lost all energy
-simulated function ProjectileLostAllEnergy()
+simulated function ZeroProjectileEnergy()
 {
+	bHasLostAllEnergy = True;
 	DestroyTrail();
+	bBounce = False;
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
 	Velocity = Vect(0.0, 0.0, 0.0);
@@ -596,13 +604,17 @@ simulated function UpdateProjectilePerformance(
 			}
 			// Lose all Energy
 			else
-				ProjectileLostAllEnergy();
+				ZeroProjectileEnergy();
 		}
 		// Just update current projectile performance
 		else  {
 			Speed = VSize(Velocity);
 			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
 		}
+		// Stop the projectile if its Speed less than MinSpeed
+		if ( !bHasLostAllEnergy && Speed < MinSpeed )
+			ZeroProjectileEnergy();
+		
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}
 	else
@@ -763,6 +775,7 @@ simulated function ProcessTouch( Actor Other, Vector HitLocation )
 	LastTouched = None;
 }
 
+// Called when the actor's collision hull is touching another actor's collision hull.
 simulated singular event Touch( Actor Other )
 {
 	local	Vector	TouchLocation;
@@ -774,7 +787,7 @@ simulated singular event Touch( Actor Other )
 
 simulated function ProcessHitWall( vector HitNormal )
 {
-	local	Vector			VectVelDotNorm, TraceNorm;
+	local	Vector			VectVelDotNorm, TmpVect;
 	local	Material		HitMat;
 	local	ESurfaceTypes	ST;
 	local	float			f, EnergyByNormal;
@@ -786,9 +799,9 @@ simulated function ProcessHitWall( vector HitNormal )
 	if ( Role == ROLE_Authority )
 		MakeNoise(0.3);
 	
-	if ( bBounce )  {
+	if ( bCanBounce )  {
 		// Finding out surface material
-		Trace(VectVelDotNorm, TraceNorm, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
+		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
 		else
@@ -818,9 +831,10 @@ simulated function ProcessHitWall( vector HitNormal )
 		}
 	}
 	
-	ProjectileLostAllEnergy();
+	ZeroProjectileEnergy();
 }
 
+// Called when the actor can collide with world geometry and just hit a wall.
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
 	local	Vector	HitLocation;
@@ -832,6 +846,9 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	HurtWall = None;
 }
 
+// Event Landed() called when the actor is no longer falling.
+// If you want to receive HitWall() instead of Landed() when the actor has 
+// finished falling set bBounce to True.
 simulated event Landed( vector HitNormal )
 {
 	SetPhysics(PHYS_None);
@@ -906,7 +923,7 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 ImpactSound=None
 	 //[end]
-	 //Replication
+	 //[block] Replication
 	 bNetTemporary=True
      bReplicateInstigator=True
      bNetInitialRotation=True
@@ -917,11 +934,15 @@ defaultproperties
 	 // If it's True server will replicate Velocity, Location 
 	 // and etc all of the life time of this projectile.
      bUpdateSimulatedPosition=False
-     // Physics options.
-	 // Orient in the direction of current velocity.
-	 bOrientToVelocity=False
-	 bIgnoreOutOfWorld=False
+	 //[end]
+     //[block] Physics options.
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bOrientToVelocity=False	// Orient in the direction of current velocity.
+	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
 	 Physics=PHYS_Projectile
+	 //[end]
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy
 	 //LifeSpan

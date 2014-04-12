@@ -31,7 +31,7 @@ defaultproperties
 	 DisintegrateChance=0.600000
 	 ///ImpactDamage
 	 ImpactDamage=30.000000
-	 HeadShotImpactDamageMult=1.100000
+	 HeadShotDamageMult=1.100000
 	 ImpactDamageType=None
 	 Damage=65.000000
 	 DamageRadius=40.000000

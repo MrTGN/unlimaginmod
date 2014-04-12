@@ -21,8 +21,7 @@ class UM_BaseProjectile_30WCF_H160FTX extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     bBounce=True
-	 BounceChance=0.650000
+     bCanBounce=True
 	 BallisticCoefficient=0.330000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=1000.000000

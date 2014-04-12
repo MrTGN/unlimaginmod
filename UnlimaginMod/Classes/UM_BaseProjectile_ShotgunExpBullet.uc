@@ -22,7 +22,7 @@ defaultproperties
 {
      //ImpactDamage
 	 ImpactDamage=150.000000
-	 HeadShotImpactDamageMult=1.250000
+	 HeadShotDamageMult=1.250000
 	 Damage=180.000000
      DamageRadius=150.000000
 	 //BallisticCoefficient

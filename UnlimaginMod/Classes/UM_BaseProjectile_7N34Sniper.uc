@@ -20,10 +20,9 @@ class UM_BaseProjectile_7N34Sniper extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-	 BounceChance=0.850000
 	 HeadShotDamageMult=2.500000
 	 PenetrationEnergyReduction=0.900000
-	 bBounce=True
+	 bCanBounce=True
 	 //You can use this varible to set new hit sound volume and radius
 	 HitSoundVolume=1.400000
 	 //Ballistic

@@ -21,8 +21,7 @@ class UM_BaseProjectile_M1022LRSniper extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     bBounce=True
-	 BounceChance=0.800000
+     bCanBounce=True
 	 PenetrationEnergyReduction=0.860000
 	 //Ballistic
 	 BallisticCoefficient=0.876000

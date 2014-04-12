@@ -119,7 +119,7 @@ simulated function ProcessTouch( actor Other, vector HitLocation )
 			}
     	}
         else if ( Pawn(Other) != None && Pawn(Other).IsHeadShot(HitLocation, X, 1.0) )
-			Pawn(Other).TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
+			Pawn(Other).TakeDamage((ImpactDamage * HeadShotDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
 		else
 			Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
     }

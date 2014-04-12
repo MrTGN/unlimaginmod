@@ -67,7 +67,6 @@ var		int					SmallDramaticEventKills, MediumDramaticEvenKills, LongDramaticEvent
 
 // How much damage to do when this Projectile impacts something before exploding
 var(Impact)		float		ImpactDamage, ImpactDamageRadius;
-var(Impact)		float		HeadShotImpactDamageMult;	// headshot ImpactDamage multiplier
 var(Impact)		float		ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
 var		class<DamageType>	ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
 

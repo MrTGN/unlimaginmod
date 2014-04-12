@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseProjectile_ElementalBullet
-//	Parent class:	 UM_BaseElementalProjectile
+//	Parent class:	 UM_BaseExplosiveProjectile
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseProjectile_ElementalBullet extends UM_BaseElementalProjectile
+class UM_BaseProjectile_ElementalBullet extends UM_BaseExplosiveProjectile
 	Abstract;
 
 //========================================================================
@@ -31,7 +31,7 @@ var		bool		bCanDisintegrate;
 
 replication
 {
-	reliable if ( RemoteRole == ROLE_SimulatedProxy && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetInitial )
 		bCanDisintegrate;
 }
 
@@ -45,7 +45,7 @@ replication
 simulated event PostBeginPlay()
 {
 	if ( Role == ROLE_Authority )
-		bCanDisintegrate = (FRand() <= DisintegrateChance);
+		bCanDisintegrate = FRand() <= DisintegrateChance;
 	
 	Super.PostBeginPlay();
 }
@@ -113,60 +113,12 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	Destroy();
 }
 
-//Todo: Ïåðåïèñàòü!
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
 {
-	local	Vector		TempHitLocation, HitNormal, X, TraceEnd;
-	local	array<int>	HitPoints;
-	local	Pawn		Victim;
-	
-	// Don't let it hit this player, or blow up on another player
-	// Don't collide with bullet whip attachments
-	// Don't allow hits on poeple on the same team
-	if ( Other == None || Other.bDeleteMe || Instigator == None || Other == Instigator ||
-		 Other.Base == Instigator || !Other.bBlockHitPointTraces )
-		Return;
-
-	// KFBulletWhipAttachment/ROBulletWhipAttachment - Collision for projectiles whip sounds. We need to do a HitPointTrace.
-	if ( KFBulletWhipAttachment(Other) != None || ROBulletWhipAttachment(Other) != None )  {
-		TraceEnd = HitLocation + (MaxEffectiveRange * Vector(Rotation));
-		Victim = Pawn(Instigator.HitPointTrace(TempHitLocation, HitNormal, TraceEnd, HitPoints, HitLocation,, 1));
-		if ( HitPoints.Length < 1 )
-			Return;
-	}
-	// ExtendedZCollision - Killing Floor hack for large zombies.
-	else if ( ExtendedZCollision(Other) != None )
-		Victim = Pawn(Other.Owner);
-	else
-		Victim = Pawn(Other);
-	
-	// Do not damage a friendly Pawn
-	if ( Victim != None && Instigator != Victim && TeamGame(Level.Game) != None
-		 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == Victim.GetTeamNum() )
-		Return;
-	
-	// Updating bullet Performance before hit the victim
-	// Needed because bullet lose Speed and ImpactDamage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	if ( Role == ROLE_Authority && ImpactDamageType != None && ImpactDamage > 0.0 )  {
-		X = Normal(Velocity);
-		if ( Victim != None )  {
-			if ( KFPawn(Victim) != None )
-				KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
-			else  {
-				if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
-					Victim.TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-				else
-					Victim.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-			}
-		}
-		else
-			Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-    }
-	
+	LastTouched = A;
+	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	Explode(HitLocation, Normal(HitLocation - Other.Location));
+	LastTouched = None;
 }
 
 simulated event Landed( vector HitNormal )
@@ -240,7 +192,11 @@ defaultproperties
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 MaxEffectiveRangeScale=1.200000
-	 bBounce=False
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bOrientToVelocity=True	// Orient in the direction of current velocity.
+	 bCanBounce=False
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects

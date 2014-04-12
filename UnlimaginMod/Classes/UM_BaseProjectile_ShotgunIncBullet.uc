@@ -22,7 +22,7 @@ defaultproperties
 {
      //ImpactDamage
 	 ImpactDamage=100.000000
-	 HeadShotImpactDamageMult=1.250000
+	 HeadShotDamageMult=1.250000
 	 ImpactDamageType=None
 	 Damage=100.000000
 	 DamageRadius=140.000000

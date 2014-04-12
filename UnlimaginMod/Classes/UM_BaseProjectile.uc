@@ -83,7 +83,7 @@ var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
-var				bool		bCanBounce;		// This projectile can bounce (ricochet) from the wall
+var				bool		bCanBounce;		// This projectile can bounce (ricochet) from the wall/floor
 
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
@@ -127,7 +127,6 @@ var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 var				float		MuzzleEnergy, ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
 var				float		EnergyToSpeedSquared;		// 2.0 / (ProjectileMass * SquareMeterInUU)
-var				bool		bHasLostAllEnergy;
 
 // This var used for pawns, who don't have GetPenetrationEnergyLoss function
 // The energy of the bullet will drop to value = MuzzleEnergy * PenetrationEnergyReduction
@@ -454,11 +453,11 @@ simulated function SetInitialVelocity()
 // Called after the actor is created but BEFORE any values have been replicated to it.
 simulated event PostBeginPlay()
 {
-	if ( bReplicateSpawnTime )
-		SpawnTime = Level.TimeSeconds;
-	
 	if ( bReplicateSpawnLocation )
 		SpawnLocation = Location;
+	
+	if ( bReplicateSpawnTime )
+		SpawnTime = Level.TimeSeconds;
 	
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(self);
@@ -561,7 +560,6 @@ simulated function float GetPenetrationBonus()
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
-	bHasLostAllEnergy = True;
 	DestroyTrail();
 	bBounce = False;
 	Speed = 0.0;
@@ -611,9 +609,6 @@ simulated function UpdateProjectilePerformance(
 			Speed = VSize(Velocity);
 			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
 		}
-		// Stop the projectile if its Speed less than MinSpeed
-		if ( !bHasLostAllEnergy && Speed < MinSpeed )
-			ZeroProjectileEnergy();
 		
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}
@@ -703,14 +698,16 @@ simulated function ProcessHitActor(
 	local	float	EnergyLoss;
 	local	Pawn	P;
 	
-	// Updating bullet Performance before hit the victim
-	// Needed because bullet lose Speed and Damage while flying
+	if ( DmgType == None || DamageAmount <= 0.0 )
+		Return;
+	
+	// Updating Projectile Performance before hit the victim
+	// Needed because Projectile can lose Speed and Damage while flying
 	UpdateProjectilePerformance();
-	SpawnHitEffects(Location, Normal(HitLocation - A.Location), , , A);
 	VelNormal = Normal(Velocity);
 	
 	P = CastTouchedActorToPawn(A);
-	// If it is a Pawn actor
+	// If projectile hit a Pawn
 	if ( P != None )  {
 		// Do not damage a friendly Pawn
 		if ( !CanHurtPawn(P) )
@@ -730,28 +727,24 @@ simulated function ProcessHitActor(
 			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * ExpansionCoefficient / GetPenetrationBonus();
 		else
 			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
-
-		if ( Role == ROLE_Authority )  {
-			if ( Instigator == None || Instigator.Controller == None )
-				A.SetDelayedDamageInstigatorController( InstigatorController );
-			// Hurt this actor
-			P.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
-			MakeNoise(1.0);
-		}
-
-		UpdateProjectilePerformance(True, EnergyLoss);
 	}
-	else if ( Role == ROLE_Authority )  {
+	
+	// Hit effects
+	SpawnHitEffects(Location, Normal(HitLocation - A.Location), , , A);
+	// Damage
+	if ( Role == ROLE_Authority )  {
 		if ( Instigator == None || Instigator.Controller == None )
 			A.SetDelayedDamageInstigatorController( InstigatorController );
 		// Hurt this actor
 		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
 		MakeNoise(1.0);
 	}
-	
 	// Decreasing performance
 	if ( bTrueBallistics )
 		BallisticCoefficient = FMax((BallisticCoefficient * 0.85), (default.BallisticCoefficient * 0.5));
+	// Updating Projectile
+	if ( P != None )
+		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
@@ -771,7 +764,7 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = A;
-	ProcessHitActor(Other, TouchLocation, Damage, MomentumTransfer, MyDamageType);
+	ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
 	LastTouched = None;
 }
 
@@ -822,10 +815,13 @@ simulated function ProcessHitWall( vector HitNormal )
 			
 			// Mirroring Velocity Vector by HitNormal with lossy
 			Velocity -= VectVelDotNorm * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.99) + VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.98);
-			UpdateProjectilePerformance(True);
 			// Decreasing performance
 			if ( bTrueBallistics )
 				BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
+			UpdateProjectilePerformance(True);
+			// If Speed less than MinSpeed start falling
+			if ( Speed < MinSpeed )
+				SetPhysics(PHYS_Falling);
 			
 			Return;
 		}
@@ -851,7 +847,11 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 // finished falling set bBounce to True.
 simulated event Landed( vector HitNormal )
 {
-	SetPhysics(PHYS_None);
+	UpdateProjectilePerformance(True);
+	if ( Speed >= MinSpeed )
+		HitWall(HitNormal, None);
+	else
+		SetPhysics(PHYS_None);
 }
 
 simulated event Destroyed()
@@ -938,7 +938,7 @@ defaultproperties
      //[block] Physics options.
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
-	 bBounce=True
+	 bBounce=False
 	 bOrientToVelocity=False	// Orient in the direction of current velocity.
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
 	 Physics=PHYS_Projectile

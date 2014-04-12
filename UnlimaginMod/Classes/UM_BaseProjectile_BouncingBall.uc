@@ -130,7 +130,6 @@ defaultproperties
 	 bAutoLifeSpan=False
 	 LifeSpan=120.000000
 	 //[block] Ballistic performance
-	 BounceChance=1.000000
 	 BallisticRandPercent=5.000000
 	 //EffectiveRange in Meters
 	 EffectiveRange=100.000000
@@ -144,6 +143,7 @@ defaultproperties
 	 HeadShotDamageMult=1.100000
 	 PenetrationEnergyReduction=0.800000
 	 bBounce=True
+	 bCanBounce=True
 	 Physics=PHYS_Projectile
 	 //Trail
 	 DrawType=DT_StaticMesh

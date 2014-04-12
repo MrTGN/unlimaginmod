@@ -199,7 +199,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 					KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
 				else  {
 					if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
-						Victim.TakeDamage((ImpactDamage * HeadShotImpactDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
+						Victim.TakeDamage((ImpactDamage * HeadShotDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
 					else
 						Victim.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
 				}

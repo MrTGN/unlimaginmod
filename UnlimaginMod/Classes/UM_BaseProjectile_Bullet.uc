@@ -21,15 +21,6 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 //[block] Variables
 
 
-//[block] Ballistic performance
-
-// Bullet Expansion Coefficient.
-// For FMJ bullets ExpansionCoefficient less then 1.01 (approximately 1.0)
-// For JHP and HP bullets ExpansionCoefficient more then 1.4
-var(Ballistic)	float		ExpansionCoefficient;
-var(Ballistic)	float		BounceChance;	// Chance to bounse. Ranged from 0.01 to 1.00
-//[end]
-
 var				Pawn		IgnoreImpactPawn; // Used for penetrations
 
 //[end] Varibles
@@ -131,7 +122,6 @@ defaultproperties
 	 //[block] Ballistic performance
 	 Speed=0.000000
 	 MaxSpeed=0.000000
-	 BounceChance=0.650000
 	 BallisticRandPercent=2.000000
 	 //EffectiveRange in Meters
 	 EffectiveRange=500.000000

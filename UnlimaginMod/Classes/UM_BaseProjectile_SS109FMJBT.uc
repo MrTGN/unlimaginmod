@@ -21,7 +21,8 @@ class UM_BaseProjectile_SS109FMJBT extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.308000
+     ProjectileDiameter=5.7
+	 BallisticCoefficient=0.308000
 	 BallisticRandPercent=7.000000
 	 EffectiveRange=1200.000000
 	 ProjectileMass=0.004017		//kilograms

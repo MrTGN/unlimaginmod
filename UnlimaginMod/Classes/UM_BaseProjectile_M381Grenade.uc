@@ -20,7 +20,8 @@ class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_LowVelocityGrenade
 
 defaultproperties
 {
-     bAutoLifeSpan=True
+     ProjectileDiameter=40.0
+	 bAutoLifeSpan=True
 	 BallisticCoefficient=0.150000
 	 ArmingRange=5.000000
 	 //Shrapnel

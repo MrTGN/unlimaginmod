@@ -12,9 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 10.04.2013 19:38
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Pellet diameter: .36" (9.1 mm). Pellet weight: 68 grains (4.4063 grams).
-//					 7-8 pellets in buckshot shell.
-//					 ProjectileMass increased by 8.5 to save buckshot penetration.
+//	Comments:		 ProjectileMass increased by 8.5 to save buckshot penetration.
 //================================================================================
 class UM_BaseProjectile_Buckshot extends UM_BaseProjectile_Bullet
 	Abstract;
@@ -36,7 +34,8 @@ defaultproperties
      // равна такому числу сотен метров, какое число целых миллиметров имеет диаметр отдельной 
 	 // дробины, выстреленной с максимальной начальной скоростью 375-400 м/с. 
 	 // Так, дробь № 7 (2,5 мм) летит на 250 м.
-     BallisticCoefficient=0.050000
+     ProjectileDiameter=18.5
+	 BallisticCoefficient=0.050000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=910.000000
 	 MaxEffectiveRangeScale=1.000000

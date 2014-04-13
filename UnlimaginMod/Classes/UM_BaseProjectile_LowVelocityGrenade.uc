@@ -22,7 +22,6 @@ class UM_BaseProjectile_LowVelocityGrenade extends UM_BaseExplosiveProjectile
 //[block] Variables
 
 var		float		FlyingTime, TimeToStartFalling; 
-var		float		ArmingDelay, ArmingTime;
 var		bool		bDisarmed;
 
 //[end] Varibles
@@ -35,10 +34,6 @@ replication
 {
 	reliable if ( Role == ROLE_Authority && bNetInitial )
 		TimeToStartFalling;
-	/*	TimeToStartFalling, ArmingTime;
-
-	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bDisarmed; */
 }
 
 //[end] Replication
@@ -63,41 +58,22 @@ simulated function CalcDefaultProperties()
 			
 			FlyingTime = default.FlyingTime;
 		}
-		// ArmingDelay
-		if ( default.ArmingRange > 0.0 )  {
-			default.ArmingDelay = (default.ArmingRange * MeterInUU) / default.MaxSpeed;
-			if ( default.bTrueBallistics && default.bInitialAcceleration )
-				default.ArmingDelay += default.InitialAccelerationTime;
-			
-			ArmingDelay = default.ArmingDelay;
-		}
 	}
 }
 
 simulated function SetInitialVelocity()
 {
+	SpawnLocation = Location;
 	if ( FlyingTime > 0.0 )
 		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
 	
-	if ( ArmingDelay > 0.0 )
-		ArmingTime = Level.TimeSeconds + ArmingDelay;
-	
 	Super.SetInitialVelocity();
-}
-
-simulated function ZeroProjectileEnergy()
-{
-	bBounce = False;
-	if ( Role == ROLE_Authority )
-		Disarm();
-	
-	Super.ZeroProjectileEnergy();
 }
 
 // Detonator is armed
 function bool IsArmed()
 {
-	if ( bDisarmed || Level.TimeSeconds < ArmingTime )
+	if ( bDisarmed || VSizeSquared(SpawnLocation - Location) < ArmingRange )
 		Return False;
 	
 	Return Super.IsArmed();
@@ -106,7 +82,8 @@ function bool IsArmed()
 simulated event Tick( float DeltaTime )
 {
 	Super.Tick(DeltaTime);
-
+	
+	/*
 	if ( Velocity != Vect(0.0, 0.0, 0.0)
 		 && (Physics == default.Physics || Physics == PHYS_Falling)
 		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
@@ -117,104 +94,51 @@ simulated event Tick( float DeltaTime )
 			 && Level.TimeSeconds >= TimeToStartFalling )
 			SetPhysics(PHYS_Falling);
 	}
+	*/
+	// Time to start falling
+	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
+		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
+		SetPhysics(PHYS_Falling);
 }
 
 function Disarm()
 {
-	if ( !bDisarmed )  {
-		bDisarmed = True;
-		//NetUpdateTime = Level.TimeSeconds - 1;
-	}
+	bDisarmed = True;
+}
+
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
+{
+	LastTouched = Other;
+	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	if ( Role == ROLE_Authority && IsArmed() )
+		Explode(HitLocation, Normal(HitLocation - Other.Location));
+	
+	LastTouched = None;
 }
 
 simulated singular event HitWall(vector HitNormal, actor Wall)
 {
-	// Updating bullet Performance before hit the victim
-	// Needed because bullet lose Speed and ImpactDamage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
+	local	Vector	HitLocation;
 	
-	if ( Role == ROLE_Authority )  {
-		if ( ImpactDamageType != None && ImpactDamage > 0.0 && !Wall.bStatic && !Wall.bWorldGeometry )  {
-			if ( Instigator == None || Instigator.Controller == None )
-				Wall.SetDelayedDamageInstigatorController(InstigatorController);
-
-			Wall.TakeDamage(ImpactDamage, Instigator, Location, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
-
-			if ( ImpactDamageRadius > 0.0 && Vehicle(Wall) != None && Vehicle(Wall).Health > 0 )
-				Vehicle(Wall).DriverRadiusDamage(ImpactDamage, ImpactDamageRadius, InstigatorController, ImpactDamageType, ImpactMomentumTransfer, Location);
-
-			HurtWall = Wall;
-		}
-		
-		if ( IsArmed() )
-			Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	if ( CanTouchThisActor(Wall, HitLocation) )  {
+		HurtWall = Wall;
+		ProcessTouch(Wall, HitLocation);
+		Return;
 	}
+	
+	ProcessHitWall(HitNormal);
+	if ( Role == ROLE_Authority && IsArmed() )
+		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	
 	HurtWall = None;
-	ZeroProjectileEnergy();
 }
 
-simulated function ProcessTouch(Actor Other, Vector HitLocation)
+simulated function ProcessLanded( vector HitNormal )
 {
-	local	Vector		TempHitLocation, HitNormal, X, TraceEnd;
-	local	array<int>	HitPoints;
-	local	Pawn		Victim;
+	if ( Role == ROLE_Authority )
+		Disarm();
 	
-	// Don't let it hit this player, or blow up on another player
-	// Don't collide with bullet whip attachments
-	// Don't allow hits on poeple on the same team
-	if ( Other == None || Other.bDeleteMe || Instigator == None || Other == Instigator ||
-		 Other.Base == Instigator || !Other.bBlockHitPointTraces )
-		Return;
-
-	// KFBulletWhipAttachment/ROBulletWhipAttachment - Collision for projectiles whip sounds. We need to do a HitPointTrace.
-	if ( KFBulletWhipAttachment(Other) != None || ROBulletWhipAttachment(Other) != None )  {
-		TraceEnd = HitLocation + (MaxEffectiveRange * Vector(Rotation));
-		Victim = Pawn(Instigator.HitPointTrace(TempHitLocation, HitNormal, TraceEnd, HitPoints, HitLocation,, 1));
-		if ( HitPoints.Length < 1 )
-			Return;
-	}
-	// ExtendedZCollision - Killing Floor hack for large zombies.
-	else if ( ExtendedZCollision(Other) != None )
-		Victim = Pawn(Other.Owner);
-	else
-		Victim = Pawn(Other);
-	
-	// Do not damage a friendly Pawn
-	if ( Victim != None && Instigator != Victim && TeamGame(Level.Game) != None
-		 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == Victim.GetTeamNum() )
-		Return;
-	
-	// Updating bullet Performance before hit the victim
-	// Needed because bullet lose Speed and ImpactDamage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	if ( Role == ROLE_Authority )  {
-		if ( ImpactDamageType != None && ImpactDamage > 0.0 )  {
-			X = Normal(Velocity);
-			if ( Victim != None )  {
-				if ( KFPawn(Victim) != None )
-					KFPawn(Victim).ProcessLocationalDamage(Damage, Instigator, TempHitLocation, (MomentumTransfer * X), MyDamageType, HitPoints);
-				else  {
-					if ( Victim.IsHeadShot(HitLocation, X, 1.0) )
-						Victim.TakeDamage((ImpactDamage * HeadShotDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-					else
-						Victim.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-				}
-			}
-			else
-				Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-		}
-		
-		if ( IsArmed() )
-			Explode(HitLocation, Normal(HitLocation - Other.Location));
-    }
-	
-	// Stop the grenade in its tracks if it hits an enemy.
-	if ( Speed > 0.0 && !Other.bWorldGeometry && Other != Instigator && Other.Base != Instigator )
-		ZeroProjectileEnergy();
+	Super.ProcessLanded(HitNormal);
 }
 
 //[end] Functions
@@ -223,6 +147,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 defaultproperties
 {
 	 bIgnoreSameClassProj=True
+	 ProjectileDiameter=40.0
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000

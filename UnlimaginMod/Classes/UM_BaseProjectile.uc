@@ -113,6 +113,7 @@ var				float		MaxEffectiveRange;	// Temporary variable. Used for calculations.
 var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic performance randomization
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
+var				Vector		LandedPrePivot;
 
 var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
 var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
@@ -335,7 +336,6 @@ simulated event PreBeginPlay()
 
     // Prevents from touching owner at spawn
 	LastTouched = Owner;
-	
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
 	
@@ -453,16 +453,33 @@ simulated function SetInitialVelocity()
 // Called after the actor is created but BEFORE any values have been replicated to it.
 simulated event PostBeginPlay()
 {
-	if ( bReplicateSpawnLocation )
-		SpawnLocation = Location;
+	local	PlayerController	PC;
 	
 	if ( bReplicateSpawnTime )
 		SpawnTime = Level.TimeSeconds;
 	
+	if ( bReplicateSpawnLocation )
+		SpawnLocation = Location;
+	
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(self);
 	
-	Super(Projectile).PostBeginPlay();
+	//[block] Copied from Projectile.uc
+    if ( Role == ROLE_Authority && Instigator != None && Instigator.Controller != None )  {
+    	if ( Instigator.Controller.ShotTarget != None && Instigator.Controller.ShotTarget.Controller != None )
+			Instigator.Controller.ShotTarget.Controller.ReceiveProjectileWarning( Self );
+		InstigatorController = Instigator.Controller;
+    }
+	// DynamicLight
+    if ( bDynamicLight && Level.NetMode != NM_DedicatedServer )  {
+		PC = Level.GetLocalPlayerController();
+		if ( PC == None || PC.ViewTarget == None || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0 )  {
+			LightType = LT_None;
+			bDynamicLight = false;
+		}
+	}
+	bReadyToSplash = True;
+	//[end]
 	
 	// Assign Velocity
 	SetInitialVelocity();
@@ -560,7 +577,6 @@ simulated function float GetPenetrationBonus()
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
-	DestroyTrail();
 	bBounce = False;
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
@@ -580,14 +596,13 @@ simulated function UpdateProjectilePerformance(
  optional	bool		bForceUpdate,
  optional	float		EnergyLoss )
 {
-	local	vector	VelNormal;
+	//local	vector	VelNormal;
 	local	float	LastProjectileEnergy;
 	
 	if ( !bForceUpdate && Level.TimeSeconds < NextProjectileUpdateTime )
 		Return;
 		
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
-	VelNormal = Normal(Velocity);
 	// Rotation Update
 	SetRotation(Rotator(VelNormal));
 	// Performance update
@@ -598,7 +613,9 @@ simulated function UpdateProjectilePerformance(
 			if ( EnergyLoss < ProjectileEnergy )  {
 				ProjectileEnergy -= EnergyLoss;
 				Speed = Sqrt(ProjectileEnergy * EnergyToSpeedSquared);
-				Velocity = Speed * VelNormal;
+				//Velocity = Speed * VelNormal;
+				//Velocity = Speed * Normal(Velocity);
+				Velocity = Speed * Vector(Rotation);
 			}
 			// Lose all Energy
 			else
@@ -619,15 +636,10 @@ simulated function UpdateProjectilePerformance(
 simulated function SpawnHitEffects(
 			vector			HitLocation, 
 			vector			HitNormal, 
- optional	ESurfaceTypes	HitSurfaceType, 
- optional	ESurfaceTypes	HitSoundSurfaceType, 
- optional	Actor			Victim, 
- optional	Sound			NewHitSound, 
- optional	float			NewHitSoundVolume, 
- optional	float			NewHitSoundRadius )
+ optional	ESurfaceTypes	HitSurfaceType,
+ optional	Actor			Victim )
 {
 	local	UM_BaseHitEffects	HitEffects;
-	local	float				Vol, Rad;
 	
 	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail && 
 		 Level.DetailMode != DM_Low )  {
@@ -639,24 +651,14 @@ simulated function SpawnHitEffects(
 		}
 		
 		if ( HitEffects != None )  {
-			if ( NewHitSoundVolume > 0.0 )
-				Vol = NewHitSoundVolume;
-			else if ( HitSoundVolume > 0.0 )
-				Vol = HitSoundVolume;
-			
-			if ( NewHitSoundRadius > 0.0 )
-				Rad = NewHitSoundRadius;
-			else if ( HitSoundRadius > 0.0 )
-				Rad = HitSoundRadius;
-			
 			if ( Pawn(Victim) != None )  {
 				if ( Pawn(Victim).ShieldStrength > 0 )
-					HitEffects.PlayHitEffects(EST_MetalArmor, , Vol, Rad, NewHitSound);
+					HitEffects.PlayHitEffects(EST_MetalArmor);
 				else
-					HitEffects.PlayHitEffects(EST_Flesh, , Vol, Rad, NewHitSound);
+					HitEffects.PlayHitEffects(EST_Flesh);
 			}
 			else
-				HitEffects.PlayHitEffects(HitSurfaceType, HitSoundSurfaceType, Vol, Rad, NewHitSound);
+				HitEffects.PlayHitEffects(HitSurfaceType);
 		}
 	}
 }
@@ -671,16 +673,17 @@ simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWh
 	// This collisions is attached to Pawn owners.
 	if ( (!bIgnoreWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
 		Return Pawn(A.Owner);
-	else if ( Pawn(A) != None )
-		Return Pawn(A);
-	else
+	else if ( Pawn(A.Base) != None  )
 		Return Pawn(A.Base);
+	else
+		Return Pawn(A);
 }
 
 simulated function bool CanHurtPawn( Pawn P )
 {
 	if ( P == None || Instigator != None && ((!bCanHurtOwner && (P == Instigator || P.Base == Instigator))
-			|| (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && Instigator.GetTeamNum() == P.GetTeamNum())) )
+			 || (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0 
+				 && P.GetTeamNum() == Instigator.GetTeamNum())) )
 		Return False;
 		
 	Return True;
@@ -730,7 +733,7 @@ simulated function ProcessHitActor(
 	}
 	
 	// Hit effects
-	SpawnHitEffects(Location, Normal(HitLocation - A.Location), , , A);
+	SpawnHitEffects(Location, Normal(HitLocation - A.Location), ,A);
 	// Damage
 	if ( Role == ROLE_Authority )  {
 		if ( Instigator == None || Instigator.Controller == None )
@@ -749,7 +752,7 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched && !A.bStatic
+	if ( A != None && A != Self && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched && !A.bStatic
 		 && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors || A.bBlockHitPointTraces) )  {
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
 			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
@@ -763,7 +766,7 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	LastTouched = A;
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
 	LastTouched = None;
 }
@@ -820,8 +823,10 @@ simulated function ProcessHitWall( vector HitNormal )
 				BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
 			UpdateProjectilePerformance(True);
 			// If Speed less than MinSpeed start falling
-			if ( Speed < MinSpeed )
+			if ( Speed < MinSpeed )  {
+				bBounce = False;
 				SetPhysics(PHYS_Falling);
+			}
 			
 			Return;
 		}
@@ -835,11 +840,23 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 {
 	local	Vector	HitLocation;
 
-	if ( CanTouchThisActor(Wall, HitLocation) )
+	if ( CanTouchThisActor(Wall, HitLocation) )  {
+		HurtWall = Wall;
 		ProcessTouch(Wall, HitLocation);
+		Return;
+	}
 	
 	ProcessHitWall(HitNormal);
 	HurtWall = None;
+}
+
+simulated function ProcessLanded( vector HitNormal )
+{
+	DestroyTrail();
+	Velocity = Vect(0.0, 0.0, 0.0);
+	Acceleration = Vect(0.0, 0.0, 0.0);
+	PrePivot = LandedPrePivot;
+	SetPhysics(PHYS_None);
 }
 
 // Event Landed() called when the actor is no longer falling.
@@ -851,7 +868,7 @@ simulated event Landed( vector HitNormal )
 	if ( Speed >= MinSpeed )
 		HitWall(HitNormal, None);
 	else
-		SetPhysics(PHYS_None);
+		ProcessLanded(HitNormal);
 }
 
 simulated event Destroyed()
@@ -865,26 +882,46 @@ simulated event Destroyed()
 
 defaultproperties
 {
-	 ImpactSurfaces(EST_Default)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
-	 ImpactSurfaces(EST_Rock)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.9)
-	 ImpactSurfaces(EST_Dirt)=(ImpactStrength=0.01,FrictionCoefficient=0.65,PlasticityCoefficient=0.4)
-	 ImpactSurfaces(EST_Metal)=(ImpactStrength=0.8,FrictionCoefficient=0.95,PlasticityCoefficient=0.8)
-	 ImpactSurfaces(EST_Wood)=(ImpactStrength=0.08,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
-	 ImpactSurfaces(EST_Plant)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.3)
-	 ImpactSurfaces(EST_Flesh)=(ImpactStrength=0.025,FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
-	 ImpactSurfaces(EST_Ice)=(ImpactStrength=0.1,FrictionCoefficient=0.98,PlasticityCoefficient=0.7)
-	 ImpactSurfaces(EST_Snow)=(ImpactStrength=0.01,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
-	 ImpactSurfaces(EST_Water)=(ImpactStrength=0.005,FrictionCoefficient=0.85,PlasticityCoefficient=0.3)
-	 ImpactSurfaces(EST_Glass)=(ImpactStrength=0.5,FrictionCoefficient=0.9,PlasticityCoefficient=0.7)
-	 ImpactSurfaces(EST_Gravel)=(ImpactStrength=0.5,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
-	 ImpactSurfaces(EST_Concrete)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.75)
-	 ImpactSurfaces(EST_HollowWood)=(ImpactStrength=0.07,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
-	 ImpactSurfaces(EST_Mud)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.2)
-	 ImpactSurfaces(EST_MetalArmor)=(ImpactStrength=1.2,FrictionCoefficient=0.9,PlasticityCoefficient=0.75)
-	 ImpactSurfaces(EST_Paper)=(ImpactStrength=0.04,FrictionCoefficient=0.75,PlasticityCoefficient=0.5)
-	 ImpactSurfaces(EST_Cloth)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
-	 ImpactSurfaces(EST_Rubber)=(ImpactStrength=0.05,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
-	 ImpactSurfaces(EST_Poop)=(ImpactStrength=0.0005,FrictionCoefficient=0.8,PlasticityCoefficient=0.1)
+	 // EST_Default
+	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
+	 // EST_Rock
+	 ImpactSurfaces(1)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.85)
+	 // EST_Dirt
+	 ImpactSurfaces(2)=(ImpactStrength=0.01,FrictionCoefficient=0.65,PlasticityCoefficient=0.4)
+	 // EST_Metal
+	 ImpactSurfaces(3)=(ImpactStrength=0.8,FrictionCoefficient=0.95,PlasticityCoefficient=0.8)
+	 // EST_Wood
+	 ImpactSurfaces(4)=(ImpactStrength=0.08,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 // EST_Plant
+	 ImpactSurfaces(5)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.3)
+	 // EST_Flesh
+	 ImpactSurfaces(6)=(ImpactStrength=0.025,FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
+	 // EST_Ice
+	 ImpactSurfaces(7)=(ImpactStrength=0.1,FrictionCoefficient=0.98,PlasticityCoefficient=0.7)
+	 // EST_Snow
+	 ImpactSurfaces(8)=(ImpactStrength=0.01,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 // EST_Water
+	 ImpactSurfaces(9)=(ImpactStrength=0.005,FrictionCoefficient=0.85,PlasticityCoefficient=0.3)
+	 // EST_Glass
+	 ImpactSurfaces(10)=(ImpactStrength=0.5,FrictionCoefficient=0.9,PlasticityCoefficient=0.7)
+	 // EST_Gravel
+	 ImpactSurfaces(11)=(ImpactStrength=0.5,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 // EST_Concrete
+	 ImpactSurfaces(12)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.75)
+	 // EST_HollowWood
+	 ImpactSurfaces(13)=(ImpactStrength=0.07,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 // EST_Mud
+	 ImpactSurfaces(14)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.2)
+	 // EST_MetalArmor
+	 ImpactSurfaces(15)=(ImpactStrength=1.2,FrictionCoefficient=0.9,PlasticityCoefficient=0.75)
+	 // EST_Paper
+	 ImpactSurfaces(16)=(ImpactStrength=0.04,FrictionCoefficient=0.75,PlasticityCoefficient=0.5)
+	 // EST_Cloth
+	 ImpactSurfaces(17)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 // EST_Rubber
+	 ImpactSurfaces(18)=(ImpactStrength=0.05,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
+	 // EST_Poop
+	 ImpactSurfaces(19)=(ImpactStrength=0.0005,FrictionCoefficient=0.8,PlasticityCoefficient=0.1)
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
 	 bEnableLogging=False
@@ -936,10 +973,11 @@ defaultproperties
      bUpdateSimulatedPosition=False
 	 //[end]
      //[block] Physics options.
+	 LandedPrePivot=(Z=-1.0)
+	 bCanRebound=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=False
-	 bOrientToVelocity=False	// Orient in the direction of current velocity.
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
 	 Physics=PHYS_Projectile
 	 //[end]

@@ -17,8 +17,7 @@ class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 
 simulated function SetInitialVelocity()
 {
-	if ( Role == ROLE_Authority && Speed > 0.0 )
-    {
+	if ( Role == ROLE_Authority && Speed > 0.0 )  {
         bCanHitOwner = False;
 		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
 			Speed *= SpeedDropInWaterCoefficient;
@@ -38,7 +37,9 @@ simulated event PostBeginPlay()
 
 defaultproperties
 {
-     bIgnoreSameClassProj=True
+     ProjectileDiameter=30.0
+	 ProjectileMass=0.200
+	 bIgnoreSameClassProj=True
 	 //Sounds
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=350.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
@@ -55,7 +56,6 @@ defaultproperties
      Damage=300.000000
      DamageRadius=300.000000
 	 ImpactDamage=40.000000
-	 ProjectileMass=0.200000
 	 //IgnoreVictims
 	 IgnoreVictims(0)="UM_ClusterHandGrenade"
 	 ShrapnelClass=None

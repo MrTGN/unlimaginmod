@@ -20,7 +20,8 @@ class UM_BaseProjectile_45ACPIncendiary extends UM_BaseProjectile_IncendiaryBull
 
 defaultproperties
 {
-     DrawScale=0.650000
+     ProjectileDiameter=11.5
+	 DrawScale=0.650000
 	 //BallisticCoefficient
 	 BallisticCoefficient=0.125000
 	 //MuzzleVelocity

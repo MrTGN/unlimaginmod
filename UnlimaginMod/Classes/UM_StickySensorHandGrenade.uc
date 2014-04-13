@@ -27,7 +27,7 @@ var		bool			bStuck;		// Grenade has stuck on something.
 
 var		float			DetectionRadius;	// How far away to detect enemies
 
-var		SoundData		BeepSound, StickSound, PickupSound;
+var		SoundData		BeepSound, PickupSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
@@ -59,12 +59,10 @@ replication
 simulated static function PreloadAssets(Projectile Proj)
 {
 	default.BeepSound.Snd = BaseActor.static.LoadSound(default.BeepSound.Ref);
-	default.StickSound.Snd = BaseActor.static.LoadSound(default.StickSound.Ref);
 	default.PickupSound.Snd = BaseActor.static.LoadSound(default.PickupSound.Ref);
 	
 	if ( UM_StickySensorHandGrenade(Proj) != None )  {
 		UM_StickySensorHandGrenade(Proj).BeepSound.Snd = default.BeepSound.Snd;
-		UM_StickySensorHandGrenade(Proj).StickSound.Snd = default.StickSound.Snd;
 		UM_StickySensorHandGrenade(Proj).PickupSound.Snd = default.PickupSound.Snd;
 	}
 	
@@ -75,7 +73,6 @@ simulated static function PreloadAssets(Projectile Proj)
 simulated static function bool UnloadAssets()
 {
 	default.BeepSound.Snd = None;
-	default.StickSound.Snd = None;
 	default.PickupSound.Snd = None;
 
 	Return Super.UnloadAssets();
@@ -152,37 +149,35 @@ event Timer()
 		Destroy();
 }
 
-simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
+simulated function Stick( Actor HitActor, vector HitLocation, vector HitNormal )
 {
 	local	name		NearestBone;
 	local	float		dist;
-	//local	Inventory	Inv;
 
-	bStuck = True;
-	
-	if ( Role == ROLE_Authority && !bTimerSet )
-	{
+	if ( Role == ROLE_Authority && !bTimerSet )  {
 		SetTimer(ExplodeTimer, True);
 		bTimerSet = True;
 	}
 	
+	if ( HitActor == Instigator || HitActor.Base == Instigator )
+		Return;
+	
+	bStuck = True;
 	bCollideWorld = False;
 	SetPhysics(PHYS_None);
 	DestroyTrail();
 	StickActor = HitActor;
 
-	if ( Pawn(StickActor) != None )
-	{
+	if ( Pawn(StickActor) != None )  {
 		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
 		StickActor.AttachToBone(Self, NearestBone);
 	}
 	else
 		SetBase(StickActor);
 
-	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.Snd, StickSound.Vol, StickSound.Radius);
+	SpawnHitEffects(HitLocation, HitNormal, ,StickActor);
 
-	if ( Base == None )
-	{
+	if ( Base == None )  {
 		bStuck = False;
 		bCollideWorld = True;
 		SetPhysics(PHYS_Falling);
@@ -192,18 +187,12 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 		GoToState('Stuck');
 }
 
-simulated function ProcessTouch( actor Other, vector HitLocation )
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	if ( !bStuck )
-	{
-		// Don't allow hits on poeple on the same team
-		if ( Other == None || Other == Instigator || Other.Base == Instigator || 
-			 (KFHumanPawn(Other) != None && Instigator != None &&
-				 KFHumanPawn(Other).PlayerReplicationInfo.Team.TeamIndex == Instigator.PlayerReplicationInfo.Team.TeamIndex) )
-			Return;
-		
 		Stick(Other, HitLocation, Normal(HitLocation - Other.Location));
-	}
+	LastTouched = None;
 }
 
 //simulated singular event HitWall( vector HitNormal, actor Wall )
@@ -245,8 +234,7 @@ state Stuck
 	
 	simulated event BaseChange()
 	{
-		if ( Base == None )
-		{
+		if ( Base == None )  {
 			bStuck = False;
 			bCollideWorld = True;
 			SetPhysics(PHYS_Falling);
@@ -276,6 +264,7 @@ defaultproperties
 	 //Actually ExplodeTimer is a scanning delay time here
 	 ExplodeTimer=0.500000
 	 GrenadeLightClass=Class'UnlimaginMod.UM_StickySensorHandGrenadeLight'
+	 HitEffectsClass=Class'UnlimaginMod.UM_GrenadeStickEffect'
 	 //Shrapnel
 	 ShrapnelClass=Class'KFMod.KFShrapnel'
 	 MaxShrapnelAmount=10
@@ -284,7 +273,6 @@ defaultproperties
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=400.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=400.0,bUse3D=True)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Slot=SLOT_Pain,Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 DetectionRadius=170.000000
 	 DamageRadius=380.000000

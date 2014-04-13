@@ -22,7 +22,8 @@ class UM_BaseProjectile_2Buckshot extends UM_BaseProjectile_Buckshot
 
 defaultproperties
 {
-     BallisticCoefficient=0.037000
+     ProjectileDiameter=6.86
+	 BallisticCoefficient=0.037000
 	 BallisticRandPercent=8.500000
 	 EffectiveRange=690.000000
 	 ProjectileMass=0.016193

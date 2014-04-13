@@ -20,7 +20,8 @@ class UM_BaseProjectile_ShotgunExpBullet extends UM_BaseProjectile_ExplosiveBull
 
 defaultproperties
 {
-     //ImpactDamage
+     ProjectileDiameter=18.5
+	 //ImpactDamage
 	 ImpactDamage=150.000000
 	 HeadShotDamageMult=1.250000
 	 Damage=180.000000

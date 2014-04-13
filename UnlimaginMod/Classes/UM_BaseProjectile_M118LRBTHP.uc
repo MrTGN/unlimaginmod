@@ -21,7 +21,8 @@ class UM_BaseProjectile_M118LRBTHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.513000
+     ProjectileDiameter=7.82
+	 BallisticCoefficient=0.513000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=1600.000000
 	 ExpansionCoefficient=1.500000

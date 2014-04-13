@@ -21,7 +21,8 @@ class UM_BaseProjectile_792x33Kurz extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.345000
+     ProjectileDiameter=8.2
+	 BallisticCoefficient=0.345000
 	 BallisticRandPercent=7.000000
 	 EffectiveRange=1400.000000
 	 ProjectileMass=0.008100		//kilograms

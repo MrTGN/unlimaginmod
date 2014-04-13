@@ -21,14 +21,14 @@ class UM_BaseProjectile_Gas extends UM_BaseProjectile
 //========================================================================
 //[block] Variables
 
-var		float		SpeedDropScale;		// Sets the speed drop per second by multiplying value on projectile speed
-var		float		SpawnCheckRadiusScale;	// CheckRadius calculating by multiplying DamageRadius on GasCloudCheckRadiusScale
+var		float			SpeedDropScale;		// Sets the speed drop per second by multiplying value on projectile speed
+var		float			SpawnCheckRadiusScale;	// CheckRadius calculating by multiplying DamageRadius on GasCloudCheckRadiusScale
 
 var		class<Emitter>	GasCloudEmitterClass;
 var		Emitter			GasCloudEmitter;
 
-var		bool		bStopped;	// This projectile has stopped
-var		bool		bGasCloudSpawned;
+var		bool			bStopped;	// This projectile has stopped
+var		bool			bGasCloudSpawned;
 
 //[end] Varibles
 //====================================================================
@@ -39,7 +39,7 @@ var		bool		bGasCloudSpawned;
 
 replication
 {
-	reliable if ( bNetDirty && Role == ROLE_Authority )
+	reliable if ( Role == ROLE_Authority && bNetDirty )
 		bStopped;
 }
 
@@ -67,18 +67,14 @@ simulated function SpawnGasCloud()
 		foreach VisibleActors(Class'Emitter', GasCloud, (DamageRadius * SpawnCheckRadiusScale), Location)  {
 			if ( GasCloud != None && GasCloud.Class == GasCloudEmitterClass )  {
 				GasCloud.Reset();
-				//GasCloud.LifeSpan = LifeSpan - (Level.TimeSeconds - SpawnTime);
 				Break;
 			}
 			else
 				GasCloud = None;
 		}
 		
-		if ( GasCloud == None )  {
+		if ( GasCloud == None )
 			GasCloudEmitter = Spawn(GasCloudEmitterClass, self);
-			//if ( GasCloudEmitter != None )
-				//GasCloudEmitter.LifeSpan = LifeSpan - (Level.TimeSeconds - SpawnTime);
-		}
 	}
 }
 
@@ -120,8 +116,7 @@ simulated event Tick(float DeltaTime)
 			Speed = 0.0;
 			SpawnGasCloud();
 			DestroyTrail();
-			if ( Physics != PHYS_None )
-				SetPhysics(PHYS_None);
+			SetPhysics(PHYS_None);
 			
 			if ( bCollideWorld )
 				bCollideWorld = False;
@@ -145,8 +140,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 			Speed = 0.0;
 			SpawnGasCloud();
 			DestroyTrail();
-			if ( Physics != PHYS_None )
-				SetPhysics(PHYS_None);
+			SetPhysics(PHYS_None);
 			
 			if ( bCollideWorld )
 				bCollideWorld = False;
@@ -166,8 +160,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 			Speed = 0.0;
 			SpawnGasCloud();
 			DestroyTrail();
-			if ( Physics != PHYS_None )
-				SetPhysics(PHYS_None);
+			SetPhysics(PHYS_None);
 			
 			if ( bCollideWorld )
 				bCollideWorld = False;
@@ -177,7 +170,9 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 
 simulated event Landed( vector HitNormal )
 {
-	HitWall(HitNormal, None);
+	Acceleration = Vect(0.0,0.0,0.0);
+	Velocity = Vect(0.0, 0.0, 0.0);
+	SetPhysics(PHYS_None);
 }
 
 //[end] Functions
@@ -187,9 +182,9 @@ simulated event Landed( vector HitNormal )
 defaultproperties
 {
      SpawnCheckRadiusScale=0.200000
-	 bCanBeDamaged=False
-	 bBounce=False
-	 bInitialAcceleration=False
+	 bCanRebound=False
+	 bBounce=True
+	 bOrientToVelocity=True	// Orient in the direction of current velocity.
 	 //Ballistic performance randomization percent
 	 BallisticRandPercent=10.000000
 	 bReplicateSpawnTime=True

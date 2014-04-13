@@ -21,7 +21,8 @@ class UM_BaseProjectile_SS190APFMJ extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.154000
+     ProjectileDiameter=5.7
+	 BallisticCoefficient=0.154000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=800.000000
 	 ProjectileMass=0.002000		//kilograms

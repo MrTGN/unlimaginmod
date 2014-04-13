@@ -113,9 +113,9 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	Destroy();
 }
 
-simulated function ProcessTouch(Actor Other, Vector HitLocation)
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	LastTouched = A;
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	Explode(HitLocation, Normal(HitLocation - Other.Location));
 	LastTouched = None;

@@ -21,7 +21,8 @@ class UM_BaseProjectile_SP5FMJ extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.557000
+     ProjectileDiameter=9.25
+	 BallisticCoefficient=0.557000
 	 BallisticRandPercent=5.000000
 	 EffectiveRange=800.000000
 	 ProjectileMass=0.016100		//kilograms

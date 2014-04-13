@@ -21,7 +21,8 @@ class UM_BaseProjectile_45ACP_Speer200JHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.140000
+     ProjectileDiameter=11.5
+	 BallisticCoefficient=0.140000
 	 BallisticRandPercent=9.000000
 	 EffectiveRange=720.000000
 	 ExpansionCoefficient=1.745000

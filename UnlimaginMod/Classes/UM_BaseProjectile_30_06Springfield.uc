@@ -22,6 +22,7 @@ class UM_BaseProjectile_30_06Springfield extends UM_BaseProjectile_Bullet
 defaultproperties
 {
      bCanRebound=True
+	 ProjectileDiameter=7.8
 	 BallisticCoefficient=0.480000
 	 BallisticRandPercent=7.000000
 	 EffectiveRange=1200.000000

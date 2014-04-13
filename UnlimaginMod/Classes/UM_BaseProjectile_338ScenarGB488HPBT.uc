@@ -22,7 +22,8 @@ class UM_BaseProjectile_338ScenarGB488HPBT extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.631000
+     ProjectileDiameter=8.58
+	 BallisticCoefficient=0.631000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=1400.000000
 	 ExpansionCoefficient=1.600000

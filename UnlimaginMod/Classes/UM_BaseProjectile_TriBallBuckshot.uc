@@ -22,7 +22,8 @@ class UM_BaseProjectile_TriBallBuckshot extends UM_BaseProjectile_Buckshot
 
 defaultproperties
 {
-     BallisticCoefficient=0.081000
+     ProjectileDiameter=15.24
+	 BallisticCoefficient=0.081000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=1500.000000
 	 MaxEffectiveRangeScale=1.000000

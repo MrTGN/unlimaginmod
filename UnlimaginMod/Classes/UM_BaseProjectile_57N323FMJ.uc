@@ -21,7 +21,8 @@ class UM_BaseProjectile_57N323FMJ extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.425000
+     ProjectileDiameter=7.92
+	 BallisticCoefficient=0.425000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=1500.000000
 	 ProjectileMass=0.009600		//kilograms

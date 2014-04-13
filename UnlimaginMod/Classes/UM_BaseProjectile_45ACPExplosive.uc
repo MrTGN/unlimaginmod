@@ -20,7 +20,8 @@ class UM_BaseProjectile_45ACPExplosive extends UM_BaseProjectile_ExplosiveBullet
 
 defaultproperties
 {
-     DrawScale=0.650000
+     ProjectileDiameter=11.5
+	 DrawScale=0.650000
 	 //BallisticCoefficient
 	 BallisticCoefficient=0.125000
 	 //MuzzleVelocity

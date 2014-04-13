@@ -21,7 +21,8 @@ class UM_BaseProjectile_9x19P_Speer124JHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.184000
+     ProjectileDiameter=9.01
+	 BallisticCoefficient=0.184000
 	 BallisticRandPercent=10.000000
 	 EffectiveRange=800.000000
 	 ExpansionCoefficient=1.860000

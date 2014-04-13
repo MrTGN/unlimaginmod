@@ -58,7 +58,7 @@ var		SoundData			DisintegrateSound, ExplodeSound;
 var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
-var		float				ArmingRange;	// Detonator will be armed after this distance
+var		float				ArmingRange;	// Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
 
 //DramaticEvents
 var		float				SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
@@ -66,7 +66,7 @@ var		int					SmallDramaticEventKills, MediumDramaticEvenKills, LongDramaticEvent
 
 
 // How much damage to do when this Projectile impacts something before exploding
-var(Impact)		float		ImpactDamage, ImpactDamageRadius;
+var(Impact)		float		ImpactDamage;
 var(Impact)		float		ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
 var		class<DamageType>	ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
 
@@ -88,6 +88,17 @@ replication
 
 //========================================================================
 //[block] Functions
+
+simulated function CalcDefaultProperties()
+{
+	Super.CalcDefaultProperties();
+	// ArmingRange
+	if ( default.ArmingRange > 0.0 )  {
+		// Squared ArmingRange
+		default.ArmingRange = default.ArmingRange * default.ArmingRange * SquareMeterInUU;
+		ArmingRange = default.ArmingRange;
+	}
+}
 
 simulated event PreBeginPlay()
 {
@@ -428,9 +439,9 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		NetUpdateTime = Level.TimeSeconds - 1;
 		BlowUp(HitLocation);
 		SetTimer(0.1, false);
-		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	
 	// Explode effects
@@ -467,11 +478,11 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		NetUpdateTime = Level.TimeSeconds - 1;
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
 		BlowUp(HitLocation);
 		SetTimer(0.1, false);
-		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	
 	// Disintegrate effects
@@ -510,38 +521,11 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	}
 }
 
-simulated singular event HitWall(vector HitNormal, actor Wall)
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	// Updating bullet Performance before hit the victim
-	// Needed because bullet lose Speed and ImpactDamage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	if ( Role == ROLE_Authority )  {
-		if ( ImpactDamageType != None && ImpactDamage > 0.0 && !Wall.bStatic && !Wall.bWorldGeometry )  {
-			if ( Instigator == None || Instigator.Controller == None )
-				Wall.SetDelayedDamageInstigatorController(InstigatorController);
-
-			Wall.TakeDamage(ImpactDamage, Instigator, Location, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
-
-			if ( ImpactDamageRadius > 0.0 && Vehicle(Wall) != None && Vehicle(Wall).Health > 0 )
-				Vehicle(Wall).DriverRadiusDamage(ImpactDamage, ImpactDamageRadius, InstigatorController, ImpactDamageType, ImpactMomentumTransfer, Location);
-
-			HurtWall = Wall;
-		}
-		
-		if ( IsArmed() )
-			Explode((Location + ExploWallOut * HitNormal), HitNormal);
-	}
-	
-	HurtWall = None;
-	ZeroProjectileEnergy();
-}
-
-
-simulated event Landed( vector HitNormal )
-{
-	SetPhysics(PHYS_None);
+	LastTouched = Other;
+	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	LastTouched = None;
 }
 
 simulated event Destroyed()
@@ -562,7 +546,6 @@ defaultproperties
      bCanBeDamaged=True
 	 bIgnoreSameClassProj=True
 	 DisintegrateDamageScale=0.100000
-	 ImpactDamageRadius=0.00000
 	 TransientSoundVolume=2.000000
 	 //Sounds
 	 DisintegrateSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)

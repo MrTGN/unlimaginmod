@@ -22,6 +22,7 @@ class UM_BaseProjectile_30WCF_H160FTX extends UM_BaseProjectile_Bullet
 defaultproperties
 {
      bCanRebound=True
+	 ProjectileDiameter=7.8
 	 BallisticCoefficient=0.330000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=1000.000000

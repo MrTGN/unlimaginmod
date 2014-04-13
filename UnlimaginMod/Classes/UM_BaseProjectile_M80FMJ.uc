@@ -21,7 +21,8 @@ class UM_BaseProjectile_M80FMJ extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.431000
+     ProjectileDiameter=7.82
+	 BallisticCoefficient=0.431000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=1400.000000
 	 ProjectileMass=0.009525		//kilograms

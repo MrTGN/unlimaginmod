@@ -20,9 +20,6 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 //========================================================================
 //[block] Variables
 
-
-var				Pawn		IgnoreImpactPawn; // Used for penetrations
-
 //[end] Varibles
 //====================================================================
 
@@ -62,40 +59,16 @@ simulated function ZeroProjectileEnergy()
 	Destroy();
 }
 
+simulated function ProcessLanded( vector HitNormal )
+{
+	DestroyTrail();
+	Destroy();
+}
+
 // Called when the projectile loses some of it's energy
 simulated function ScaleProjectilePerformance(float NewScale)
 {
 	Damage *= NewScale;
-}
-
-simulated singular event HitWall( vector HitNormal, actor Wall )
-{
-	local	float			CosMaxBA, EL, CosBA;
-	local	vector			HitLoc, HitNorm, TraceEnd;
-	local	Material		HitMat;
-	local	ESurfaceTypes	ST;
-
-	// Updating bullet performance before hit the wall
-	// Needed because bullet lose Speed and Damage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	if ( Wall != None && !Wall.bStatic && !Wall.bWorldGeometry 
-		&& (Mover(Wall) == None || Mover(Wall).bDamageTriggered) )  {
-		if ( Role == ROLE_Authority && Level.NetMode != NM_Client )  {
-			if ( Instigator == None || Instigator.Controller == None )
-				Wall.SetDelayedDamageInstigatorController(InstigatorController);
-			
-			Wall.TakeDamage(Damage, Instigator, Location, (MomentumTransfer * Normal(Velocity)), MyDamageType);
-			HurtWall = Wall;
-			if ( Instigator != None )
-				MakeNoise(1.0);
-		}
-		ZeroProjectileEnergy();
-		Return;
-	}
-	ProcessHitWall(HitNormal);
-	HurtWall = None;
 }
 
 //[end] Functions
@@ -103,8 +76,6 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 
 defaultproperties
 {
-     // Orient in the direction of current velocity.
-	 bOrientToVelocity=True
 	 // Simple not-elemental bullets don't need to take damage from something
 	 bCanBeDamaged=False
 	 //bEnableLogging=True
@@ -135,7 +106,6 @@ defaultproperties
 	 //[end]
 	 HeadShotDamageMult=1.100000
 	 PenetrationEnergyReduction=0.800000
-	 bBounce=True
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects
@@ -155,6 +125,10 @@ defaultproperties
 	 bBlockHitPointTraces=False
 	 bSwitchToZeroCollision=True
 	 //Physics
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bCanRebound=False
 	 Physics=PHYS_Projectile
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy

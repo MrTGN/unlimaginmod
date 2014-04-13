@@ -27,7 +27,7 @@ var		bool			bStuck;	// Grenade has stuck on something
 var		bool			bTimerSet;
 var		float			ExplodeTimer;
 
-var		SoundData		BeepSound, StickSound;
+var		SoundData		BeepSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
@@ -59,12 +59,9 @@ replication
 simulated static function PreloadAssets(Projectile Proj)
 {
 	default.BeepSound.Snd = BaseActor.static.LoadSound(default.BeepSound.Ref);
-	default.StickSound.Snd = BaseActor.static.LoadSound(default.StickSound.Ref);
 
-	if ( UM_BaseProjectile_StickyGrenade(Proj) != None )  {
+	if ( UM_BaseProjectile_StickyGrenade(Proj) != None )
 		UM_BaseProjectile_StickyGrenade(Proj).BeepSound.Snd = default.BeepSound.Snd;
-		UM_BaseProjectile_StickyGrenade(Proj).StickSound.Snd = default.StickSound.Snd;
-	}
 	
 	Super.PreloadAssets(Proj);
 }
@@ -73,7 +70,6 @@ simulated static function PreloadAssets(Projectile Proj)
 simulated static function bool UnloadAssets()
 {
 	default.BeepSound.Snd = None;
-	default.StickSound.Snd = None;
 	
 	Return Super.UnloadAssets();
 }
@@ -104,29 +100,30 @@ simulated event PostNetReceive()
 	Super.PostNetReceive();
 }
 
-simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
+simulated function Stick( Actor HitActor, vector HitLocation, vector HitNormal )
 {
 	local	name		NearestBone;
 	local	float		dist;
-
+	
+	if ( HitActor == Instigator || HitActor.Base == Instigator )
+		Return;
+	
 	bStuck = True;
 	bCollideWorld = False;
 	SetPhysics(PHYS_None);
 	DestroyTrail();
 	StickActor = HitActor;
 
-	if ( Pawn(StickActor) != None )
-	{
+	if ( Pawn(StickActor) != None )  {
 		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
 		StickActor.AttachToBone(Self, NearestBone);
 	}
 	else
 		SetBase(StickActor);
 	
-	SpawnHitEffects(HitLocation, HitNormal, , , StickActor, StickSound.Snd, StickSound.Vol, StickSound.Radius);
+	SpawnHitEffects(HitLocation, HitNormal, ,StickActor);
 	
-	if ( Base == None )
-	{
+	if ( Base == None )  {
 		bStuck = False;
 		bCollideWorld = True;
 		SetPhysics(PHYS_Falling);
@@ -136,18 +133,12 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 		GoToState('Stuck');
 }
 
-simulated function ProcessTouch( actor Other, vector HitLocation )
+simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	if ( !bStuck )
-	{
-		// Don't allow hits on poeple on the same team
-		if ( Other == None || Other == Instigator || Other.Base == Instigator || 
-			 (KFHumanPawn(Other) != None && Instigator != None &&
-				 KFHumanPawn(Other).PlayerReplicationInfo.Team.TeamIndex == Instigator.PlayerReplicationInfo.Team.TeamIndex) )
-			Return;
-		
 		Stick(Other, HitLocation, Normal(HitLocation - Other.Location));
-	}
+	LastTouched = None;
 }
 
 //simulated singular event HitWall( vector HitNormal, actor Wall )
@@ -197,6 +188,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 ProjectileDiameter=40.0
 	 bIgnoreSameClassProj=True
 	 ExplodeTimer=0.500000
 	 BallisticCoefficient=0.150000
@@ -211,7 +203,6 @@ defaultproperties
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=360.0,bUse3D=True)
-	 StickSound=(Ref="ProjectileSounds.PTRD_deflect04",Vol=2.2,Radius=360.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 LifeSpan=0.000000
 	 ProjectileMass=0.230000
      //DisintegrateDamageTypes
@@ -222,6 +213,7 @@ defaultproperties
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
+	 HitEffectsClass=Class'UnlimaginMod.UM_GrenadeStickEffect'
 	 //StaticMesh
      DrawType=DT_StaticMesh
 	 StaticMesh=StaticMesh'kf_generic_sm.40mm_Warhead'

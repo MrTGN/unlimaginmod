@@ -23,8 +23,8 @@ class UM_BaseProjectile_HandGrenade extends UM_BaseExplosiveProjectile
 var		float				ExplodeTimer;
 var		bool				bCanHitOwner, bTimerSet;
 
-var		AvoidMarker				FearMarker;
-var		Class<AvoidMarker>		FearMarkerClass;
+var		AvoidMarker			FearMarker;
+var		Class<AvoidMarker>	FearMarkerClass;
 
 //[end] Varibles
 //====================================================================
@@ -54,11 +54,9 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	
-	if ( FearMarkerClass != None )
-	{
+	if ( FearMarkerClass != None )  {
 		FearMarker = Spawn(FearMarkerClass, self);
-		if ( FearMarker != None )
-		{
+		if ( FearMarker != None )  {
 			FearMarker.SetBase(self);
 			FearMarker.SetCollisionSize((DamageRadius * 1.04), (DamageRadius * 1.04));
 			FearMarker.StartleBots();
@@ -70,139 +68,31 @@ simulated event PostNetBeginPlay()
 {
 	Super(UM_BaseExplosiveProjectile).PostNetBeginPlay();
 	
-	if ( Role == ROLE_Authority && !bTimerSet )
-	{
+	if ( Role == ROLE_Authority && !bTimerSet )  {
 		SetTimer(ExplodeTimer, False);
 		bTimerSet = True;
 	}
+	RandSpin(25000);
 }
 
-simulated function ZeroProjectileEnergy()
-{
-	Super.ZeroProjectileEnergy();
-	bBounce = False;
-}
-
-simulated function ProcessTouch( actor Other, vector HitLocation )
-{
-	local	Vector		TempHitLocation, HitNormal, X;
-	local	array<int>	HitPoints;
-    local	KFPawn		HitPawn;
-	
-	// Don't allow hits on poeple on the same team
-	if ( KFBulletWhipAttachment(Other) != None ||
-		 KFHumanPawn(Other) != none && Instigator != none &&
-		 KFHumanPawn(Other).PlayerReplicationInfo.Team.TeamIndex == Instigator.PlayerReplicationInfo.Team.TeamIndex )
-		Return;
-	
-	// Updating Projectile Performance before hit the victim
-	// Needed because Projectile lose Speed and ImpactDamage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	SpawnHitEffects(Location, Normal(HitLocation - Other.Location), , , Other);
-	
-	if ( Other.IsA('NetKActor') )
-		KAddImpulse(Velocity,HitLocation,);
-		
-	if ( Role == ROLE_Authority && ImpactDamage > 0.0 && ImpactDamageType != None )  {
-		X = Normal(Velocity);
-		if ( ROBulletWhipAttachment(Other) != None )  {
-			if ( !Other.Base.bDeleteMe )  {
-				Other = Instigator.HitPointTrace(TempHitLocation, HitNormal, HitLocation + (200 * Vector(Rotation)), HitPoints, HitLocation,, 1);
-				if ( Other == None || HitPoints.Length == 0 )
-					Return;
-
-				HitPawn = KFPawn(Other);
-				if ( HitPawn != None && !HitPawn.bDeleteMe )
-					HitPawn.ProcessLocationalDamage(ImpactDamage, Instigator, TempHitLocation, (ImpactMomentumTransfer * X), ImpactDamageType, HitPoints);
-			}
-    	}
-        else if ( Pawn(Other) != None && Pawn(Other).IsHeadShot(HitLocation, X, 1.0) )
-			Pawn(Other).TakeDamage((ImpactDamage * HeadShotDamageMult), Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-		else
-			Other.TakeDamage(ImpactDamage, Instigator, HitLocation, (ImpactMomentumTransfer * X), ImpactDamageType);
-    }
-	
-	// Stop the grenade in its tracks if it hits an enemy.
-	if ( Speed > 0.0 && !Other.bWorldGeometry && 
-		 ( (Other != Instigator && Other.Base != Instigator) || bCanHitOwner ) )
-		ZeroProjectileEnergy();
-}
-
-//Todo: Переписать
-simulated event Landed( vector HitNormal )
-{
-	UpdateProjectilePerformance();
-	if ( bBounce && Speed > MinSpeed )
-		HitWall(HitNormal, None);
-	else
-	{
-		//SpawnHitEffects(Location, HitNormal);
-		if ( bBounce )
-			bBounce = False;
-		PrePivot.Z = -1.5;
-		if ( Physics != PHYS_None )
-			SetPhysics(PHYS_None);
-		DestroyTrail();
-	}
-}
-
-//Todo: переписать!
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
-	local	float	CosBA, EL;
-
-	if ( Role == ROLE_Authority && ImpactDamage > 0.0 && ImpactDamageType != None )
-	{
-		if ( !Wall.bStatic && !Wall.bWorldGeometry )
-		{
-			if ( Instigator == None || Instigator.Controller == None )
-				Wall.SetDelayedDamageInstigatorController(InstigatorController);
-
-			Wall.TakeDamage(ImpactDamage, Instigator, Location, (ImpactMomentumTransfer * Normal(Velocity)), ImpactDamageType);
-
-			if ( ImpactDamageRadius > 0.0 && Vehicle(Wall) != None && Vehicle(Wall).Health > 0 )
-				Vehicle(Wall).DriverRadiusDamage(ImpactDamage, ImpactDamageRadius, InstigatorController, ImpactDamageType, ImpactMomentumTransfer, Location);
-
-			HurtWall = Wall;
-		}
-		MakeNoise(1.0);
-	}
-	
-	if ( Role == ROLE_Authority && !bTimerSet )
-	{
-		SetTimer(ExplodeTimer, False);
+	if ( Role == ROLE_Authority && !bTimerSet )  {
 		bTimerSet = True;
+		SetTimer(ExplodeTimer, False);
 	}
-	
-	CosBA = FMax((1.0 - Abs(Maths.static.CosBetweenVectors(Velocity, HitNormal))), 0.25);
-	EL = MuzzleEnergy * (1.0 - BounceEnergyReduction) * (0.5 / CosBA);
-	//log(self$": Cos of the BounceAngle="$CosBA);
-	//Velocity = MirrorVectorByNormal(Velocity, HitNormal);
-	// 0.5 = Cos(60 deg)
-	UpdateProjectilePerformance(EL,, MirrorVectorByNormal(Velocity, HitNormal));
-
+	Super.HitWall(HitNormal, Wall);
 	RandSpin(100000);
-	DesiredRotation.Roll = 0;
-	RotationRate.Roll = 0;
+}
 
-	if ( Speed > MinSpeed )  {
-		SpawnHitEffects(Location, HitNormal);
-		bFixedRotationDir = False;
-		bRotateToDesired = True;
-		DesiredRotation.Pitch = 0;
-		RotationRate.Pitch = 50000;
-    }
-	else  {
-		bBounce = False;	// убрать это
+simulated function ProcessLanded( vector HitNormal )
+{
+	if ( bRotateToDesired )  {
+		bRotateToDesired = False;
 		DesiredRotation = Rotation;
-		DesiredRotation.Roll = 0;
-		DesiredRotation.Pitch = 0;
 		SetRotation(DesiredRotation);
 	}
-	
-	HurtWall = None;
+	Super.ProcessLanded(HitNormal);
 }
 
 simulated event Destroyed()
@@ -218,7 +108,9 @@ simulated event Destroyed()
 
 defaultproperties
 {
-     FearMarkerClass=Class'AvoidMarker'
+     ProjectileDiameter=56.0
+	 bRotateToDesired=True
+	 FearMarkerClass=Class'AvoidMarker'
 	 DisintegrateChance=0.950000
 	 //Sounds
 	 TransientSoundVolume=2.000000
@@ -270,8 +162,8 @@ defaultproperties
      bBlockHitPointTraces=False
      bUnlit=False
 	 bNetTemporary=False
-	 bBounce=True
-     bFixedRotationDir=True
+     //bFixedRotationDir=True
+	 bFixedRotationDir=False
 	 //Collision
 	 bCollideActors=True
      bCollideWorld=True
@@ -285,5 +177,10 @@ defaultproperties
      FluidSurfaceShootStrengthMod=3.000000
      DesiredRotation=(Pitch=12000,Yaw=5666,Roll=2334)
 	 //Physics
+	 // If bBounce=True call HitWal() instead of Landed()
+	 // when the actor has finished falling (Physics was PHYS_Falling).
+	 bBounce=True
+	 bOrientToVelocity=False	// Orient in the direction of current velocity.
+	 bCanRebound=True
 	 Physics=PHYS_Falling
 }

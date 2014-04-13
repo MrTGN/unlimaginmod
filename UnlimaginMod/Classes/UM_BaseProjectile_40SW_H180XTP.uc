@@ -21,7 +21,8 @@ class UM_BaseProjectile_40SW_H180XTP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.164000
+     ProjectileDiameter=10.0
+	 BallisticCoefficient=0.164000
 	 BallisticRandPercent=7.000000
 	 EffectiveRange=860.000000
 	 ExpansionCoefficient=1.760000

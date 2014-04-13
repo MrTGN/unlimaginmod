@@ -21,7 +21,8 @@ class UM_BaseProjectile_45ACP_FHST230JHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.162000
+     ProjectileDiameter=11.5
+	 BallisticCoefficient=0.162000
 	 BallisticRandPercent=8.000000
 	 EffectiveRange=700.000000
 	 ExpansionCoefficient=1.984500

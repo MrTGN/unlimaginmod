@@ -21,7 +21,8 @@ class UM_BaseProjectile_9x19P_FHST147JHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.218000
+     ProjectileDiameter=9.01
+	 BallisticCoefficient=0.218000
 	 BallisticRandPercent=9.000000
 	 EffectiveRange=800.000000
 	 ExpansionCoefficient=2.008000

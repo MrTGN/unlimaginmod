@@ -21,6 +21,7 @@ class UM_BaseProjectile_357Mag_H158XTP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
+	 ProjectileDiameter=9.1
 	 BallisticCoefficient=0.206000
 	 BallisticRandPercent=9.000000
 	 EffectiveRange=1000.000000

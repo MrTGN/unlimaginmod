@@ -17,6 +17,7 @@ class UM_AA12_00Buckshot extends UM_BaseProjectile_00Buckshot;
 
 defaultproperties
 {
+	 bCanRebound=True
 	 MuzzleVelocity=380.000000
 	 Damage=27.000000
      MyDamageType=Class'UnlimaginMod.UM_DamTypeAA12_00Buckshot'

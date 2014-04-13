@@ -40,11 +40,9 @@ var()	HitEffectData			HitEffects[20];
 //[block] Functions
 
 simulated function PlayHitEffects(
- optional	ESurfaceTypes	SurfaceType, 
- optional	ESurfaceTypes	SoundSurfaceType, 
+ optional	ESurfaceTypes	SurfaceType,  
  optional	float			NewHitSoundVolume, 
- optional	float			NewHitSoundRadius,
- optional	Sound			NewHitSound )
+ optional	float			NewHitSoundRadius )
 {
 	local vector	HitLoc, HitNormal, TraceEnd;
 	local Material	HitMat;
@@ -65,35 +63,29 @@ simulated function PlayHitEffects(
 			else
 				SurfaceType = EST_Default;
 		}
-		
-		if ( SoundSurfaceType == EST_Default || SoundSurfaceType >= ArrayCount(HitEffects) )
-			SoundSurfaceType = SurfaceType;
 
 		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[SurfaceType].Effect$" Particle Effect = "$HitEffects[SurfaceType].ParticleEffect$" TempEffect = "$HitEffects[SurfaceType].TempEffect);
 
 		if ( HitEffects[SurfaceType].HitDecal != None )
 			Spawn(HitEffects[SurfaceType].HitDecal, self,, Location, Rotation);
 
-		if ( HitEffects[SoundSurfaceType].HitSound != None || NewHitSound != None )  {
-			if ( NewHitSound == None )
-				NewHitSound = HitEffects[SoundSurfaceType].HitSound;
-			
+		if ( HitEffects[SurfaceType].HitSound != None )  {
 			if ( NewHitSoundVolume <= 0.0 )  {
-				if ( HitEffects[SoundSurfaceType].HitSoundVolume > 0.0 )
-					NewHitSoundVolume = HitEffects[SoundSurfaceType].HitSoundVolume;
+				if ( HitEffects[SurfaceType].HitSoundVolume > 0.0 )
+					NewHitSoundVolume = HitEffects[SurfaceType].HitSoundVolume;
 				else
 					NewHitSoundVolume = TransientSoundVolume;
 			}
 			
 			if ( NewHitSoundRadius <= 0.0 )  {
-				if ( HitEffects[SoundSurfaceType].HitSoundRadius > 0.0 )
-					NewHitSoundRadius = HitEffects[SoundSurfaceType].HitSoundRadius;
+				if ( HitEffects[SurfaceType].HitSoundRadius > 0.0 )
+					NewHitSoundRadius = HitEffects[SurfaceType].HitSoundRadius;
 				else
 					NewHitSoundRadius = TransientSoundRadius;
 			}
 			
 			if ( NewHitSoundVolume > 0.0 )
-				PlaySound(NewHitSound, SLOT_None, NewHitSoundVolume, False, NewHitSoundRadius,, True);
+				PlaySound(HitEffects[SurfaceType].HitSound, SLOT_None, NewHitSoundVolume, False, NewHitSoundRadius,, True);
 		}
 
 		if ( HitEffects[SurfaceType].HitEffect != None )  {

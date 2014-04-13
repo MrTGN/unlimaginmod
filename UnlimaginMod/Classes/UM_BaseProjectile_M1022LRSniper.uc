@@ -21,7 +21,8 @@ class UM_BaseProjectile_M1022LRSniper extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     bCanRebound=True
+     ProjectileDiameter=12.95
+	 bCanRebound=True
 	 PenetrationEnergyReduction=0.860000
 	 //Ballistic
 	 BallisticCoefficient=0.876000

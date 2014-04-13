@@ -43,41 +43,6 @@ simulated function ZeroProjectileEnergy()
 	GotoState('NoEnergy');
 }
 
-simulated singular event HitWall( vector HitNormal, actor Wall )
-{
-	local	float			EL, CosBA;
-	local	vector			HitLoc, HitNorm, TraceEnd;
-	local	Material		HitMat;
-	local	ESurfaceTypes	ST;
-	//local	float			VelDotHitNorm;
-
-	// Updating bullet performance before hit the wall
-	// Needed because bullet lose Speed and Damage while flying
-	if ( Level.TimeSeconds > NextProjectileUpdateTime )
-		UpdateProjectilePerformance();
-	
-	if ( Role == ROLE_Authority && Wall != None && !Wall.bStatic && !Wall.bWorldGeometry 
-		&& (Mover(Wall) == None || Mover(Wall).bDamageTriggered) )
-	{
-		if ( Level.NetMode != NM_Client )
-		{
-			if ( Instigator == None || Instigator.Controller == None )
-				Wall.SetDelayedDamageInstigatorController(InstigatorController);
-			
-			Wall.TakeDamage(Damage, Instigator, Location, (MomentumTransfer * Normal(Velocity)), MyDamageType);
-			HurtWall = Wall;
-			if ( Instigator != None )
-				MakeNoise(1.0);
-		}
-		Destroy();
-		Return;
-	}
-	
-	ProcessHitWall(HitNormal);
-	
-	HurtWall = None;
-}
-
 state NoEnergy
 {
 	Ignores HitWall;
@@ -126,7 +91,8 @@ state NoEnergy
 
 defaultproperties
 {
-     BounceBonus=1.500000
+     ProjectileDiameter=60.0
+	 BounceBonus=1.500000
 	 bAutoLifeSpan=False
 	 LifeSpan=120.000000
 	 //[block] Ballistic performance

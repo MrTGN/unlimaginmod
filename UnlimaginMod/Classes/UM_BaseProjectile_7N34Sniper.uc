@@ -12,14 +12,15 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 31.03.2013 04:07
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Base class of specialized high accuracy bullet 7N34 Sniper FMJ
-//					 12.7x108mm cartridge. Bullet Mass: 59.0 gram
+//	Comments:		 Specialized high accuracy bullet 12.7x108mm 7N34 Sniper FMJ.
+//					 Bullet diameter: 12.98 mm (0.511 in). Bullet Mass: 59.0 gram
 //================================================================================
 class UM_BaseProjectile_7N34Sniper extends UM_BaseProjectile_Bullet
 	Abstract;
 
 defaultproperties
 {
+	 ProjectileDiameter=12.98
 	 HeadShotDamageMult=2.500000
 	 PenetrationEnergyReduction=0.900000
 	 bCanRebound=True

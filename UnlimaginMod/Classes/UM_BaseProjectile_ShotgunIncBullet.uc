@@ -20,7 +20,8 @@ class UM_BaseProjectile_ShotgunIncBullet extends UM_BaseProjectile_IncendiaryBul
 
 defaultproperties
 {
-     //ImpactDamage
+     ProjectileDiameter=18.5
+	 //ImpactDamage
 	 ImpactDamage=100.000000
 	 HeadShotDamageMult=1.250000
 	 ImpactDamageType=None

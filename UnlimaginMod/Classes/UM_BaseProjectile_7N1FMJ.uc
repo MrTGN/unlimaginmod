@@ -21,7 +21,8 @@ class UM_BaseProjectile_7N1FMJ extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     BallisticCoefficient=0.434000
+     ProjectileDiameter=7.92
+	 BallisticCoefficient=0.434000
 	 BallisticRandPercent=6.000000
 	 EffectiveRange=1600.000000
 	 ProjectileMass=0.009800		//kilograms

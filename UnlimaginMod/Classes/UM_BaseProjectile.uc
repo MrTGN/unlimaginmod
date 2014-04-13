@@ -83,7 +83,7 @@ var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
-var				bool		bCanRebound;		// This projectile can bounce (ricochet) from the wall/floor
+var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
 
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
@@ -114,6 +114,7 @@ var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic p
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
 var				Vector		LandedPrePivot;
+var				bool		bIgnoreBulletWhipAttachment;
 
 var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
 var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
@@ -133,6 +134,7 @@ var				float		EnergyToSpeedSquared;		// 2.0 / (ProjectileMass * SquareMeterInUU)
 // The energy of the bullet will drop to value = MuzzleEnergy * PenetrationEnergyReduction
 var(Ballistic)	float		PenetrationEnergyReduction;	// Standard penetration energy reduction (must be < 1.000000 )
 var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction (must be < 1.000000 )
+var				float		BounceBonus;
 //[end]
 
 //[block] Effects
@@ -300,7 +302,7 @@ simulated function CalcDefaultProperties()
 			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * SquareMeterInUU);
 			SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
 			// EnergyToSpeedSquared
-			default.EnergyToSpeedSquared = 2.0 / (default.ProjectileMass * SquareMeterInUU);
+			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
 			EnergyToSpeedSquared = default.EnergyToSpeedSquared;
 			// MuzzleEnergy
 			default.MuzzleEnergy = default.MaxSpeed * default.MaxSpeed * default.SpeedSquaredToEnergy;
@@ -329,14 +331,15 @@ simulated function CalcDefaultProperties()
 
 simulated event PreBeginPlay()
 {
-	Super(Projectile).PreBeginPlay();
+	Super(Actor).PreBeginPlay();
 	
 	if ( !default.bDefaultPropertiesCalculated )
 		CalcDefaultProperties();
 
-    // Prevents from touching owner at spawn
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
+	// Prevents from touching owner at spawn
+	LastTouched = Instigator;
 	
 	// Forcing to not call UpdateBulletPerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )
@@ -563,11 +566,6 @@ function BlowUp(vector HitLocation) {}
 simulated function Explode(vector HitLocation, vector HitNormal) {}
 
 
-simulated function float GetBounceBonus()
-{
-	Return 1.0;
-}
-
 simulated function float GetPenetrationBonus()
 {
 	Return 1.0;
@@ -613,12 +611,11 @@ simulated function UpdateProjectilePerformance(
 				ProjectileEnergy -= EnergyLoss;
 				Speed = Sqrt(ProjectileEnergy * EnergyToSpeedSquared);
 				//Velocity = Speed * VelNormal;
-				//Velocity = Speed * Normal(Velocity);
-				Velocity = Speed * Vector(Rotation);
+				Velocity = Speed * Normal(Velocity);
+				//Velocity = Speed * Vector(Rotation);
 			}
-			// Lose all Energy
 			else
-				ZeroProjectileEnergy();
+				ZeroProjectileEnergy();	// Lose all Energy
 		}
 		// Just update current projectile performance
 		else  {
@@ -665,23 +662,10 @@ simulated function SpawnHitEffects(
 simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 
-simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWhipAttachment )
-{
-	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
-	// ExtendedZCollision is a Killing Floor hack for a large zombies.
-	// This collisions is attached to Pawn owners.
-	if ( (!bIgnoreWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
-		Return Pawn(A.Owner);
-	else if ( Pawn(A.Base) != None  )
-		Return Pawn(A.Base);
-	else
-		Return Pawn(A);
-}
-
 simulated function bool CanHurtPawn( Pawn P )
 {
-	if ( P == None || (Instigator != None && TeamGame(Level.Game) != None 
-		 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
+	if ( P == None || (Instigator != None && ((P == Instigator && !bCanHurtOwner) || (TeamGame(Level.Game) != None
+			&& TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum())) )
 		Return False;
 		
 	Return True;
@@ -699,7 +683,7 @@ simulated function ProcessHitActor(
 	local	float	EnergyLoss;
 	local	Pawn	P;
 	
-	if ( DmgType == None || DamageAmount <= 0.0 )
+	if ( DmgType == None || DamageAmount <= 0.0 /* A != Instigator && A.Base != Instigator */ )
 		Return;
 	
 	// Updating Projectile Performance before hit the victim
@@ -707,12 +691,23 @@ simulated function ProcessHitActor(
 	UpdateProjectilePerformance();
 	VelNormal = Normal(Velocity);
 	
-	P = CastTouchedActorToPawn(A);
+	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
+	// ExtendedZCollision is a Killing Floor hack for a large zombies.
+	// This collisions is attached to Pawn owners.
+	if ( (!bIgnoreBulletWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
+		P = Pawn(A.Owner);
+	else if ( Pawn(A.Base) != None  )
+		P = Pawn(A.Base);
+	else
+		P = Pawn(A);
+	
 	// If projectile hit a Pawn
 	if ( P != None )  {
 		// Do not damage a friendly Pawn
-		if ( !CanHurtPawn(P) )
+		if ( !CanHurtPawn(P) )  {
+			P = None;
 			Return;
+		}
 		
 		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
 			DamageAmount *= HeadShotDamageMult;
@@ -729,8 +724,6 @@ simulated function ProcessHitActor(
 		else
 			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
 	}
-	
-	LastTouched = A;
 	
 	// Hit effects
 	SpawnHitEffects(Location, Normal(HitLocation - A.Location), ,A);
@@ -752,9 +745,8 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && !A.bDeleteMe && A != Instigator && A.Base != Instigator && A != LastTouched 
-		 && A.Base != LastTouched && !A.bStatic && !A.bWorldGeometry 
-		 && (A.bProjTarget || A.bBlockActors) )  {
+	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
+		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
 			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
 			TouchLocation = Location;
@@ -767,6 +759,7 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
 	LastTouched = None;
 }
@@ -810,14 +803,13 @@ simulated function ProcessHitWall( vector HitNormal )
 		
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			// Getting the bounce bonus
-			if ( EnergyByNormal < ImpactSurfaces[ST].ImpactStrength )
-				f = GetBounceBonus() / ExpansionCoefficient;
+			f = BounceBonus / ExpansionCoefficient;
 			// Projectile has entered into the surface but not stuck into it. Projectile should lose more speed.
-			else
-				f = GetBounceBonus() / ExpansionCoefficient * EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
+			if ( EnergyByNormal > ImpactSurfaces[ST].ImpactStrength )
+				f *= EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
 			
 			// Mirroring Velocity Vector by HitNormal with lossy
-			Velocity -= VectVelDotNorm * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.99) + VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.98);
+			Velocity -= VectVelDotNorm * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) + VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
 			// Decreasing performance
 			if ( bTrueBallistics )
 				BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
@@ -883,45 +875,45 @@ simulated event Destroyed()
 defaultproperties
 {
 	 // EST_Default
-	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
 	 // EST_Rock
-	 ImpactSurfaces(1)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.85)
+	 ImpactSurfaces(1)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.75)
 	 // EST_Dirt
-	 ImpactSurfaces(2)=(ImpactStrength=0.01,FrictionCoefficient=0.65,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(2)=(ImpactStrength=0.01,FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
 	 // EST_Metal
-	 ImpactSurfaces(3)=(ImpactStrength=0.8,FrictionCoefficient=0.95,PlasticityCoefficient=0.8)
+	 ImpactSurfaces(3)=(ImpactStrength=0.8,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
 	 // EST_Wood
-	 ImpactSurfaces(4)=(ImpactStrength=0.08,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(4)=(ImpactStrength=0.08,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Plant
-	 ImpactSurfaces(5)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(5)=(ImpactStrength=0.001,FrictionCoefficient=0.65,PlasticityCoefficient=0.3)
 	 // EST_Flesh
 	 ImpactSurfaces(6)=(ImpactStrength=0.025,FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
 	 // EST_Ice
-	 ImpactSurfaces(7)=(ImpactStrength=0.1,FrictionCoefficient=0.98,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(7)=(ImpactStrength=0.1,FrictionCoefficient=0.95,PlasticityCoefficient=0.7)
 	 // EST_Snow
 	 ImpactSurfaces(8)=(ImpactStrength=0.01,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
 	 // EST_Water
-	 ImpactSurfaces(9)=(ImpactStrength=0.005,FrictionCoefficient=0.85,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(9)=(ImpactStrength=0.005,FrictionCoefficient=0.8,PlasticityCoefficient=0.3)
 	 // EST_Glass
 	 ImpactSurfaces(10)=(ImpactStrength=0.5,FrictionCoefficient=0.9,PlasticityCoefficient=0.7)
 	 // EST_Gravel
 	 ImpactSurfaces(11)=(ImpactStrength=0.5,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Concrete
-	 ImpactSurfaces(12)=(ImpactStrength=1.0,FrictionCoefficient=0.85,PlasticityCoefficient=0.75)
+	 ImpactSurfaces(12)=(ImpactStrength=1.0,FrictionCoefficient=0.75,PlasticityCoefficient=0.65)
 	 // EST_HollowWood
-	 ImpactSurfaces(13)=(ImpactStrength=0.07,FrictionCoefficient=0.8,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(13)=(ImpactStrength=0.07,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Mud
 	 ImpactSurfaces(14)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.2)
 	 // EST_MetalArmor
-	 ImpactSurfaces(15)=(ImpactStrength=1.2,FrictionCoefficient=0.9,PlasticityCoefficient=0.75)
+	 ImpactSurfaces(15)=(ImpactStrength=1.2,FrictionCoefficient=0.8,PlasticityCoefficient=0.7)
 	 // EST_Paper
-	 ImpactSurfaces(16)=(ImpactStrength=0.04,FrictionCoefficient=0.75,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(16)=(ImpactStrength=0.04,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Cloth
 	 ImpactSurfaces(17)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
 	 // EST_Rubber
-	 ImpactSurfaces(18)=(ImpactStrength=0.05,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
+	 ImpactSurfaces(18)=(ImpactStrength=0.05,FrictionCoefficient=0.7,PlasticityCoefficient=0.6)
 	 // EST_Poop
-	 ImpactSurfaces(19)=(ImpactStrength=0.0005,FrictionCoefficient=0.8,PlasticityCoefficient=0.1)
+	 ImpactSurfaces(19)=(ImpactStrength=0.0005,FrictionCoefficient=0.7,PlasticityCoefficient=0.1)
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
 	 bEnableLogging=False
@@ -929,6 +921,7 @@ defaultproperties
 	 bReplicateSpawnTime=False
 	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
+	 bIgnoreBulletWhipAttachment=False
 	 // Do not use TrueBallistics by default
 	 // Change it in the subclasses if you need TrueBallistics calculations
 	 // TrueBallistics
@@ -939,8 +932,9 @@ defaultproperties
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
 	 //[block] Ballistic performance
+	 BounceBonus=1.0
 	 SpeedDropInWaterCoefficient=0.650000
-	 FullStopSpeedCoefficient=0.085000
+	 FullStopSpeedCoefficient=0.090000
 	 Speed=0.000000
 	 MaxSpeed=0.000000
 	 ProjectileDiameter=10.0
@@ -979,7 +973,7 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=False
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
-	 
+	 bOrientToVelocity=False
 	 Physics=PHYS_Projectile
 	 //[end]
 	 //RemoteRole

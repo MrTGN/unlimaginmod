@@ -21,7 +21,6 @@ class UM_BaseProjectile_BouncingBall extends UM_BaseProjectile_Bullet
 //========================================================================
 //[block] Variables
 
-var		float		BounceBonus;
 var		SoundData	PickupSound;
 
 //[end] Varibles
@@ -30,11 +29,6 @@ var		SoundData	PickupSound;
 
 //========================================================================
 //[block] Functions
-
-simulated function float GetBounceBonus()
-{
-	Return BounceBonus;
-}
 
 // Called when projectile has lost all energy
 simulated function ZeroProjectileEnergy()
@@ -110,6 +104,7 @@ defaultproperties
 	 PenetrationEnergyReduction=0.800000
 	 bBounce=True
 	 bCanRebound=True
+	 bOrientToVelocity=True
 	 Physics=PHYS_Projectile
 	 //Trail
 	 DrawType=DT_StaticMesh

@@ -115,6 +115,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	Explode(HitLocation, Normal(HitLocation - Other.Location));
 	LastTouched = None;
@@ -227,6 +228,7 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
 	 bCanRebound=False
+	 bOrientToVelocity=True
 	 //Physics
 	 Physics=PHYS_Projectile
 	 //RemoteRole

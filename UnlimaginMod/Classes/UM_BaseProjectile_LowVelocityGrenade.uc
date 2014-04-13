@@ -83,6 +83,7 @@ simulated event Tick( float DeltaTime )
 {
 	Super.Tick(DeltaTime);
 	
+	/*
 	if ( Velocity != Vect(0.0, 0.0, 0.0)
 		 && (Physics == default.Physics || Physics == PHYS_Falling)
 		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
@@ -92,7 +93,10 @@ simulated event Tick( float DeltaTime )
 		if ( Physics == default.Physics && TimeToStartFalling > 0.0 
 			 && Level.TimeSeconds >= TimeToStartFalling )
 			SetPhysics(PHYS_Falling);
-	}
+	} */
+	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
+		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
+			SetPhysics(PHYS_Falling);
 }
 
 function Disarm()
@@ -102,6 +106,7 @@ function Disarm()
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	if ( Role == ROLE_Authority && IsArmed() )
 		Explode(HitLocation, Normal(HitLocation - Other.Location));
@@ -157,7 +162,9 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
 	 bCanRebound=True
+	 bOrientToVelocity=True
 	 Physics=PHYS_Projectile
+	 bIgnoreBulletWhipAttachment=True
 	 UpdateTimeDelay=0.100000
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000

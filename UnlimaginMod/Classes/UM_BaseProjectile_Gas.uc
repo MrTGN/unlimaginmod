@@ -184,6 +184,7 @@ defaultproperties
      SpawnCheckRadiusScale=0.200000
 	 bCanRebound=False
 	 bBounce=True
+	 bOrientToVelocity=True
 	 //Ballistic performance randomization percent
 	 BallisticRandPercent=10.000000
 	 bReplicateSpawnTime=True

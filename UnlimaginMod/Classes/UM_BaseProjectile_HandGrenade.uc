@@ -21,7 +21,7 @@ class UM_BaseProjectile_HandGrenade extends UM_BaseExplosiveProjectile
 //[block] Variables
 
 var		float				ExplodeTimer;
-var		bool				bCanHitOwner, bTimerSet;
+var		bool				bTimerSet;
 
 var		AvoidMarker			FearMarker;
 var		Class<AvoidMarker>	FearMarkerClass;
@@ -41,7 +41,6 @@ replication
 simulated function SetInitialVelocity()
 {
 	if ( Role == ROLE_Authority && Speed > 0.0 )  {
-		bCanHitOwner = False;
 		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
 			Speed *= SpeedDropInWaterCoefficient;
 		
@@ -91,8 +90,8 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	}
 	
 	ProcessHitWall(HitNormal);
-	HurtWall = None;
 	RandSpin(100000);
+	HurtWall = None;
 }
 
 simulated function ProcessLanded( vector HitNormal )
@@ -126,6 +125,7 @@ defaultproperties
 	 TransientSoundVolume=2.000000
 	 DisintegrateSound=(Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplodeSound=(Vol=2.0,Radius=400.0,bUse3D=True)
+	 bIgnoreBulletWhipAttachment=True
 	 //ExplodeTimer	 
 	 ExplodeTimer=2.000000
 	 //Shrapnel

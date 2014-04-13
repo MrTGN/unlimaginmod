@@ -523,6 +523,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
+	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	LastTouched = None;
 }

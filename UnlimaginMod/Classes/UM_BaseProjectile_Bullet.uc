@@ -129,6 +129,7 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
 	 bCanRebound=False
+	 bOrientToVelocity=True
 	 Physics=PHYS_Projectile
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy

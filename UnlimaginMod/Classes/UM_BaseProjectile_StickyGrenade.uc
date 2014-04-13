@@ -135,7 +135,6 @@ simulated function Stick( Actor HitActor, vector HitLocation, vector HitNormal )
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	LastTouched = Other;
 	if ( !bStuck )
 		Stick(Other, HitLocation, Normal(HitLocation - Other.Location));
 	LastTouched = None;

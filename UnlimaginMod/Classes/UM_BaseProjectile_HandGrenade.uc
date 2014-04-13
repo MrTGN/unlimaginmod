@@ -77,11 +77,21 @@ simulated event PostNetBeginPlay()
 
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
+	local	Vector	HitLocation;
+	
 	if ( Role == ROLE_Authority && !bTimerSet )  {
 		bTimerSet = True;
 		SetTimer(ExplodeTimer, False);
 	}
-	Super.HitWall(HitNormal, Wall);
+	
+	if ( CanTouchThisActor(Wall, HitLocation) )  {
+		HurtWall = Wall;
+		ProcessTouch(Wall, HitLocation);
+		Return;
+	}
+	
+	ProcessHitWall(HitNormal);
+	HurtWall = None;
 	RandSpin(100000);
 }
 
@@ -180,7 +190,6 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bOrientToVelocity=False	// Orient in the direction of current velocity.
 	 bCanRebound=True
 	 Physics=PHYS_Falling
 }

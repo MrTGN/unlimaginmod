@@ -267,7 +267,7 @@ simulated function CalcDefaultProperties()
 	}
 	
 	// Speed
-	if ( (default.Speed <= 0.0 || default.MaxSpeed <= 0.0) && default.MuzzleVelocity > 0.0 )  {
+	if ( default.MuzzleVelocity > 0.0 )  {
 		// Assign Speed defaults
 		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
 		MaxSpeed = default.MaxSpeed;
@@ -335,7 +335,6 @@ simulated event PreBeginPlay()
 		CalcDefaultProperties();
 
     // Prevents from touching owner at spawn
-	LastTouched = Owner;
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
 	
@@ -604,7 +603,7 @@ simulated function UpdateProjectilePerformance(
 		
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
 	// Rotation Update
-	SetRotation(Rotator(VelNormal));
+	//SetRotation(Rotator(Normal(Velocity)));
 	// Performance update
 	if ( ProjectileEnergy > 0.0 )  {
 		LastProjectileEnergy = ProjectileEnergy;
@@ -681,9 +680,8 @@ simulated function Pawn CastTouchedActorToPawn( Actor A, optional bool bIgnoreWh
 
 simulated function bool CanHurtPawn( Pawn P )
 {
-	if ( P == None || Instigator != None && ((!bCanHurtOwner && (P == Instigator || P.Base == Instigator))
-			 || (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0 
-				 && P.GetTeamNum() == Instigator.GetTeamNum())) )
+	if ( P == None || (Instigator != None && TeamGame(Level.Game) != None 
+		 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 		Return False;
 		
 	Return True;
@@ -732,6 +730,8 @@ simulated function ProcessHitActor(
 			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
 	}
 	
+	LastTouched = A;
+	
 	// Hit effects
 	SpawnHitEffects(Location, Normal(HitLocation - A.Location), ,A);
 	// Damage
@@ -752,8 +752,9 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && A != Self && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched && !A.bStatic
-		 && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors || A.bBlockHitPointTraces) )  {
+	if ( A != None && !A.bDeleteMe && A != Instigator && A.Base != Instigator && A != LastTouched 
+		 && A.Base != LastTouched && !A.bStatic && !A.bWorldGeometry 
+		 && (A.bProjTarget || A.bBlockActors) )  {
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
 			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
 			TouchLocation = Location;
@@ -766,7 +767,6 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
 	LastTouched = None;
 }
@@ -836,7 +836,7 @@ simulated function ProcessHitWall( vector HitNormal )
 }
 
 // Called when the actor can collide with world geometry and just hit a wall.
-simulated singular event HitWall( vector HitNormal, actor Wall )
+simulated singular event HitWall( Vector HitNormal, Actor Wall )
 {
 	local	Vector	HitLocation;
 
@@ -979,6 +979,7 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=False
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
+	 
 	 Physics=PHYS_Projectile
 	 //[end]
 	 //RemoteRole

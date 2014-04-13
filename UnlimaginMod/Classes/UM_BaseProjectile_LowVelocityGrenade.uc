@@ -83,7 +83,6 @@ simulated event Tick( float DeltaTime )
 {
 	Super.Tick(DeltaTime);
 	
-	/*
 	if ( Velocity != Vect(0.0, 0.0, 0.0)
 		 && (Physics == default.Physics || Physics == PHYS_Falling)
 		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
@@ -94,11 +93,6 @@ simulated event Tick( float DeltaTime )
 			 && Level.TimeSeconds >= TimeToStartFalling )
 			SetPhysics(PHYS_Falling);
 	}
-	*/
-	// Time to start falling
-	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
-		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
-		SetPhysics(PHYS_Falling);
 }
 
 function Disarm()
@@ -108,7 +102,6 @@ function Disarm()
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
-	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 	if ( Role == ROLE_Authority && IsArmed() )
 		Explode(HitLocation, Normal(HitLocation - Other.Location));
@@ -163,7 +156,6 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bOrientToVelocity=True	// Orient in the direction of current velocity.
 	 bCanRebound=True
 	 Physics=PHYS_Projectile
 	 UpdateTimeDelay=0.100000

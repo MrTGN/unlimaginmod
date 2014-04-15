@@ -93,7 +93,7 @@ defaultproperties
 	 BallisticRandPercent=5.000000
 	 //EffectiveRange in Meters
 	 EffectiveRange=100.000000
-	 MaxEffectiveRangeScale=1.200000
+	 MaxEffectiveRange=150.000000
 	 //Expansion
 	 ExpansionCoefficient=1.00000	// For FMJ
 	 ProjectileMass=0.400000	// kilograms

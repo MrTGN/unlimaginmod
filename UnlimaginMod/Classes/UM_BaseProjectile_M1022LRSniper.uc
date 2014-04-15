@@ -28,6 +28,7 @@ defaultproperties
 	 BallisticCoefficient=0.876000
 	 BallisticRandPercent=5.000000
 	 EffectiveRange=1800.000000
+	 MaxEffectiveRange=1950.000000
 	 ProjectileMass=0.042443		//kilograms
 	 MuzzleVelocity=920.000000	// m/s
    	 HeadShotDamageMult=2.800000

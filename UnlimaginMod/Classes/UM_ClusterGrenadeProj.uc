@@ -18,7 +18,6 @@ class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 simulated function SetInitialVelocity()
 {
 	if ( Role == ROLE_Authority && Speed > 0.0 )  {
-        bCanHitOwner = False;
 		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
 			Speed *= SpeedDropInWaterCoefficient;
 		

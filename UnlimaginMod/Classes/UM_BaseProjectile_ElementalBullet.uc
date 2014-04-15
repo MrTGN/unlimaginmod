@@ -121,6 +121,22 @@ simulated function ProcessTouch( Actor Other, Vector HitLocation )
 	LastTouched = None;
 }
 
+// Called when the actor can collide with world geometry and just hit a wall.
+simulated singular event HitWall( Vector HitNormal, Actor Wall )
+{
+	local	Vector	HitLocation;
+
+	if ( CanTouchThisActor(Wall, HitLocation) )  {
+		HurtWall = Wall;
+		ProcessTouch(Wall, HitLocation);
+		Return;
+	}
+	
+	ProcessHitWall(HitNormal);
+	Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	HurtWall = None;
+}
+
 simulated event Landed( vector HitNormal )
 {
 	SetPhysics(PHYS_None);
@@ -191,7 +207,7 @@ defaultproperties
 	 BallisticRandPercent=2.000000
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
-	 MaxEffectiveRangeScale=1.200000
+	 MaxEffectiveRange=600.000000
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects

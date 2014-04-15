@@ -25,7 +25,8 @@ defaultproperties
      ProjectileDiameter=6.09
 	 BallisticCoefficient=0.033000
 	 BallisticRandPercent=10.000000
-	 EffectiveRange=600.000000
+	 EffectiveRange=500.000000
+	 MaxEffectiveRange=600.000000
 	 ProjectileMass=0.011400
 	 MuzzleVelocity=380.000000
      PenetrationEnergyReduction=0.210000

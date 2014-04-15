@@ -138,13 +138,13 @@ simulated static function bool UnloadAssets()
 simulated event PostNetReceive()
 {
 	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, vect(0,0,1));
+		Disintegrate(Location, vect(0.0, 0.0, 1.0));
 	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, vect(0,0,1));
+		Explode(Location, vect(0.0, 0.0, 1.0));
 }
 
 // Detonator is armed
-function bool IsArmed()
+simulated function bool IsArmed()
 {
 	if ( bHidden || bShouldExplode )
 		Return False;
@@ -517,7 +517,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			}
 		}
 		
-		Explode(HitLocation, vect(0.0, 0.0, 1.0));
+		if ( IsArmed() )
+			Explode(HitLocation, vect(0.0, 0.0, 1.0));
 	}
 }
 
@@ -531,9 +532,9 @@ simulated function ProcessTouch( Actor Other, Vector HitLocation )
 simulated event Destroyed()
 {
 	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, vect(0,0,1));
+		Disintegrate(Location, vect(0.0, 0.0, 1.0));
 	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, vect(0,0,1));
+		Explode(Location, vect(0.0, 0.0, 1.0));
 	
 	Super.Destroyed();
 }

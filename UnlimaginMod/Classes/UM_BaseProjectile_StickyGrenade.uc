@@ -191,7 +191,7 @@ defaultproperties
 	 ProjectileDiameter=40.0
 	 bIgnoreSameClassProj=True
 	 ExplodeTimer=0.500000
-	 BallisticCoefficient=0.150000
+	 BallisticCoefficient=0.140000
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000

@@ -105,11 +105,7 @@ var(Ballistic)	float		ExpansionCoefficient;
 var(Ballistic)	float		ProjectileDiameter;		// Projectile diameter in mm
 var				float		ProjectileCrossSectionalArea;	// Projectile cross-sectional area in mm2. Calculated automatically.
 
-// EffectiveRange - effective range of this projectile in meters. Will be converted to unreal units in PreBeginPlay()
-// MaxEffectiveRangeScale - How much to scale MaxEffectiveRange from EffectiveRange
-var(Ballistic)	float		EffectiveRange, MaxEffectiveRangeScale;
-var				float		MaxEffectiveRange;	// Temporary variable. Used for calculations.
-
+var(Ballistic)	float		EffectiveRange, MaxEffectiveRange;	// EffectiveRange and MaxEffectiveRange of this projectile in meters. 
 var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic performance randomization
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
@@ -128,7 +124,7 @@ var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 // MuzzleEnergy and ProjectileEnergy Calculates automatically.
 var				float		MuzzleEnergy, ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
-var				float		EnergyToSpeedSquared;		// 2.0 / (ProjectileMass * SquareMeterInUU)
+var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.ProjectileMass
 
 // This var used for pawns, who don't have GetPenetrationEnergyLoss function
 // The energy of the bullet will drop to value = MuzzleEnergy * PenetrationEnergyReduction
@@ -262,10 +258,15 @@ simulated function CalcDefaultProperties()
 		}
 	}
 	
+	// EffectiveRange
+	if ( default.EffectiveRange > 0.0 )  {
+		default.EffectiveRange = default.EffectiveRange * MeterInUU;
+		EffectiveRange = default.EffectiveRange;
+	}
 	// MaxEffectiveRange
-	if ( default.MaxEffectiveRange <= 0.0 && default.EffectiveRange > 0.0 )  {
-		default.MaxEffectiveRange = default.EffectiveRange * MeterInUU * MaxEffectiveRangeScale;
-		MaxEffectiveRange = default.MaxEffectiveRange;  // Randoming MaxEffectiveRange for this Projectile
+	if ( default.MaxEffectiveRange > 0.0 )  {
+		default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
+		MaxEffectiveRange = default.MaxEffectiveRange;
 	}
 	
 	// Speed
@@ -664,8 +665,8 @@ simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 simulated function bool CanHurtPawn( Pawn P )
 {
-	if ( P == None || (Instigator != None && ((P == Instigator && !bCanHurtOwner) || (TeamGame(Level.Game) != None
-			&& TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum())) )
+	if ( P == None || (P == Instigator && !bCanHurtOwner) || (Instigator != None && TeamGame(Level.Game) != None 
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 		Return False;
 		
 	Return True;
@@ -757,6 +758,24 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 	Return False;
 }
 
+simulated function bool CanHitThisActor( Actor A, optional out Pawn P )
+{
+	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
+	// ExtendedZCollision is a Killing Floor hack for a large zombies.
+	// This collisions is attached to Pawn owners.
+	if ( (!bIgnoreBulletWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
+		P = Pawn(A.Owner);
+	else if ( Pawn(A.Base) != None  )
+		P = Pawn(A.Base);
+	else
+		P = Pawn(A);
+	
+	if ( A == Instigator || A.Base == Instigator || !CanHurtPawn(P) )
+		Return False;
+	
+	Return True;
+}
+
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
@@ -774,7 +793,7 @@ simulated singular event Touch( Actor Other )
 }
 
 
-simulated function ProcessHitWall( vector HitNormal )
+simulated function ProcessHitWall( Vector HitNormal )
 {
 	local	Vector			VectVelDotNorm, TmpVect;
 	local	Material		HitMat;
@@ -940,7 +959,7 @@ defaultproperties
 	 ProjectileDiameter=10.0
 	 //EffectiveRange in Meters
 	 EffectiveRange=500.000000
-	 MaxEffectiveRangeScale=1.000000
+	 MaxEffectiveRange=500.000000
 	 //Visible Distance
 	 CullDistance=4000.000000
 	 //Ballistic performance randomization percent
@@ -958,6 +977,7 @@ defaultproperties
 	 bNetTemporary=True
      bReplicateInstigator=True
      bNetInitialRotation=True
+	 bGameRelevant=True
 	 // bReplicateMovement need to be True by default to replicate Velocity, Location 
 	 // and other movement variables of this projectile at spawn.
 	 bReplicateMovement=True

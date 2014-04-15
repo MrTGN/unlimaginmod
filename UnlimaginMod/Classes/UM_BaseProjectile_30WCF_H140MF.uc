@@ -25,7 +25,8 @@ defaultproperties
 	 bCanRebound=True
 	 BallisticCoefficient=0.277000
 	 BallisticRandPercent=8.000000
-	 EffectiveRange=1000.000000
+	 EffectiveRange=900.000000
+	 MaxEffectiveRange=100.000000
 	 ExpansionCoefficient=1.450000
 	 ProjectileMass=0.009072		//kilograms
 	 MuzzleVelocity=750.000000		//Meter/sec

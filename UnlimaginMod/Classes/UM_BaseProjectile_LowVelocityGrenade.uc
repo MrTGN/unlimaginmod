@@ -63,7 +63,6 @@ simulated function CalcDefaultProperties()
 
 simulated function SetInitialVelocity()
 {
-	SpawnLocation = Location;
 	if ( FlyingTime > 0.0 )
 		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
 	
@@ -71,7 +70,7 @@ simulated function SetInitialVelocity()
 }
 
 // Detonator is armed
-function bool IsArmed()
+simulated function bool IsArmed()
 {
 	if ( bDisarmed || VSizeSquared(SpawnLocation - Location) < ArmingRange )
 		Return False;
@@ -96,19 +95,22 @@ simulated event Tick( float DeltaTime )
 	} */
 	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
 		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
-			SetPhysics(PHYS_Falling);
+		SetPhysics(PHYS_Falling);
 }
 
-function Disarm()
+simulated function Disarm()
 {
-	bDisarmed = True;
+	if ( !bDisarmed )  {
+		bDisarmed = True;
+		LifeSpan = 1.0;
+	}
 }
 
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
 	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-	if ( Role == ROLE_Authority && IsArmed() )
+	if ( IsArmed() )
 		Explode(HitLocation, Normal(HitLocation - Other.Location));
 	
 	LastTouched = None;
@@ -125,7 +127,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	}
 	
 	ProcessHitWall(HitNormal);
-	if ( Role == ROLE_Authority && IsArmed() )
+	if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	
 	HurtWall = None;
@@ -133,9 +135,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 
 simulated function ProcessLanded( vector HitNormal )
 {
-	if ( Role == ROLE_Authority )
-		Disarm();
-	
+	Disarm();
 	Super.ProcessLanded(HitNormal);
 }
 
@@ -145,6 +145,7 @@ simulated function ProcessLanded( vector HitNormal )
 defaultproperties
 {
 	 bIgnoreSameClassProj=True
+	 bReplicateSpawnLocation=True
 	 ProjectileDiameter=40.0
 	 //Shrapnel
 	 ShrapnelClass=None
@@ -157,6 +158,7 @@ defaultproperties
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
+	 CullDistance=5000.000000
 	 //Physics
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
@@ -169,14 +171,14 @@ defaultproperties
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000
      MaxSpeed=0.000000
-	 ProjectileMass=0.023000	// kilograms
+	 ProjectileMass=0.230000	// kilograms
 	 //EffectiveRange in Meters
-	 EffectiveRange=180.000000
-	 MaxEffectiveRangeScale=1.250000
+	 EffectiveRange=140.000000
+	 MaxEffectiveRange=300.000000
 	 //TrueBallistics
 	 bTrueBallistics=True
 	 bInitialAcceleration=True
-	 BallisticCoefficient=0.150000
+	 BallisticCoefficient=0.132000
 	 SpeedFudgeScale=1.000000
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
@@ -193,4 +195,5 @@ defaultproperties
 	 bUpdateSimulatedPosition=True
 	 bNetTemporary=False
 	 bNetNotify=True
+	 LifeSpan=0.0
 }

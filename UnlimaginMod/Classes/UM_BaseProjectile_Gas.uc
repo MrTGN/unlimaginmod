@@ -126,10 +126,6 @@ simulated event Tick(float DeltaTime)
 
 simulated function ProcessTouch(Actor Other, vector HitLocation)
 {
-	if ( Other == None || Other == Instigator || Other.Base == Instigator 
-		 || !Other.bBlockHitPointTraces )
-		Return;
-	
 	if ( !bStopped 
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
 		UpdateProjectilePerformance();

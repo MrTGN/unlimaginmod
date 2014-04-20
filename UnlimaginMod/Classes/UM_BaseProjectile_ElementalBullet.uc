@@ -31,7 +31,7 @@ var		bool		bCanDisintegrate;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetInitial )
+	unreliable if ( Role == ROLE_Authority && bNetInitial )
 		bCanDisintegrate;
 }
 
@@ -45,15 +45,9 @@ replication
 simulated event PostBeginPlay()
 {
 	if ( Role == ROLE_Authority )
-		bCanDisintegrate = FRand() <= DisintegrateChance;
+		bCanDisintegrate = (FRand() <= DisintegrateChance);
 	
 	Super.PostBeginPlay();
-}
-
-// Called when the projectile loses some of it's energy
-simulated function ScaleProjectilePerformance(float NewScale)
-{
-	ImpactDamage *= NewScale;
 }
 
 simulated function Explode(vector HitLocation, vector HitNormal)
@@ -116,8 +110,10 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
-	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-	Explode(HitLocation, Normal(HitLocation - Other.Location));
+	if ( CanHitThisActor(Other) )  {
+		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		Explode(HitLocation, Normal(HitLocation - Other.Location));
+	}
 	LastTouched = None;
 }
 
@@ -132,7 +128,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 		Return;
 	}
 	
-	ProcessHitWall(HitNormal);
+	//ProcessHitWall(HitNormal);
 	Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	HurtWall = None;
 }
@@ -228,7 +224,7 @@ defaultproperties
      bNetInitialRotation=True
 	 bReplicateMovement=True
 	 bUpdateSimulatedPosition=False
-	 bNetNotify=False
+	 bNetNotify=True
 	 //Light
 	 AmbientGlow=30		// Ambient brightness, or 255=pulsing.
 	 bUnlit=True		// Lights don't affect actor.
@@ -239,7 +235,6 @@ defaultproperties
 	 bSwitchToZeroCollision=True
 	 bCollideActors=True
      bCollideWorld=True
-     bUseCylinderCollision=True
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True

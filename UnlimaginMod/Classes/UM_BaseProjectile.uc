@@ -339,8 +339,6 @@ simulated event PreBeginPlay()
 
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
-	// Prevents from touching owner at spawn
-	LastTouched = Instigator;
 	
 	// Forcing to not call UpdateBulletPerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )
@@ -442,10 +440,10 @@ simulated function DestroyTrail()
 	}
 }
 
+// Called before initial replication
 simulated function SetInitialVelocity()
 {
-	// Assign Velocity
-	if ( Speed > 0.0 )  {
+	if ( Role == ROLE_Authority && Speed > 0.0 )  {
 		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
 			Speed *= SpeedDropInWaterCoefficient;
 			
@@ -634,28 +632,26 @@ simulated function SpawnHitEffects(
 			vector			HitLocation, 
 			vector			HitNormal, 
  optional	ESurfaceTypes	HitSurfaceType,
- optional	Actor			Victim )
+ optional	Actor			A )
 {
 	local	UM_BaseHitEffects	HitEffects;
 	
-	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail && 
-		 Level.DetailMode != DM_Low )  {
-		if ( HitEffectsClass != None )  {
-			if ( Class'UM_AData'.default.ActorPool != None )
-				HitEffects = UM_BaseHitEffects(Class'UM_AData'.default.ActorPool.AllocateActor(HitEffectsClass,HitLocation,rotator(-HitNormal)));
-			else
-				HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
-		}
-		
+	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
+		 && Level.DetailMode != DM_Low && HitEffectsClass != None )  {
+		// Spawn
+		if ( Class'UM_AData'.default.ActorPool != None )
+			HitEffects = UM_BaseHitEffects(Class'UM_AData'.default.ActorPool.AllocateActor(HitEffectsClass,HitLocation,rotator(-HitNormal)));
+		else
+			HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
+		// Play Hit Effects
 		if ( HitEffects != None )  {
-			if ( Pawn(Victim) != None )  {
-				if ( Pawn(Victim).ShieldStrength > 0 )
-					HitEffects.PlayHitEffects(EST_MetalArmor);
+			if ( Pawn(A) != None && HitSurfaceType == EST_Default )  {
+				if ( Pawn(A).ShieldStrength > 0 )
+					HitSurfaceType = EST_MetalArmor;
 				else
-					HitEffects.PlayHitEffects(EST_Flesh);
+					HitSurfaceType = EST_Flesh;
 			}
-			else
-				HitEffects.PlayHitEffects(HitSurfaceType);
+			HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
 		}
 	}
 }
@@ -665,26 +661,27 @@ simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 simulated function bool CanHurtPawn( Pawn P )
 {
-	if ( P == None || (P == Instigator && !bCanHurtOwner) || (Instigator != None && TeamGame(Level.Game) != None 
+	// Do not damage a friendly Pawn
+	if ( P == None || (!bCanHurtOwner && P == Instigator) 
+		 || (Instigator != None && P != Instigator && TeamGame(Level.Game) != None
 			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 		Return False;
-		
+	
 	Return True;
 }
 
 simulated function ProcessHitActor( 
-			Actor				A, 
-			vector				HitLocation, 
-			float				DamageAmount, 
-			float				MomentumAmount,
-			class<DamageType>	DmgType, 
- optional	class<DamageType>	HeadShotDmgType )
+	Actor				A, 
+	Vector				HitLocation,
+	float				DamageAmount, 
+	float				MomentumAmount, 
+	class<DamageType>	DmgType )
 {
-	local	vector	VelNormal;
+	local	Vector	VelNormal;
 	local	float	EnergyLoss;
 	local	Pawn	P;
 	
-	if ( DmgType == None || DamageAmount <= 0.0 /* A != Instigator && A.Base != Instigator */ )
+	if ( DmgType == None || DamageAmount <= 0.0 )
 		Return;
 	
 	// Updating Projectile Performance before hit the victim
@@ -692,28 +689,16 @@ simulated function ProcessHitActor(
 	UpdateProjectilePerformance();
 	VelNormal = Normal(Velocity);
 	
-	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
-	// ExtendedZCollision is a Killing Floor hack for a large zombies.
-	// This collisions is attached to Pawn owners.
-	if ( (!bIgnoreBulletWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
-		P = Pawn(A.Owner);
-	else if ( Pawn(A.Base) != None  )
+	P = Pawn(A);
+	if ( P == None )
 		P = Pawn(A.Base);
-	else
-		P = Pawn(A);
 	
 	// If projectile hit a Pawn
 	if ( P != None )  {
-		// Do not damage a friendly Pawn
-		if ( !CanHurtPawn(P) )  {
-			P = None;
-			Return;
-		}
-		
 		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
 			DamageAmount *= HeadShotDamageMult;
-			if ( HeadShotDmgType != None )
-				DmgType = HeadShotDmgType;
+			if ( HeadShotDamageType != None )
+				DmgType = HeadShotDamageType;
 			// HeadShot EnergyLoss
 			if ( UM_Monster(P) != None )
 				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * ExpansionCoefficient / GetPenetrationBonus();
@@ -728,6 +713,7 @@ simulated function ProcessHitActor(
 	
 	// Hit effects
 	SpawnHitEffects(Location, Normal(HitLocation - A.Location), ,A);
+	
 	// Damage
 	if ( Role == ROLE_Authority )  {
 		if ( Instigator == None || Instigator.Controller == None )
@@ -736,41 +722,33 @@ simulated function ProcessHitActor(
 		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
 		MakeNoise(1.0);
 	}
-	// Decreasing performance
-	if ( bTrueBallistics )
-		BallisticCoefficient = FMax((BallisticCoefficient * 0.85), (default.BallisticCoefficient * 0.5));
+	
 	// Updating Projectile
 	if ( P != None )
 		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
-simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
+simulated function bool CanHitThisActor( Actor A )
 {
-	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
-		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
-			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2 * Velocity), GetCollisionExtent()) )
-			TouchLocation = Location;
-		
-		Return True;
-	}
-	
-	Return False;
-}
-
-simulated function bool CanHitThisActor( Actor A, optional out Pawn P )
-{
+	local	Pawn	P;
 	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
 	// ExtendedZCollision is a Killing Floor hack for a large zombies.
 	// This collisions is attached to Pawn owners.
+	/*
 	if ( (!bIgnoreBulletWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
-		P = Pawn(A.Owner);
-	else if ( Pawn(A.Base) != None  )
 		P = Pawn(A.Base);
 	else
 		P = Pawn(A);
+	*/
+	if ( ROBulletWhipAttachment(A) != None || ExtendedZCollision(A) != None )
+		Return False;
 	
-	if ( A == Instigator || A.Base == Instigator || !CanHurtPawn(P) )
+	P = Pawn(A);
+	if ( P == None )
+		P = Pawn(A.Base);
+	
+	if ( A == Instigator || A.Base == Instigator || (P != None && Instigator != None && TeamGame(Level.Game) != None
+			&& TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 		Return False;
 	
 	Return True;
@@ -779,8 +757,24 @@ simulated function bool CanHitThisActor( Actor A, optional out Pawn P )
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
-	ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
+	if ( CanHitThisActor(Other) )
+		ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
+	
 	LastTouched = None;
+}
+
+simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
+{
+	if ( A != None && !A.bDeleteMe && A != LastTouched /*&& A.Base != LastTouched*/
+		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
+			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )
+			TouchLocation = Location;
+		
+		Return True;
+	}
+	
+	Return False;
 }
 
 // Called when the actor's collision hull is touching another actor's collision hull.
@@ -809,11 +803,9 @@ simulated function ProcessHitWall( Vector HitNormal )
 	
 	if ( bCanRebound )  {
 		// Finding out surface material
-		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 20), Location, false,, HitMat);
+		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 16.0), Location, false,, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
-		else
-			ST = EST_Default;
 		
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
@@ -823,15 +815,14 @@ simulated function ProcessHitWall( Vector HitNormal )
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			// Getting the bounce bonus
 			f = BounceBonus / ExpansionCoefficient;
+			//Todo: думаю, что это нужно убрать
 			// Projectile has entered into the surface but not stuck into it. Projectile should lose more speed.
 			if ( EnergyByNormal > ImpactSurfaces[ST].ImpactStrength )
 				f *= EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
 			
 			// Mirroring Velocity Vector by HitNormal with lossy
-			Velocity -= VectVelDotNorm * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) + VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
+			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
 			// Decreasing performance
-			if ( bTrueBallistics )
-				BallisticCoefficient = FMax((BallisticCoefficient * 0.8), (default.BallisticCoefficient * 0.5));
 			UpdateProjectilePerformance(True);
 			// If Speed less than MinSpeed start falling
 			if ( Speed < MinSpeed )  {
@@ -987,7 +978,7 @@ defaultproperties
      bUpdateSimulatedPosition=False
 	 //[end]
      //[block] Physics options.
-	 LandedPrePivot=(Z=-1.0)
+	 LandedPrePivot=(Z=-1.5)
 	 bCanRebound=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).

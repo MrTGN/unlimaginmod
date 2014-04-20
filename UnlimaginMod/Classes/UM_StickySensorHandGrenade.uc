@@ -211,17 +211,14 @@ state Stuck
 {
 	Ignores HitWall, Landed, Stick;
 	
-	function ProcessTouch(Actor Other, vector HitLocation)
+	function ProcessTouch( Actor Other, vector HitLocation )
 	{
 		local	Inventory	Inv;
 		
-		if ( Pawn(Other) != None && Pawn(Other) == Instigator && Pawn(Other).Inventory != None )
-		{
-			for( Inv = Pawn(Other).Inventory; Inv != None; Inv = Inv.Inventory )
-			{
+		if ( Pawn(Other) != None && Pawn(Other) == Instigator && Pawn(Other).Inventory != None )  {
+			for( Inv = Pawn(Other).Inventory; Inv != None; Inv = Inv.Inventory )  {
 				if ( UM_Weapon_HandGrenade(Inv) != None && 
-					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )
-				{
+					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
 						ServerPlaySoundData(PickupSound);

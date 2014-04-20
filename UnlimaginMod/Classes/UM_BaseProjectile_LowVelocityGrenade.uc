@@ -109,10 +109,11 @@ simulated function Disarm()
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
-	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-	if ( IsArmed() )
-		Explode(HitLocation, Normal(HitLocation - Other.Location));
-	
+	if ( CanHitThisActor(Other) )  {
+		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		if ( IsArmed() )
+			Explode(HitLocation, Normal(HitLocation - Other.Location));
+	}
 	LastTouched = None;
 }
 
@@ -126,9 +127,10 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 		Return;
 	}
 	
-	ProcessHitWall(HitNormal);
 	if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	else
+		ProcessHitWall(HitNormal);
 	
 	HurtWall = None;
 }
@@ -144,6 +146,46 @@ simulated function ProcessLanded( vector HitNormal )
 
 defaultproperties
 {
+	 // EST_Default
+	 ImpactSurfaces(0)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
+	 // EST_Rock
+	 ImpactSurfaces(1)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.5)
+	 // EST_Dirt
+	 ImpactSurfaces(2)=(FrictionCoefficient=0.42,PlasticityCoefficient=0.22)
+	 // EST_Metal
+	 ImpactSurfaces(3)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.45)
+	 // EST_Wood
+	 ImpactSurfaces(4)=(FrictionCoefficient=0.52,PlasticityCoefficient=0.34)
+	 // EST_Plant
+	 ImpactSurfaces(5)=(FrictionCoefficient=0.47,PlasticityCoefficient=0.3)
+	 // EST_Flesh
+	 ImpactSurfaces(6)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.29)
+	 // EST_Ice
+	 ImpactSurfaces(7)=(FrictionCoefficient=0.7,PlasticityCoefficient=0.48)
+	 // EST_Snow
+	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.32)
+	 // EST_Water
+	 ImpactSurfaces(9)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
+	 // EST_Glass
+	 ImpactSurfaces(10)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.48)
+	 // EST_Gravel
+	 ImpactSurfaces(11)=(FrictionCoefficient=0.49,PlasticityCoefficient=0.34)
+	 // EST_Concrete
+	 ImpactSurfaces(12)=(FrictionCoefficient=0.56,PlasticityCoefficient=0.4)
+	 // EST_HollowWood
+	 ImpactSurfaces(13)=(FrictionCoefficient=0.52,PlasticityCoefficient=0.34)
+	 // EST_Mud
+	 ImpactSurfaces(14)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
+	 // EST_MetalArmor
+	 ImpactSurfaces(15)=(FrictionCoefficient=0.66,PlasticityCoefficient=0.5)
+	 // EST_Paper
+	 ImpactSurfaces(16)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
+	 // EST_Cloth
+	 ImpactSurfaces(17)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.3)
+	 // EST_Rubber
+	 ImpactSurfaces(18)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
+	 // EST_Poop
+	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 bIgnoreSameClassProj=True
 	 bReplicateSpawnLocation=True
 	 ProjectileDiameter=40.0

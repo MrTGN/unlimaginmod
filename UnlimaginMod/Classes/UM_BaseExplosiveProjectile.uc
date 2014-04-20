@@ -190,6 +190,7 @@ simulated function ZeroProjectileEnergy()
 simulated function ScaleProjectilePerformance(float NewScale)
 {
 	ImpactDamage *= NewScale;
+	ImpactMomentumTransfer *= NewScale;
 }
 
 // HurtRadius()
@@ -236,9 +237,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			}
 			
 			dir = Victims.Location - HitLocation;
-			dist = FMax(1, VSize(dir));
+			dist = FMax(1.0, VSize(dir));
 			dir = dir / dist;
-			damageScale = 1 - FMax( 0, ((dist - Victims.CollisionRadius) / DamageRadius) );
+			damageScale = 1.0 - FMax( 0.0, ((dist - Victims.CollisionRadius) / DamageRadius) );
 			
 			if ( Instigator == None || Instigator.Controller == None )
 				Victims.SetDelayedDamageInstigatorController( InstigatorController );
@@ -318,7 +319,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 		
 		dir = Victims.Location - HitLocation;
-		dist = FMax(1, VSize(dir));
+		dist = FMax(1.0, VSize(dir));
 		dir = dir / dist;
 		damageScale = FMax((Victims.CollisionRadius / (Victims.CollisionRadius + Victims.CollisionHeight)),(1.0 - FMax(0, ((dist - Victims.CollisionRadius) / DamageRadius))));
 		if ( damageScale <= 0.0 )
@@ -426,7 +427,7 @@ simulated function ShakePlayersView()
 event Timer()
 {
 	if ( IsArmed() )
-		Explode(Location, vect(0,0,1));
+		Explode(Location, vect(0.0, 0.0, 1.0));
 	else
 		Destroy();
 }
@@ -525,7 +526,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 simulated function ProcessTouch( Actor Other, Vector HitLocation )
 {
 	LastTouched = Other;
-	ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	if ( CanHitThisActor(Other) )
+		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		
 	LastTouched = None;
 }
 
@@ -546,6 +549,7 @@ defaultproperties
 {
      bCanBeDamaged=True
 	 bIgnoreSameClassProj=True
+	 bCanHurtOwner=True
 	 DisintegrateDamageScale=0.100000
 	 TransientSoundVolume=2.000000
 	 //Sounds

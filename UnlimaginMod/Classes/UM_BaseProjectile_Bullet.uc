@@ -69,6 +69,7 @@ simulated function ProcessLanded( vector HitNormal )
 simulated function ScaleProjectilePerformance(float NewScale)
 {
 	Damage *= NewScale;
+	MomentumTransfer *= NewScale;
 }
 
 //[end] Functions

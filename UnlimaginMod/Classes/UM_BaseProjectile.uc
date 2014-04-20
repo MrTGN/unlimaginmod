@@ -441,14 +441,10 @@ simulated function DestroyTrail()
 }
 
 // Called before initial replication
-simulated function SetInitialVelocity()
+function ServerSetInitialVelocity()
 {
-	if ( Role == ROLE_Authority && Speed > 0.0 )  {
-		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
-			Speed *= SpeedDropInWaterCoefficient;
-			
+	if ( Speed > 0.0 )
 		Velocity = Speed * Vector(Rotation);
-	}
 }
 
 // Called after the actor is created but BEFORE any values have been replicated to it.
@@ -482,11 +478,15 @@ simulated event PostBeginPlay()
 	bReadyToSplash = True;
 	//[end]
 	
-	// Assign Velocity
-	SetInitialVelocity();
+	// Set the Initial Velocity on the server before replication
+	if ( Role == ROLE_Authority )
+		ServerSetInitialVelocity();
 	// Spawning the Trail
 	SpawnTrail();
+}
 
+simulated event PostNetBeginPlay()
+{
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
 }
@@ -506,8 +506,11 @@ state InTheWater
 	simulated event BeginState()
 	{
 		DestroyTrail();
-		if ( Speed > 0.0 && Velocity != Vect(0.0,0.0,0.0) && SpeedDropInWaterCoefficient > 0.0 )
-			Acceleration = Speed * SpeedDropInWaterCoefficient * -Normal(Velocity);
+		if ( Speed > 0.0 && SpeedDropInWaterCoefficient > 0.0 )  {
+			Speed *= SpeedDropInWaterCoefficient;
+			if ( Velocity != Vect(0.0,0.0,0.0) )
+				Acceleration = -Normal(Velocity) * Speed;
+		}
 	}
 	
 	simulated event Tick( float DeltaTime )
@@ -604,7 +607,7 @@ simulated function UpdateProjectilePerformance(
 	// Performance update
 	if ( ProjectileEnergy > 0.0 )  {
 		LastProjectileEnergy = ProjectileEnergy;
-		// Need to lose some energy
+		// Lose some energy
 		if ( EnergyLoss > 0.0 )  {
 			if ( EnergyLoss < ProjectileEnergy )  {
 				ProjectileEnergy -= EnergyLoss;
@@ -690,8 +693,8 @@ simulated function ProcessHitActor(
 	VelNormal = Normal(Velocity);
 	
 	P = Pawn(A);
-	if ( P == None )
-		P = Pawn(A.Base);
+	/*if ( P == None )
+		P = Pawn(A.Base);*/
 	
 	// If projectile hit a Pawn
 	if ( P != None )  {
@@ -744,8 +747,8 @@ simulated function bool CanHitThisActor( Actor A )
 		Return False;
 	
 	P = Pawn(A);
-	if ( P == None )
-		P = Pawn(A.Base);
+	/*if ( P == None )
+		P = Pawn(A.Base);*/
 	
 	if ( A == Instigator || A.Base == Instigator || (P != None && Instigator != None && TeamGame(Level.Game) != None
 			&& TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
@@ -943,7 +946,7 @@ defaultproperties
      InitialAccelerationTime=0.100000
 	 //[block] Ballistic performance
 	 BounceBonus=1.0
-	 SpeedDropInWaterCoefficient=0.650000
+	 SpeedDropInWaterCoefficient=0.850000
 	 FullStopSpeedCoefficient=0.090000
 	 Speed=0.000000
 	 MaxSpeed=0.000000

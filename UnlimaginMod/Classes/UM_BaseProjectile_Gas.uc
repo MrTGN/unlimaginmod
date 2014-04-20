@@ -78,17 +78,12 @@ simulated function SpawnGasCloud()
 	}
 }
 
-simulated function SetInitialVelocity()
+simulated event PostNetBeginPlay()
 {
-	Super.SetInitialVelocity();
+	Super.PostNetBeginPlay();
 	
-	if ( Speed > 0.0 && !bInitialAcceleration )  {
-		default.bInitialAcceleration = True;
-		bInitialAcceleration = default.bInitialAcceleration;
-	}
-	
-	if ( Speed > 0.0 && Velocity != Vect(0.0,0.0,0.0) && SpeedDropScale > 0.0 )
-		Acceleration = Speed * SpeedDropScale * -Normal(Velocity);
+	if ( Velocity != Vect(0.0,0.0,0.0) && Speed > 0.0 && SpeedDropScale > 0.0 )
+		Acceleration = -Normal(Velocity) * Speed * SpeedDropScale;
 	else if ( !bGasCloudSpawned && (Velocity == Vect(0.0,0.0,0.0) || bStopped) )
 		SpawnGasCloud();
 }

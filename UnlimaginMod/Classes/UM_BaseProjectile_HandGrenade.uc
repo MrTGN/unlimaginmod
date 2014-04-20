@@ -29,25 +29,8 @@ var		Class<AvoidMarker>	FearMarkerClass;
 //[end] Varibles
 //====================================================================
 
-replication
-{
-    reliable if ( Role == ROLE_Authority && bNetDirty )
-        ExplodeTimer;
-}
-
 //========================================================================
 //[block] Functions
-
-simulated function SetInitialVelocity()
-{
-	if ( Role == ROLE_Authority && Speed > 0.0 )  {
-		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
-			Speed *= SpeedDropInWaterCoefficient;
-		
-		Velocity = Speed * Vector(Rotation);
-		RandSpin(25000);
-    }
-}
 
 simulated event PostBeginPlay()
 {

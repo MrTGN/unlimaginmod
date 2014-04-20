@@ -15,7 +15,7 @@
 class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 
 
-simulated function SetInitialVelocity()
+function ServerSetInitialVelocity()
 {
 	if ( Role == ROLE_Authority && Speed > 0.0 )  {
 		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
@@ -27,11 +27,11 @@ simulated function SetInitialVelocity()
 }
 
 simulated event PostBeginPlay()
-{
-	if ( Role == ROLE_Authority )
-		ExplodeTimer = default.ExplodeTimer * (0.50 + FRand());
-	
+{	
 	Super(UM_BaseProjectile).PostBeginPlay();
+	
+	if ( Role == ROLE_Authority )
+		ExplodeTimer = default.ExplodeTimer * (0.5 + FRand());
 }
 
 defaultproperties

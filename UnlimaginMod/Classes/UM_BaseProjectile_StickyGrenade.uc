@@ -42,7 +42,7 @@ var		Actor			StickActor;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		ExplodeTimer, bStuck;
+		bStuck;
 	
 	unreliable if ( Role == ROLE_Authority && bNetDirty )
 		StickActor;

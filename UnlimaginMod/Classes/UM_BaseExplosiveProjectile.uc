@@ -100,17 +100,6 @@ simulated function CalcDefaultProperties()
 	}
 }
 
-simulated event PreBeginPlay()
-{
-	Super.PreBeginPlay();
-	
-	if ( default.ImpactDamage > 0.0 )
-		ImpactDamage = default.ImpactDamage * GetRandMultByPercent(BallisticRandPercent);
-	
-	if ( default.Damage > 0.0 )
-		Damage = default.Damage * GetRandMultByPercent(BallisticRandPercent);
-}
-
 //[block] Dynamic Loading
 simulated static function PreloadAssets(Projectile Proj)
 {

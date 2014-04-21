@@ -31,7 +31,6 @@ var		SoundData		BeepSound, PickupSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
-var		Actor			StickActor;
 
 //[end] Varibles
 //====================================================================
@@ -43,9 +42,6 @@ replication
 {
 	reliable if ( bNetDirty && Role == ROLE_Authority )
 		bStuck;
-	
-	unreliable if ( bNetDirty && Role == ROLE_Authority )
-		StickActor;
 }
 
 //[end] Replication
@@ -149,7 +145,7 @@ event Timer()
 		Destroy();
 }
 
-simulated function Stick( Actor HitActor, vector HitLocation, vector HitNormal )
+simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 {
 	local	name		NearestBone;
 	local	float		dist;
@@ -159,23 +155,22 @@ simulated function Stick( Actor HitActor, vector HitLocation, vector HitNormal )
 		bTimerSet = True;
 	}
 	
-	if ( HitActor == Instigator || HitActor.Base == Instigator )
+	if ( A == Instigator || A.Base == Instigator )
 		Return;
 	
 	bStuck = True;
 	bCollideWorld = False;
 	SetPhysics(PHYS_None);
 	DestroyTrail();
-	StickActor = HitActor;
 
-	if ( Pawn(StickActor) != None )  {
+	if ( Pawn(A) != None )  {
 		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
-		StickActor.AttachToBone(Self, NearestBone);
+		A.AttachToBone(Self, NearestBone);
 	}
 	else
-		SetBase(StickActor);
+		SetBase(A);
 
-	SpawnHitEffects(HitLocation, HitNormal, ,StickActor);
+	SpawnHitEffects(HitLocation, HitNormal, ,A);
 
 	if ( Base == None )  {
 		bStuck = False;

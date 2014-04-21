@@ -443,8 +443,9 @@ simulated function DestroyTrail()
 // Called before initial replication
 function ServerSetInitialVelocity()
 {
+	// Little Velocity randomization
 	if ( Speed > 0.0 )
-		Velocity = Speed * Vector(Rotation);
+		Velocity = Vector(Rotation) * Speed * GetRandMultByPercent(BallisticRandPercent);
 }
 
 // Called after the actor is created but BEFORE any values have been replicated to it.
@@ -478,7 +479,7 @@ simulated event PostBeginPlay()
 	bReadyToSplash = True;
 	//[end]
 	
-	// Set the Initial Velocity on the server before replication
+	// Setting Initial Velocity on the server before the initial replication
 	if ( Role == ROLE_Authority )
 		ServerSetInitialVelocity();
 	// Spawning the Trail

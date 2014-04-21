@@ -17,21 +17,16 @@ class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 
 function ServerSetInitialVelocity()
 {
-	if ( Role == ROLE_Authority && Speed > 0.0 )  {
-		if ( PhysicsVolume.bWaterVolume && SpeedDropInWaterCoefficient > 0.0 )
-			Speed *= SpeedDropInWaterCoefficient;
-		
-		SetRotation(RotRand());
-		Velocity = Vector(Rotation) * Speed * (0.5 + FRand());
-    }
+	SetRotation(RotRand());
+	Super.ServerSetInitialVelocity();
 }
 
 simulated event PostBeginPlay()
 {	
-	Super(UM_BaseProjectile).PostBeginPlay();
-	
 	if ( Role == ROLE_Authority )
 		ExplodeTimer = default.ExplodeTimer * (0.5 + FRand());
+	
+	Super(UM_BaseProjectile).PostBeginPlay();
 }
 
 defaultproperties
@@ -44,7 +39,7 @@ defaultproperties
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
 	 //ExplodeTimer
 	 ExplodeTimer=2.000000
-	 BallisticRandPercent=20.000000
+	 BallisticRandPercent=60.000000
      //MuzzleVelocity
      MuzzleVelocity=26.000000	// m/sec
 	 Trail=(xEmitterClass=Class'KFTracer')

@@ -26,32 +26,6 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 //========================================================================
 //[block] Functions
 
-simulated event PreBeginPlay()
-{
-	Super(UM_BaseProjectile).PreBeginPlay();
-	
-	// Randomising Damage
-	//Damage = default.Damage * RandMult;
-	Damage = default.Damage * GetRandMultByPercent(BallisticRandPercent);
-	
-	/* if ( bEnableLogging )  {
-		log(self$": PreBeginPlay ProjectileMass="$ProjectileMass);
-		log(self$": PreBeginPlay MuzzleEnergy="$MuzzleEnergy);
-		log(self$": PreBeginPlay ProjectileEnergy="$ProjectileEnergy);
-		log(self$": PreBeginPlay MaxSpeed="$MaxSpeed);
-		log(self$": PreBeginPlay Speed="$Speed);
-	} */
-}
-
-/*
-simulated event PostBeginPlay()
-{
-	Super(UM_BaseProjectile).PostBeginPlay();
-		
-	if ( bEnableLogging )
-		log(self$": PostBeginPlay LifeSpan="$LifeSpan);
-} */
-
 // Called when projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
@@ -59,7 +33,7 @@ simulated function ZeroProjectileEnergy()
 	Destroy();
 }
 
-simulated function ProcessLanded( vector HitNormal )
+simulated function ProcessLanded( Vector HitNormal )
 {
 	DestroyTrail();
 	Destroy();

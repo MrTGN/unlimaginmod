@@ -61,12 +61,11 @@ simulated function CalcDefaultProperties()
 	}
 }
 
-simulated function SetInitialVelocity()
+simulated event PostBeginPlay()
 {
+	Super.PostBeginPlay();
 	if ( FlyingTime > 0.0 )
 		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
-	
-	Super.SetInitialVelocity();
 }
 
 // Detonator is armed

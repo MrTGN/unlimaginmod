@@ -841,8 +841,7 @@ function DryFire()
 simulated function bool AllowFire()
 {
 	if ( (KFWeap.bIsReloading && (!KFWeap.bHoldToReload || KFWeap.MagAmmoRemaining < AmmoPerFire))
-		 || KFPawn(Instigator).SecondaryItem != None
-		 || KFPawn(Instigator).bThrowingNade
+		 || KFPawn(Instigator).SecondaryItem != None || KFPawn(Instigator).bThrowingNade
 		 || Instigator.IsProneTransitioning() )
 		Return False;
 	
@@ -882,10 +881,7 @@ event ModeDoFire()
 		 !AllowFire() )
 		Return;
 	
-	if ( MaxHoldTime > 0.0 )
-		HoldTime = FMin(HoldTime, MaxHoldTime);
-	
-	bTheLastShot = (KFWeap.MagAmmoRemaining <= AmmoPerFire);
+	bTheLastShot = KFWeap.MagAmmoRemaining <= AmmoPerFire;
 	// Storing InstigatorMovingSpeed
 	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
 		if ( Instigator.bIsCrouched )
@@ -901,6 +897,9 @@ event ModeDoFire()
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
+	
+	if ( MaxHoldTime > 0.0 )
+		HoldTime = FMin(HoldTime, MaxHoldTime);
 	
 	// server
     if ( Weapon.Role == ROLE_Authority )  {

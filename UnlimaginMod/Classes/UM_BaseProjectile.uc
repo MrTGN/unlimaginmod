@@ -769,7 +769,7 @@ simulated function ProcessTouch( Actor Other, Vector HitLocation )
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && !A.bDeleteMe && A != LastTouched /*&& A.Base != LastTouched*/
+	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
 		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
 			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )

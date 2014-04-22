@@ -128,11 +128,12 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 		GoToState('Stuck');
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
-	LastTouched = Other;
+	LastTouched = A;
 	if ( !bStuck )
-		Stick(Other, HitLocation, Normal(HitLocation - Other.Location));
+		Stick(A, TouchLocation, TouchNormal);
+	
 	LastTouched = None;
 }
 
@@ -150,7 +151,7 @@ simulated event Landed(vector HitNormal)
 
 state Stuck
 {
-	Ignores HitWall, Landed, ProcessTouch, Stick;
+	Ignores HitWall, Landed, ProcessTouchActor, Stick;
 	
 	/*
 	simulated event BeginState()

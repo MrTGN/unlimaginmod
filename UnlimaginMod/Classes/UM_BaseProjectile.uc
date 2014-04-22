@@ -687,7 +687,7 @@ simulated function ProcessHitActor(
 	float				MomentumAmount, 
 	class<DamageType>	DmgType )
 {
-	local	Vector	VelNormal, HitNormal;
+	local	Vector	VelNormal;
 	local	float	EnergyLoss;
 	local	Pawn	P;
 	
@@ -767,15 +767,6 @@ simulated function bool CanHitThisActor( Actor A )
 	Return True;
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
-{
-	LastTouched = Other;
-	if ( CanHitThisActor(Other) )
-		ProcessHitActor(Other, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
-	
-	LastTouched = None;
-}
-
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
 	/*
@@ -783,6 +774,7 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  { */
 	if ( A != None && !A.bDeleteMe && A != LastTouched
 		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
+		// If projectile is not moving or TraceThisActor did't hit the actor
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
@@ -792,6 +784,15 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 	}
 	
 	Return False;
+}
+
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+{
+	LastTouched = A;
+	if ( CanHitThisActor(A) )
+		ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
+	
+	LastTouched = None;
 }
 
 // Called when the actor's collision hull is touching another actor's collision hull.
@@ -823,6 +824,8 @@ simulated function ProcessHitWall( Vector HitNormal )
 		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 16.0), Location, false,, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
+		else
+			ST = EST_Default;
 		
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
@@ -841,9 +844,8 @@ simulated function ProcessHitWall( Vector HitNormal )
 			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
 			// Decreasing performance
 			UpdateProjectilePerformance(True);
-			if ( Physics == default.Physics )
+			if ( Physics == PHYS_Projectile )
 				SetPhysics(PHYS_Falling);
-			
 			if ( Speed <= MinSpeed )
 				bBounce = False;
 			
@@ -861,7 +863,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 
 	if ( CanTouchThisActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
-		ProcessTouch(Wall, HitLocation);
+		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
 	
@@ -869,7 +871,10 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 	HurtWall = None;
 }
 
-simulated function ProcessLanded( vector HitNormal )
+// Event Landed() called when the actor is no longer falling.
+// If you want to receive HitWall() instead of Landed() when the actor has 
+// finished falling set bBounce to True.
+simulated event Landed( Vector HitNormal )
 {
 	DestroyTrail();
 	Velocity = Vect(0.0, 0.0, 0.0);
@@ -878,16 +883,10 @@ simulated function ProcessLanded( vector HitNormal )
 	SetPhysics(PHYS_None);
 }
 
-// Event Landed() called when the actor is no longer falling.
-// If you want to receive HitWall() instead of Landed() when the actor has 
-// finished falling set bBounce to True.
-simulated event Landed( vector HitNormal )
+simulated event EncroachedBy( Actor Other )
 {
-	UpdateProjectilePerformance(True);
-	if ( Speed > MinSpeed )
-		HitWall(HitNormal, None);
-	else
-		ProcessLanded(HitNormal);
+	if ( Other != None && (Other == Level || Other.bWorldGeometry) )
+		ZeroProjectileEnergy();
 }
 
 simulated event Destroyed()
@@ -1001,7 +1000,8 @@ defaultproperties
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=False
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
-	 bOrientToVelocity=False
+	 bOrientToVelocity=False	// Orient in the direction of current velocity.
+	 bOrientOnSlope=False	// when landing, orient base on slope of floor
 	 Physics=PHYS_Projectile
 	 //[end]
 	 //RemoteRole

@@ -68,7 +68,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	
 	if ( CanTouchThisActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
-		ProcessTouch(Wall, HitLocation);
+		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
 	
@@ -77,14 +77,14 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	HurtWall = None;
 }
 
-simulated function ProcessLanded( vector HitNormal )
+simulated event Landed( Vector HitNormal )
 {
 	if ( bRotateToDesired )  {
 		bRotateToDesired = False;
 		DesiredRotation = Rotation;
 		SetRotation(DesiredRotation);
 	}
-	Super.ProcessLanded(HitNormal);
+	Super.Landed(HitNormal);
 }
 
 simulated event Destroyed()

@@ -41,21 +41,20 @@ state NoEnergy
 {
 	Ignores HitWall;
 	
-	function ProcessTouch(Actor Other, vector HitLocation)
+	simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 	{
 		local	Inventory	Inv;
 		
-		if ( Pawn(Other) != None && Pawn(Other) == Instigator && 
-			 Pawn(Other).Inventory != None && MyDamageType != None && 
+		if ( Role == ROLE_Authority && Pawn(A) != None && Pawn(A) == Instigator && 
+			 Pawn(A).Inventory != None && MyDamageType != None && 
 			 Class<WeaponDamageType>(MyDamageType) != None &&
 			 Class<WeaponDamageType>(MyDamageType).default.WeaponClass != None )
 		{
-			for( Inv = Pawn(Other).Inventory; Inv != None; Inv = Inv.Inventory )
+			for( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )
 			{
 				if ( KFWeapon(Inv) != None && 
 					 Inv.Class == Class<WeaponDamageType>(MyDamageType).default.WeaponClass &&
-					 KFWeapon(Inv).AmmoAmount(0) < KFWeapon(Inv).MaxAmmo(0) )
-				{
+					 KFWeapon(Inv).AmmoAmount(0) < KFWeapon(Inv).MaxAmmo(0) )  {
 					KFWeapon(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
 						ServerPlaySoundData(PickupSound);

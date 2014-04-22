@@ -66,7 +66,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(-HitNormal));
 			if ( ExplosionDecal != None )
 				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
 		}
@@ -101,18 +101,18 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 			ClientPlaySoundData(DisintegrateSound);
 		// VFX
 		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
-			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));
 	}
 
 	Destroy();
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
-	LastTouched = Other;
-	if ( CanHitThisActor(Other) )  {
-		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		Explode(HitLocation, Normal(HitLocation - Other.Location));
+	LastTouched = A;
+	if ( CanHitThisActor(A) )  {
+		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		Explode(TouchLocation, TouchNormal);
 	}
 	LastTouched = None;
 }
@@ -124,7 +124,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 
 	if ( CanTouchThisActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
-		ProcessTouch(Wall, HitLocation);
+		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
 	
@@ -133,14 +133,13 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 	HurtWall = None;
 }
 
-simulated event Landed( vector HitNormal )
+simulated singular event Landed( vector HitNormal )
 {
 	SetPhysics(PHYS_None);
 	Explode(Location, HitNormal);
 }
 
 // TakeDamage must be simulated because it is a bNetTemporary actor
-//simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex)
 {
 	local	int		i;

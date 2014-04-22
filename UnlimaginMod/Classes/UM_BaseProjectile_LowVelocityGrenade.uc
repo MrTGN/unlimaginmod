@@ -71,7 +71,7 @@ simulated event PostBeginPlay()
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( bDisarmed || VSizeSquared(SpawnLocation - Location) < ArmingRange )
+	if ( bDisarmed || (Instigator != None && VSizeSquared(Instigator.Location - Location) < ArmingRange) )
 		Return False;
 	
 	Return Super.IsArmed();
@@ -105,13 +105,13 @@ simulated function Disarm()
 	}
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
-	LastTouched = Other;
-	if ( CanHitThisActor(Other) )  {
-		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	LastTouched = A;
+	if ( CanHitThisActor(A) )  {
+		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		if ( IsArmed() )
-			Explode(HitLocation, Normal(HitLocation - Other.Location));
+			Explode(TouchLocation, TouchNormal);
 	}
 	LastTouched = None;
 }
@@ -122,7 +122,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	
 	if ( CanTouchThisActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
-		ProcessTouch(Wall, HitLocation);
+		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
 	
@@ -134,10 +134,10 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	HurtWall = None;
 }
 
-simulated function ProcessLanded( vector HitNormal )
+simulated event Landed( Vector HitNormal )
 {
 	Disarm();
-	Super.ProcessLanded(HitNormal);
+	Super.Landed(HitNormal);
 }
 
 //[end] Functions
@@ -186,7 +186,6 @@ defaultproperties
 	 // EST_Poop
 	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 bIgnoreSameClassProj=True
-	 bReplicateSpawnLocation=True
 	 ProjectileDiameter=40.0
 	 //Shrapnel
 	 ShrapnelClass=None
@@ -206,6 +205,7 @@ defaultproperties
 	 bBounce=True
 	 bCanRebound=True
 	 bOrientToVelocity=True
+	 //bOrientOnSlope=True	// when landing, orient base on slope of floor
 	 Physics=PHYS_Projectile
 	 bIgnoreBulletWhipAttachment=True
 	 UpdateTimeDelay=0.100000

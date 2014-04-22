@@ -182,16 +182,17 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 		GoToState('Stuck');
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
-	LastTouched = Other;
+	LastTouched = A;
 	if ( !bStuck )
-		Stick(Other, HitLocation, Normal(HitLocation - Other.Location));
+		Stick(A, TouchLocation, TouchNormal);
+	
 	LastTouched = None;
 }
 
 //simulated singular event HitWall( vector HitNormal, actor Wall )
-simulated event HitWall( vector HitNormal, actor Wall )
+simulated event HitWall( vector HitNormal, Actor Wall )
 {
 	if ( !bStuck )
 		Stick(Wall, (Location + HitNormal), HitNormal);
@@ -206,12 +207,12 @@ state Stuck
 {
 	Ignores HitWall, Landed, Stick;
 	
-	function ProcessTouch( Actor Other, vector HitLocation )
+	simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 	{
 		local	Inventory	Inv;
 		
-		if ( Pawn(Other) != None && Pawn(Other) == Instigator && Pawn(Other).Inventory != None )  {
-			for( Inv = Pawn(Other).Inventory; Inv != None; Inv = Inv.Inventory )  {
+		if ( Role == ROLE_Authority && Pawn(A) != None && Pawn(A) == Instigator && Pawn(A).Inventory != None )  {
+			for( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )  {
 				if ( UM_Weapon_HandGrenade(Inv) != None && 
 					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);

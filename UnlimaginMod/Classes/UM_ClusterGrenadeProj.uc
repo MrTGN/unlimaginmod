@@ -15,12 +15,6 @@
 class UM_ClusterGrenadeProj extends UM_BaseProjectile_HandGrenade;
 
 
-function ServerSetInitialVelocity()
-{
-	SetRotation(RotRand());
-	Super.ServerSetInitialVelocity();
-}
-
 simulated event PostBeginPlay()
 {	
 	if ( Role == ROLE_Authority )

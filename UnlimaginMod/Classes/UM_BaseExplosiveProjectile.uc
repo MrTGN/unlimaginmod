@@ -357,7 +357,7 @@ function SpawnShrapnel()
 	local	Rotator		SpawnRotation;
 	local	Projectile	ShrapnelProj;
 	local	Actor		SpawnBlocker;
-	local	Vector		THitLoc, THitNorm, TraceEnd;
+	local	Vector		THitLoc, THitNorm;
 	
 	if ( ShrapnelClass != None && MaxShrapnelAmount > 0 )  {
 		if ( MaxShrapnelAmount > 1 )  {
@@ -366,7 +366,6 @@ function SpawnShrapnel()
 				ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
 				if ( ShrapnelProj == None )  {
 					// Number 30 here is a distance in unreal units and nothing more =)
-					TraceEnd = Location + Vector(SpawnRotation) * 30;
 					SpawnBlocker = Trace(THitLoc, THitNorm, (Location + Vector(SpawnRotation) * 30), Location, false);
 					// If something blocking shrapnel spawn location
 					if ( SpawnBlocker != None )  {
@@ -381,7 +380,6 @@ function SpawnShrapnel()
 			ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
 			if ( ShrapnelProj == None )  {
 				// Number 30 here is a distance in unreal units and nothing more =)
-				TraceEnd = Location + Vector(SpawnRotation) * 30;
 				SpawnBlocker = Trace(THitLoc, THitNorm, (Location + Vector(SpawnRotation) * 30), Location, false);
 				// If something blocking shrapnel spawn location
 				if ( SpawnBlocker != None )  {
@@ -441,7 +439,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(-HitNormal));
 			if ( ExplosionDecal != None )
 				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
 		}
@@ -481,7 +479,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 			ClientPlaySoundData(DisintegrateSound);
 		// VFX
 		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
-			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(vect(0,0,1)));
+			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));
 	}
 
 	// Destroying on client-side
@@ -489,7 +487,6 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 		Destroy();
 }
 
-//event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex)
 {
 	local	int		i;
@@ -513,11 +510,11 @@ event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Mo
 	}
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
-	LastTouched = Other;
-	if ( CanHitThisActor(Other) )
-		ProcessHitActor(Other, HitLocation, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	LastTouched = A;
+	if ( CanHitThisActor(A) )
+		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		
 	LastTouched = None;
 }

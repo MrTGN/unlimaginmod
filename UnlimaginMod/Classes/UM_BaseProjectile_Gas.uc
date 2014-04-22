@@ -119,8 +119,9 @@ simulated event Tick(float DeltaTime)
 	}
 }
 
-simulated function ProcessTouch(Actor Other, vector HitLocation)
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
+	LastTouched = A;
 	if ( !bStopped 
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
 		UpdateProjectilePerformance();
@@ -137,6 +138,7 @@ simulated function ProcessTouch(Actor Other, vector HitLocation)
 				bCollideWorld = False;
 		}
 	}
+	LastTouched = None;
 }
 
 simulated singular event HitWall( vector HitNormal, actor Wall )
@@ -159,13 +161,6 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 	}
 }
 
-simulated event Landed( vector HitNormal )
-{
-	Acceleration = Vect(0.0,0.0,0.0);
-	Velocity = Vect(0.0, 0.0, 0.0);
-	SetPhysics(PHYS_None);
-}
-
 //[end] Functions
 //====================================================================
 
@@ -174,7 +169,6 @@ defaultproperties
 {
      SpawnCheckRadiusScale=0.200000
 	 bCanRebound=False
-	 bBounce=True
 	 bOrientToVelocity=True
 	 //Ballistic performance randomization percent
 	 BallisticRandPercent=10.000000

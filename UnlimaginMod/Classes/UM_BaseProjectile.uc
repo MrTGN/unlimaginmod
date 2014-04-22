@@ -392,7 +392,10 @@ simulated function SpawnTrail()
 	if ( !bTrailSpawned )  {
 		bTrailSpawned = True;
 		
-		if ( Level.NetMode != NM_DedicatedServer && !PhysicsVolume.bWaterVolume )  {
+		// Level.bDropDetail is true when frame rate is below DesiredFrameRate
+		// DM_Low - is a low-detail Mode
+		if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
+			 && Level.DetailMode != DM_Low && !PhysicsVolume.bWaterVolume )  {
 			// xEmitter
 			if ( Trail.xEmitterClass != None )  {
 				Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
@@ -471,9 +474,10 @@ simulated event PostBeginPlay()
 	// DynamicLight
     if ( bDynamicLight && Level.NetMode != NM_DedicatedServer )  {
 		PC = Level.GetLocalPlayerController();
-		if ( PC == None || PC.ViewTarget == None || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0 )  {
+		if ( PC == None || PC.ViewTarget == None || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0
+			 || Level.DetailMode == DM_Low )  {
 			LightType = LT_None;
-			bDynamicLight = false;
+			bDynamicLight = False;
 		}
 	}
 	bReadyToSplash = True;
@@ -662,6 +666,7 @@ simulated function SpawnHitEffects(
 
 simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
+simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
 
 simulated function bool CanHurtPawn( Pawn P )
 {
@@ -677,11 +682,12 @@ simulated function bool CanHurtPawn( Pawn P )
 simulated function ProcessHitActor( 
 	Actor				A, 
 	Vector				HitLocation,
+	Vector				HitNormal,
 	float				DamageAmount, 
 	float				MomentumAmount, 
 	class<DamageType>	DmgType )
 {
-	local	Vector	VelNormal;
+	local	Vector	VelNormal, HitNormal;
 	local	float	EnergyLoss;
 	local	Pawn	P;
 	
@@ -714,9 +720,9 @@ simulated function ProcessHitActor(
 		else
 			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
 	}
-	
+
 	// Hit effects
-	SpawnHitEffects(Location, Normal(HitLocation - A.Location), ,A);
+	SpawnHitEffects(Location, HitNormal, ,A);
 	
 	// Damage
 	if ( Role == ROLE_Authority )  {
@@ -730,6 +736,8 @@ simulated function ProcessHitActor(
 	// Updating Projectile
 	if ( P != None )
 		UpdateProjectilePerformance(True, EnergyLoss);
+	else if ( Mover(A) != None )
+		ProcessHitWall(HitNormal);
 }
 
 simulated function bool CanHitThisActor( Actor A )
@@ -748,32 +756,37 @@ simulated function bool CanHitThisActor( Actor A )
 		Return False;
 	
 	P = Pawn(A);
-	/*if ( P == None )
-		P = Pawn(A.Base);*/
+	if ( P == None )
+		P = Pawn(A.Base);
 	
-	if ( A == Instigator || A.Base == Instigator || (P != None && Instigator != None && TeamGame(Level.Game) != None
-			&& TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
+	if ( Instigator != None && (A == Instigator || A.Base == Instigator || (P != None 
+			 && TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0
+			 && P.GetTeamNum() == Instigator.GetTeamNum())) )
 		Return False;
 	
 	Return True;
 }
 
-simulated function ProcessTouch( Actor Other, Vector HitLocation )
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = Other;
 	if ( CanHitThisActor(Other) )
-		ProcessHitActor(Other, HitLocation, Damage, MomentumTransfer, MyDamageType);
+		ProcessHitActor(Other, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
 	
 	LastTouched = None;
 }
 
 simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
+	/*
 	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
+		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  { */
+	if ( A != None && !A.bDeleteMe && A != LastTouched
 		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.IsA('Mover') 
-			 || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
 			TouchLocation = Location;
+			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
+		}
 		
 		Return True;
 	}
@@ -784,10 +797,10 @@ simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, op
 // Called when the actor's collision hull is touching another actor's collision hull.
 simulated singular event Touch( Actor Other )
 {
-	local	Vector	TouchLocation;
+	local	Vector	TouchLocation, TouchNormal;
 
-	if ( CanTouchThisActor(Other, TouchLocation) )
-		ProcessTouch(Other, TouchLocation);
+	if ( CanTouchThisActor(Other, TouchLocation, TouchNormal) )
+		ProcessTouchActor(Other, TouchLocation, TouchNormal);
 }
 
 
@@ -828,11 +841,11 @@ simulated function ProcessHitWall( Vector HitNormal )
 			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
 			// Decreasing performance
 			UpdateProjectilePerformance(True);
-			// If Speed less than MinSpeed start falling
-			if ( Speed < MinSpeed )  {
-				bBounce = False;
+			if ( Physics == default.Physics )
 				SetPhysics(PHYS_Falling);
-			}
+			
+			if ( Speed <= MinSpeed )
+				bBounce = False;
 			
 			Return;
 		}
@@ -871,7 +884,7 @@ simulated function ProcessLanded( vector HitNormal )
 simulated event Landed( vector HitNormal )
 {
 	UpdateProjectilePerformance(True);
-	if ( Speed >= MinSpeed )
+	if ( Speed > MinSpeed )
 		HitWall(HitNormal, None);
 	else
 		ProcessLanded(HitNormal);

@@ -140,16 +140,17 @@ simulated event Landed( vector HitNormal )
 }
 
 // TakeDamage must be simulated because it is a bNetTemporary actor
-simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+//simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex)
 {
 	local	int		i;
 
-	if ( Monster(InstigatedBy) != None || InstigatedBy == Instigator ||
+	if ( Monster(EventInstigator) != None || EventInstigator == Instigator ||
 		 (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
 		if ( DisintegrateDamageTypes.Length > 0 )  {
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
-				if ( damageType == DisintegrateDamageTypes[i] )  {
+				if ( DamageType == DisintegrateDamageTypes[i] )  {
 					if ( bCanDisintegrate )
 						Disintegrate(HitLocation, vect(0.0, 0.0, 1.0));
 					

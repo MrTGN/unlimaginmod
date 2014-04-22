@@ -837,15 +837,15 @@ simulated function ProcessHitWall( Vector HitNormal )
 			f = BounceBonus / ExpansionCoefficient;
 			//Todo: думаю, что это нужно убрать
 			// Projectile has entered into the surface but not stuck into it. Projectile should lose more speed.
-			if ( EnergyByNormal > ImpactSurfaces[ST].ImpactStrength )
-				f *= EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
+			//if ( EnergyByNormal > ImpactSurfaces[ST].ImpactStrength )
+			//	f *= EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
 			
+			if ( Physics == PHYS_Projectile )
+				SetPhysics(PHYS_Falling);
 			// Mirroring Velocity Vector by HitNormal with lossy
 			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
 			// Decreasing performance
 			UpdateProjectilePerformance(True);
-			if ( Physics == PHYS_Projectile )
-				SetPhysics(PHYS_Falling);
 			if ( Speed <= MinSpeed )
 				bBounce = False;
 			
@@ -959,6 +959,7 @@ defaultproperties
      InitialAccelerationTime=0.100000
 	 //[block] Ballistic performance
 	 BounceBonus=1.0
+	 ExpansionCoefficient=1.0
 	 SpeedDropInWaterCoefficient=0.850000
 	 FullStopSpeedCoefficient=0.090000
 	 Speed=0.000000

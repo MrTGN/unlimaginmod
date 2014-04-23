@@ -23,9 +23,6 @@ class UM_Monster extends KFMonster
 //========================================================================
 //[block] Variables
 
-//New variable for ExtendedCollisionClass to fix "Accessed None 'MyExtCollision'"
-var		class<ExtendedZCollision>	ExtendedCollisionClass;
-
 var(Ballistic)	float	EnergyToPenetrateHead, EnergyToPenetrateBody;
 
 var				bool	bRandomSizeAdjusted;
@@ -44,6 +41,9 @@ var(MiniBoss)	float	MiniBossSpeedChance, MiniBossMaxSpeedScale;
 var(MiniBoss)	float	ExtraSizesChance, MinExtraSizeScale, MaxExtraSizeScale;
 var(MiniBoss)	float	MiniBossHealthsChance, MiniBossMaxHealthScale, MiniBossMaxHeadHealthScale;
 
+var		class<UM_ExtendedZCollision>	ExtendedCollisionClass;
+var		UM_ExtendedZCollision			ExtendedCollision;
+
 //[end] Varibles
 //====================================================================
 
@@ -54,6 +54,9 @@ replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		EnergyToPenetrateHead, EnergyToPenetrateBody, bThisIsMiniBoss;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		ExtendedCollision;
 }
 
 //[end] Replication
@@ -127,14 +130,13 @@ simulated event PostBeginPlay()
 {
 	local	float	RandMult;
 	local	float	MovementSpeedDifficultyScale;
-	local	vector	AttachPos;
 	
 	if ( ROLE == ROLE_Authority )  {
 		if ( ControllerClass != None && Controller == None )
 			Controller = Spawn(ControllerClass);
 
 		if ( Controller != None )
-			Controller.Possess(self);
+			Controller.Possess(Self);
 
 		SplashTime = 0;
 		SpawnTime = Level.TimeSeconds;
@@ -143,20 +145,15 @@ simulated event PostBeginPlay()
 		
 		if ( HealthModifer != 0 )
 			Health = HealthModifer;
-
-		if ( bUseExtendedCollision && MyExtCollision == None )  {
-			if ( ExtendedCollisionClass != None )
-				MyExtCollision = Spawn(ExtendedCollisionClass, Self);
-			else
-				MyExtCollision = Spawn(class'KFMod.ExtendedZCollision',self);
-	
-			MyExtCollision.SetCollisionSize(ColRadius,ColHeight);
-			MyExtCollision.bHardAttach = true;
-			AttachPos = Location + (ColOffset >> Rotation);
-			MyExtCollision.SetLocation( AttachPos );
-			MyExtCollision.SetPhysics( PHYS_None );
-			MyExtCollision.SetBase( self );
-			SavedExtCollision = MyExtCollision.bCollideActors;
+		
+		if ( bUseExtendedCollision && ExtendedCollision == None && ExtendedCollisionClass != None )  {
+			ExtendedCollision = Spawn(ExtendedCollisionClass, Self);
+			ExtendedCollision.SetCollisionSize(ColRadius, ColHeight);
+			ExtendedCollision.bHardAttach = True;
+			ExtendedCollision.SetLocation( Location + (ColOffset >> Rotation) );
+			ExtendedCollision.SetPhysics( PHYS_None );
+			ExtendedCollision.SetBase( Self );
+			SavedExtCollision = ExtendedCollision.bCollideActors;
 		}
 	}
 
@@ -279,6 +276,33 @@ simulated final function float GetPenetrationEnergyLoss(optional bool bIsHeadSho
 		Return EnergyToPenetrateHead;
 	else
 		Return EnergyToPenetrateBody;
+}
+
+// Setters for extra collision cylinders
+simulated function ToggleAuxCollision( bool NewbCollision )
+{
+	if ( !NewbCollision )
+		SavedExtCollision = ExtendedCollision.bCollideActors;
+		ExtendedCollision.SetCollision(False);
+	}
+	else
+		ExtendedCollision.SetCollision(SavedExtCollision);
+}
+
+simulated function PlayDyingAnimation( Class<DamageType> DamageType, Vector HitLoc )
+{
+	if ( ExtendedCollision != None )
+		ExtendedCollision.Destroy();
+	
+	Super.PlayDyingAnimation(DamageType, HitLoc );
+}
+
+simulated function Destroyed()
+{
+	if ( ExtendedCollision != None )
+		ExtendedCollision.Destroy();
+	
+	Super.Destroyed();
 }
 
 // Scales the damage this Zed deals by the difficulty level
@@ -1006,7 +1030,7 @@ defaultproperties
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-	 ExtendedCollisionClass=Class'KFMod.ExtendedZCollision'
+	 ExtendedCollisionClass=Class'UnlimaginMod.UM_ExtendedZCollision'
 	 EnergyToPenetrateHead=380.000000
      EnergyToPenetrateBody=520.000000
 	 ControllerClass=Class'UnlimaginMod.UM_KFMonsterController'

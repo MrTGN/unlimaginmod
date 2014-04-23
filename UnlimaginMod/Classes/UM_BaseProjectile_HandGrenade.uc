@@ -100,47 +100,46 @@ simulated event Destroyed()
 
 defaultproperties
 {
-     //Todo: подумать, как все это в ImpactSurfaces переделать.
 	 // EST_Default
-	 ImpactSurfaces(0)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(0)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
 	 // EST_Rock
-	 ImpactSurfaces(1)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(1)=(FrictionCoefficient=0.58,PlasticityCoefficient=0.5)
 	 // EST_Dirt
-	 ImpactSurfaces(2)=(FrictionCoefficient=0.32,PlasticityCoefficient=0.12)
+	 ImpactSurfaces(2)=(FrictionCoefficient=0.42,PlasticityCoefficient=0.22)
 	 // EST_Metal
-	 ImpactSurfaces(3)=(FrictionCoefficient=0.54,PlasticityCoefficient=0.35)
+	 ImpactSurfaces(3)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.45)
 	 // EST_Wood
-	 ImpactSurfaces(4)=(FrictionCoefficient=0.42,PlasticityCoefficient=0.24)
+	 ImpactSurfaces(4)=(FrictionCoefficient=0.51,PlasticityCoefficient=0.34)
 	 // EST_Plant
-	 ImpactSurfaces(5)=(FrictionCoefficient=0.37,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(5)=(FrictionCoefficient=0.44,PlasticityCoefficient=0.3)
 	 // EST_Flesh
-	 ImpactSurfaces(6)=(FrictionCoefficient=0.36,PlasticityCoefficient=0.19)
+	 ImpactSurfaces(6)=(FrictionCoefficient=0.44,PlasticityCoefficient=0.29)
 	 // EST_Ice
-	 ImpactSurfaces(7)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.38)
+	 ImpactSurfaces(7)=(FrictionCoefficient=0.7,PlasticityCoefficient=0.45)
 	 // EST_Snow
-	 ImpactSurfaces(8)=(FrictionCoefficient=0.38,PlasticityCoefficient=0.22)
+	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.31)
 	 // EST_Water
-	 ImpactSurfaces(9)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(9)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
 	 // EST_Glass
-	 ImpactSurfaces(10)=(FrictionCoefficient=0.54,PlasticityCoefficient=0.38)
+	 ImpactSurfaces(10)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.46)
 	 // EST_Gravel
-	 ImpactSurfaces(11)=(FrictionCoefficient=0.39,PlasticityCoefficient=0.24)
+	 ImpactSurfaces(11)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.34)
 	 // EST_Concrete
-	 ImpactSurfaces(12)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(12)=(FrictionCoefficient=0.55,PlasticityCoefficient=0.4)
 	 // EST_HollowWood
-	 ImpactSurfaces(13)=(FrictionCoefficient=0.42,PlasticityCoefficient=0.24)
+	 ImpactSurfaces(13)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
 	 // EST_Mud
-	 ImpactSurfaces(14)=(FrictionCoefficient=0.3,PlasticityCoefficient=0.1)
+	 ImpactSurfaces(14)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 // EST_MetalArmor
-	 ImpactSurfaces(15)=(FrictionCoefficient=0.56,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(15)=(FrictionCoefficient=0.65,PlasticityCoefficient=0.5)
 	 // EST_Paper
-	 ImpactSurfaces(16)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.24)
+	 ImpactSurfaces(16)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
 	 // EST_Cloth
-	 ImpactSurfaces(17)=(FrictionCoefficient=0.3,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(17)=(FrictionCoefficient=0.45,PlasticityCoefficient=0.3)
 	 // EST_Rubber
-	 ImpactSurfaces(18)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(18)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
 	 // EST_Poop
-	 ImpactSurfaces(19)=(FrictionCoefficient=0.3,PlasticityCoefficient=0.1)
+	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 ProjectileDiameter=56.0
 	 bRotateToDesired=True
 	 FearMarkerClass=Class'AvoidMarker'
@@ -149,7 +148,6 @@ defaultproperties
 	 TransientSoundVolume=2.000000
 	 DisintegrateSound=(Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplodeSound=(Vol=2.0,Radius=400.0,bUse3D=True)
-	 bIgnoreBulletWhipAttachment=True
 	 //ExplodeTimer	 
 	 ExplodeTimer=2.000000
 	 //Shrapnel
@@ -158,7 +156,7 @@ defaultproperties
 	 MinShrapnelAmount=5
 	 //Speed
 	 SpeedDropInWaterCoefficient=0.600000
-	 FullStopSpeedCoefficient=0.150000
+	 FullStopSpeedCoefficient=0.120000
 	 //Ballistic performance randomization percent
 	 BallisticRandPercent=20.000000
 	 BounceEnergyReduction=0.350000

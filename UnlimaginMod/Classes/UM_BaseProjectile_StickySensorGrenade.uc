@@ -28,12 +28,6 @@ var		float		DetectionRadius;	// How far away to detect enemies
 //====================================================================
 
 //========================================================================
-//[block] Replication
-
-//[end] Replication
-//====================================================================
-
-//========================================================================
 //[block] Functions
 
 simulated event PostNetBeginPlay()
@@ -48,8 +42,6 @@ simulated event PostNetBeginPlay()
 
 event Timer()
 {
-	local	bool	bFriendlyPawnDetected;
-	
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
@@ -64,10 +56,9 @@ event Timer()
 		// Armed
 		else  {
 			bEnemyDetected = MonsterIsInRadius(DamageRadius);
-			bFriendlyPawnDetected = FriendlyPawnIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !bFriendlyPawnDetected )
-					Explode(Location, vect(0,0,1));
+				if ( !FriendlyPawnIsInRadius(DamageRadius) )
+					Explode(Location, Normal(Vector(Rotation)));
 				else if ( BeepSound.Snd != None )
 					ServerPlaySoundData(BeepSound);
 			}
@@ -87,13 +78,11 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 		SetTimer(ExplodeTimer, True);
 		bTimerSet = True;
 	}
-	
 	Super.Stick(HitActor, HitLocation, HitNormal);
 }
 
 //[end] Functions
 //====================================================================
-
 
 defaultproperties
 {

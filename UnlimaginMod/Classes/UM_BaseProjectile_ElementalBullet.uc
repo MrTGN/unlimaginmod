@@ -31,7 +31,7 @@ var		bool		bCanDisintegrate;
 
 replication
 {
-	unreliable if ( Role == ROLE_Authority && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		bCanDisintegrate;
 }
 
@@ -151,14 +151,14 @@ simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation,
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
 				if ( DamageType == DisintegrateDamageTypes[i] )  {
 					if ( bCanDisintegrate )
-						Disintegrate(HitLocation, vect(0.0, 0.0, 1.0));
+						Disintegrate(HitLocation, Normal(Vector(Rotation)));
 					
 					Return;
 				}
 			}
 		}
 		
-		Explode(HitLocation, vect(0.0, 0.0, 1.0));
+		Explode(HitLocation, Normal(Vector(Rotation)));
 	}
 }
 

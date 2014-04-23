@@ -17,14 +17,31 @@
 class UM_BaseProjectile_StickyRMCGrenade extends UM_BaseProjectile_StickyGrenade
 	Abstract;
 
+//========================================================================
+//[block] Variables
+
+var		bool	bDelayedExplode;
+var		float	DelayedExplodeTimer;
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Functions
 
 event Timer()
 {
 	if ( IsArmed() )  {
 		if ( !FriendlyPawnIsInRadius(DamageRadius) )
-			Explode(Location, vect(0,0,1));
-		else if ( BeepSound.Snd != None )
-			ServerPlaySoundData(BeepSound);
+			Explode(Location, Normal(Vector(Rotation)));
+		else  { 
+			if ( !bDelayedExplode )  {
+				bDelayedExplode = True;
+				SetTimer(DelayedExplodeTimer, True);
+			}
+			if ( BeepSound.Snd != None )
+				ServerPlaySoundData(BeepSound);
+		}
 	}
 	else
 		Destroy();
@@ -34,12 +51,17 @@ function Activate()
 {
 	if ( BeepSound.Snd != None )
 		ServerPlaySoundData(BeepSound, 1.5);
+	
 	SetTimer(ExplodeTimer, True);
 }
 
+//[end] Functions
+//====================================================================
+
 defaultproperties
 {
-	 ExplodeTimer=0.160000
+	 ExplodeTimer=0.150000
+	 DelayedExplodeTimer=0.200000
 	 Damage=280.000000
 	 DamageRadius=330.000000
 	 MomentumTransfer=50000.000000

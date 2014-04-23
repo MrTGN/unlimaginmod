@@ -96,6 +96,17 @@ simulated event PostNetReceive()
 	Super.PostNetReceive();
 }
 
+simulated function UnStick()
+{
+	bStuck = False;
+	bCollideWorld = True;
+	PrePivot = default.PrePivot;
+	bOrientToVelocity = True;
+	SetPhysics(PHYS_Falling);
+	if ( IsInState('Stuck') )
+		GotoState('');
+}
+
 simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 {
 	local	name		NearestBone;
@@ -106,8 +117,10 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	
 	bStuck = True;
 	bCollideWorld = False;
-	SetPhysics(PHYS_None);
 	DestroyTrail();
+	bOrientToVelocity = False;
+	PrePivot = GetCollisionExtent() * LandedPrePivotCollisionScale;
+	SetPhysics(PHYS_None);
 	
 	if ( Pawn(A) != None )  {
 		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
@@ -118,12 +131,8 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	
 	SpawnHitEffects(HitLocation, HitNormal, ,A);
 	
-	if ( Base == None )  {
-		bStuck = False;
-		bCollideWorld = True;
-		SetPhysics(PHYS_Falling);
-		Return;
-	}
+	if ( Base == None )
+		UnStick();
 	else
 		GoToState('Stuck');
 }
@@ -137,7 +146,6 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 	LastTouched = None;
 }
 
-//simulated singular event HitWall( vector HitNormal, actor Wall )
 simulated event HitWall( vector HitNormal, actor Wall )
 {
 	if ( !bStuck )
@@ -153,21 +161,10 @@ state Stuck
 {
 	Ignores HitWall, Landed, ProcessTouchActor, Stick;
 	
-	/*
-	simulated event BeginState()
-	{
-		//log(self$": Grenade is in the Stuck State.");
-	} */
-	
 	simulated event BaseChange()
 	{
 		if ( Base == None )
-		{
-			bStuck = False;
-			bCollideWorld = True;
-			SetPhysics(PHYS_Falling);
-			GotoState('');
-		}
+			UnStick();
 	}
 }
 

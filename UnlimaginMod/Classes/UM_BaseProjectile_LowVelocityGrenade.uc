@@ -32,7 +32,7 @@ var		bool		bDisarmed;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		TimeToStartFalling;
 }
 
@@ -148,31 +148,31 @@ defaultproperties
 	 // EST_Default
 	 ImpactSurfaces(0)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
 	 // EST_Rock
-	 ImpactSurfaces(1)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(1)=(FrictionCoefficient=0.58,PlasticityCoefficient=0.5)
 	 // EST_Dirt
 	 ImpactSurfaces(2)=(FrictionCoefficient=0.42,PlasticityCoefficient=0.22)
 	 // EST_Metal
 	 ImpactSurfaces(3)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.45)
 	 // EST_Wood
-	 ImpactSurfaces(4)=(FrictionCoefficient=0.52,PlasticityCoefficient=0.34)
+	 ImpactSurfaces(4)=(FrictionCoefficient=0.51,PlasticityCoefficient=0.34)
 	 // EST_Plant
-	 ImpactSurfaces(5)=(FrictionCoefficient=0.47,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(5)=(FrictionCoefficient=0.44,PlasticityCoefficient=0.3)
 	 // EST_Flesh
-	 ImpactSurfaces(6)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.29)
+	 ImpactSurfaces(6)=(FrictionCoefficient=0.44,PlasticityCoefficient=0.29)
 	 // EST_Ice
-	 ImpactSurfaces(7)=(FrictionCoefficient=0.7,PlasticityCoefficient=0.48)
+	 ImpactSurfaces(7)=(FrictionCoefficient=0.7,PlasticityCoefficient=0.45)
 	 // EST_Snow
-	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.32)
+	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.31)
 	 // EST_Water
 	 ImpactSurfaces(9)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
 	 // EST_Glass
-	 ImpactSurfaces(10)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.48)
+	 ImpactSurfaces(10)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.46)
 	 // EST_Gravel
-	 ImpactSurfaces(11)=(FrictionCoefficient=0.49,PlasticityCoefficient=0.34)
+	 ImpactSurfaces(11)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.34)
 	 // EST_Concrete
-	 ImpactSurfaces(12)=(FrictionCoefficient=0.56,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(12)=(FrictionCoefficient=0.55,PlasticityCoefficient=0.4)
 	 // EST_HollowWood
-	 ImpactSurfaces(13)=(FrictionCoefficient=0.52,PlasticityCoefficient=0.34)
+	 ImpactSurfaces(13)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
 	 // EST_Mud
 	 ImpactSurfaces(14)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 // EST_MetalArmor
@@ -180,7 +180,7 @@ defaultproperties
 	 // EST_Paper
 	 ImpactSurfaces(16)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
 	 // EST_Cloth
-	 ImpactSurfaces(17)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(17)=(FrictionCoefficient=0.45,PlasticityCoefficient=0.3)
 	 // EST_Rubber
 	 ImpactSurfaces(18)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
 	 // EST_Poop
@@ -207,7 +207,6 @@ defaultproperties
 	 bOrientToVelocity=True
 	 //bOrientOnSlope=True	// when landing, orient base on slope of floor
 	 Physics=PHYS_Projectile
-	 bIgnoreBulletWhipAttachment=True
 	 UpdateTimeDelay=0.100000
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000

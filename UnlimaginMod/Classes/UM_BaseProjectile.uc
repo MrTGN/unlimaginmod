@@ -81,6 +81,7 @@ var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
 // Logging
 var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
+var				bool		bFriendlyFireIsAllowed;	// Friendly fire is allowed or not. Replicates from the server to the clients.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
 var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
@@ -109,8 +110,6 @@ var(Ballistic)	float		EffectiveRange, MaxEffectiveRange;	// EffectiveRange and M
 var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic performance randomization
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
-var				Vector		LandedPrePivot;
-var				bool		bIgnoreBulletWhipAttachment;
 
 var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
 var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
@@ -131,6 +130,7 @@ var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.Projec
 var(Ballistic)	float		PenetrationEnergyReduction;	// Standard penetration energy reduction (must be < 1.000000 )
 var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction (must be < 1.000000 )
 var				float		BounceBonus;
+var				float		LandedPrePivotCollisionScale;
 //[end]
 
 //[block] Effects
@@ -153,7 +153,10 @@ var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in 
 
 replication
 {
-    reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
+    reliable if ( Role == ROLE_Authority && bNetDirty )
+		bFriendlyFireIsAllowed;
+	
+	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
 		SpawnTime;
 	
 	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetInitial )
@@ -337,6 +340,10 @@ simulated event PreBeginPlay()
 	if ( !default.bDefaultPropertiesCalculated )
 		CalcDefaultProperties();
 
+	// Level.Game variable exists only on the server-side
+	if ( Role == ROLE_Authority )
+		bFriendlyFireIsAllowed = TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0;
+	
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
 	
@@ -552,6 +559,18 @@ simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 		GotoState('InTheWater');
 }
 
+// Server only function because Level.Game variable exists only on the server-side
+function bool CanHurtPawn( Pawn P )
+{
+	// Do not damage a friendly Pawn
+	if ( P == None || (!bCanHurtOwner && P == Instigator) 
+		 || (Instigator != None && P != Instigator && TeamGame(Level.Game) != None
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
+		Return False;
+	
+	Return True;
+}
+
 function HurtRadius( 
  float				DamageAmount, 
  float				DamageRadius,
@@ -572,10 +591,16 @@ function BlowUp(vector HitLocation) {}
 
 simulated function Explode(vector HitLocation, vector HitNormal) {}
 
-
+// Use this function for the Veterancy Penetration Bonus
 simulated function float GetPenetrationBonus()
 {
 	Return 1.0;
+}
+
+// Use this function for the Veterancy Bounce Bonus
+simulated function float GetBounceBonus()
+{
+	Return BounceBonus;
 }
 
 // Called when the projectile has lost all energy
@@ -600,15 +625,12 @@ simulated function UpdateProjectilePerformance(
  optional	bool		bForceUpdate,
  optional	float		EnergyLoss )
 {
-	//local	vector	VelNormal;
 	local	float	LastProjectileEnergy;
 	
 	if ( !bForceUpdate && Level.TimeSeconds < NextProjectileUpdateTime )
 		Return;
 		
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
-	// Rotation Update
-	//SetRotation(Rotator(Normal(Velocity)));
 	// Performance update
 	if ( ProjectileEnergy > 0.0 )  {
 		LastProjectileEnergy = ProjectileEnergy;
@@ -617,9 +639,7 @@ simulated function UpdateProjectilePerformance(
 			if ( EnergyLoss < ProjectileEnergy )  {
 				ProjectileEnergy -= EnergyLoss;
 				Speed = Sqrt(ProjectileEnergy * EnergyToSpeedSquared);
-				//Velocity = Speed * VelNormal;
 				Velocity = Speed * Normal(Velocity);
-				//Velocity = Speed * Vector(Rotation);
 			}
 			else
 				ZeroProjectileEnergy();	// Lose all Energy
@@ -629,7 +649,6 @@ simulated function UpdateProjectilePerformance(
 			Speed = VSize(Velocity);
 			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
 		}
-		
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}
 	else
@@ -668,17 +687,6 @@ simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
 
-simulated function bool CanHurtPawn( Pawn P )
-{
-	// Do not damage a friendly Pawn
-	if ( P == None || (!bCanHurtOwner && P == Instigator) 
-		 || (Instigator != None && P != Instigator && TeamGame(Level.Game) != None
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
-		Return False;
-	
-	Return True;
-}
-
 simulated function ProcessHitActor( 
 	Actor				A, 
 	Vector				HitLocation,
@@ -700,9 +708,6 @@ simulated function ProcessHitActor(
 	VelNormal = Normal(Velocity);
 	
 	P = Pawn(A);
-	/*if ( P == None )
-		P = Pawn(A.Base);*/
-	
 	// If projectile hit a Pawn
 	if ( P != None )  {
 		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
@@ -722,7 +727,9 @@ simulated function ProcessHitActor(
 	}
 
 	// Hit effects
-	SpawnHitEffects(Location, HitNormal, ,A);
+	// Mover Hit effect will be spawned in the ProcessHitWall function
+	if ( Mover(A) == None )
+		SpawnHitEffects(Location, HitNormal, ,A);
 	
 	// Damage
 	if ( Role == ROLE_Authority )  {
@@ -740,42 +747,32 @@ simulated function ProcessHitActor(
 		ProcessHitWall(HitNormal);
 }
 
-simulated function bool CanHitThisActor( Actor A )
+simulated function bool CanHitThisActor( out Actor A )
 {
 	local	Pawn	P;
-	// ROBulletWhipAttachment - Collision for projectiles whip sounds.
-	// ExtendedZCollision is a Killing Floor hack for a large zombies.
-	// This collisions is attached to Pawn owners.
-	/*
-	if ( (!bIgnoreBulletWhipAttachment && ROBulletWhipAttachment(A) != None) || ExtendedZCollision(A) != None )
-		P = Pawn(A.Base);
-	else
-		P = Pawn(A);
-	*/
-	if ( ROBulletWhipAttachment(A) != None || ExtendedZCollision(A) != None )
+
+	if ( ROBulletWhipAttachment(A) != None )
 		Return False;
 	
 	P = Pawn(A);
-	if ( P == None )
-		P = Pawn(A.Base);
-	
-	if ( Instigator != None && (A == Instigator || A.Base == Instigator || (P != None 
-			 && TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale <= 0.0
-			 && P.GetTeamNum() == Instigator.GetTeamNum())) )
+	if ( Instigator != None && (A == Instigator || A.Base == Instigator 
+			|| (P != None && !bFriendlyFireIsAllowed && P.GetTeamNum() == Instigator.GetTeamNum())) )
 		Return False;
 	
 	Return True;
 }
 
-simulated function bool CanTouchThisActor( Actor A, out vector TouchLocation, optional out vector TouchNormal )
+simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	/*
-	if ( A != None && !A.bDeleteMe && A != LastTouched && A.Base != LastTouched
-		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  { */
-	if ( A != None && !A.bDeleteMe && A != LastTouched
-		 && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
+	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
+		if ( LastTouched != None && (A == LastTouched || A.Base == LastTouched) )
+			Return False;
+		
+		if ( Pawn(A.Base) != None )
+			A = Pawn(A.Base);
+		
 		// If projectile is not moving or TraceThisActor did't hit the actor
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 2.0 * Velocity), (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
 		}
@@ -834,19 +831,16 @@ simulated function ProcessHitWall( Vector HitNormal )
 		
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			// Getting the bounce bonus
-			f = BounceBonus / ExpansionCoefficient;
-			//Todo: думаю, что это нужно убрать
-			// Projectile has entered into the surface but not stuck into it. Projectile should lose more speed.
-			//if ( EnergyByNormal > ImpactSurfaces[ST].ImpactStrength )
-			//	f *= EnergyByNormal / ImpactSurfaces[ST].ProjectileEnergyToStuck;
-			
-			if ( Physics == PHYS_Projectile )
-				SetPhysics(PHYS_Falling);
+			f = GetBounceBonus() / ExpansionCoefficient;
 			// Mirroring Velocity Vector by HitNormal with lossy
 			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
+			// Start Falling
+			if ( Physics == PHYS_Projectile )
+				SetPhysics(PHYS_Falling);
 			// Decreasing performance
 			UpdateProjectilePerformance(True);
-			if ( Speed <= MinSpeed )
+			// Landed on the next colliding with ground
+			if ( Speed < MinSpeed )
 				bBounce = False;
 			
 			Return;
@@ -877,9 +871,10 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 simulated event Landed( Vector HitNormal )
 {
 	DestroyTrail();
+	bOrientToVelocity = False;
 	Velocity = Vect(0.0, 0.0, 0.0);
 	Acceleration = Vect(0.0, 0.0, 0.0);
-	PrePivot = LandedPrePivot;
+	PrePivot = GetCollisionExtent() * LandedPrePivotCollisionScale;
 	SetPhysics(PHYS_None);
 }
 
@@ -947,7 +942,6 @@ defaultproperties
 	 bReplicateSpawnTime=False
 	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
-	 bIgnoreBulletWhipAttachment=False
 	 // Do not use TrueBallistics by default
 	 // Change it in the subclasses if you need TrueBallistics calculations
 	 // TrueBallistics
@@ -957,11 +951,12 @@ defaultproperties
 	 SpeedFudgeScale=1.000000
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
+	 LandedPrePivotCollisionScale=0.25
 	 //[block] Ballistic performance
-	 BounceBonus=1.0
-	 ExpansionCoefficient=1.0
+	 BounceBonus=1.000000
+	 ExpansionCoefficient=1.000000
 	 SpeedDropInWaterCoefficient=0.850000
-	 FullStopSpeedCoefficient=0.090000
+	 FullStopSpeedCoefficient=0.100000
 	 Speed=0.000000
 	 MaxSpeed=0.000000
 	 ProjectileDiameter=10.0
@@ -995,7 +990,6 @@ defaultproperties
      bUpdateSimulatedPosition=False
 	 //[end]
      //[block] Physics options.
-	 LandedPrePivot=(Z=-1.5)
 	 bCanRebound=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).

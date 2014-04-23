@@ -40,7 +40,7 @@ var		Emitter			GrenadeLight;
 
 replication
 {
-	reliable if ( bNetDirty && Role == ROLE_Authority )
+	reliable if ( Role == ROLE_Authority && bNetDirty )
 		bStuck;
 }
 
@@ -112,8 +112,6 @@ simulated event PostNetReceive()
 
 event Timer()
 {
-	local	bool	bFriendlyPawnDetected;
-	
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
@@ -128,10 +126,9 @@ event Timer()
 		// Armed
 		else  {
 			bEnemyDetected = MonsterIsInRadius(DamageRadius);
-			bFriendlyPawnDetected = FriendlyPawnIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !bFriendlyPawnDetected )
-					Explode(Location, vect(0,0,1));
+				if ( !FriendlyPawnIsInRadius(DamageRadius) )
+					Explode(Location, Normal(Vector(Rotation)));
 				else if ( BeepSound.Snd != None )
 					ServerPlaySoundData(BeepSound);
 			}
@@ -143,6 +140,17 @@ event Timer()
 	}
 	else
 		Destroy();
+}
+
+simulated function UnStick()
+{
+	bStuck = False;
+	bCollideWorld = True;
+	PrePivot = default.PrePivot;
+	bOrientToVelocity = True;
+	SetPhysics(PHYS_Falling);
+	if ( IsInState('Stuck') )
+		GotoState('');
 }
 
 simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
@@ -160,8 +168,10 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	
 	bStuck = True;
 	bCollideWorld = False;
-	SetPhysics(PHYS_None);
 	DestroyTrail();
+	bOrientToVelocity = False;
+	PrePivot = GetCollisionExtent() * LandedPrePivotCollisionScale;
+	SetPhysics(PHYS_None);
 
 	if ( Pawn(A) != None )  {
 		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
@@ -172,12 +182,8 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 
 	SpawnHitEffects(HitLocation, HitNormal, ,A);
 
-	if ( Base == None )  {
-		bStuck = False;
-		bCollideWorld = True;
-		SetPhysics(PHYS_Falling);
-		Return;
-	}
+	if ( Base == None )
+		UnStick();
 	else
 		GoToState('Stuck');
 }
@@ -191,7 +197,6 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 	LastTouched = None;
 }
 
-//simulated singular event HitWall( vector HitNormal, actor Wall )
 simulated event HitWall( vector HitNormal, Actor Wall )
 {
 	if ( !bStuck )
@@ -227,12 +232,8 @@ state Stuck
 	
 	simulated event BaseChange()
 	{
-		if ( Base == None )  {
-			bStuck = False;
-			bCollideWorld = True;
-			SetPhysics(PHYS_Falling);
-			GotoState('');
-		}
+		if ( Base == None )
+			UnStick();
 	}
 }
 

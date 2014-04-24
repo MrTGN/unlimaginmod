@@ -41,8 +41,8 @@ var(MiniBoss)	float	MiniBossSpeedChance, MiniBossMaxSpeedScale;
 var(MiniBoss)	float	ExtraSizesChance, MinExtraSizeScale, MaxExtraSizeScale;
 var(MiniBoss)	float	MiniBossHealthsChance, MiniBossMaxHealthScale, MiniBossMaxHeadHealthScale;
 
-var		class<UM_ExtendedZCollision>	ExtendedCollisionClass;
-var		UM_ExtendedZCollision			ExtendedCollision;
+var		class<UM_ExtendedCollision>		ExtendedCollisionClass;
+var		UM_ExtendedCollision			ExtendedCollision;
 
 //[end] Varibles
 //====================================================================
@@ -281,7 +281,7 @@ simulated final function float GetPenetrationEnergyLoss(optional bool bIsHeadSho
 // Setters for extra collision cylinders
 simulated function ToggleAuxCollision( bool NewbCollision )
 {
-	if ( !NewbCollision )
+	if ( !NewbCollision )  {
 		SavedExtCollision = ExtendedCollision.bCollideActors;
 		ExtendedCollision.SetCollision(False);
 	}
@@ -1030,7 +1030,7 @@ defaultproperties
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-	 ExtendedCollisionClass=Class'UnlimaginMod.UM_ExtendedZCollision'
+	 ExtendedCollisionClass=Class'UnlimaginMod.UM_ExtendedCollision'
 	 EnergyToPenetrateHead=380.000000
      EnergyToPenetrateBody=520.000000
 	 ControllerClass=Class'UnlimaginMod.UM_KFMonsterController'

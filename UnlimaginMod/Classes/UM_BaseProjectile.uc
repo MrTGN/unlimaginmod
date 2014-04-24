@@ -747,7 +747,7 @@ simulated function ProcessHitActor(
 		ProcessHitWall(HitNormal);
 }
 
-simulated function bool CanHitThisActor( out Actor A )
+simulated function bool CanHitThisActor( Actor A )
 {
 	local	Pawn	P;
 
@@ -769,10 +769,10 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 			Return False;
 		
 		if ( Pawn(A.Base) != None )
-			A = Pawn(A.Base);
+			A = A.Base;
 		
 		// If projectile is not moving or TraceThisActor did't hit the actor
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 2.0 * Velocity), (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
 		}

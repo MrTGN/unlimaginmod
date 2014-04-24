@@ -79,19 +79,7 @@ simulated function bool IsArmed()
 
 simulated event Tick( float DeltaTime )
 {
-	Super.Tick(DeltaTime);
-	
-	/*
-	if ( Velocity != Vect(0.0, 0.0, 0.0)
-		 && (Physics == default.Physics || Physics == PHYS_Falling)
-		 && Level.TimeSeconds > NextProjectileUpdateTime )  {
-		// Updating Projectile
-		UpdateProjectilePerformance();
-		// Time to start falling
-		if ( Physics == default.Physics && TimeToStartFalling > 0.0 
-			 && Level.TimeSeconds >= TimeToStartFalling )
-			SetPhysics(PHYS_Falling);
-	} */
+	// Start falling
 	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
 		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
 		SetPhysics(PHYS_Falling);
@@ -99,10 +87,8 @@ simulated event Tick( float DeltaTime )
 
 simulated function Disarm()
 {
-	if ( !bDisarmed )  {
-		bDisarmed = True;
-		LifeSpan = 1.0;
-	}
+	bDisarmed = True;
+	LifeSpan = 1.0;
 }
 
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )

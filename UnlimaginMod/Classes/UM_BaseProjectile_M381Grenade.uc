@@ -18,6 +18,45 @@ class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_LowVelocityGrenade
 	Abstract;
 
 
+//========================================================================
+//[block] Variables
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
+
+//[end] Replication
+//====================================================================
+
+//========================================================================
+//[block] Functions
+
+simulated function CalcDefaultProperties()
+{
+	Super.CalcDefaultProperties();
+	
+}
+
+simulated event PostBeginPlay()
+{
+	
+	Super.PostBeginPlay();
+}
+
+// Detonator is armed
+simulated function bool IsArmed()
+{
+	if ( (Instigator != None && VSizeSquared(Instigator.Location - Location) < ArmingRange) )
+		Return False;
+	
+	Return Super.IsArmed();
+}
+
+//[end] Functions
+//====================================================================
+
 defaultproperties
 {
      BallisticCoefficient=0.132000

@@ -99,6 +99,9 @@ var(Headshots)	float				HeadShotDamageMult;	// Headshot damage multiplier
 
 var				SurfaceTypeImpactData		ImpactSurfaces[20];
 
+var				float		SurfaceTraceRange;
+var				Vector		CollisionExtent;
+var				float		LandedPrePivotCollisionScale;
 // Projectile Expansion Coefficient.
 // For FMJ bullets ExpansionCoefficient less then 1.01 (approximately 1.0)
 // For JHP and HP bullets ExpansionCoefficient more then 1.4
@@ -130,7 +133,6 @@ var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.Projec
 var(Ballistic)	float		PenetrationEnergyReduction;	// Standard penetration energy reduction (must be < 1.000000 )
 var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction (must be < 1.000000 )
 var				float		BounceBonus;
-var				float		LandedPrePivotCollisionScale;
 //[end]
 
 //[block] Effects
@@ -316,6 +318,13 @@ simulated function CalcDefaultProperties()
 			ProjectileEnergy = default.MuzzleEnergy;
 		}
 	}
+	
+	// CollisionExtent
+	default.CollisionExtent = GetCollisionExtent();
+	CollisionExtent = default.CollisionExtent;
+	// SurfaceTraceRange
+	default.SurfaceTraceRange = VSize(default.CollisionExtent) + 8.0;
+	SurfaceTraceRange = default.SurfaceTraceRange;
 	
 	// Logging
 	/* if ( bEnableLogging )
@@ -729,7 +738,7 @@ simulated function ProcessHitActor(
 	// Hit effects
 	// Mover Hit effect will be spawned in the ProcessHitWall function
 	if ( Mover(A) == None )
-		SpawnHitEffects(Location, HitNormal, ,A);
+		SpawnHitEffects(HitLocation, HitNormal, ,A);
 	
 	// Damage
 	if ( Role == ROLE_Authority )  {
@@ -772,7 +781,8 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 			A = A.Base;
 		
 		// If projectile is not moving or TraceThisActor did't hit the actor
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, Location, (Location - 2.0 * Velocity), GetCollisionExtent()) )  {
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 2.0 * Velocity), CollisionExtent) )  {
+			Log("TraceThisActor did't hit the actor. Trace end:" @(Location + Velocity) @"Trace start:" @(Location - 2.0 * Velocity) "Actor location:" @A.Location, Name);
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
 		}
@@ -818,18 +828,16 @@ simulated function ProcessHitWall( Vector HitNormal )
 	
 	if ( bCanRebound )  {
 		// Finding out surface material
-		Trace(VectVelDotNorm, TmpVect, (Location + Vector(Rotation) * 16.0), Location, false,, HitMat);
+		Trace(VectVelDotNorm, TmpVect, (Location + Normal(Velocity) * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
-		else
-			ST = EST_Default;
 		
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
 		EnergyByNormal = f * f * SpeedSquaredToEnergy;
-		VectVelDotNorm = HitNormal * f;
 		
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
+			VectVelDotNorm = HitNormal * f;
 			// Getting the bounce bonus
 			f = GetBounceBonus() / ExpansionCoefficient;
 			// Mirroring Velocity Vector by HitNormal with lossy
@@ -874,7 +882,7 @@ simulated event Landed( Vector HitNormal )
 	bOrientToVelocity = False;
 	Velocity = Vect(0.0, 0.0, 0.0);
 	Acceleration = Vect(0.0, 0.0, 0.0);
-	PrePivot = GetCollisionExtent() * LandedPrePivotCollisionScale;
+	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetPhysics(PHYS_None);
 }
 
@@ -896,45 +904,45 @@ simulated event Destroyed()
 defaultproperties
 {
 	 // EST_Default
-	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.8,PlasticityCoefficient=0.6)
+	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Rock
-	 ImpactSurfaces(1)=(ImpactStrength=1.3,FrictionCoefficient=0.8,PlasticityCoefficient=0.75)
+	 ImpactSurfaces(1)=(ImpactStrength=1.3,FrictionCoefficient=0.68,PlasticityCoefficient=0.6)
 	 // EST_Dirt
-	 ImpactSurfaces(2)=(ImpactStrength=0.01,FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(2)=(ImpactStrength=0.01,FrictionCoefficient=0.52,PlasticityCoefficient=0.32)
 	 // EST_Metal
-	 ImpactSurfaces(3)=(ImpactStrength=0.8,FrictionCoefficient=0.85,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(3)=(ImpactStrength=0.8,FrictionCoefficient=0.74,PlasticityCoefficient=0.55)
 	 // EST_Wood
-	 ImpactSurfaces(4)=(ImpactStrength=0.08,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(4)=(ImpactStrength=0.08,FrictionCoefficient=0.61,PlasticityCoefficient=0.44)
 	 // EST_Plant
-	 ImpactSurfaces(5)=(ImpactStrength=0.001,FrictionCoefficient=0.65,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(5)=(ImpactStrength=0.001,FrictionCoefficient=0.54,PlasticityCoefficient=0.4)
 	 // EST_Flesh
-	 ImpactSurfaces(6)=(ImpactStrength=0.025,FrictionCoefficient=0.6,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(6)=(ImpactStrength=0.025,FrictionCoefficient=0.54,PlasticityCoefficient=0.39)
 	 // EST_Ice
-	 ImpactSurfaces(7)=(ImpactStrength=0.1,FrictionCoefficient=0.95,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(7)=(ImpactStrength=0.1,FrictionCoefficient=0.8,PlasticityCoefficient=0.55)
 	 // EST_Snow
-	 ImpactSurfaces(8)=(ImpactStrength=0.01,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(8)=(ImpactStrength=0.01,FrictionCoefficient=0.58,PlasticityCoefficient=0.4)
 	 // EST_Water
-	 ImpactSurfaces(9)=(ImpactStrength=0.005,FrictionCoefficient=0.8,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(9)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.36)
 	 // EST_Glass
-	 ImpactSurfaces(10)=(ImpactStrength=0.5,FrictionCoefficient=0.9,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(10)=(ImpactStrength=0.5,FrictionCoefficient=0.74,PlasticityCoefficient=0.56)
 	 // EST_Gravel
-	 ImpactSurfaces(11)=(ImpactStrength=0.5,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(11)=(ImpactStrength=0.5,FrictionCoefficient=0.56,PlasticityCoefficient=0.43)
 	 // EST_Concrete
-	 ImpactSurfaces(12)=(ImpactStrength=1.0,FrictionCoefficient=0.75,PlasticityCoefficient=0.65)
+	 ImpactSurfaces(12)=(ImpactStrength=1.0,FrictionCoefficient=0.65,PlasticityCoefficient=0.5)
 	 // EST_HollowWood
-	 ImpactSurfaces(13)=(ImpactStrength=0.07,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(13)=(ImpactStrength=0.07,FrictionCoefficient=0.6,PlasticityCoefficient=0.44)
 	 // EST_Mud
-	 ImpactSurfaces(14)=(ImpactStrength=0.001,FrictionCoefficient=0.7,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(14)=(ImpactStrength=0.001,FrictionCoefficient=0.5,PlasticityCoefficient=0.3)
 	 // EST_MetalArmor
-	 ImpactSurfaces(15)=(ImpactStrength=1.2,FrictionCoefficient=0.8,PlasticityCoefficient=0.7)
+	 ImpactSurfaces(15)=(ImpactStrength=1.2,FrictionCoefficient=0.75,PlasticityCoefficient=0.6)
 	 // EST_Paper
-	 ImpactSurfaces(16)=(ImpactStrength=0.04,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(16)=(ImpactStrength=0.04,FrictionCoefficient=0.6,PlasticityCoefficient=0.44)
 	 // EST_Cloth
-	 ImpactSurfaces(17)=(ImpactStrength=0.005,FrictionCoefficient=0.7,PlasticityCoefficient=0.4)
+	 ImpactSurfaces(17)=(ImpactStrength=0.005,FrictionCoefficient=0.55,PlasticityCoefficient=0.41)
 	 // EST_Rubber
-	 ImpactSurfaces(18)=(ImpactStrength=0.05,FrictionCoefficient=0.7,PlasticityCoefficient=0.6)
+	 ImpactSurfaces(18)=(ImpactStrength=0.05,FrictionCoefficient=0.6,PlasticityCoefficient=0.5)
 	 // EST_Poop
-	 ImpactSurfaces(19)=(ImpactStrength=0.0005,FrictionCoefficient=0.7,PlasticityCoefficient=0.1)
+	 ImpactSurfaces(19)=(ImpactStrength=0.0005,FrictionCoefficient=0.5,PlasticityCoefficient=0.2)
 	 // This projectile can take damage from something
 	 bCanBeDamaged=False
 	 bEnableLogging=False

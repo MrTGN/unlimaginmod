@@ -40,24 +40,19 @@ var()	HitEffectData			HitEffects[20];
 //[block] Functions
 
 simulated function PlayHitEffects(
- optional	ESurfaceTypes	SurfaceType,  
+ optional	ESurfaceTypes	SurfaceType, 
  optional	float			NewHitSoundVolume, 
  optional	float			NewHitSoundRadius )
 {
-	local vector	HitLoc, HitNormal, TraceEnd;
-	local Material	HitMat;
+	local	Vector		HitLoc, HitNormal;
+	local	Material	HitMat;
 
 	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail && Level.DetailMode != DM_Low )  {
 		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[ST].Effect$" Particle Effect = "$HitEffects[ST].ParticleEffect$" TempEffect = "$HitEffects[ST].TempEffect);
 		//log("
-		TraceEnd = Location + Vector(Rotation) * 20;
-		Trace(HitLoc, HitNormal, TraceEnd, Location, false,, HitMat);
+		Trace(HitLoc, HitNormal, (Location + Vector(Rotation) * 20.0), Location, false,, HitMat);
 		
-		if ( SurfaceType < ArrayCount(HitEffects) )  {
-			if ( SurfaceType == EST_Default && HitMat != None )
-				SurfaceType = ESurfaceTypes(HitMat.SurfaceType);
-		}
-		else  {
+		if ( SurfaceType == EST_Default || SurfaceType >= ArrayCount(HitEffects) )  {
 			if ( HitMat != None )
 				SurfaceType = ESurfaceTypes(HitMat.SurfaceType);
 			else
@@ -90,7 +85,7 @@ simulated function PlayHitEffects(
 
 		if ( HitEffects[SurfaceType].HitEffect != None )  {
 			if ( HitLoc != vect(0,0,0) )
-				Spawn(HitEffects[SurfaceType].HitEffect,,, HitLoc, rotator(HitNormal));
+				Spawn(HitEffects[SurfaceType].HitEffect,,, HitLoc, Rotator(HitNormal));
 			else
 				Spawn(HitEffects[SurfaceType].HitEffect,,, Location, Rotation);
 		}

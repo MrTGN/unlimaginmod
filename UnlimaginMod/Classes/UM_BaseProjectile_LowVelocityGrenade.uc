@@ -148,13 +148,13 @@ defaultproperties
 	 // EST_Ice
 	 ImpactSurfaces(7)=(FrictionCoefficient=0.7,PlasticityCoefficient=0.45)
 	 // EST_Snow
-	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.31)
+	 ImpactSurfaces(8)=(FrictionCoefficient=0.48,PlasticityCoefficient=0.3)
 	 // EST_Water
-	 ImpactSurfaces(9)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(9)=(FrictionCoefficient=0.6,PlasticityCoefficient=0.26)
 	 // EST_Glass
 	 ImpactSurfaces(10)=(FrictionCoefficient=0.64,PlasticityCoefficient=0.46)
 	 // EST_Gravel
-	 ImpactSurfaces(11)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.34)
+	 ImpactSurfaces(11)=(FrictionCoefficient=0.46,PlasticityCoefficient=0.33)
 	 // EST_Concrete
 	 ImpactSurfaces(12)=(FrictionCoefficient=0.55,PlasticityCoefficient=0.4)
 	 // EST_HollowWood
@@ -162,15 +162,15 @@ defaultproperties
 	 // EST_Mud
 	 ImpactSurfaces(14)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
 	 // EST_MetalArmor
-	 ImpactSurfaces(15)=(FrictionCoefficient=0.66,PlasticityCoefficient=0.5)
+	 ImpactSurfaces(15)=(FrictionCoefficient=0.65,PlasticityCoefficient=0.5)
 	 // EST_Paper
 	 ImpactSurfaces(16)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.34)
 	 // EST_Cloth
-	 ImpactSurfaces(17)=(FrictionCoefficient=0.45,PlasticityCoefficient=0.3)
+	 ImpactSurfaces(17)=(FrictionCoefficient=0.45,PlasticityCoefficient=0.31)
 	 // EST_Rubber
 	 ImpactSurfaces(18)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
 	 // EST_Poop
-	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.2)
+	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.1)
 	 bIgnoreSameClassProj=True
 	 ProjectileDiameter=40.0
 	 //Shrapnel

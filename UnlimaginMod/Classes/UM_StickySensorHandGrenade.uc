@@ -170,7 +170,7 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	bCollideWorld = False;
 	DestroyTrail();
 	bOrientToVelocity = False;
-	PrePivot = GetCollisionExtent() * LandedPrePivotCollisionScale;
+	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetPhysics(PHYS_None);
 
 	if ( Pawn(A) != None )  {

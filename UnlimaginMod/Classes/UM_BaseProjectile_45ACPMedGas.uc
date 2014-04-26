@@ -23,7 +23,7 @@ defaultproperties
      bInitialAcceleration=True
 	 SpawnCheckRadiusScale=0.250000
 	 SpeedDropScale=0.950000
-	 BallisticRandPercent=26.000000
+	 BallisticRandRange=(Min=0.86,Max=1.14)
 	 // MuzzleVelocity in m/sec
 	 MuzzleVelocity=120.000000
 	 HealBoostAmount=13

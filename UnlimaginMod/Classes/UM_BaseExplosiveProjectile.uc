@@ -59,6 +59,7 @@ var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
 var		float				ArmingRange;	// Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
+var		float				SquaredArmingRange;
 
 //DramaticEvents
 var		float				SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
@@ -94,9 +95,11 @@ simulated function CalcDefaultProperties()
 	Super.CalcDefaultProperties();
 	// ArmingRange
 	if ( default.ArmingRange > 0.0 )  {
-		// Squared ArmingRange
-		default.ArmingRange = default.ArmingRange * default.ArmingRange * SquareMeterInUU;
+		default.ArmingRange = default.ArmingRange * MeterInUU;
 		ArmingRange = default.ArmingRange;
+		// Squared ArmingRange
+		default.SquaredArmingRange = default.ArmingRange * default.ArmingRange;
+		SquaredArmingRange = default.SquaredArmingRange;
 	}
 }
 
@@ -586,4 +589,5 @@ defaultproperties
 	 Physics=PHYS_Projectile
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy
+	 BallisticRandRange=(Min=0.98,Max=1.02)
 }

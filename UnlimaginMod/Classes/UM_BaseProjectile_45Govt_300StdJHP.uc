@@ -24,7 +24,7 @@ defaultproperties
      bCanRebound=True
 	 ProjectileDiameter=11.6
 	 BallisticCoefficient=0.300000
-	 BallisticRandPercent=8.000000
+	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=950.000000
 	 MaxEffectiveRange=1000.000000
 	 ExpansionCoefficient=1.700000

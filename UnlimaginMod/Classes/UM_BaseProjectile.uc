@@ -110,7 +110,7 @@ var(Ballistic)	float		ProjectileDiameter;		// Projectile diameter in mm
 var				float		ProjectileCrossSectionalArea;	// Projectile cross-sectional area in mm2. Calculated automatically.
 
 var(Ballistic)	float		EffectiveRange, MaxEffectiveRange;	// EffectiveRange and MaxEffectiveRange of this projectile in meters. 
-var(Ballistic)	float		BallisticRandPercent; // Percent of Projectile ballistic performance randomization
+var(Ballistic)	range		BallisticRandRange;	// Projectile ballistic performance randomization range
 var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
 var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
 
@@ -228,21 +228,9 @@ simulated function Reset()
 	PostBeginPlay();
 }
 
-// Returns the random multiplier by percent of 1.0
-// 50.0% RandRangePercent value will return random float value in the range from 0.75 up to 1.25
-// Min RandRangePercent value: 2.0%
-// Max RandRangePercent value: 198.0%
-simulated final function float GetRandMultByPercent(float RandRangePercent)
+simulated final function float GetBallisticRandMult()
 {
-	local	float	MinMult, MaxMult, RandMultiplier;
-	
-	RandRangePercent = FClamp( (RandRangePercent * 0.005), 0.01, 0.99 );
-	MinMult = 1.0 - RandRangePercent;
-	MaxMult = 1.0 + RandRangePercent;
-	//Logic copied from RandRange() function
-	RandMultiplier = MinMult + (MaxMult - MinMult) * FRand();
-	
-	Return RandMultiplier;
+	Return BallisticRandRange.Min + (BallisticRandRange.Max - BallisticRandRange.Min) * FRand();
 }
 
 simulated function CalcDefaultProperties()
@@ -323,7 +311,7 @@ simulated function CalcDefaultProperties()
 	default.CollisionExtent = GetCollisionExtent();
 	CollisionExtent = default.CollisionExtent;
 	// SurfaceTraceRange
-	default.SurfaceTraceRange = VSize(default.CollisionExtent) + 8.0;
+	default.SurfaceTraceRange = VSize(default.CollisionExtent) + 16.0;
 	SurfaceTraceRange = default.SurfaceTraceRange;
 	
 	// Logging
@@ -459,12 +447,18 @@ simulated function DestroyTrail()
 	}
 }
 
+function ServerInitialUpdate()
+{
+	// Use this function to init something on the server-side before InitialVelocity is set.
+	// It is a good place to assign replicated variables.
+}
+
 // Called before initial replication
 function ServerSetInitialVelocity()
 {
 	// Little Velocity randomization
 	if ( Speed > 0.0 )
-		Velocity = Vector(Rotation) * Speed * GetRandMultByPercent(BallisticRandPercent);
+		Velocity = Vector(Rotation) * Speed * GetBallisticRandMult();
 }
 
 // Called after the actor is created but BEFORE any values have been replicated to it.
@@ -498,10 +492,12 @@ simulated event PostBeginPlay()
 	}
 	bReadyToSplash = True;
 	//[end]
-	
-	// Setting Initial Velocity on the server before the initial replication
-	if ( Role == ROLE_Authority )
+	if ( Role == ROLE_Authority )  {
+		// InitialUpdate on the server-side
+		ServerInitialUpdate();
+		// Setting Initial Velocity on the server before the initial replication
 		ServerSetInitialVelocity();
+	}
 	// Spawning the Trail
 	SpawnTrail();
 }
@@ -777,12 +773,12 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 		if ( LastTouched != None && (A == LastTouched || A.Base == LastTouched) )
 			Return False;
 		
-		if ( Pawn(A.Base) != None )
+		if ( Pawn(A.Base) != None || Mover(A.Base) != None )
 			A = A.Base;
 		
 		// If projectile is not moving or TraceThisActor did't hit the actor
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 2.0 * Velocity), CollisionExtent) )  {
-			Log("TraceThisActor did't hit the actor. Trace end:" @(Location + Velocity) @"Trace start:" @(Location - 2.0 * Velocity) "Actor location:" @A.Location, Name);
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.5 * Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
+			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
 		}
@@ -974,7 +970,7 @@ defaultproperties
 	 //Visible Distance
 	 CullDistance=4000.000000
 	 //Ballistic performance randomization percent
-	 BallisticRandPercent=2.000000
+	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 //ProjectileMass
 	 ProjectileMass=0.020000	// kilograms
 	 //MuzzleVelocity

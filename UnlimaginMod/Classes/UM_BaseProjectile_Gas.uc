@@ -170,8 +170,8 @@ defaultproperties
      SpawnCheckRadiusScale=0.200000
 	 bCanRebound=False
 	 bOrientToVelocity=True
-	 //Ballistic performance randomization percent
-	 BallisticRandPercent=10.000000
+	 //Ballistic performance randomization
+	 BallisticRandRange=(Min=0.95,Max=1.05)
 	 bReplicateSpawnTime=True
 	 ProjectileMass=0.000000
 	 UpdateTimeDelay=0.100000

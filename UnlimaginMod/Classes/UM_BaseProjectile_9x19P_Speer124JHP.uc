@@ -23,7 +23,7 @@ defaultproperties
 {
      ProjectileDiameter=9.01
 	 BallisticCoefficient=0.184000
-	 BallisticRandPercent=10.000000
+	 BallisticRandRange=(Min=0.95,Max=1.05)
 	 EffectiveRange=740.000000
 	 MaxEffectiveRange=800.000000
 	 ExpansionCoefficient=1.860000

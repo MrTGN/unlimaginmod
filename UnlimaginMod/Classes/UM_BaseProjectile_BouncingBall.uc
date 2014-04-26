@@ -89,7 +89,7 @@ defaultproperties
 	 bAutoLifeSpan=False
 	 LifeSpan=120.000000
 	 //[block] Ballistic performance
-	 BallisticRandPercent=5.000000
+	 BallisticRandRange=(Min=0.94,Max=1.06)
 	 //EffectiveRange in Meters
 	 EffectiveRange=100.000000
 	 MaxEffectiveRange=150.000000

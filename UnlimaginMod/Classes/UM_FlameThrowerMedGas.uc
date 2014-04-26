@@ -21,7 +21,7 @@ defaultproperties
 {
      bInitialAcceleration=True
 	 SpeedDropScale=0.780000
-	 BallisticRandPercent=28.000000
+	 BallisticRandRange=(Min=0.76,Max=1.14)
 	 // MuzzleVelocity in m/sec
 	 MuzzleVelocity=40.000000
 	 HealBoostAmount=13

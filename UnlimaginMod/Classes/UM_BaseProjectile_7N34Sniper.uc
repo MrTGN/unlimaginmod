@@ -28,7 +28,7 @@ defaultproperties
 	 HitSoundVolume=1.400000
 	 //Ballistic
 	 BallisticCoefficient=1.200000
-	 BallisticRandPercent=6.000000
+	 BallisticRandRange=(Min=0.93,Max=1.03)
 	 EffectiveRange=1800.000000	// meters
 	 MaxEffectiveRange=2000.000000
 	 ProjectileMass=0.059000	//Kilograms

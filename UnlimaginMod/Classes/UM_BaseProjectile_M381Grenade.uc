@@ -21,11 +21,19 @@ class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_LowVelocityGrenade
 //========================================================================
 //[block] Variables
 
+var		float		ArmingDelay, ArmedTime;
+
 //[end] Varibles
 //====================================================================
 
 //========================================================================
 //[block] Replication
+
+replication
+{
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		ArmedTime;
+}
 
 //[end] Replication
 //====================================================================
@@ -37,18 +45,26 @@ simulated function CalcDefaultProperties()
 {
 	Super.CalcDefaultProperties();
 	
+	if ( default.MaxSpeed > 0.0 && default.ArmingRange > 0.0 )  {
+		// ArmingDelay
+		default.ArmingDelay = default.ArmingRange / default.MaxSpeed;
+		// InitialAccelerationTime
+		if ( default.bTrueBallistics && default.bInitialAcceleration )
+			default.ArmingDelay += default.InitialAccelerationTime;
+		ArmingDelay = default.ArmingDelay;
+	}
 }
 
-simulated event PostBeginPlay()
+function ServerInitialUpdate()
 {
-	
-	Super.PostBeginPlay();
+	Super.ServerInitialUpdate();
+	ArmedTime = Level.TimeSeconds + ArmingDelay;
 }
 
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( (Instigator != None && VSizeSquared(Instigator.Location - Location) < ArmingRange) )
+	if ( ArmedTime > 0.0 && Level.TimeSeconds < ArmedTime )
 		Return False;
 	
 	Return Super.IsArmed();

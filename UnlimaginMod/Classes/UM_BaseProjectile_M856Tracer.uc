@@ -24,7 +24,7 @@ defaultproperties
      Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 //Ballistic
 	 BallisticCoefficient=0.318000
-	 BallisticRandPercent=30.000000
+	 BallisticRandRange=(Min=0.95,Max=1.05)
 	 EffectiveRange=1200.000000
 	 ProjectileMass=0.004147		//kilograms
 	 MuzzleVelocity=880.000000		//Meter/sec

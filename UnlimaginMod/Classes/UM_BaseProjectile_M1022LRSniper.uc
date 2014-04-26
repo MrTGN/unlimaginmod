@@ -26,7 +26,7 @@ defaultproperties
 	 PenetrationEnergyReduction=0.860000
 	 //Ballistic
 	 BallisticCoefficient=0.876000
-	 BallisticRandPercent=5.000000
+	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 EffectiveRange=1800.000000
 	 MaxEffectiveRange=1950.000000
 	 ProjectileMass=0.042443		//kilograms

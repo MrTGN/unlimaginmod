@@ -158,7 +158,7 @@ defaultproperties
 	 SpeedDropInWaterCoefficient=0.600000
 	 FullStopSpeedCoefficient=0.120000
 	 //Ballistic performance randomization percent
-	 BallisticRandPercent=20.000000
+	 BallisticRandRange=(Min=0.9,Max=1.1)
 	 BounceEnergyReduction=0.350000
 	 //ProjectileMass
 	 ProjectileMass=0.400000	// kilograms

@@ -21,7 +21,7 @@ class UM_BaseProjectile_LowVelocityGrenade extends UM_BaseExplosiveProjectile
 //========================================================================
 //[block] Variables
 
-var		float		FlyingTime, TimeToStartFalling; 
+var		float		FlyingTime, TimeToStartFalling;
 var		bool		bDisarmed;
 
 //[end] Varibles
@@ -46,32 +46,28 @@ simulated function CalcDefaultProperties()
 {
 	Super.CalcDefaultProperties();
 	
-	if ( default.MaxSpeed > 0.0 )  {
-		// FlyingTime
-		if ( default.EffectiveRange > 0.0 )  {
-			default.FlyingTime = default.EffectiveRange / default.MaxSpeed;
-			if ( default.bTrueBallistics )  {
-				default.FlyingTime += 1.0 - FMin(default.BallisticCoefficient, 1.0);
-				if ( default.bInitialAcceleration )
-					default.FlyingTime += default.InitialAccelerationTime;
-			}
-			
-			FlyingTime = default.FlyingTime;
+	// FlyingTime
+	if ( default.MaxSpeed > 0.0 && default.EffectiveRange > 0.0 )  {
+		default.FlyingTime = default.EffectiveRange / default.MaxSpeed;
+		if ( default.bTrueBallistics )  {
+			default.FlyingTime += 1.0 - FMin(default.BallisticCoefficient, 1.0);
+			if ( default.bInitialAcceleration )
+				default.FlyingTime += default.InitialAccelerationTime;
 		}
+		FlyingTime = default.FlyingTime;
 	}
 }
 
-simulated event PostBeginPlay()
+function ServerInitialUpdate()
 {
-	Super.PostBeginPlay();
 	if ( FlyingTime > 0.0 )
-		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
+		TimeToStartFalling = Level.TimeSeconds + FlyingTime * GetBallisticRandMult();
 }
 
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( bDisarmed || (Instigator != None && VSizeSquared(Instigator.Location - Location) < ArmingRange) )
+	if ( bDisarmed )
 		Return False;
 	
 	Return Super.IsArmed();
@@ -205,6 +201,7 @@ defaultproperties
 	 bTrueBallistics=True
 	 bInitialAcceleration=True
 	 BallisticCoefficient=0.132000
+	 BallisticRandRange=(Min=0.95,Max=1.05)
 	 SpeedFudgeScale=1.000000
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000

@@ -36,7 +36,7 @@ defaultproperties
 	 // Так, дробь № 7 (2,5 мм) летит на 250 м.
      ProjectileDiameter=18.5
 	 BallisticCoefficient=0.050000
-	 BallisticRandPercent=8.000000
+	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=910.000000
 	 MaxEffectiveRange=910.000000
 	 ProjectileMass=0.037454

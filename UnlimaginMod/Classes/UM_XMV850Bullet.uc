@@ -19,7 +19,6 @@ class UM_XMV850Bullet extends UM_BaseProjectile_SS109FMJBT;
 
 defaultproperties
 {
-	 BallisticRandPercent=3.000000
 	 MuzzleVelocity=910.000000
 	 Damage=44.000000
 	 MyDamageType=Class'UnlimaginMod.Exod_BlueStahli_DamTypeXMV850Minigun'

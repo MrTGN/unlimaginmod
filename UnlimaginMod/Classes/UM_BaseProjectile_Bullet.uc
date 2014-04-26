@@ -70,7 +70,7 @@ defaultproperties
 	 //[block] Ballistic performance
 	 Speed=0.000000
 	 MaxSpeed=0.000000
-	 BallisticRandPercent=2.000000
+	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 //EffectiveRange in Meters
 	 EffectiveRange=500.000000
 	 MaxEffectiveRange=600.000000

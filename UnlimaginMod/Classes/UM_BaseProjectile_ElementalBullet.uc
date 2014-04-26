@@ -199,8 +199,7 @@ defaultproperties
 	 MaxSpeed=0.000000
 	 //MuzzleVelocity
 	 MuzzleVelocity=100.000000	// m/sec
-	 //BallisticRandPercent
-	 BallisticRandPercent=2.000000
+	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 MaxEffectiveRange=600.000000

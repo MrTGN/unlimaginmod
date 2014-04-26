@@ -75,7 +75,7 @@ simulated function bool IsArmed()
 
 defaultproperties
 {
-     BallisticCoefficient=0.132000
+	 BallisticCoefficient=0.132000
 	 ProjectileDiameter=40.0
 	 ArmingRange=5.000000
 	 //Shrapnel

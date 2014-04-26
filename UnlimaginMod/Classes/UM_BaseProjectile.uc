@@ -449,7 +449,7 @@ simulated function DestroyTrail()
 
 function ServerInitialUpdate()
 {
-	// Use this function to init something on the server-side before InitialVelocity is set.
+	// Use this function to init something on the server-side before InitialVelocity has set.
 	// It is a good place to assign replicated variables.
 }
 
@@ -466,22 +466,26 @@ simulated event PostBeginPlay()
 {
 	local	PlayerController	PC;
 	
-	if ( bReplicateSpawnTime )
-		SpawnTime = Level.TimeSeconds;
-	
-	if ( bReplicateSpawnLocation )
-		SpawnLocation = Location;
+	if ( Role == ROLE_Authority )  {
+		// SpawnTime
+		if ( bReplicateSpawnTime )
+			SpawnTime = Level.TimeSeconds;
+		// SpawnLocation
+		if ( bReplicateSpawnLocation )
+			SpawnLocation = Location;
+		// InstigatorController
+		if ( Instigator != None && Instigator.Controller != None )  {
+			if ( Instigator.Controller.ShotTarget != None && Instigator.Controller.ShotTarget.Controller != None )
+				Instigator.Controller.ShotTarget.Controller.ReceiveProjectileWarning( Self );
+			InstigatorController = Instigator.Controller;
+		}
+    }
 	
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(self);
 	
 	//[block] Copied from Projectile.uc
-    if ( Role == ROLE_Authority && Instigator != None && Instigator.Controller != None )  {
-    	if ( Instigator.Controller.ShotTarget != None && Instigator.Controller.ShotTarget.Controller != None )
-			Instigator.Controller.ShotTarget.Controller.ReceiveProjectileWarning( Self );
-		InstigatorController = Instigator.Controller;
-    }
-	// DynamicLight
+    // DynamicLight
     if ( bDynamicLight && Level.NetMode != NM_DedicatedServer )  {
 		PC = Level.GetLocalPlayerController();
 		if ( PC == None || PC.ViewTarget == None || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0

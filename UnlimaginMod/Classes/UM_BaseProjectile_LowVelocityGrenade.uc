@@ -22,7 +22,7 @@ class UM_BaseProjectile_LowVelocityGrenade extends UM_BaseExplosiveProjectile
 //[block] Variables
 
 var		float		FlyingTime, TimeToStartFalling;
-var		bool		bDisarmed;
+var		bool		bArmed;
 
 //[end] Varibles
 //====================================================================
@@ -64,13 +64,19 @@ function ServerInitialUpdate()
 		TimeToStartFalling = Level.TimeSeconds + FlyingTime * GetBallisticRandMult();
 }
 
+simulated event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	bArmed = True;
+}
+
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( bDisarmed )
-		Return False;
+	if ( bArmed )
+		Return Super.IsArmed();
 	
-	Return Super.IsArmed();
+	Return False;
 }
 
 simulated event Tick( float DeltaTime )
@@ -83,7 +89,7 @@ simulated event Tick( float DeltaTime )
 
 simulated function Disarm()
 {
-	bDisarmed = True;
+	bArmed = False;
 	LifeSpan = 1.0;
 }
 
@@ -169,6 +175,7 @@ defaultproperties
 	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.1)
 	 bIgnoreSameClassProj=True
 	 ProjectileDiameter=40.0
+	 bArmed=False
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000

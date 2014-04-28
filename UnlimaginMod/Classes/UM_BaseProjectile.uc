@@ -203,6 +203,8 @@ simulated final function ClientPlaySoundData( SoundData SD, optional float VolMu
 	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
 }
 
+// Todo: Думаю, что все же лучше убрать эти функции и писать самому вручную, ибо
+// слишком много переменных копируется.
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
 simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMult )
@@ -226,6 +228,11 @@ simulated function Reset()
 	SetPhysics(default.Physics);
 	PreBeginPlay();
 	PostBeginPlay();
+}
+
+simulated static final function Vector GetDefaultCollisionExtent()
+{
+	Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
 }
 
 simulated final function float GetBallisticRandMult()
@@ -308,7 +315,7 @@ simulated function CalcDefaultProperties()
 	}
 	
 	// CollisionExtent
-	default.CollisionExtent = GetCollisionExtent();
+	default.CollisionExtent = GetDefaultCollisionExtent();
 	CollisionExtent = default.CollisionExtent;
 	// SurfaceTraceRange
 	default.SurfaceTraceRange = VSize(default.CollisionExtent) + 16.0;
@@ -822,20 +829,23 @@ simulated function ProcessHitWall( Vector HitNormal )
 	// Updating bullet performance before hit the wall
 	// Needed because bullet lose Speed and Damage while flying
 	UpdateProjectilePerformance();
-	SpawnHitEffects(Location, HitNormal);
-	if ( Role == ROLE_Authority )
-		MakeNoise(0.3);
+	if ( Speed > MinSpeed )  {
+		SpawnHitEffects(Location, HitNormal);
+		if ( Role == ROLE_Authority )
+			MakeNoise(0.3);
+	}
 	
 	if ( bCanRebound )  {
 		// Finding out surface material
 		Trace(VectVelDotNorm, TmpVect, (Location + Normal(Velocity) * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
 		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 			ST = ESurfaceTypes(HitMat.SurfaceType);
-		
+		else
+			ST = EST_Default;
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
 		EnergyByNormal = f * f * SpeedSquaredToEnergy;
-		
+		// Stuck or Rebound
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			VectVelDotNorm = HitNormal * f;
 			// Getting the bounce bonus

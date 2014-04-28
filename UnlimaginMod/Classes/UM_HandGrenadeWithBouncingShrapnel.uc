@@ -18,9 +18,9 @@ class UM_HandGrenadeWithBouncingShrapnel extends UM_BaseProjectile_HandGrenade;
 defaultproperties
 {
 	 //Shrapnel
-	 ShrapnelClass=Class'UnlimaginMod.UM_BouncingGrenadeShrapnel'
+	 ShrapnelClass=Class'UnlimaginMod.UM_TungstenShrapnel'
 	 MaxShrapnelAmount=30
-	 MinShrapnelAmount=20
+	 MinShrapnelAmount=24
 	 //Sounds
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=390.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=390.0,bUse3D=True)

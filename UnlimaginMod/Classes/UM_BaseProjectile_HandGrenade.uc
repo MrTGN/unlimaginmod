@@ -151,7 +151,6 @@ defaultproperties
 	 //ExplodeTimer	 
 	 ExplodeTimer=2.000000
 	 //Shrapnel
-	 //ShrapnelClass=Class'KFMod.KFShrapnel'
 	 MaxShrapnelAmount=10
 	 MinShrapnelAmount=5
 	 //Speed

@@ -41,7 +41,7 @@ var		array< name >		IgnoreVictims;
 var		bool				bIgnoreSameClassProj;	//Ignore projectiles with the same class in HurtRadius
 
 //Shrapnel
-var		class<Projectile>	ShrapnelClass;
+var		class<UM_BaseProjectile>	ShrapnelClass;
 var		int					MaxShrapnelAmount, MinShrapnelAmount;
 
 //[block] Effects
@@ -360,35 +360,33 @@ function SpawnShrapnel()
 	local	Rotator		SpawnRotation;
 	local	Projectile	ShrapnelProj;
 	local	Actor		SpawnBlocker;
-	local	Vector		THitLoc, THitNorm;
+	local	Vector		THitLoc, THitNorm, ShrapnelCollisionExtent;
 	
 	if ( ShrapnelClass != None && MaxShrapnelAmount > 0 )  {
 		if ( MaxShrapnelAmount > 1 )  {
 			for ( i = Rand( Max((MaxShrapnelAmount - MinShrapnelAmount), 1) ); i < MaxShrapnelAmount; ++i )  {
 				SpawnRotation = RotRand(True);
 				ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
+				// Can't spawn Shrapnel
 				if ( ShrapnelProj == None )  {
-					// Number 30 here is a distance in unreal units and nothing more =)
-					SpawnBlocker = Trace(THitLoc, THitNorm, (Location + Vector(SpawnRotation) * 30), Location, false);
+					ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
+					SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
 					// If something blocking shrapnel spawn location
-					if ( SpawnBlocker != None )  {
-						THitLoc = (2.0 + FMax(ShrapnelClass.default.CollisionRadius, ShrapnelClass.default.CollisionHeight)) * -Normal(THitLoc - Location) + THitLoc;
-						Spawn(ShrapnelClass, Instigator,, THitLoc, SpawnRotation);
-					}
+					if ( SpawnBlocker != None )
+						Spawn(ShrapnelClass, Instigator,, (THitLoc + ShrapnelCollisionExtent), SpawnRotation);
 				}
 			}
 		}
 		else  {
 			SpawnRotation = RotRand(True);
 			ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
+			// Can't spawn Shrapnel
 			if ( ShrapnelProj == None )  {
-				// Number 30 here is a distance in unreal units and nothing more =)
-				SpawnBlocker = Trace(THitLoc, THitNorm, (Location + Vector(SpawnRotation) * 30), Location, false);
+				ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
+				SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
 				// If something blocking shrapnel spawn location
-				if ( SpawnBlocker != None )  {
-					THitLoc = (2.0 + FMax(ShrapnelClass.default.CollisionRadius, ShrapnelClass.default.CollisionHeight)) * -Normal(THitLoc - Location) + THitLoc;
-					Spawn(ShrapnelClass, Instigator,, THitLoc, SpawnRotation);
-				}
+				if ( SpawnBlocker != None )
+					Spawn(ShrapnelClass, Instigator,, (THitLoc + ShrapnelCollisionExtent), SpawnRotation);
 			}
 		}
 	}
@@ -442,12 +440,13 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(-HitNormal));
+				Spawn(ExplosionVisualEffect,,, HitLocation, Rotator(-HitNormal));
 			if ( ExplosionDecal != None )
-				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
+				Spawn(ExplosionDecal,self,,HitLocation, Rotator(-HitNormal));
 		}
 	}
 	
+	SetCollision(False);
 	// Shrapnel
 	if ( Role == ROLE_Authority )
 		SpawnShrapnel();

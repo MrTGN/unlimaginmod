@@ -260,9 +260,9 @@ defaultproperties
 	 GrenadeLightClass=Class'UnlimaginMod.UM_StickySensorHandGrenadeLight'
 	 HitEffectsClass=Class'UnlimaginMod.UM_GrenadeStickEffect'
 	 //Shrapnel
-	 ShrapnelClass=Class'KFMod.KFShrapnel'
-	 MaxShrapnelAmount=10
-	 MinShrapnelAmount=5
+	 ShrapnelClass=Class'UnlimaginMod.UM_HandGrenadeShrapnel'
+	 MaxShrapnelAmount=8
+	 MinShrapnelAmount=6
 	 //Sounds
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=400.0,bUse3D=True)

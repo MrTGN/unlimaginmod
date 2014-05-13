@@ -17,16 +17,6 @@
 class UM_BaseProjectile_Buckshot extends UM_BaseProjectile_Bullet
 	Abstract;
 
-simulated function float GetPenetrationBonus()
-{
-	local 	KFPlayerReplicationInfo		KFPRI;
-	
-	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
-		Return KFPRI.ClientVeteranSkill.static.GetShotgunPenetrationDamageMulti(KFPRI, default.PenetrationEnergyReduction) / default.PenetrationEnergyReduction;
-	
-	Return 1.0;
-}
 
 defaultproperties
 {
@@ -39,9 +29,9 @@ defaultproperties
 	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=910.000000
 	 MaxEffectiveRange=910.000000
+	 // ToDo: отредактировать во всех классах картечи массу
 	 ProjectileMass=0.037454
 	 MuzzleVelocity=380.000000
-     PenetrationEnergyReduction=0.720000
      HeadShotDamageMult=1.500000
 	 // Damage for 7 pellets
 	 Damage=40.000000

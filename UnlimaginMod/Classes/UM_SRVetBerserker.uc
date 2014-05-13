@@ -98,12 +98,12 @@ static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Othe
 	Return 1.00;
 }
 
-static function float GetJumpModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetPawnJumpModifier(KFPlayerReplicationInfo KFPRI)
 {
 	Return 1.00 + (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 25% extra jump height
 }
 
-static function int GetMaxBounce(KFPlayerReplicationInfo KFPRI)
+static function int GetPawnMaxBounce(KFPlayerReplicationInfo KFPRI)
 {
 	Return Min(KFPRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
 }

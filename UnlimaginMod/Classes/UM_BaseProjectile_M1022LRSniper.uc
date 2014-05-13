@@ -23,7 +23,6 @@ defaultproperties
 {
      ProjectileDiameter=12.95
 	 bCanRebound=True
-	 PenetrationEnergyReduction=0.860000
 	 //Ballistic
 	 BallisticCoefficient=0.876000
 	 BallisticRandRange=(Min=0.98,Max=1.02)

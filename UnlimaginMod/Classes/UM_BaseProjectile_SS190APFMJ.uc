@@ -28,7 +28,6 @@ defaultproperties
 	 MaxEffectiveRange=780.000000
 	 ProjectileMass=0.002000		//kilograms
 	 MuzzleVelocity=710.000000		//Meter/sec
-     PenetrationEnergyReduction=0.200000
      HeadShotDamageMult=1.100000
    	 Damage=40.000000
 	 MomentumTransfer=25000.000000

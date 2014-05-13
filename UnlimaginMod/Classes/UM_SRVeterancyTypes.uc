@@ -219,36 +219,51 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 }
 
 // New function for the extra jump height
-static function float GetJumpModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetPawnJumpModifier( KFPlayerReplicationInfo KFPRI )
 {
 	Return 1.0;
 }
 
-static function int GetMaxBounce(KFPlayerReplicationInfo KFPRI)
+static function int GetPawnMaxBounce( KFPlayerReplicationInfo KFPRI )
 {
 	Return 0;
 }
 
+// Weapon Fire Spread
 static function float GetSpreadModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
+// Weapon Fire AimError
 static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
+// Weapon Fire Recoil
 static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
+// Weapon Fire ShakeView
 static function float GetShakeViewModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
+// Projectile Penetration Bonus
+static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+{
+	Return 1.0;
+}
+
+// Projectile Bounce Bonus
+static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+{
+	Return 1.0;
+}
 
 defaultproperties
 {

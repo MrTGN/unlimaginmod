@@ -29,7 +29,6 @@ defaultproperties
 	 ExpansionCoefficient=2.008000
 	 ProjectileMass=0.009520		//kilograms
 	 MuzzleVelocity=350.000000		//Meter/sec
-     PenetrationEnergyReduction=0.100000
      HeadShotDamageMult=1.250000
    	 Damage=40.000000
 	 MomentumTransfer=25000.000000

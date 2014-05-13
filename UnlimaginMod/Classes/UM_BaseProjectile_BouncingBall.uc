@@ -100,7 +100,6 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 //[end]
 	 HeadShotDamageMult=1.100000
-	 PenetrationEnergyReduction=0.800000
 	 bBounce=True
 	 bCanRebound=True
 	 bOrientToVelocity=True

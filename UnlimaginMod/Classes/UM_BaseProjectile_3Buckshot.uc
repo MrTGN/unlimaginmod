@@ -29,7 +29,6 @@ defaultproperties
 	 MaxEffectiveRange=640.000000
 	 ProjectileMass=0.012889
 	 MuzzleVelocity=380.000000
-     PenetrationEnergyReduction=0.240000
 	 // Damage for 18 pellets
      Damage=20.000000
 	 MomentumTransfer=31200.000000

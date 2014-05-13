@@ -82,7 +82,6 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 //[end]
 	 HeadShotDamageMult=1.100000
-	 PenetrationEnergyReduction=0.800000
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects

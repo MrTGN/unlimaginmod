@@ -58,7 +58,7 @@ function VeterancyChanged()
 	if ( KFPRI != None )  {
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 		if ( SRVT != None )
-			BounceRemaining = SRVT.static.GetMaxBounce(KFPRI);
+			BounceRemaining = SRVT.static.GetPawnMaxBounce(KFPRI);
 	}
 	
 	Super.VeterancyChanged();
@@ -170,7 +170,7 @@ function bool DoJump( bool bUpdating )
 		if ( KFPRI != None )  {
 			SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 			if ( SRVT != None )
-				JumpModif = SRVT.static.GetJumpModifier(KFPRI);
+				JumpModif = SRVT.static.GetPawnJumpModifier(KFPRI);
 		}
 		JumpZ = default.JumpZ * JumpModif;
 		
@@ -226,7 +226,7 @@ event Landed(vector HitNormal)
 	if ( KFPRI != None )  {
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 		if ( SRVT != None )
-			BounceRemaining = SRVT.static.GetMaxBounce(KFPRI);
+			BounceRemaining = SRVT.static.GetPawnMaxBounce(KFPRI);
 	}
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();

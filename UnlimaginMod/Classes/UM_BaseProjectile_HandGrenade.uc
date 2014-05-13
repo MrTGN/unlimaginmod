@@ -158,7 +158,6 @@ defaultproperties
 	 FullStopSpeedCoefficient=0.120000
 	 //Ballistic performance randomization percent
 	 BallisticRandRange=(Min=0.9,Max=1.1)
-	 BounceEnergyReduction=0.350000
 	 //ProjectileMass
 	 ProjectileMass=0.400000	// kilograms
 	 //MuzzleVelocity

@@ -32,6 +32,5 @@ defaultproperties
 	 HeadShotDamageMult=1.100000
 	 Damage=40.000000
 	 MomentumTransfer=28000.000000
-     PenetrationEnergyReduction=0.200000
 	 HitSoundVolume=0.600000
 }

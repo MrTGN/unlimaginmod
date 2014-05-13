@@ -128,10 +128,7 @@ var				float		MuzzleEnergy, ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
 var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.ProjectileMass
 
-// This var used for pawns, who don't have GetPenetrationEnergyLoss function
-// The energy of the bullet will drop to value = MuzzleEnergy * PenetrationEnergyReduction
-var(Ballistic)	float		PenetrationEnergyReduction;	// Standard penetration energy reduction (must be < 1.000000 )
-var(Ballistic)	float		BounceEnergyReduction;	// Standard bounce energy reduction (must be < 1.000000 )
+var				float		PenetrationBonus;
 var				float		BounceBonus;
 //[end]
 
@@ -171,6 +168,20 @@ replication
 
 //========================================================================
 //[block] Functions
+
+simulated function Reset()
+{
+	Super(Actor).Reset();
+	SetPhysics(default.Physics);
+	PreBeginPlay();
+	PostBeginPlay();
+}
+
+// RandPitch
+simulated final function float GetRandPitch( range PitchRange )
+{
+	Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
+}
 
 //[block] Sound functions
 // Play a sound effect from the SoundData struct with replication from the server to the clients.
@@ -221,14 +232,6 @@ simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMul
 	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
 }
 //[end]
-
-simulated function Reset()
-{
-	Super(Actor).Reset();
-	SetPhysics(default.Physics);
-	PreBeginPlay();
-	PostBeginPlay();
-}
 
 simulated static final function Vector GetDefaultCollisionExtent()
 {
@@ -337,6 +340,42 @@ simulated function CalcDefaultProperties()
 	default.bDefaultPropertiesCalculated = True;
 }
 
+// Veterancy Penetration Bonus
+simulated function UpdatePenetrationBonus()
+{
+	local	KFPlayerReplicationInfo		KFPRI;
+	local	Class<UM_SRVeterancyTypes>	SRVT;
+	
+	KFPRI =  KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	if ( KFPRI != None )  {
+		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
+		if ( SRVT != None )  {
+			PenetrationBonus *= SRVT.static.GetProjectilePenetrationBonus(KFPRI, Class) / ExpansionCoefficient;
+			Return;
+		}
+	}
+	
+	PenetrationBonus /= ExpansionCoefficient;
+}
+
+// Veterancy Bounce Bonus
+simulated function UpdateBounceBonus()
+{
+	local	KFPlayerReplicationInfo		KFPRI;
+	local	Class<UM_SRVeterancyTypes>	SRVT;
+	
+	KFPRI =  KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	if ( KFPRI != None )  {
+		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
+		if ( SRVT != None )  {
+			BounceBonus *= SRVT.static.GetProjectileBounceBonus(KFPRI, Class) / ExpansionCoefficient;
+			Return;
+		}
+	}
+	
+	BounceBonus /= ExpansionCoefficient;
+}
+
 simulated event PreBeginPlay()
 {
 	Super(Actor).PreBeginPlay();
@@ -350,8 +389,11 @@ simulated event PreBeginPlay()
 	
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
+		
+	UpdatePenetrationBonus();
+	UpdateBounceBonus();
 	
-	// Forcing to not call UpdateBulletPerformance() at the InitialAccelerationTime
+	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )
 		NextProjectileUpdateTime = Level.TimeSeconds + InitialAccelerationTime + InitialUpdateTimeDelay;
 	else
@@ -359,7 +401,7 @@ simulated event PreBeginPlay()
 }
 
 //[block] Dynamic Loading
-simulated static function PreloadAssets(Projectile Proj)
+simulated static function PreloadAssets( Projectile Proj )
 {
 	default.AmbientSound = BaseActor.static.LoadSound( default.AmbientSoundRef );
 	
@@ -607,18 +649,6 @@ function BlowUp(vector HitLocation) {}
 
 simulated function Explode(vector HitLocation, vector HitNormal) {}
 
-// Use this function for the Veterancy Penetration Bonus
-simulated function float GetPenetrationBonus()
-{
-	Return 1.0;
-}
-
-// Use this function for the Veterancy Bounce Bonus
-simulated function float GetBounceBonus()
-{
-	Return BounceBonus;
-}
-
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
@@ -732,14 +762,14 @@ simulated function ProcessHitActor(
 				DmgType = HeadShotDamageType;
 			// HeadShot EnergyLoss
 			if ( UM_Monster(P) != None )
-				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * ExpansionCoefficient / GetPenetrationBonus();
+				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * PenetrationBonus;
 			else
-				EnergyLoss = EnergyToPenetratePawnHead * ExpansionCoefficient / GetPenetrationBonus();
+				EnergyLoss = EnergyToPenetratePawnHead * PenetrationBonus;
 		}
 		else if ( UM_Monster(P) != None )
-			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * ExpansionCoefficient / GetPenetrationBonus();
+			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * PenetrationBonus;
 		else
-			EnergyLoss = EnergyToPenetratePawnBody * ExpansionCoefficient / GetPenetrationBonus();
+			EnergyLoss = EnergyToPenetratePawnBody * PenetrationBonus;
 	}
 
 	// Hit effects
@@ -848,10 +878,8 @@ simulated function ProcessHitWall( Vector HitNormal )
 		// Stuck or Rebound
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			VectVelDotNorm = HitNormal * f;
-			// Getting the bounce bonus
-			f = GetBounceBonus() / ExpansionCoefficient;
 			// Mirroring Velocity Vector by HitNormal with lossy
-			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * f), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * f), 0.96);
+			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * BounceBonus), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * BounceBonus), 0.96);
 			// Start Falling
 			if ( Physics == PHYS_Projectile )
 				SetPhysics(PHYS_Falling);
@@ -971,6 +999,7 @@ defaultproperties
      InitialAccelerationTime=0.100000
 	 LandedPrePivotCollisionScale=0.25
 	 //[block] Ballistic performance
+	 PenetrationBonus=1.000000
 	 BounceBonus=1.000000
 	 ExpansionCoefficient=1.000000
 	 SpeedDropInWaterCoefficient=0.850000

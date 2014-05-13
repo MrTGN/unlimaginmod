@@ -250,6 +250,25 @@ static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFi
 	Return 1.0;
 }
 
+// Projectile Penetration Bonus
+static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+{
+	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None )
+		Return 2.0 + float(Min(KFPRI.ClientVeteranSkillLevel, 6));
+	
+	Return 1.0;
+}
+
+// Projectile Bounce Bonus
+static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+{
+	if ( KFPRI.ClientVeteranSkillLevel > 0 && 
+		 (Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None) )
+		Return 1.0 + (0.1 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));
+	
+	Return 1.0;
+}
+
 // Give Extra Items as Default
 static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 {

@@ -119,7 +119,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					ServerPlaySoundData(BeepSound, 1.5);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 				SetTimer(0.2,True);
 			}
 		}
@@ -130,7 +130,7 @@ event Timer()
 				if ( !FriendlyPawnIsInRadius(DamageRadius) )
 					Explode(Location, Normal(Vector(Rotation)));
 				else if ( BeepSound.Snd != None )
-					ServerPlaySoundData(BeepSound);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 			}
 			else  {
 				bAlwaysRelevant = False;
@@ -222,7 +222,7 @@ state Stuck
 					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
-						ServerPlaySoundData(PickupSound);
+						PlaySound(PickupSound.Snd, PickupSound.Slot, PickupSound.Vol, PickupSound.bNoOverride, PickupSound.Radius, GetRandPitch(PickupSound.PitchRange), PickupSound.bUse3D);
 					Break;
 				}
 			}

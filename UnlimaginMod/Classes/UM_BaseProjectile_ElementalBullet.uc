@@ -62,7 +62,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	// Explode effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( ExplodeSound.Snd != None )
-			ClientPlaySoundData(ExplodeSound);
+			PlaySound(ExplodeSound.Snd, ExplodeSound.Slot, ExplodeSound.Vol, ExplodeSound.bNoOverride, ExplodeSound.Radius, GetRandPitch(ExplodeSound.PitchRange), ExplodeSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
@@ -98,7 +98,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	// Disintegrate effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( DisintegrateSound.Snd != None )
-			ClientPlaySoundData(DisintegrateSound);
+			PlaySound(DisintegrateSound.Snd, DisintegrateSound.Slot, DisintegrateSound.Vol, DisintegrateSound.bNoOverride, DisintegrateSound.Radius, GetRandPitch(DisintegrateSound.PitchRange), DisintegrateSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
 			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));

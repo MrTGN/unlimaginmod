@@ -180,58 +180,11 @@ simulated function Reset()
 // RandPitch
 simulated final function float GetRandPitch( range PitchRange )
 {
-	Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
-}
-
-//[block] Sound functions
-// Play a sound effect from the SoundData struct with replication from the server to the clients.
-final function ServerPlaySoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
+	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )
+		Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
 	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
+		Return 1.0;
 }
-
-// Play a sound effect from the SoundData struct without server replication.
-simulated final function ClientPlaySoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-
-// Todo: Думаю, что все же лучше убрать эти функции и писать самому вручную, ибо
-// слишком много переменных копируется.
-// play a sound effect, but don't propagate to a remote owner
-// (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlayOwnedSound
-	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-//[end]
 
 simulated static final function Vector GetDefaultCollisionExtent()
 {

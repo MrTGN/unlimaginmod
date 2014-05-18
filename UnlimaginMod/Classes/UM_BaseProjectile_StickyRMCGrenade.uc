@@ -40,7 +40,7 @@ event Timer()
 				SetTimer(DelayedExplodeTimer, True);
 			}
 			if ( BeepSound.Snd != None )
-				ServerPlaySoundData(BeepSound);
+				PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 		}
 	}
 	else
@@ -50,7 +50,7 @@ event Timer()
 function Activate()
 {
 	if ( BeepSound.Snd != None )
-		ServerPlaySoundData(BeepSound, 1.5);
+		PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 	
 	SetTimer(ExplodeTimer, True);
 }

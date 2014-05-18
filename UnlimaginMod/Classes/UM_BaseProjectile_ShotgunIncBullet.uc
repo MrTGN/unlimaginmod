@@ -44,8 +44,8 @@ defaultproperties
 	 //Sound Effects
 	 TransientSoundVolume=2.000000
 	 AmbientSoundRef="KF_BaseHusk.husk_fireball_loop"
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=250.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=2.0,Radius=250.0,bUse3D=True)
+	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=250.0,bUse3D=True)
+	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.8,Radius=250.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFMod.FlameImpact_Medium'
 	 ExplosionDecal=Class'KFMod.FlameThrowerBurnMark_Medium'

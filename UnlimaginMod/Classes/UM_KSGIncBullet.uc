@@ -17,7 +17,6 @@ class UM_KSGIncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     TransientSoundVolume=2.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeKSGIncImpact'
      ImpactDamage=100.000000
 	 //MuzzleVelocity

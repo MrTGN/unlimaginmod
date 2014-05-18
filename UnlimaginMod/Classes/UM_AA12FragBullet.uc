@@ -19,8 +19,6 @@ defaultproperties
 {
      ImpactDamageType=Class'UnlimaginMod.UM_DamTypeAA12FragImpact'
      ImpactDamage=140.000000
-     //Sound Effects
-	 TransientSoundVolume=2.000000
      //MuzzleVelocity
 	 MuzzleVelocity=420.000000		// m/sec
      //

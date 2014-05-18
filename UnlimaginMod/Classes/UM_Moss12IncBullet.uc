@@ -19,7 +19,6 @@ class UM_Moss12IncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-     TransientSoundVolume=2.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeMoss12IncImpact'
      ImpactDamage=100.000000
 	 //MuzzleVelocity

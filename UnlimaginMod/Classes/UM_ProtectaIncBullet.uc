@@ -19,7 +19,6 @@ class UM_ProtectaIncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-	 TransientSoundVolume=1.200000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeProtectaIncImpact'
      ImpactDamage=50.000000
 	 //MuzzleVelocity

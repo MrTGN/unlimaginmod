@@ -42,7 +42,7 @@ defaultproperties
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=2.0,Radius=200.0,bUse3D=True)
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'UnlimaginMod.UM_ExpBulletExplosionEffect'
-	 ExplosionDecal=Class'KFMod.KFScorchMark'
+	 ExplosionDecal=Class'UnlimaginMod.UM_ExpBulletDecal'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
      //MuzzleVelocity
 	 MuzzleVelocity=300.000000	// m/sec

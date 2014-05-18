@@ -19,13 +19,14 @@ class UM_HandGrenadeShrapnel extends UM_BaseProjectile_Shrapnel;
 
 defaultproperties
 {
-     ProjectileDiameter=9.0
-	 ProjectileMass=0.038000	// kilograms
-	 MuzzleVelocity=100.000000	// m/sec
-	 BallisticCoefficient=0.051000
+     BallisticCoefficient=0.049000
 	 // EffectiveRange in Meters
 	 EffectiveRange=900.000000
 	 MaxEffectiveRange=1000.000000
+	 ProjectileDiameter=9.0
+	 ProjectileMass=0.004330	// kilograms
+	 ExpansionCoefficient=1.050000
+	 MuzzleVelocity=100.000000	// m/sec
 	 Damage=40.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenadeShrapnel'
 	 MomentumTransfer=60000.000000

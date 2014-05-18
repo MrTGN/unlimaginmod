@@ -18,6 +18,6 @@ class UM_BenelliM3_00Buckshot extends UM_BaseProjectile_00Buckshot;
 defaultproperties
 {
      MuzzleVelocity=382.000000
-	 Damage=35.000000
+	 Damage=36.000000
      MyDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM3_00Buckshot'
 }

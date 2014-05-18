@@ -18,6 +18,6 @@ class UM_Trenchgun_0Buckshot extends UM_BaseProjectile_0Buckshot;
 defaultproperties
 {
 	 MuzzleVelocity=374.000000
-	 Damage=31.600000
+	 Damage=32.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeTrenchgun_0Buckshot'
 }

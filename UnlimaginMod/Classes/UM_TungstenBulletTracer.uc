@@ -1,30 +1,24 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_HandGrenadeWithBouncingShrapnel
-//	Parent class:	 UM_BaseProjectile_HandGrenade
+//	Class name:		 UM_TungstenBulletTracer
+//	Parent class:	 UM_BulletTracer
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
+//	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
 //	Also some parts of the code with some changes copied from: 
 //	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
 //	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 21.11.2012 22:46
+//	Creation date:	 18.05.2014 05:12
+//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+//	Comments:		 
 //================================================================================
-class UM_HandGrenadeWithBouncingShrapnel extends UM_BaseProjectile_HandGrenade;
+class UM_TungstenBulletTracer extends UM_BulletTracer;
 
 
 defaultproperties
 {
-	 //Shrapnel
-	 ShrapnelClass=Class'UnlimaginMod.UM_TungstenShrapnel'
-	 MaxShrapnelAmount=30
-	 MinShrapnelAmount=24
-	 //Sounds
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=390.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=390.0,bUse3D=True)
-	 //Damage
-	 Damage=300.000000
-     DamageRadius=300.000000
+     mColorRange(0)=(R=180,G=188,B=180,A=92)
+     mColorRange(1)=(R=180,G=188,B=180,A=92)
 }

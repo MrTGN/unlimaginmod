@@ -191,13 +191,12 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, KFPawn Instigator, int InDamage, class<DamageType> DmgType)
 {
 	if ( Class<UM_BaseDamType_Shotgun>(DmgType) != None ||
+		 Class<UM_BaseDamType_Shrapnel>(DmgType) != None ||
 		 DmgType == class'DamTypeShotgun' || DmgType == class'DamTypeDBShotgun' ||
 		 DmgType == class'DamTypeAA12Shotgun' || DmgType == class'DamTypeBenelli' ||
 		 DmgType == class'DamTypeKSGShotgun' || DmgType == class'DamTypeNailgun' || 
 		 DmgType == class'DamTypeSPShotgun' )
-		Return float(InDamage) * (1.06 + (0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); // Up to 60% more damage with Shotguns
-	else if ( DmgType == class'DamTypeFrag' && KFPRI.ClientVeteranSkillLevel > 1 )
-		Return float(InDamage) * (0.90 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); // Up to 50% more damage with Nades
+		Return float(InDamage) * (1.06 + (0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); // Up to 60% more damage with Shotguns or shrapnel
 
 	Return InDamage;
 }
@@ -254,7 +253,7 @@ static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFi
 static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
 {
 	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None )
-		Return 2.0 + float(Min(KFPRI.ClientVeteranSkillLevel, 6));
+		Return 2.0 + float(Min(KFPRI.ClientVeteranSkillLevel, 6));	// Up to 800% bonus
 	
 	Return 1.0;
 }
@@ -264,7 +263,7 @@ static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, C
 {
 	if ( KFPRI.ClientVeteranSkillLevel > 0 && 
 		 (Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None) )
-		Return 1.0 + (0.1 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));
+		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 50% bonus
 	
 	Return 1.0;
 }

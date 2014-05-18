@@ -66,7 +66,7 @@ defaultproperties
 	 //Field Medic
 	 PerkProjectileClass(0)=Class'KFMod.MedicNade'
 	 //Support Specialist
-	 PerkProjectileClass(1)=Class'UnlimaginMod.UM_HandGrenadeWithBouncingShrapnel'
+	 PerkProjectileClass(1)=Class'UnlimaginMod.UM_HandGrenadeWithTungstenShrapnel'
 	 //Commando
 	 PerkProjectileClass(3)=Class'UnlimaginMod.UM_StickySensorHandGrenade'
 	 //Firebug

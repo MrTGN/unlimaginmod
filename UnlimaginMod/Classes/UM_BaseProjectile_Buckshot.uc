@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 10.04.2013 19:38
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 ProjectileMass increased by 8.5 to save buckshot penetration.
+//	Comments:		 
 //================================================================================
 class UM_BaseProjectile_Buckshot extends UM_BaseProjectile_Bullet
 	Abstract;
@@ -24,18 +24,18 @@ defaultproperties
      // равна такому числу сотен метров, какое число целых миллиметров имеет диаметр отдельной 
 	 // дробины, выстреленной с максимальной начальной скоростью 375-400 м/с. 
 	 // Так, дробь № 7 (2,5 мм) летит на 250 м.
-     ProjectileDiameter=18.5
-	 BallisticCoefficient=0.050000
-	 BallisticRandRange=(Min=0.96,Max=1.04)
-	 EffectiveRange=910.000000
-	 MaxEffectiveRange=910.000000
-	 // ToDo: отредактировать во всех классах картечи массу
-	 ProjectileMass=0.037454
+     ProjectileDiameter=10.00
+	 BallisticCoefficient=0.090000
+	 BallisticRandRange=(Min=0.97,Max=1.03)
+	 EffectiveRange=1400.000000
+	 MaxEffectiveRange=1500.000000
+	 ProjectileMass=0.015000
+	 //Trail
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
 	 MuzzleVelocity=380.000000
      HeadShotDamageMult=1.500000
-	 // Damage for 7 pellets
-	 Damage=40.000000
-	 MomentumTransfer=60000.000000
-	 HitSoundVolume=0.650000
-	 DrawScale=1.080000
+	 Damage=100.000000
+	 MomentumTransfer=70000.000000
+	 HitSoundVolume=0.750000
+	 DrawScale=1.900000
 }

@@ -20,6 +20,6 @@ class UM_Moss12_0Buckshot extends UM_BaseProjectile_0Buckshot;
 defaultproperties
 {
      MuzzleVelocity=362.000000
-	 Damage=32.000000
+	 Damage=32.500000
      MyDamageType=Class'UnlimaginMod.UM_DamTypeMoss12_0Buckshot'
 }

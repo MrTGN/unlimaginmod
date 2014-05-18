@@ -30,6 +30,6 @@ defaultproperties
 	 mSizeRange(0)=4.000000
      mSizeRange(1)=4.000000
      mGrowthRate=-0.500000
-     mColorRange(0)=(B=82,G=231,R=252,A=100)
-     mColorRange(1)=(B=82,G=231,R=252,A=100)
+     mColorRange(0)=(B=82,G=231,R=252,A=92)
+     mColorRange(1)=(B=82,G=231,R=252,A=92)
 }

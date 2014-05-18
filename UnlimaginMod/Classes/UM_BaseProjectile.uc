@@ -340,39 +340,23 @@ simulated function CalcDefaultProperties()
 	default.bDefaultPropertiesCalculated = True;
 }
 
-// Veterancy Penetration Bonus
-simulated function UpdatePenetrationBonus()
+// Veterancy Penetration and Bounce bonuses
+simulated function UpdateBonuses()
 {
 	local	KFPlayerReplicationInfo		KFPRI;
 	local	Class<UM_SRVeterancyTypes>	SRVT;
 	
-	KFPRI =  KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	if ( KFPRI != None )  {
 		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 		if ( SRVT != None )  {
 			PenetrationBonus *= SRVT.static.GetProjectilePenetrationBonus(KFPRI, Class) / ExpansionCoefficient;
-			Return;
-		}
-	}
-	
-	PenetrationBonus /= ExpansionCoefficient;
-}
-
-// Veterancy Bounce Bonus
-simulated function UpdateBounceBonus()
-{
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
-	
-	KFPRI =  KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-	if ( KFPRI != None )  {
-		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
-		if ( SRVT != None )  {
 			BounceBonus *= SRVT.static.GetProjectileBounceBonus(KFPRI, Class) / ExpansionCoefficient;
 			Return;
 		}
 	}
 	
+	PenetrationBonus /= ExpansionCoefficient;
 	BounceBonus /= ExpansionCoefficient;
 }
 
@@ -390,8 +374,7 @@ simulated event PreBeginPlay()
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
 		
-	UpdatePenetrationBonus();
-	UpdateBounceBonus();
+	UpdateBonuses();
 	
 	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )

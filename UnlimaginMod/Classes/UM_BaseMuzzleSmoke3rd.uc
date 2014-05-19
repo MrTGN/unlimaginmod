@@ -58,7 +58,7 @@ defaultproperties
 		 TriggerDisabled=False
 		 AutomaticInitialSpawning=False
 		 RespawnDeadParticles=False
-		 SpawnOnTriggerPPS=1500.000000
+		 SpawnOnTriggerPPS=1000.000000
 		 SpawnOnTriggerRange=(Min=2.000000,Max=3.000000)
      End Object
 	 Emitters(0)=SpriteEmitter'UnlimaginMod.UM_BaseMuzzleSmoke3rd.Smoke1'

@@ -698,14 +698,14 @@ simulated function ProcessHitActor(
 				DmgType = HeadShotDamageType;
 			// HeadShot EnergyLoss
 			if ( UM_Monster(P) != None )
-				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) * PenetrationBonus;
+				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) / PenetrationBonus;
 			else
-				EnergyLoss = EnergyToPenetratePawnHead * PenetrationBonus;
+				EnergyLoss = EnergyToPenetratePawnHead / PenetrationBonus;
 		}
 		else if ( UM_Monster(P) != None )
-			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) * PenetrationBonus;
+			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) / PenetrationBonus;
 		else
-			EnergyLoss = EnergyToPenetratePawnBody * PenetrationBonus;
+			EnergyLoss = EnergyToPenetratePawnBody / PenetrationBonus;
 	}
 
 	// Hit effects

@@ -32,7 +32,7 @@ defaultproperties
 	 bNetInitialRotation=True
 	 bReplicateInstigator=True
 	 bReplicateMovement=True
-	 //bUpdateSimulatedPosition=True
+	 bUpdateSimulatedPosition=True
 	 RemoteRole=ROLE_SimulatedProxy
 	 NetUpdateFrequency=100.000000
 	 //NetPriority=2.000000

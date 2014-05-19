@@ -18,7 +18,6 @@ class UM_BaseProjectile_ExplosiveBullet extends UM_BaseProjectile_ElementalBulle
 	Abstract;
 
 
-
 defaultproperties
 {
      bIgnoreSameClassProj=True

@@ -42,10 +42,6 @@ defaultproperties
 	 TransientSoundVolume=2.000000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=260.0,bUse3D=True)
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=2.0,Radius=260.0,bUse3D=True)
-	 //Visual Effects
-	 ExplosionVisualEffect=Class'UnlimaginMod.UM_ExpBulletExplosionEffect'
-	 ExplosionDecal=Class'KFMod.KFScorchMark'
-	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
      //MuzzleVelocity
 	 MuzzleVelocity=300.000000	// m/sec
 	 //EffectiveRange

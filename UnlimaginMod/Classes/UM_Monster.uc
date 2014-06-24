@@ -43,6 +43,14 @@ var(MiniBoss)	float	MiniBossHealthsChance, MiniBossMaxHealthScale, MiniBossMaxHe
 
 var		class<UM_ExtendedCollision>		ExtendedCollisionClass;
 var		UM_ExtendedCollision			ExtendedCollision;
+/*
+struct	HitAreaData
+{
+	var	name	BoneName;
+	var	float	ImpactStrength;
+};
+
+var		array< HitAreaData >		HeadHitArea;	*/
 
 //[end] Varibles
 //====================================================================
@@ -102,10 +110,11 @@ function RandomizeMonsterSizes()
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
+	SetCollisionSize( (default.CollisionRadius * RandomSizeMult), (default.CollisionHeight * RandomSizeMult) );
 	Mass = default.Mass * RandomSizeMult;
 	ColRadius = default.ColRadius * RandomSizeMult;
 	ColHeight = default.ColHeight * RandomSizeMult;
-	ColOffset = default.ColOffset * RandomSizeMult;
+	//ColOffset = default.ColOffset * RandomSizeMult;
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
 	HeadHeight = default.HeadHeight * RandomSizeMult;

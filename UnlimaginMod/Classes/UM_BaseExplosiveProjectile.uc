@@ -368,7 +368,7 @@ function SpawnShrapnel()
 				SpawnRotation = RotRand(True);
 				ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
 				// Can't spawn Shrapnel
-				if ( ShrapnelProj == None )  {
+				if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
 					ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
 					SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
 					// If something blocking shrapnel spawn location
@@ -381,7 +381,7 @@ function SpawnShrapnel()
 			SpawnRotation = RotRand(True);
 			ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
 			// Can't spawn Shrapnel
-			if ( ShrapnelProj == None )  {
+			if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
 				ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
 				SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
 				// If something blocking shrapnel spawn location

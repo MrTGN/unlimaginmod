@@ -21,9 +21,6 @@ class UM_ZombieBloat extends UM_ZombieBloatBase;
 // NOTE: All Variables are declared in the base class to eliminate hitching
 //----------------------------------------------------------------------------
 
-var class<FleshHitEmitter> BileExplosion;
-var class<FleshHitEmitter> BileExplosionHeadless;
-
 function bool FlipOver()
 {
 	Return False;

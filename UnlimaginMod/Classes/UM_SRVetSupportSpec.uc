@@ -261,8 +261,9 @@ static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFP
 // Projectile Bounce Bonus
 static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
 {
-	if ( KFPRI.ClientVeteranSkillLevel > 0 && 
-		 (Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None) )
+	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None && KFPRI.ClientVeteranSkillLevel > 0 )
+		Return 1.00 + (0.03 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 30% bonus
+	else if ( Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 50% bonus
 	
 	Return 1.0;

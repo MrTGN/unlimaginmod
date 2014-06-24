@@ -180,8 +180,12 @@ simulated function Reset()
 // RandPitch
 simulated final function float GetRandPitch( range PitchRange )
 {
-	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )
-		Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
+	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )  {
+		if ( PitchRange.Min != PitchRange.Max )
+			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
+		else
+			Return PitchRange.Max;	// Just return Max Pitch
+	}
 	else
 		Return 1.0;
 }
@@ -326,7 +330,7 @@ simulated event PreBeginPlay()
 	
 	if ( Pawn(Owner) != None )
         Instigator = Pawn(Owner);
-		
+	
 	UpdateBonuses();
 	
 	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
@@ -692,7 +696,7 @@ simulated function ProcessHitActor(
 	P = Pawn(A);
 	// If projectile hit a Pawn
 	if ( P != None )  {
-		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
+		if ( P.IsHeadShot(HitLocation, VelNormal, 1.1) )  {
 			DamageAmount *= HeadShotDamageMult;
 			if ( HeadShotDamageType != None )
 				DmgType = HeadShotDamageType;
@@ -754,7 +758,8 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 			A = A.Base;
 		
 		// If projectile is not moving or TraceThisActor did't hit the actor
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.5 * Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
+		//if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.5 * Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.35 * Velocity), (Location - 1.65 * Velocity), CollisionExtent) )  {
 			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));

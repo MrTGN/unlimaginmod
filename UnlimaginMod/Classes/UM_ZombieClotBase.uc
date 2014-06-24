@@ -85,7 +85,7 @@ defaultproperties
      WalkAnims(2)="ClotWalk"
      WalkAnims(3)="ClotWalk"
      AmbientSound=Sound'KF_BaseClot.Clot_Idle1Loop'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.CLOT_Freak'
+     Mesh=SkeletalMesh'UM_Monsters_A.Clot_Mesh'
      DrawScale=1.100000
      PrePivot=(Z=5.000000)
      Skins(0)=Combiner'KF_Specimens_Trip_T.clot_cmb'

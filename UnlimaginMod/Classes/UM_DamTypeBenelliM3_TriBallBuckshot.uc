@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_BaseProjectile_TriBallBuckshot
-//	Parent class:	 UM_BaseProjectile_Buckshot
+//	Class name:		 UM_DamTypeBenelliM3_TriBallBuckshot
+//	Parent class:	 UM_BaseDamType_Shotgun
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -10,29 +10,21 @@
 //	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
 //	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 07.04.2014 23:29
+//	Creation date:	 21.05.2014 15:11
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Pellet diameter: 15.24 mm (0.60"). Pellet weight: 315 grains (20.412 grams).
-//					 3 pellets in buckshot shell.
+//	Comments:		 
 //================================================================================
-class UM_BaseProjectile_TriBallBuckshot extends UM_BaseProjectile_Buckshot
+class UM_DamTypeBenelliM3_TriBallBuckshot extends UM_BaseDamType_Shotgun
 	Abstract;
 
 
 defaultproperties
 {
-     bCanRebound=True
-	 ProjectileDiameter=15.24
-	 BallisticCoefficient=0.081000
-	 BallisticRandRange=(Min=0.97,Max=1.03)
-	 EffectiveRange=1400.000000
-	 MaxEffectiveRange=1500.000000
-	 ProjectileMass=0.020412
-	 MuzzleVelocity=380.000000
-     HeadShotDamageMult=1.500000
-	 // Damage for 3 pellets
-	 Damage=94.000000
-	 MomentumTransfer=70000.000000
-	 HitSoundVolume=0.750000
-	 DrawScale=1.820000
+     WeaponClass=Class'UnlimaginMod.UM_BenelliM3Shotgun'
+	 DeathString="%k killed %o (Benelli M3 Shotgun)."
+     FemaleSuicide="%o shot herself in the foot."
+     MaleSuicide="%o shot himself in the foot."
+     KDamageImpulse=17000.000000
+     KDeathVel=460.000000
+     KDeathUpKick=220.000000
 }

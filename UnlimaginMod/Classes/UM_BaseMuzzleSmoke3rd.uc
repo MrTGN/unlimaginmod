@@ -16,16 +16,6 @@
 //================================================================================
 class UM_BaseMuzzleSmoke3rd extends UM_BaseEmitter;
 
-/*
-simulated event Trigger( Actor Other, Pawn EventInstigator )
-{
-	local	int		i;
-	
-	for ( i = 0; i < Emitters.Length; ++i )  {
-		if ( Emitters[i] != None )
-			Emitters[i].SpawnParticle(5);
-	}
-} */
 
 defaultproperties
 {
@@ -42,7 +32,7 @@ defaultproperties
          ColorScale(0)=(Color=(B=255,G=255,R=255,A=255))
          ColorScale(1)=(RelativeTime=1.000000,Color=(B=255,G=255,R=255,A=218))
          Opacity=0.220000
-         MaxParticles=100
+         MaxParticles=200
          StartLocationOffset=(X=5.000000)
          StartLocationRange=(X=(Max=10.000000))
 		 UseRotationFrom=PTRS_Normal
@@ -58,7 +48,7 @@ defaultproperties
 		 TriggerDisabled=False
 		 AutomaticInitialSpawning=False
 		 RespawnDeadParticles=False
-		 SpawnOnTriggerPPS=1000.000000
+		 SpawnOnTriggerPPS=750.000000
 		 SpawnOnTriggerRange=(Min=2.000000,Max=3.000000)
      End Object
 	 Emitters(0)=SpriteEmitter'UnlimaginMod.UM_BaseMuzzleSmoke3rd.Smoke1'

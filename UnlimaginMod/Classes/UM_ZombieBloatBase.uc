@@ -17,10 +17,13 @@ class UM_ZombieBloatBase extends UM_Monster;
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd.uax
 
-var BileJet BloatJet;
-var bool bPlayBileSplash;
-var bool bMovingPukeAttack;
-var float RunAttackTimeout;
+var		BileJet		BloatJet;
+var		bool		bPlayBileSplash;
+var		bool		bMovingPukeAttack;
+var		float		RunAttackTimeout;
+
+var	class<FleshHitEmitter>	BileExplosion;
+var	class<FleshHitEmitter>	BileExplosionHeadless;
 
 //-------------------------------------------------------------------------------
 // NOTE: All Code resides in the child class(this class was only created to

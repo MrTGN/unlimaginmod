@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_BaseProjectile_TriBallBuckshot
-//	Parent class:	 UM_BaseProjectile_Buckshot
+//	Class name:		 UM_BenelliM3_TriBallBuckshot
+//	Parent class:	 UM_BaseProjectile_TriBallBuckshot
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -10,29 +10,16 @@
 //	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
 //	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 07.04.2014 23:29
+//	Creation date:	 21.05.2014 15:10
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Comments:		 Pellet diameter: 15.24 mm (0.60"). Pellet weight: 315 grains (20.412 grams).
-//					 3 pellets in buckshot shell.
+//	Comments:		 
 //================================================================================
-class UM_BaseProjectile_TriBallBuckshot extends UM_BaseProjectile_Buckshot
-	Abstract;
+class UM_BenelliM3_TriBallBuckshot extends UM_BaseProjectile_TriBallBuckshot;
 
 
 defaultproperties
 {
-     bCanRebound=True
-	 ProjectileDiameter=15.24
-	 BallisticCoefficient=0.081000
-	 BallisticRandRange=(Min=0.97,Max=1.03)
-	 EffectiveRange=1400.000000
-	 MaxEffectiveRange=1500.000000
-	 ProjectileMass=0.020412
-	 MuzzleVelocity=380.000000
-     HeadShotDamageMult=1.500000
-	 // Damage for 3 pellets
-	 Damage=94.000000
-	 MomentumTransfer=70000.000000
-	 HitSoundVolume=0.750000
-	 DrawScale=1.820000
+     MuzzleVelocity=382.000000
+	 Damage=95.000000
+     MyDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM3_TriBallBuckshot'
 }

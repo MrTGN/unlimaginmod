@@ -36,7 +36,7 @@ defaultproperties
      maxHorizontalRecoilAngle=900
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=0.950000)
 	 FireAnims(0)=(Rate=0.950000)
-     ProjPerFire=8
+     ProjPerFire=3
      bWaitForRelease=True
      TransientSoundVolume=2.000000
      TransientSoundRadius=500.000000
@@ -49,7 +49,7 @@ defaultproperties
      ShakeOffsetMag=(X=6.000000,Y=2.000000,Z=10.000000)
      ShakeOffsetRate=(X=1000.000000,Y=1000.000000,Z=1000.000000)
      ShakeOffsetTime=3.000000
-     ProjectileClass=Class'UnlimaginMod.UM_BenelliM3_00Buckshot'
+     ProjectileClass=Class'UnlimaginMod.UM_BenelliM3_TriBallBuckshot'
 	 //Field Medic
 	 PerkProjsInfo(0)=(PerkProjClass=Class'UnlimaginMod.UM_BenelliM3MedGasBullet',PerkProjPerFire=1,PerkProjSpread=0.012000)
 	 //Sharpshooter

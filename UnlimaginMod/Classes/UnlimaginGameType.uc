@@ -1547,13 +1547,12 @@ defaultproperties
      ActorPoolClass=Class'UnlimaginMod.UM_ActorPool'
 	 
 	 //EndGameBossClass
-	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss"
+	 UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss"
 	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_HALLOWEEN"
-	 UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_XMas"
+	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_XMas"
 	 
 	  
 	 //MonsterClasses
-     /*
 	 UM_MonsterClasses(0)=(MClassName="UnlimaginMod.UM_ZombieClot",Mid="A")
      UM_MonsterClasses(1)=(MClassName="UnlimaginMod.UM_ZombieCrawler",Mid="B")
      UM_MonsterClasses(2)=(MClassName="UnlimaginMod.UM_ZombieGoreFast",Mid="C")
@@ -1563,7 +1562,7 @@ defaultproperties
      UM_MonsterClasses(6)=(MClassName="UnlimaginMod.UM_ZombieBloat",Mid="G")
      UM_MonsterClasses(7)=(MClassName="UnlimaginMod.UM_ZombieSiren",Mid="H")
      UM_MonsterClasses(8)=(MClassName="UnlimaginMod.UM_ZombieHusk",Mid="I")
-	 */
+	 
 	 /*
 	 UM_MonsterClasses(0)=(MClassName="UnlimaginMod.UM_ZombieClot_HALLOWEEN",Mid="A")
      UM_MonsterClasses(1)=(MClassName="UnlimaginMod.UM_ZombieCrawler_HALLOWEEN",Mid="B")
@@ -1574,7 +1573,7 @@ defaultproperties
      UM_MonsterClasses(6)=(MClassName="UnlimaginMod.UM_ZombieBloat_HALLOWEEN",Mid="G")
      UM_MonsterClasses(7)=(MClassName="UnlimaginMod.UM_ZombieSiren_HALLOWEEN",Mid="H")
      UM_MonsterClasses(8)=(MClassName="UnlimaginMod.UM_ZombieHusk_HALLOWEEN",Mid="I")
-	 */
+	 
 	 UM_MonsterClasses(0)=(MClassName="UnlimaginMod.UM_ZombieClot_XMas",Mid="A")
      UM_MonsterClasses(1)=(MClassName="UnlimaginMod.UM_ZombieCrawler_XMas",Mid="B")
      UM_MonsterClasses(2)=(MClassName="UnlimaginMod.UM_ZombieGoreFast_XMas",Mid="C")
@@ -1584,11 +1583,12 @@ defaultproperties
      UM_MonsterClasses(6)=(MClassName="UnlimaginMod.UM_ZombieBloat_XMas",Mid="G")
      UM_MonsterClasses(7)=(MClassName="UnlimaginMod.UM_ZombieSiren_XMas",Mid="H")
      UM_MonsterClasses(8)=(MClassName="UnlimaginMod.UM_ZombieHusk_XMas",Mid="I")
-	  
+	 */
+	 
      //FallbackMonsterClass
-	 //UM_FallbackMonsterClass="UnlimaginMod.UM_ZombieStalker"
+	 UM_FallbackMonsterClass="UnlimaginMod.UM_ZombieStalker"
 	 //UM_FallbackMonsterClass="UnlimaginMod.UM_ZombieStalker_HALLOWEEN"
-	 UM_FallbackMonsterClass="UnlimaginMod.UM_ZombieStalker_XMas"
+	 //UM_FallbackMonsterClass="UnlimaginMod.UM_ZombieStalker_XMas"
 	  
 	 //MonsterSquads
 	 UM_MonsterSquads(0)="4A"
@@ -1623,25 +1623,24 @@ defaultproperties
      UM_MonsterSquads(29)="3A2C1E1G1H"
 	  
      //SpecialSquads
-	 /*
 	 UM_SpecialSquads(3)=(ZedClass=("UnlimaginMod.UM_ZombieCrawler","UnlimaginMod.UM_ZombieGoreFast","UnlimaginMod.UM_ZombieStalker","UnlimaginMod.UM_ZombieScrake"),NumZeds=(2,2,1,1))
      UM_SpecialSquads(4)=(ZedClass=("UnlimaginMod.UM_ZombieFleshpound"),NumZeds=(1))
      UM_SpecialSquads(5)=(ZedClass=("UnlimaginMod.UM_ZombieBloat","UnlimaginMod.UM_ZombieSiren","UnlimaginMod.UM_ZombieFleshpound"),NumZeds=(1,1,1))
 	 UM_SpecialSquads(6)=(ZedClass=("UnlimaginMod.UM_ZombieBloat","UnlimaginMod.UM_ZombieSiren","UnlimaginMod.UM_ZombieScrake","UnlimaginMod.UM_ZombieFleshPound"),NumZeds=(1,2,1,1))
 	 UM_SpecialSquads(7)=(ZedClass=("UnlimaginMod.UM_ZombieBloat","UnlimaginMod.UM_ZombieSiren","UnlimaginMod.UM_ZombieFleshpound"),NumZeds=(2,1,2))
-     */
 	 /*
 	 UM_SpecialSquads(3)=(ZedClass=("UnlimaginMod.UM_ZombieCrawler_HALLOWEEN","UnlimaginMod.UM_ZombieGoreFast_HALLOWEEN","UnlimaginMod.UM_ZombieStalker_HALLOWEEN","UnlimaginMod.UM_ZombieScrake_HALLOWEEN"),NumZeds=(2,2,1,1))
      UM_SpecialSquads(4)=(ZedClass=("UnlimaginMod.UM_ZombieFleshpound_HALLOWEEN"),NumZeds=(1))
      UM_SpecialSquads(5)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_HALLOWEEN","UnlimaginMod.UM_ZombieSiren_HALLOWEEN","UnlimaginMod.UM_ZombieFleshpound_HALLOWEEN"),NumZeds=(1,1,1))
      UM_SpecialSquads(6)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_HALLOWEEN","UnlimaginMod.UM_ZombieSiren_HALLOWEEN","UnlimaginMod.UM_ZombieScrake_HALLOWEEN","UnlimaginMod.UM_ZombieFleshPound_HALLOWEEN"),NumZeds=(1,2,1,1))
 	 UM_SpecialSquads(7)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_HALLOWEEN","UnlimaginMod.UM_ZombieSiren_HALLOWEEN","UnlimaginMod.UM_ZombieFleshpound_HALLOWEEN"),NumZeds=(2,1,2))
-	 */
+	 
 	 UM_SpecialSquads(3)=(ZedClass=("UnlimaginMod.UM_ZombieCrawler_XMas","UnlimaginMod.UM_ZombieGoreFast_XMas","UnlimaginMod.UM_ZombieStalker_XMas","UnlimaginMod.UM_ZombieScrake_XMas"),NumZeds=(2,2,1,1))
      UM_SpecialSquads(4)=(ZedClass=("UnlimaginMod.UM_ZombieFleshpound_XMas"),NumZeds=(1))
      UM_SpecialSquads(5)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_XMas","UnlimaginMod.UM_ZombieSiren_XMas","UnlimaginMod.UM_ZombieFleshpound_XMas"),NumZeds=(1,1,1))
      UM_SpecialSquads(6)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_XMas","UnlimaginMod.UM_ZombieSiren_XMas","UnlimaginMod.UM_ZombieScrake_XMas","UnlimaginMod.UM_ZombieFleshPound_XMas"),NumZeds=(1,2,1,1))
 	 UM_SpecialSquads(7)=(ZedClass=("UnlimaginMod.UM_ZombieBloat_XMas","UnlimaginMod.UM_ZombieSiren_XMas","UnlimaginMod.UM_ZombieFleshpound_XMas"),NumZeds=(2,1,2))
+	 */
 	 
      ShortSpecialSquads(2)=(ZedClass=("UnlimaginMod.UM_ZombieCrawler","UnlimaginMod.UM_ZombieGoreFast","UnlimaginMod.UM_ZombieStalker","UnlimaginMod.UM_ZombieScrake"),NumZeds=(2,2,1,1))
      ShortSpecialSquads(3)=(ZedClass=("UnlimaginMod.UM_ZombieBloat","UnlimaginMod.UM_ZombieSiren","UnlimaginMod.UM_ZombieFleshpound"),NumZeds=(1,2,1))
@@ -1656,19 +1655,18 @@ defaultproperties
      LongSpecialSquads(9)=(ZedClass=("UnlimaginMod.UM_ZombieBloat","UnlimaginMod.UM_ZombieSiren","UnlimaginMod.UM_ZombieScrake","UnlimaginMod.UM_ZombieFleshpound"),NumZeds=(1,2,1,2))
 	  
 	 //FinalSquads
-     /*
 	 UM_FinalSquads(0)=(ZedClass=("UnlimaginMod.UM_ZombieClot"),NumZeds=(6))
      UM_FinalSquads(1)=(ZedClass=("UnlimaginMod.UM_ZombieClot","UnlimaginMod.UM_ZombieCrawler"),NumZeds=(5,1))
      UM_FinalSquads(2)=(ZedClass=("UnlimaginMod.UM_ZombieClot","UnlimaginMod.UM_ZombieStalker","UnlimaginMod.UM_ZombieCrawler"),NumZeds=(4,1,1))
-	 */
 	 /*
 	 UM_FinalSquads(0)=(ZedClass=("UnlimaginMod.UM_ZombieClot_HALLOWEEN"),NumZeds=(6))
      UM_FinalSquads(1)=(ZedClass=("UnlimaginMod.UM_ZombieClot_HALLOWEEN","UnlimaginMod.UM_ZombieCrawler_HALLOWEEN"),NumZeds=(5,1))
      UM_FinalSquads(2)=(ZedClass=("UnlimaginMod.UM_ZombieClot_HALLOWEEN","UnlimaginMod.UM_ZombieStalker_HALLOWEEN","UnlimaginMod.UM_ZombieCrawler_HALLOWEEN"),NumZeds=(4,1,1))
-	 */
+	 
 	 UM_FinalSquads(0)=(ZedClass=("UnlimaginMod.UM_ZombieClot_XMas"),NumZeds=(6))
      UM_FinalSquads(1)=(ZedClass=("UnlimaginMod.UM_ZombieClot_XMas","UnlimaginMod.UM_ZombieCrawler_XMas"),NumZeds=(5,1))
      UM_FinalSquads(2)=(ZedClass=("UnlimaginMod.UM_ZombieClot_XMas","UnlimaginMod.UM_ZombieStalker_XMas","UnlimaginMod.UM_ZombieCrawler_XMas"),NumZeds=(4,1,1))
+	 */
 	 
      //Waves
      UM_Waves(0)=(WaveMask=511,WaveMaxMonsters=40,WaveDuration=255,WaveDifficulty=0.200000)

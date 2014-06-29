@@ -54,11 +54,21 @@ defaultproperties
      PuntAnim="ClotPunt"
      AdditionalWalkAnims(0)="ClotWalk2"
      Intelligence=BRAINS_Mammal
-     bUseExtendedCollision=True
+     bUseExtendedCollision=False
      ColOffset=(Z=48.000000)
      ColRadius=25.000000
      ColHeight=5.000000
      ExtCollAttachBoneName="Collision_Attach"
+	 // Collision
+	 bBlockZeroExtentTraces=False
+	 bBlockNonZeroExtentTraces=False
+	 bUseCylinderCollision=True
+	 //CollisionRadius=16.000000
+	 // CollisionRadius * DrawScale
+	 CollisionRadius=17.600000
+     //CollisionHeight=50.000000
+	 //CollisionHeight * DrawScale
+	 CollisionHeight=55.000000
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.800000
      SeveredHeadAttachScale=0.800000
@@ -87,7 +97,7 @@ defaultproperties
      AmbientSound=Sound'KF_BaseClot.Clot_Idle1Loop'
      Mesh=SkeletalMesh'UM_Monsters_A.Clot_Mesh'
      DrawScale=1.100000
-     PrePivot=(Z=5.000000)
+     PrePivot=(Z=0.000000)
      Skins(0)=Combiner'KF_Specimens_Trip_T.clot_cmb'
      RotationRate=(Yaw=45000,Roll=0)
 }

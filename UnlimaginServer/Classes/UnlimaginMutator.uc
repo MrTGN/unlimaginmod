@@ -673,9 +673,7 @@ defaultproperties
 	ModServerPackages(0)="UnlimaginMod.u"
 	ModServerPackages(1)="UnlimaginMod_Snd.uax"
 	ModServerPackages(2)="UnlimaginMod_T.utx"
-	//ModServerPackages(1)="UnlimaginMod_SM.usx"
-	//ModServerPackages(2)="UnlimaginMod_SM.usx"
-	//ModServerPackages(3)="UnlimaginMod_SM.usx"
+	ModServerPackages(3)="UM_Monsters_A.utx"
 	//Whisky_ColtM1911
 	ModServerPackages(4)="IJCWeaponPackSoundsW2.uax"
 	ModServerPackages(5)="UM_WM1911Pistol_A.ukx"

@@ -27,6 +27,7 @@ var(Ballistic)	float	EnergyToPenetrateHead, EnergyToPenetrateBody;
 
 var				bool	bRandomSizeAdjusted;
 
+//Todo: перевести в Range
 var				float	MinMonsterSizeScale, MaxMonsterSizeScale;
 var				float	MinMonsterSpeedScale, MaxMonsterSpeedScale;
 var				float	MinHealthScale, MaxHealthScale;
@@ -35,7 +36,7 @@ var				float	MinJumpZScale, MaxJumpZScale;
 var				float	MinMeleeRangeScale, MaxMeleeRangeScale;
 var				float	MinDamageScale, MaxDamageScale;
 
-
+//Todo: перевести в Range
 var(MiniBoss)	bool	bThisIsMiniBoss;
 var(MiniBoss)	float	MiniBossSpeedChance, MiniBossMaxSpeedScale;
 var(MiniBoss)	float	ExtraSizesChance, MinExtraSizeScale, MaxExtraSizeScale;

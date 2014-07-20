@@ -25,22 +25,24 @@ class UM_Monster extends KFMonster
 
 var(Ballistic)	float	EnergyToPenetrateHead, EnergyToPenetrateBody;
 
-var				bool	bRandomSizeAdjusted;
+var				bool	bRandomSizeAdjusted, bThisIsMiniBoss;
 
-//Todo: перевести в Range
-var				float	MinMonsterSizeScale, MaxMonsterSizeScale;
-var				float	MinMonsterSpeedScale, MaxMonsterSpeedScale;
-var				float	MinHealthScale, MaxHealthScale;
-var				float	MinHeadHealthScale, MaxHeadHealthScale;
-var				float	MinJumpZScale, MaxJumpZScale;
-var				float	MinMeleeRangeScale, MaxMeleeRangeScale;
-var				float	MinDamageScale, MaxDamageScale;
-
-//Todo: перевести в Range
-var(MiniBoss)	bool	bThisIsMiniBoss;
-var(MiniBoss)	float	MiniBossSpeedChance, MiniBossMaxSpeedScale;
-var(MiniBoss)	float	ExtraSizesChance, MinExtraSizeScale, MaxExtraSizeScale;
-var(MiniBoss)	float	MiniBossHealthsChance, MiniBossMaxHealthScale, MiniBossMaxHeadHealthScale;
+//	Monster Size
+var				float	ExtraSizeChance;
+var				range	SizeScaleRange, ExtraSizeScaleRange;
+// Monster Speed
+var				float	ExtraSpeedChance;
+var				range	SpeedScaleRange, ExtraSpeedScaleRange;
+// Monster Health
+var				float	ExtraHealthChance;
+var				range	HealthScaleRange, ExtraHealthScaleRange;
+var				range	HeadHealthScaleRange, ExtraHeadHealthScaleRange;
+// Monster Jump ZAxis height scale
+var				range	JumpZScaleRange;
+// Monster MeleeRange
+var				range	MeleeRangeScale;
+// Monster Damage
+var				range	DamageScaleRange;
 
 var		class<UM_ExtendedCollision>		ExtendedCollisionClass;
 var		UM_ExtendedCollision			ExtendedCollision;
@@ -61,7 +63,7 @@ var		array< HitAreaData >		HeadHitArea;	*/
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetDirty )
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		EnergyToPenetrateHead, EnergyToPenetrateBody, bThisIsMiniBoss;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
@@ -74,38 +76,31 @@ replication
 //========================================================================
 //[block] Functions
 
-// Extended RandRange() function analog
-simulated final function float GetRandMult(
-			float	MinMult, 
-			float	MaxMult,
- optional	float	ExtraMultChance,
- optional	float	MaxExtraMult,
- optional	float	MinExtraMult)
+simulated final function float GetRandMult( float MinMult, float MaxMult )
 {
-	local	float	RandMultiplier;
-	
-	// Logic copied from RandRange()
-	RandMultiplier = MinMult + (MaxMult - MinMult) * FRand();
-	// Random multiplier scaling in range from the RandMultiplier up to the MaxScale
-	if ( ExtraMultChance > 0.0 && FRand() <= ExtraMultChance )  {
-		if ( MinExtraMult != 0.0 )
-			RandMultiplier = MinExtraMult + (MaxExtraMult - MinExtraMult) * FRand();
-		// if only MaxExtraMult variable was specified
-		else
-			RandMultiplier = RandMultiplier + (MaxExtraMult - RandMultiplier) * FRand();
-	}
-	
-	Return RandMultiplier;
+	Return	MinMult + (MaxMult - MinMult) * FRand();
+}
+
+simulated final function float GetRandExtraScale(
+	range		ScaleRange,
+	float		ExtraScaleChance,
+	range		ExtraScaleRange
+)
+{
+	if ( FRand() <= ExtraScaleChance )
+		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();
+	else
+		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
 function RandomizeMonsterSizes()
 {
 	local	float	RandomSizeMult;
 	
-	RandomSizeMult = GetRandMult( MinMonsterSizeScale, MaxMonsterSizeScale, ExtraSizesChance, MaxExtraSizeScale, MinExtraSizeScale );
+	RandomSizeMult = GetRandExtraScale( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
 	EnergyToPenetrateHead = default.EnergyToPenetrateHead * RandomSizeMult * GetRandMult(0.9, 1.1);
 	EnergyToPenetrateBody = default.EnergyToPenetrateBody * RandomSizeMult * GetRandMult(0.9, 1.1);
-	MeleeRange = default.MeleeRange * RandomSizeMult * GetRandMult(MinMeleeRangeScale, MaxMeleeRangeScale);
+	MeleeRange = default.MeleeRange * RandomSizeMult * GetRandMult( MeleeRangeScale.Min, MeleeRangeScale.Max );
 	// Sizes
 	SetDrawScale(default.DrawScale * RandomSizeMult);
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
@@ -224,8 +219,8 @@ simulated event PostBeginPlay()
 		
 		//[block] Speed Randomization
 		AirSpeed *= MovementSpeedDifficultyScale;
-		RandMult = GetRandMult( MinMonsterSpeedScale, MaxMonsterSpeedScale, MiniBossSpeedChance, MiniBossMaxSpeedScale );
-		if ( RandMult > MaxMonsterSpeedScale )
+		RandMult = GetRandExtraScale( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
+		if ( RandMult > SpeedScaleRange.Max )
 			bThisIsMiniBoss = True;
 		GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
 		WaterSpeed *= MovementSpeedDifficultyScale * RandMult;
@@ -236,29 +231,31 @@ simulated event PostBeginPlay()
 		
 		//[block] Healths Randomization
 		// Health
-		RandMult = GetRandMult( MinHealthScale, MaxHealthScale, MiniBossHealthsChance, MiniBossMaxHealthScale );
-		if ( RandMult > MaxHealthScale )
-			bThisIsMiniBoss = True;
+		RandMult = GetRandExtraScale( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
 		Health *= DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer();
 		HealthMax = float(Health);
 		
 		// HeadHealth
-		RandMult = GetRandMult( MinHeadHealthScale, MaxHeadHealthScale, MiniBossHealthsChance, MiniBossMaxHeadHealthScale );
-		if ( RandMult > MaxHeadHealthScale )
+		if ( RandMult > HealthScaleRange.Max )  {
 			bThisIsMiniBoss = True;
+			RandMult = GetRandMult( ExtraHeadHealthScaleRange.Min, ExtraHeadHealthScaleRange.Max );
+		}
+		else
+			RandMult = GetRandMult( HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
+
 		HeadHealth *= DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer();
 		if ( HeadHealth >= HealthMax )
 			HeadHealth = HealthMax - 10.00;
 		//[end]
 			
 		//floats
-		RandMult = GetRandMult(MinDamageScale, MaxDamageScale);
-		SpinDamConst = FMax( (DifficultyDamageModifer() * SpinDamConst * RandMult), 1.0 );
-		SpinDamRand = FMax( (DifficultyDamageModifer() * SpinDamRand * RandMult), 1.0 );
-		JumpZ *= GetRandMult(MinJumpZScale, MaxJumpZScale);
+		RandMult = GetRandMult( DamageScaleRange.Min, DamageScaleRange.Max );
+		SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
+		SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
+		JumpZ *= GetRandMult( JumpZScaleRange.Min, JumpZScaleRange.Max );
 		//int
-		ScreamDamage = Max( (DifficultyDamageModifer() * ScreamDamage * GetRandMult(MinDamageScale, MaxDamageScale)), 1 );
-		MeleeDamage = Max( (DifficultyDamageModifer() * MeleeDamage * GetRandMult(MinDamageScale, MaxDamageScale)), 1 );
+		ScreamDamage = Max( (DifficultyDamageModifer() * default.ScreamDamage * GetRandMult(DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+		MeleeDamage = Max( (DifficultyDamageModifer() * default.MeleeDamage * GetRandMult(DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 
 		
 		//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
@@ -1001,37 +998,29 @@ function Dazzle(float TimeScale)
 defaultproperties
 {
      // Monster Size
-	 MinMonsterSizeScale=0.800000
-	 MaxMonsterSizeScale=1.200000
+	 SizeScaleRange=(Min=0.8,Max=1.2)
 	 // Monster Speed
-	 MinMonsterSpeedScale=0.880000
-	 MaxMonsterSpeedScale=1.120000
+	 SpeedScaleRange=(Min=0.88,1.12)
 	 // Monster Health
-	 MinHealthScale=0.900000
-	 MaxHealthScale=1.100000
+	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 // Monster HeadHealth
-	 MinHeadHealthScale=0.920000
-	 MaxHeadHealthScale=1.080000
+	 HeadHealthScaleRange=(Min=0.92,Max=1.08)
 	 // JumpZ
-	 MinJumpZScale=0.880000
-	 MaxJumpZScale=1.120000
+	 JumpZScaleRange=(Min=0.88,Max=1.12)
 	 // MeleeRange
-	 MinMeleeRangeScale=0.940000
-	 MaxMeleeRangeScale=1.060000
+	 MeleeRangeScale=(Min=0.95,Max=1.05)
 	 // DamageScale
-	 MinDamageScale=0.900000
-	 MaxDamageScale=1.100000
+	 DamageScaleRange=(Min=0.9,Max=1.1)
 	 // Extra Sizes
-	 ExtraSizesChance=0.150000
-	 MinExtraSizeScale=0.520000
-	 MaxExtraSizeScale=1.250000
-	 // MiniBoss Speed
-	 MiniBossSpeedChance=0.200000
-	 MiniBossMaxSpeedScale=2.000000
-	 // MiniBoss Health
-	 MiniBossHealthsChance=0.200000
-	 MiniBossMaxHealthScale=2.000000
-	 MiniBossMaxHeadHealthScale=1.900000
+	 ExtraSizeChance=0.150000
+	 ExtraSizeScaleRange=(Min=0.52,Max=1.25)
+	 // Extra Speed
+	 ExtraSpeedChance=0.200000
+	 ExtraSpeedScaleRange=(Min=1.2,Max=2.0)
+	 // Extra Health
+	 ExtraHealthChance=0.200000
+	 ExtraHealthScaleRange=(Min=1.15,Max=2.0)
+	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
 	 //Anims
 	 DoubleJumpAnims(0)="Jump"
      DoubleJumpAnims(1)="Jump"

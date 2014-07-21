@@ -212,11 +212,11 @@ state Stuck
 {
 	Ignores HitWall, Landed, Stick;
 	
-	simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+	function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 	{
 		local	Inventory	Inv;
 		
-		if ( Role == ROLE_Authority && Pawn(A) != None && Pawn(A) == Instigator && Pawn(A).Inventory != None )  {
+		if ( Pawn(A) != None && Pawn(A) == Instigator && Pawn(A).Inventory != None )  {
 			for( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )  {
 				if ( UM_Weapon_HandGrenade(Inv) != None && 
 					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {

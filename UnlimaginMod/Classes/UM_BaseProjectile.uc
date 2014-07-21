@@ -122,9 +122,8 @@ var				float		MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
 var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
-// [!] Do not set/change default values of this variables!
-// MuzzleEnergy and ProjectileEnergy Calculates automatically.
-var				float		MuzzleEnergy, ProjectileEnergy;
+// ProjectileEnergy Calculates automatically before initial replication.
+var				float		ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
 var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.ProjectileMass
 
@@ -154,6 +153,9 @@ replication
 {
     reliable if ( Role == ROLE_Authority && bNetDirty )
 		bFriendlyFireIsAllowed;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		ProjectileEnergy;
 	
 	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
 		SpawnTime;
@@ -255,8 +257,8 @@ simulated function CalcDefaultProperties()
 			LifeSpan = default.LifeSpan;
 		}
 		
-		// Calculating MuzzleEnergy and ProjectileEnergy
-		// Divide on (2 * SquareMeterInUU) because we need to convert 
+		// Calculating SpeedSquaredToEnergy and EnergyToSpeedSquared
+		// (2 * SquareMeterInUU) because we need to convert 
 		// speed square from uu/sec to meter/sec
 		if ( default.ProjectileMass > 0.0 )  {
 			// SpeedSquaredToEnergy
@@ -265,12 +267,6 @@ simulated function CalcDefaultProperties()
 			// EnergyToSpeedSquared
 			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
 			EnergyToSpeedSquared = default.EnergyToSpeedSquared;
-			// MuzzleEnergy
-			default.MuzzleEnergy = default.MaxSpeed * default.MaxSpeed * default.SpeedSquaredToEnergy;
-			MuzzleEnergy = default.MuzzleEnergy;
-			// ProjectileEnergy
-			default.ProjectileEnergy = default.MuzzleEnergy;
-			ProjectileEnergy = default.MuzzleEnergy;
 		}
 	}
 	
@@ -382,56 +378,48 @@ simulated static function bool UnloadAssets()
 //simulated function used to Spawn trails on client side
 simulated function SpawnTrail()
 {
-	if ( !bTrailSpawned )  {
-		bTrailSpawned = True;
-		
-		// Level.bDropDetail is true when frame rate is below DesiredFrameRate
-		// DM_Low - is a low-detail Mode
-		if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
-			 && Level.DetailMode != DM_Low && !PhysicsVolume.bWaterVolume )  {
-			// xEmitter
-			if ( Trail.xEmitterClass != None )  {
-				Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
-				if ( Trail.xEmitterEffect != None )  {
-					Trail.xEmitterEffect.Lifespan = Lifespan;
-					// Rotation
-					if ( Trail.xEmitterRotation != Rot(0, 0, 0) )
-						Trail.xEmitterEffect.SetRelativeRotation( Trail.xEmitterRotation );
-				}
-			}
-			// Emitter
-			if ( Trail.EmitterClass != None )  {
-				Trail.EmitterEffect = Spawn( Trail.EmitterClass, Self );
-				if ( Trail.EmitterEffect != None )  {
-					Trail.EmitterEffect.SetBase(Self);
-					// Rotation
-					if ( Trail.EmitterRotation != Rot(0, 0, 0) )
-						Trail.EmitterEffect.SetRelativeRotation( Trail.EmitterRotation );
-				}
-			}
-		}
-		
+	// Level.bDropDetail is true when frame rate is below DesiredFrameRate
+	// DM_Low - is a low-detail Mode
+	if ( Level.NetMode != NM_DedicatedServer && !bTrailSpawned && !Level.bDropDetail
+		 && Level.DetailMode != DM_Low && !PhysicsVolume.bWaterVolume )  {
 		if ( bTrailDestroyed )
 			bTrailDestroyed = False;
+		bTrailSpawned = True;
+		// xEmitter
+		if ( Trail.xEmitterClass != None )  {
+			Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
+			if ( Trail.xEmitterEffect != None )  {
+				Trail.xEmitterEffect.Lifespan = Lifespan;
+				// Rotation
+				if ( Trail.xEmitterRotation != Rot(0, 0, 0) )
+					Trail.xEmitterEffect.SetRelativeRotation( Trail.xEmitterRotation );
+			}
+		}
+		// Emitter
+		if ( Trail.EmitterClass != None )  {
+			Trail.EmitterEffect = Spawn( Trail.EmitterClass, Self );
+			if ( Trail.EmitterEffect != None )  {
+				Trail.EmitterEffect.SetBase(Self);
+				// Rotation
+				if ( Trail.EmitterRotation != Rot(0, 0, 0) )
+					Trail.EmitterEffect.SetRelativeRotation( Trail.EmitterRotation );
+			}
+		}
 	}
 }
 
 simulated function DestroyTrail()
 {
-	if ( bTrailSpawned && !bTrailDestroyed )  {
+	if ( Level.NetMode != NM_DedicatedServer && bTrailSpawned && !bTrailDestroyed )  {
 		bTrailDestroyed = True;
-		
-		if ( Level.NetMode != NM_DedicatedServer )  {
-			// xEmitter
-			if ( Trail.xEmitterEffect != None )  {
-				Trail.xEmitterEffect.mRegen = False;
-				Trail.xEmitterEffect.SetPhysics(PHYS_None);
-			}
-			// Emitter
-			if ( Trail.EmitterEffect != None )
-				Trail.EmitterEffect.Kill();
+		// xEmitter
+		if ( Trail.xEmitterEffect != None )  {
+			Trail.xEmitterEffect.mRegen = False;
+			Trail.xEmitterEffect.SetPhysics(PHYS_None);
 		}
-		
+		// Emitter
+		if ( Trail.EmitterEffect != None )
+			Trail.EmitterEffect.Kill();
 		bTrailSpawned = False;
 	}
 }
@@ -445,9 +433,13 @@ function ServerInitialUpdate()
 // Called before initial replication
 function ServerSetInitialVelocity()
 {
-	// Little Velocity randomization
-	if ( Speed > 0.0 )
-		Velocity = Vector(Rotation) * Speed * GetBallisticRandMult();
+	if ( Speed > 0.0 )  {
+		// Velocity randomization
+		Speed *= GetBallisticRandMult();
+		// Calculating ProjectileEnergy before initial replication
+		ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
+		Velocity = Vector(Rotation) * Speed;
+	}
 }
 
 // Called after the actor is created but BEFORE any values have been replicated to it.
@@ -557,7 +549,7 @@ simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 		GotoState('InTheWater');
 }
 
-// Server only function because Level.Game variable exists only on the server-side
+// Server function because Level.Game variable exists only on the server-side
 function bool CanHurtPawn( Pawn P )
 {
 	// Do not damage a friendly Pawn
@@ -757,12 +749,20 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 		if ( Pawn(A.Base) != None || Mover(A.Base) != None )
 			A = A.Base;
 		
-		// If projectile is not moving or TraceThisActor did't hit the actor
-		//if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.5 * Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + 0.35 * Velocity), (Location - 1.65 * Velocity), CollisionExtent) )  {
-			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
+		if ( Velocity == Vect(0.0, 0.0, 0.0) )  {
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
+		}
+		else if ( A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
+			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
+			// TraceThisActor did't hit UM_Monster hitbox
+			if ( UM_Monster(A) != None )
+				Return False;
+			// TraceThisActor did't hit the actor
+			else  {
+				TouchLocation = Location;
+				TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
+			}
 		}
 		
 		Return True;

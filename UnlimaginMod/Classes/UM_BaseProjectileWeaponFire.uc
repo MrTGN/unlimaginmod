@@ -81,7 +81,7 @@ struct	PerkProjData
 	var		float				SecondPerkProjMaxSpread;
 };
 
-var				UM_BaseWeapon	UMW;
+var				UM_BaseWeapon	UMWeapon;
 var				bool			bCanDryFire;
 var				bool			bIsDryFiring;
 var				float			NextDryFireTime;
@@ -334,7 +334,7 @@ simulated event PostBeginPlay()
 		PreloadAssets(Level, self);
 	
 	KFWeap = KFWeapon(Weapon);
-	UMW = UM_BaseWeapon(Weapon);
+	UMWeapon = UM_BaseWeapon(Weapon);
 	CheckAnimArrays();
 	
 	//[block] Copeid from WeaponFire.uc with some changes
@@ -430,8 +430,8 @@ simulated function DrawMuzzleFlash(Canvas Canvas)
 		Return;
 	
 	if ( !bAttachSmokeEmitter || !bAttachFlashEmitter )  {
-		if ( UMW != None )
-			EffectStart = UMW.GetFireModeEffectStart(ThisModeNum);
+		if ( UMWeapon != None )
+			EffectStart = UMWeapon.GetFireModeEffectStart(ThisModeNum);
 		else
 			EffectStart = Weapon.GetEffectStart();
 	}
@@ -563,7 +563,7 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 	if ( CP != None )  {
 		if ( Other != None )
 			Start = (2.0 + FMax(CP.default.CollisionRadius, CP.default.CollisionHeight)) * -Normal(HitLocation - Start) + HitLocation;
-		P = Weapon.Spawn(CP, Instigator,, Start, Dir);
+		P = Weapon.Spawn(CP, Weapon,, Start, Dir);
 	}
 	else
 		Return None;
@@ -582,7 +582,7 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
     local	Projectile	P;
 
 	if ( ProjectileClass != None )
-		P = Weapon.Spawn(ProjectileClass, Instigator,, Start, Dir);
+		P = Weapon.Spawn(ProjectileClass, Weapon,, Start, Dir);
 	
 	if ( P == None )
 		P = ForceSpawnProjectile(Start,Dir);
@@ -595,6 +595,28 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 	Return P;
 }
 //[end]
+
+function UpdateSavedFireProperties()
+{
+	SavedFireProperties.AmmoClass = AmmoClass;
+	SavedFireProperties.ProjectileClass = ProjectileClass;
+	SavedFireProperties.WarnTargetPct = WarnTargetPct;
+	SavedFireProperties.MaxRange = MaxRange();
+	SavedFireProperties.bTossed = bTossed;
+	SavedFireProperties.bTrySplash = bRecommendSplashDamage;
+	SavedFireProperties.bLeadTarget = bLeadTarget;
+	SavedFireProperties.bInstantHit = bInstantHit;
+	SavedFireProperties.bInitialized = True;
+}
+
+//Issue #186
+function Rotator AdjustAim(Vector Start, float InAimError)
+{
+	if ( !SavedFireProperties.bInitialized )
+		UpdateSavedFireProperties();
+
+	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError);
+}
 
 function DoFireEffect()
 {
@@ -682,9 +704,9 @@ function UpdateFireRate()
 	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )  {
 		FireSpeedModif = KFPRI.ClientVeteranSkill.Static.GetFireSpeedMod(KFPRI, Weapon);
-		// FireSpeedModif in UM_SRHumanPawn replicates from the server to the clients
-		if ( UM_SRHumanPawn(Instigator) != None && Weapon.Role == ROLE_Authority )
-			UM_SRHumanPawn(Instigator).FireSpeedModif = FireSpeedModif;
+		// FireSpeedModif in UM_HumanPawn replicates from the server to the clients
+		if ( UM_HumanPawn(Instigator) != None && Weapon.Role == ROLE_Authority )
+			UM_HumanPawn(Instigator).FireSpeedModif = FireSpeedModif;
 		// FireRate
 		FireRate = default.FireRate / FireSpeedModif;
 	}
@@ -826,13 +848,13 @@ function DryFire()
 		bCanDryFire = False;
 		NextDryFireTime = Level.TimeSeconds + FireRate;
 		PlayNoAmmoSound();
-		if ( UMW != None && UMW.default.MagCapacity > 1 )  {
+		if ( UMWeapon != None && UMWeapon.default.MagCapacity > 1 )  {
 			// Player
 			if ( PlayerController(Instigator.Controller) != None )
-				UMW.RequestAutoReload(ThisModeNum);
+				UMWeapon.RequestAutoReload(ThisModeNum);
 			// Bots and other AI
 			else if ( AIController(Instigator.Controller) != None )
-				UMW.ReloadMeNow();
+				UMWeapon.ReloadMeNow();
 		}
 		bCanDryFire = default.bCanDryFire;
 	}

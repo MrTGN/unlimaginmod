@@ -173,26 +173,26 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 	if ( KFPRI.ClientVeteranSkillLevel >= 5 )
 		P.ShieldStrength = 100;
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 6:
 				ExtraAmmo = 3 * class'MP7MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 6);
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP7MMedicGun", GetCostScaling(KFPRI, class'MP7MPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP7MMedicGun", GetCostScaling(KFPRI, class'MP7MPickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 8:
 				ExtraAmmo = 3 * class'MP5MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 8);
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP5MMedicGun", GetCostScaling(KFPRI, class'MP5MPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP5MMedicGun", GetCostScaling(KFPRI, class'MP5MPickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 10:
 				ExtraAmmo = 3 * class'M7A3MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 10);
 			case 9:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M7A3MMedicGun", GetCostScaling(KFPRI, class'M7A3MPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M7A3MMedicGun", GetCostScaling(KFPRI, class'M7A3MPickup'), ExtraAmmo, 0);
 				Break;
 		}
 	}

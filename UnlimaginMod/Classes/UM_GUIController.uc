@@ -34,8 +34,8 @@ class UM_GUIController extends KFGUIController;
 
 simulated event ResolutionChanged()
 {
-    if ( ViewportOwner.Actor != None && UM_SRPlayerController(ViewportOwner.Actor) != None )
-        UM_SRPlayerController(ViewportOwner.Actor).SetUpWidescreenFOV();
+    if ( ViewportOwner.Actor != None && UM_PlayerController(ViewportOwner.Actor) != None )
+        UM_PlayerController(ViewportOwner.Actor).SetUpWidescreenFOV();
 }
 
 //[end] Functions

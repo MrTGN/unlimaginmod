@@ -274,29 +274,29 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 {
 	local	int		ExtraAmmo;
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 6:
 				ExtraAmmo = 12;
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.BoomStick", GetCostScaling(KFPRI, class'BoomStickPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.BoomStick", GetCostScaling(KFPRI, class'BoomStickPickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 8:
 				ExtraAmmo = 12;
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM3Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM3Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM3Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM3Pickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 9:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM4Pickup'));
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM4Pickup'));
 				Break;
 			
 			case 10:
 				ExtraAmmo = 12;
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_GoldenBenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenBenelliM4Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_GoldenBenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenBenelliM4Pickup'), ExtraAmmo, 0);
 				Break;
 		}
 	}

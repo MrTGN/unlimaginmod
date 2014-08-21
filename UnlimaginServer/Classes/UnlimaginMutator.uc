@@ -228,8 +228,8 @@ event Timer()
 	
 	for ( i = (PendingPlayers.Length - 1); i >= 0; --i )  {
 		// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
-		if ( UM_SRPlayerController(PendingPlayers[i]) != None )
-			UM_SRPlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
+		if ( UM_PlayerController(PendingPlayers[i]) != None )
+			UM_PlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
 		
 		// If UM_ServerStStats is not spawned, destroying SteamStatsAndAchievements and Spawn UM_ServerStStats
 		if ( PendingPlayers[i] != None && PendingPlayers[i].Player != None )  {

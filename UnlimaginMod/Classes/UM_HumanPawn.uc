@@ -1,7 +1,7 @@
 //=============================================================================
-// UM_SRHumanPawn
+// UM_HumanPawn
 //=============================================================================
-class UM_SRHumanPawn extends KFHumanPawn;
+class UM_HumanPawn extends KFHumanPawn;
 
 var		float						FireSpeedModif;
 var		UM_SRClientPerkRepLink		PerkLink;
@@ -42,9 +42,19 @@ simulated final function float GetRandMult(
 	Return RandMultiplier;
 }
 
-simulated final function GetViewAxes( out vector xaxis, out vector yaxis, out vector zaxis )
+
+
+simulated function rotator GetViewRotation()
 {
-	GetAxes( GetViewRotation(), xaxis, yaxis, zaxis );
+	if ( Controller != None )
+		Return Controller.GetViewRotation();
+	
+	Return Rotation;
+}
+
+simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
+{
+	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
 function VeterancyChanged()

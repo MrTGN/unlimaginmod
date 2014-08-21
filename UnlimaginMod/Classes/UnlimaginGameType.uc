@@ -1707,13 +1707,13 @@ defaultproperties
      MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 
 	 UM_LoginMenuClass="UnlimaginMod.UM_SRInvasionLoginMenu"
-	 DefaultPlayerClassName="UnlimaginMod.UM_SRHumanPawn"
+	 DefaultPlayerClassName="UnlimaginMod.UM_HumanPawn"
      ScoreBoardType="UnlimaginMod.UM_SRScoreBoard"
      HUDType="UnlimaginMod.UM_SRHUDKillingFloor"
      MapListType="KFMod.KFMapList"
 	 
-	 PlayerControllerClass=Class'UnlimaginMod.UM_SRPlayerController'
-     PlayerControllerClassName="UnlimaginMod.UM_SRPlayerController"
+	 PlayerControllerClass=Class'UnlimaginMod.UM_PlayerController'
+     PlayerControllerClassName="UnlimaginMod.UM_PlayerController"
 	 DefaultLevelRulesClass=Class'UnlimaginMod.UM_SRGameRules'
 	 
 	 

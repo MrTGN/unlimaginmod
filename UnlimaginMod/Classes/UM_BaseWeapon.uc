@@ -245,10 +245,14 @@ simulated event PostBeginPlay()
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( !bHasScope )
 			KFScopeDetail = KF_None;
-
 		InitFOV();
 	}
 	//[end]
+}
+
+simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
+{
+	GetAxes( Instigator.GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
 function SpawnTacticalModule()

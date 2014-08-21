@@ -399,29 +399,29 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 {
 	local	int		ExtraAmmo;
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 6:
 				ExtraAmmo = 2 * class'Braindead_MP5A4SMG'.default.MagCapacity * (1.00 + 0.05 * 6);
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.Braindead_MP5A4SMG", GetCostScaling(KFPRI, class'UnlimaginMod.Braindead_MP5A4Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.Braindead_MP5A4SMG", GetCostScaling(KFPRI, class'UnlimaginMod.Braindead_MP5A4Pickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 8:
 				ExtraAmmo = 2 * class'UM_M4AssaultRifle'.default.MagCapacity * (1.00 + 0.05 * 8);
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_M4AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_M4AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4Pickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 9:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_AK47AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_AK47Pickup'));
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_AK47AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_AK47Pickup'));
 				Break;
 			
 			case 10:
 				ExtraAmmo = 2 * class'UM_GoldenAK47AssaultRifle'.default.MagCapacity * (1.00 + 0.05 * 10);
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_GoldenAK47AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenAK47Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_GoldenAK47AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenAK47Pickup'), ExtraAmmo, 0);
 				Break;
 		}
 	}

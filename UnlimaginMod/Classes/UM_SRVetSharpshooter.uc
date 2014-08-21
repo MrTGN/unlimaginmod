@@ -303,26 +303,26 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 	if ( KFPRI.ClientVeteranSkillLevel >= 7 )
 		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch ( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 8:
 				ExtraAmmo = 2 * class'Winchester'.default.MagCapacity;
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_WinchesterM1894Rifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_WinchesterM1894Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_WinchesterM1894Rifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_WinchesterM1894Pickup'), ExtraAmmo, 0);
 			case 6:
 				ExtraAmmo = 3 * class'UM_MK23Pistol'.default.MagCapacity;
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 10:
 				ExtraAmmo = 6;
 			case 9:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_Crossbow", GetCostScaling(KFPRI, class'UnlimaginMod.UM_CrossbowPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_Crossbow", GetCostScaling(KFPRI, class'UnlimaginMod.UM_CrossbowPickup'), ExtraAmmo, 0);
 				ExtraAmmo = 3 * class'UM_MK23Pistol'.default.MagCapacity;
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
 				Break;
 		}
 	}

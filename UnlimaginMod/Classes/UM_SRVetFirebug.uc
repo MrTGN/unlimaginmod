@@ -212,20 +212,20 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 	if ( KFPRI.ClientVeteranSkillLevel >= 9 )
 		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 6:
 				ExtraAmmo = 2 * class'UM_MAC10MP'.default.MagCapacity * (1.00 + 0.06 * 6);
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MAC10MP", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MAC10Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MAC10MP", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MAC10Pickup'), ExtraAmmo, 0);
 				Break;
 			
 			case 10:
 				ExtraAmmo = 3 * class'FlareRevolver'.default.MagCapacity;
 			case 9:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.FlareRevolver", GetCostScaling(KFPRI, class'FlareRevolverPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.FlareRevolver", GetCostScaling(KFPRI, class'FlareRevolverPickup'), ExtraAmmo, 0);
 			case 8:
 				if ( KFPRI.ClientVeteranSkillLevel == 8 )
 					ExtraAmmo = class'UM_FlameThrower'.default.MagCapacity * (1.00 + 0.10 * 8);
@@ -234,7 +234,7 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 				else
 					ExtraAmmo = class'UM_FlameThrower'.default.MagCapacity * (1.00 + 0.10 * 10);
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_FlameThrower", GetCostScaling(KFPRI, class'UnlimaginMod.UM_FlameThrowerPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_FlameThrower", GetCostScaling(KFPRI, class'UnlimaginMod.UM_FlameThrowerPickup'), ExtraAmmo, 0);
 				Break;
 		}
 	}

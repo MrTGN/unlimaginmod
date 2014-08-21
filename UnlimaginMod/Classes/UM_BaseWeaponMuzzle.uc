@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_PlayerInput
-//	Parent class:	 KFPlayerInput
+//	Class name:		 UM_BaseWeaponMuzzle
+//	Parent class:	 UM_BaseWeaponModule
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -10,13 +10,33 @@
 //	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
 //	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 08.01.2014 04:43
+//	Creation date:	 22.08.2014 00:54
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_PlayerInput extends KFPlayerInput within UM_PlayerController
-	config(User);
+class UM_BaseWeaponMuzzle extends UM_BaseWeaponModule
+	Abstract;
 
+//========================================================================
+//[block] Variables
+
+var			float		MuzzleVelocityScale;
+var			float		SpreadScale;
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
+
+//[end] Replication
+//====================================================================
+
+//========================================================================
+//[block] Functions
+
+//[end] Functions
+//====================================================================
 
 defaultproperties
 {

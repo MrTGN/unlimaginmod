@@ -86,6 +86,8 @@ var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
 var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
 
+var		UM_BaseWeapon		Weapon;
+
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
 var				bool		bReplicateSpawnLocation; // Storing and replicate projectile spawn location from server in SpawnLocation variable
@@ -324,10 +326,15 @@ simulated event PreBeginPlay()
 	if ( Role == ROLE_Authority )
 		bFriendlyFireIsAllowed = TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0;
 	
-	if ( Pawn(Owner) != None )
-        Instigator = Pawn(Owner);
-	
-	UpdateBonuses();
+	if ( UM_BaseWeapon(Owner) != None )  {
+		Weapon = UM_BaseWeapon(Owner);	
+		//[!] Todo: подумать где и как хранить настройки и данные стволов, оружия и тп.
+		// Думаю, что это может быть функция, возвращающая данные по последнему выстрелу.
+		// Сами настройки хранить в Fire классе, а из оружия получать через функцию нужные
+		// характеристики по последнему выстрелу.
+		Instigator = Weapon.Instigator;
+		UpdateBonuses();
+	}
 	
 	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )
@@ -437,7 +444,9 @@ function ServerSetInitialVelocity()
 		// Velocity randomization
 		Speed *= GetBallisticRandMult();
 		// Calculating ProjectileEnergy before initial replication
-		ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
+		if ( default.ProjectileMass > 0.0 )
+			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
+		// Initial velocity
 		Velocity = Vector(Rotation) * Speed;
 	}
 }
@@ -753,6 +762,7 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
 		}
+		// [!] Todo: replace (Location + Velocity) by (Normal(Velocity) * UM_Monster(A).CollisionVSize)
 		else if ( A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
 			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
 			// TraceThisActor did't hit UM_Monster hitbox

@@ -196,18 +196,18 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 	if ( KFPRI.ClientVeteranSkillLevel >= 9 )
 		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
 	
-	if ( UM_SRHumanPawn(P) != None )
+	if ( UM_HumanPawn(P) != None )
 	{
 		switch( KFPRI.ClientVeteranSkillLevel )
 		{
 			case 8:
 				ExtraAmmo = 6;
 			case 7:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
 			case 6:
 				ExtraAmmo = 2;
 			case 5:
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.PipeBombExplosive", GetCostScaling(KFPRI, class'PipeBombPickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.PipeBombExplosive", GetCostScaling(KFPRI, class'PipeBombPickup'), ExtraAmmo, 0);
 				Break;
 		
 			case 10:
@@ -215,12 +215,12 @@ static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
 				ExtraAmmo = 6;
 				if ( KFPRI.ClientVeteranSkillLevel == 9 )
 				{
-					UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
+					UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
 					ExtraAmmo = 0;
 				}
 				else
-					UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.GoldenM79GrenadeLauncher", GetCostScaling(KFPRI, class'GoldenM79Pickup'), ExtraAmmo, 0);
-				UM_SRHumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_M4203AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4203Pickup'), ExtraAmmo, 1);
+					UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.GoldenM79GrenadeLauncher", GetCostScaling(KFPRI, class'GoldenM79Pickup'), ExtraAmmo, 0);
+				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_M4203AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4203Pickup'), ExtraAmmo, 1);
 				Break;
 		}
 	}

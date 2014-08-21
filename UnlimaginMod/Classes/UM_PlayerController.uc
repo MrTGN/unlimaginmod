@@ -1,4 +1,4 @@
-class UM_SRPlayerController extends KFPlayerController;
+class UM_PlayerController extends KFPlayerController;
 
 var transient	vector		CamPos;
 var transient	rotator		CamRot;
@@ -135,9 +135,9 @@ function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int
 
 simulated function rotator GetViewRotation()
 {
-    if ( (bBehindView && !bUseAdvBehindview && Pawn != None) || (bBehindView && Vehicle(Pawn) != None) )
-        Return Pawn.Rotation;
-    
+	if ( bBehindView && (Vehicle(Pawn) != None || (!bUseAdvBehindview && Pawn != None)) )
+		Return Pawn.Rotation;
+	
 	Return Rotation;
 }
 
@@ -403,5 +403,5 @@ defaultproperties
 	MidGameMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	SteamStatsAndAchievementsClass=None
 	SteamStatsAndAchievementsClassName="UnlimaginServer.UM_ServerStStats"
-	PawnClass=Class'UnlimaginMod.UM_SRHumanPawn'
+	PawnClass=Class'UnlimaginMod.UM_HumanPawn'
 }

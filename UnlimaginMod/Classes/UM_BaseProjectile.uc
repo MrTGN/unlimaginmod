@@ -22,8 +22,9 @@ class UM_BaseProjectile extends ROBallisticProjectile
 //[block] Variables
 
 // Constants
-const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+//Todo: test this const!
+const	Maths = BaseActor.Maths;
 
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
@@ -79,7 +80,8 @@ struct	TrailData
 var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
 
 // Logging
-var(Logging)	bool		bEnableLogging, bDefaultPropertiesCalculated;
+var(Logging)	bool		bEnableLogging;
+var				bool		bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bFriendlyFireIsAllowed;	// Friendly fire is allowed or not. Replicates from the server to the clients.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
@@ -144,6 +146,8 @@ var(Effects)	float						HitSoundVolume;	// Volume of Projectile hit sound. Every
 var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in which actors will hear hit sounds.
 //[end]
 
+var				float						WeaponRecoilScale;
+
 //[end] Varibles
 //====================================================================
 
@@ -156,7 +160,7 @@ replication
     reliable if ( Role == ROLE_Authority && bNetDirty )
 		bFriendlyFireIsAllowed;
 	
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetInitial )
 		ProjectileEnergy;
 	
 	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
@@ -974,6 +978,7 @@ defaultproperties
 	 UpdateTimeDelay=0.100000
 	 ImpactSound=None
 	 //[end]
+	 WeaponRecoilScale=1.000000
 	 //[block] Replication
 	 bNetTemporary=True
      bReplicateInstigator=True

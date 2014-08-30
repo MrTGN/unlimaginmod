@@ -21,6 +21,22 @@ class UM_BaseActor extends Actor
 //========================================================================
 //[block] Variables
 
+// Constants
+const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+
+// 1 meter = 60.352 Unreal Units in Killing Floor
+// Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
+const	MeterInUU = 60.352;
+const	SquareMeterInUU = 3642.363904;
+
+// From UT3
+const	DegToRad = 0.017453292519943296;	// Pi / 180
+const	RadToDeg = 57.295779513082321600;	// 180 / Pi
+const	UnrRotToRad = 0.00009587379924285;	// Pi / 32768
+const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
+const 	DegToUnrRot = 182.0444;
+const 	UnrRotToDeg = 0.00549316540360483;
+
 // Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
 {

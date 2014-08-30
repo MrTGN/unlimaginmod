@@ -162,6 +162,9 @@ var		array< AnimData >		PreFireAnims,
 var		array< name >			MuzzleBones;
 var		array< name >			ShellEjectBones;
 
+var		array< class'UM_BaseWeaponMuzzle' >	MuzzleClasses;
+var		array< UM_BaseWeaponMuzzle >		Muzzles;
+
 var		bool					bDoFiringEffects;
 
 // Arrays with fire effects.
@@ -347,6 +350,24 @@ simulated event PostBeginPlay()
 	//[end]
 
 	SetMuzzleNum(default.MuzzleNum);
+}
+
+function InitWeaponMuzzles()
+{
+	local	byte	i;
+	
+	if ( UMWeapon != None )  {
+		for ( i = 0; i < MuzzleClasses.Length; ++i )  {
+			if ( MuzzleClasses[i] != None )  {
+				Muzzles[i] = UMWeapon.Spawn( MuzzleClasses[i] );
+				if ( Muzzles[i] != None )  {
+					UMWeapon.AttachToBone( Muzzles[i], MuzzleBones[i] );
+					Muzzles[i].Weapon = UMWeapon;
+					Muzzles[i].FireMode = Self;
+				}
+			}
+		}
+	}
 }
 
 // Called from Weapon simulated event Timer()
@@ -826,9 +847,8 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 		if ( KFWeap.bAimingRifle )
 			ShakeScaler *= AimingShakeBonus;
 		
-		ShakeRotMag.X = default.ShakeRotMag.X * ShakeScaler;
-		ShakeRotMag.Y = default.ShakeRotMag.Y * ShakeScaler;
-		ShakeRotMag.Z = default.ShakeRotMag.Z * ShakeScaler;
+		ShakeRotMag = default.ShakeRotMag * ShakeScaler;
+		ShakeOffsetMag = default.ShakeOffsetMag * ShakeScaler;
 		
 		P.WeaponShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime, ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
 	}
@@ -1064,10 +1084,10 @@ function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SR
  	}
 }
 
-// MaxRange of fire for bots
+// MaxRange
 function float MaxRange()
 {
-	if (Instigator.Region.Zone.bDistanceFog)
+	if ( Instigator.Region.Zone.bDistanceFog )
 		Return Min(Instigator.Region.Zone.DistanceFogEnd, EffectiveRange);
 	else 
 		Return EffectiveRange;

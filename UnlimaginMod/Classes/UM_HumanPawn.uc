@@ -3,14 +3,40 @@
 //=============================================================================
 class UM_HumanPawn extends KFHumanPawn;
 
-var		float						FireSpeedModif;
+//========================================================================
+//[block] Variables
+
+// Constants
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+//Todo: test this const!
+const	MeterInUU = BaseActor.MeterInUU;
+const	SquareMeterInUU = BaseActor.SquareMeterInUU;
+
+var		bool						bDefaultPropertiesCalculated;
 var		UM_SRClientPerkRepLink		PerkLink;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
+
+var		float						FireSpeedModif;
+var		range						JumpRandRange;
+
+// Player Info
+var		KFPlayerReplicationInfo		KFPlayerReplicationInfo;
+var		Class<UM_SRVeterancyTypes>	CurrentVeterancy;	// Current Veterancy Class
+
+// Bouncing from the walls and actors
 var		Vector						BounceMomentum;
 var		float						LowGravBounceMomentumScale, NextBounceTime, BounceDelay, BounceCheckDistance;
 var		int							BounceRemaining;
 var		Pawn						BounceVictim;
 
+
+var		float						IntuitiveShootingRange;		// The distance in meters at which the shooter can shoot without aiming
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
 
 replication
 {
@@ -18,31 +44,144 @@ replication
 		FireSpeedModif;
 }
 
-// Extended RandRange() function analog
-simulated final function float GetRandMult(
-			float	MinMult, 
-			float	MaxMult,
- optional	float	ExtraMultChance,
- optional	float	MaxExtraMult,
- optional	float	MinExtraMult)
+//[end] Replication
+//====================================================================
+
+//========================================================================
+//[block] Functions
+
+simulated function CalcDefaultProperties()
 {
-	local	float	RandMultiplier;
+	default.IntuitiveShootingRange *= MeterInUU;
+	IntuitiveShootingRange = default.IntuitiveShootingRange;
 	
-	// Logic copied from RandRange()
-	RandMultiplier = MinMult + (MaxMult - MinMult) * FRand();
-	// Random multiplier scaling in range from the RandMultiplier up to the MaxScale
-	if ( ExtraMultChance > 0.0 && FRand() <= ExtraMultChance )  {
-		if ( MinExtraMult != 0.0 )
-			RandMultiplier = MinExtraMult + (MaxExtraMult - MinExtraMult) * FRand();
-		// if only MaxExtraMult variable was specified
-		else
-			RandMultiplier = RandMultiplier + (MaxExtraMult - RandMultiplier) * FRand();
+	default.bDefaultPropertiesCalculated = True;
+}
+
+simulated event PreBeginPlay()
+{
+	if ( !default.bDefaultPropertiesCalculated )
+		CalcDefaultProperties();
+	
+	// Server
+	if ( Role == ROLE_Authority )  {
+		Super.PreBeginPlay();
+		SetTimer(1.5, True);
 	}
-	
-	Return RandMultiplier;
 }
 
 
+simulated final function float GetRandMult( float MinMult, float MaxMult )
+{
+	Return	MinMult + (MaxMult - MinMult) * FRand();
+}
+
+simulated final function float GetRandExtraScale(
+	range		ScaleRange,
+	float		ExtraScaleChance,
+	range		ExtraScaleRange
+)
+{
+	if ( FRand() <= ExtraScaleChance )
+		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();
+	else
+		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
+}
+
+/* PossessedBy()
+ Pawn is possessed by Controller
+*/
+function PossessedBy(Controller C)
+{
+	Controller = C;
+	NetPriority = 3.0;
+	NetUpdateFrequency = 100.0;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+	
+	if ( C.PlayerReplicationInfo != None )  {
+		PlayerReplicationInfo = C.PlayerReplicationInfo;
+		OwnerName = PlayerReplicationInfo.PlayerName;
+		if ( KFPlayerReplicationInfo(PlayerReplicationInfo) != None )  {
+			KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
+			CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+		}
+	}
+	
+	if ( C.IsA('PlayerController') )  {
+		if ( bSetPCRotOnPossess )
+			C.SetRotation(Rotation);
+		if ( Level.NetMode != NM_Standalone )
+			RemoteRole = ROLE_AutonomousProxy;
+		BecomeViewTarget();
+	}
+	else
+		RemoteRole = Default.RemoteRole;
+
+	SetOwner(Controller);	// for network replication
+	Eyeheight = BaseEyeHeight;
+	ChangeAnimation();
+}
+
+function UnPossessed()
+{
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( DrivenVehicle != None )
+		NetUpdateFrequency = 5;
+
+	PlayerReplicationInfo = None;
+	KFPlayerReplicationInfo = None;
+	CurrentVeterancy = None;
+	SetOwner(None);
+	Controller = None;
+}
+
+// Notify that veterancy has been changed
+function VeterancyChanged()
+{
+	BounceRemaining = default.BounceRemaining;
+	BounceMomentum = default.BounceMomentum;
+
+	if ( KFPlayerReplicationInfo != None )  {
+		CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+		if ( CurrentVeterancy != None )
+			BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
+	}
+	
+	Super.VeterancyChanged();
+}
+
+
+/* Accessor function that returns Intuitive Shooting (not aiming) Range 
+	with veterancy bonuses and other side effects */
+function float GetIntuitiveShootingRange()
+{
+	// ToDo: вписать бонусы перкам
+	if ( Region.Zone.bDistanceFog )
+		Return Min( IntuitiveShootingRange, Region.Zone.DistanceFogEnd );
+	else
+		Return IntuitiveShootingRange;
+}
+
+function vector GetAimTargetLocation(Actor Target, optional float AimingRange )  {
+	
+	local	vector	TraceEnd, EyeLocation, HitLocation, HitNormal;
+	
+	if ( Controller != None )  {
+	}
+	else  {
+		if ( AimingRange <= 0.0 )
+			AimingRange = GetIntuitiveShootingRange();
+		EyeLocation = EyePosition() + Location;
+		TraceEnd = EyeLocation + vector(Rotation) * AimingRange;
+		// Tracing from the eyes to find the target
+		Target = Trace( HitLocation, HitNormal, TraceEnd, EyeLocation, True );
+		
+		if ( Target != None )
+			Return HitLocation;
+		else
+			Return TraceEnd;
+	}
+}
 
 simulated function rotator GetViewRotation()
 {
@@ -57,25 +196,9 @@ simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out ve
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
-function VeterancyChanged()
-{
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
-	
-	BounceRemaining = default.BounceRemaining;
-	BounceMomentum = default.BounceMomentum;
-	KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
-	if ( KFPRI != None )  {
-		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
-		if ( SRVT != None )
-			BounceRemaining = SRVT.static.GetPawnMaxBounce(KFPRI);
-	}
-	
-	Super.VeterancyChanged();
-}
-
 function DoDoubleJump( bool bUpdating )
 {
+	/*
 	PlayDoubleJump();
 
 	if ( !bIsCrouched && !bWantsToCrouch )  {
@@ -86,12 +209,12 @@ function DoDoubleJump( bool bUpdating )
 		SetPhysics(PHYS_Falling);
 		if ( !bUpdating )
 			PlayOwnedSound(GetSound(EST_DoubleJump), SLOT_Pain, GruntVolume,,80);
-	}
+	} */
 }
 
 function bool CanDoubleJump()
 {
-	Return ( MultiJumpRemaining > 0 && Physics == PHYS_Falling );
+	//Return ( MultiJumpRemaining > 0 && Physics == PHYS_Falling );
 }
 
 function bool CanMultiJump()
@@ -156,9 +279,7 @@ function DoBounce( bool bUpdating, float JumpModif )
 //Player Jumped
 function bool DoJump( bool bUpdating )
 {
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
-	local	float						JumpModif;
+	local	float	JumpModif;
 	
 	// This extra jump allows a jumping or dodging pawn to jump again mid-air
     // (via thrusters). The pawn must be within +/- 100 velocity units of the
@@ -175,13 +296,11 @@ function bool DoJump( bool bUpdating )
     } */
 	
 	if ( !bIsCrouched && !bWantsToCrouch )  {
-		JumpModif = 1.0 * GetRandMult(0.95, 1.05);
-		KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
-		if ( KFPRI != None )  {
-			SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
-			if ( SRVT != None )
-				JumpModif = SRVT.static.GetPawnJumpModifier(KFPRI);
-		}
+		if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
+			JumpModif = CurrentVeterancy.static.GetPawnJumpModifier( KFPlayerReplicationInfo ) * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
+		else
+			JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
+		
 		JumpZ = default.JumpZ * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
@@ -202,8 +321,6 @@ function bool DoJump( bool bUpdating )
 				Velocity = JumpZ * Floor;
 			else if ( Physics == PHYS_Ladder )
 				Velocity.Z = 0;
-			//else if ( bIsWalking )
-				//Velocity.Z = Default.JumpZ;
 			else
 				Velocity.Z = JumpZ;
 			
@@ -227,17 +344,11 @@ function bool DoJump( bool bUpdating )
 
 event Landed(vector HitNormal)
 {
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
-	
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
-	KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
-	if ( KFPRI != None )  {
-		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
-		if ( SRVT != None )
-			BounceRemaining = SRVT.static.GetPawnMaxBounce(KFPRI);
-	}
+	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
+		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
+	
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();
 	if ( Health > 0 )
@@ -249,7 +360,7 @@ event Landed(vector HitNormal)
 	}
 	
 	LastHitBy = None;
-    MultiJumpRemaining = MaxMultiJump;
+    //MultiJumpRemaining = MaxMultiJump;
     if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
         PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
 }
@@ -357,8 +468,8 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 
 	Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
 
-	if ( KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill != None )
-		Price *= KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill.static.GetCostScaling(KFPlayerReplicationInfo(PlayerReplicationInfo), WClass.Default.PickupClass);
+	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
+		Price *= CurrentVeterancy.static.GetCostScaling( KFPlayerReplicationInfo, WClass.Default.PickupClass );
 
 	Weight = Class<KFWeapon>(WClass).Default.Weight;
 
@@ -440,8 +551,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 			{
 				Price = (class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75);
 
-				if ( KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill != none )
-					Price *= KFPlayerReplicationInfo(PlayerReplicationInfo).ClientVeteranSkill.static.GetCostScaling(KFPlayerReplicationInfo(PlayerReplicationInfo), WClass.Default.PickupClass);
+				if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
+					Price *= CurrentVeterancy.static.GetCostScaling( KFPlayerReplicationInfo, WClass.default.PickupClass );
 			}
 
 			if ( I.Class==Class'Dualies' )
@@ -500,101 +611,93 @@ simulated function StopHitCamEffects()
 }
 
 //[block] copied from KFHumanPawn to fix some bugs
-simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+// server only
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
-	local	KFPlayerReplicationInfo		KFPRI;
-	
 	if ( Controller != None && Controller.bGodMode )
 		Return;
 	
-	//server
-	if ( Role == ROLE_Authority )  {
-		if ( KFMonster(InstigatedBy) != None )
-			KFMonster(InstigatedBy).bDamagedAPlayer = True;
+	if ( KFMonster(InstigatedBy) != None )
+		KFMonster(InstigatedBy).bDamagedAPlayer = True;
 
-		// Don't allow momentum from a player shooting a player
-		if ( InstigatedBy != None && KFHumanPawn(InstigatedBy) != None )
-			Momentum = vect(0,0,0);
-		
-		//[block] Codes From KFPawn
-		LastHitDamType = damageType;
-		LastDamagedBy = InstigatedBy;
+	// Don't allow momentum from a player shooting a player
+	if ( InstigatedBy != None && KFHumanPawn(InstigatedBy) != None )
+		Momentum = vect(0,0,0);
+	
+	LastHitDamType = damageType;
+	LastDamagedBy = InstigatedBy;
+	
+	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
+	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None
+		 && CurrentVeterancy.static.ReduceDamage( KFPlayerReplicationInfo, self, InstigatedBy, Damage, DamageType ) < 1 )
+		Return;
+	
+	//ToDo: #188
+	healthtoGive -= 5;
+	
+	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, damageType);
 
-		Super(Pawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, damageType);
-
-		healthtoGive -= 5;
-
-		KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
-
-		// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-		if ( KFPRI != None &&  KFPRI.ClientVeteranSkill != None
-			 && KFPRI.ClientVeteranSkill.Static.ReduceDamage(KFPRI, self, KFMonster(InstigatedBy), Damage, DamageType) < 1 )
-				Return;
-
-		if ( class<DamTypeBurned>(damageType) != None || class<DamTypeFlamethrower>(damageType) != None )  {
-			// FriendlyFire
-			if ( InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
-				 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum() )
-				Return;
-
-			// Do burn damage if the damage was significant enough
-			if ( Damage > 2 )  {
-				// If we are already burning, and this damage is more than our current burn amount, add more burn time
-				if ( BurnDown > 0 && Damage > LastBurnDamage )  {
-					BurnDown = 5;
-					BurnInstigator = InstigatedBy;
-				}
-
-				LastBurnDamage = Damage;
-
-				if ( BurnDown <= 0 )  {
-					bBurnified = True;
-					BurnDown = 5;
-					BurnInstigator = InstigatedBy;
-					SetTimer(1.5, True);
-				}
-			}
-		}
-		
-		if ( Controller == None || PlayerController(Controller) == None )
+	if ( class<DamTypeBurned>(damageType) != None || class<DamTypeFlamethrower>(damageType) != None )  {
+		// FriendlyFire
+		if ( InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum() )
 			Return;
 
-		if ( Class<DamTypeVomit>(DamageType) != None )  {
-			BileCount = 7;
-			BileInstigator = InstigatedBy;
-			if ( NextBileTime < Level.TimeSeconds )
-				NextBileTime = Level.TimeSeconds + BileFrequency;
+		// Do burn damage if the damage was significant enough
+		if ( Damage > 2 )  {
+			// If we are already burning, and this damage is more than our current burn amount, add more burn time
+			if ( BurnDown > 0 && Damage > LastBurnDamage )  {
+				BurnDown = 5;
+				BurnInstigator = InstigatedBy;
+			}
 
-			if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 
-				 && KFPlayerController(Controller) != None && !KFPlayerController(Controller).bVomittedOn )  {
-				KFPlayerController(Controller).bVomittedOn = True;
-				KFPlayerController(Controller).VomittedOnTime = Level.TimeSeconds;
-				if ( Controller.TimerRate == 0.0 )
-					Controller.SetTimer(10.0, false);
+			LastBurnDamage = Damage;
+
+			if ( BurnDown <= 0 )  {
+				bBurnified = True;
+				BurnDown = 5;
+				BurnInstigator = InstigatedBy;
+				SetTimer(1.5, True);
 			}
 		}
-		else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-				 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 
-				 && KFPlayerController(Controller) != None && !KFPlayerController(Controller).bScreamedAt )  {
-			KFPlayerController(Controller).bScreamedAt = True;
-			KFPlayerController(Controller).ScreamTime = Level.TimeSeconds;
+	}
+	
+	if ( Controller == None || KFPlayerController(Controller) == None )
+		Return;
+
+	if ( Class<DamTypeVomit>(DamageType) != None )  {
+		BileCount = 7;
+		BileInstigator = InstigatedBy;
+		if ( NextBileTime < Level.TimeSeconds )
+			NextBileTime = Level.TimeSeconds + BileFrequency;
+
+		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPlayerController(Controller).bVomittedOn )  {
+			KFPlayerController(Controller).bVomittedOn = True;
+			KFPlayerController(Controller).VomittedOnTime = Level.TimeSeconds;
 			if ( Controller.TimerRate == 0.0 )
 				Controller.SetTimer(10.0, false);
 		}
-		//[end] Codes From KFPawn
 	}
-
-	//Simulated Bloody Overlays
-	if ( (Health - Damage) <= (HealthMax * 0.4) )
-		SetOverlayMaterial(InjuredOverlay, 0, true);
-
-	//server
-	if ( Role == ROLE_Authority && Level.Game.NumPlayers > 1 && Health < (HealthMax * 0.25) 
+	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPlayerController(Controller).bScreamedAt )  {
+		KFPlayerController(Controller).bScreamedAt = True;
+		KFPlayerController(Controller).ScreamTime = Level.TimeSeconds;
+		if ( Controller.TimerRate == 0.0 )
+			Controller.SetTimer(10.0, false);
+	}
+	
+	if ( Level.Game.NumPlayers > 1 && Health < (HealthMax * 0.25) 
 		 && (Level.TimeSeconds - LastDyingMessageTime) > DyingMessageDelay )  {
 		// Tell everyone we're dying
-		PlayerController(Instigator.Controller).Speech('AUTO', 6, "");
+		KFPlayerController(Controller).Speech('AUTO', 6, "");
 		LastDyingMessageTime = Level.TimeSeconds;
 	}
+
+	//Todo: #189
+	/*
+	//Simulated Bloody Overlays
+	if ( (Health - Damage) <= (HealthMax * 0.4) )
+		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 //[end]
 
@@ -727,11 +830,14 @@ exec function SwitchToLastWeapon()
     }
 }
 
-
+//[end] Functions
+//====================================================================
 
 defaultproperties
 {
-     BounceRemaining=0
+     IntuitiveShootingRange=150.000000
+	 JumpRandRange=(Min=0.95,Max=1.05)
+	 BounceRemaining=0
 	 BounceCheckDistance=9.000000
 	 BounceMomentum=(X=380.000000,Z=140.000000)
 	 LowGravBounceMomentumScale=2.000000

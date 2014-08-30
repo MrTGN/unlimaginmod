@@ -102,6 +102,60 @@ simulated event InitInputSystem()
 	ServerSetReadyToStart();
 }
 
+//[block] View Shakers
+/* ShakeView()
+Call this function to shake the player's view
+shaketime = how long to roll view
+RollMag = how far to roll view as it shakes
+OffsetMag = max view offset
+RollRate = how fast to roll view
+OffsetRate = how fast to offset view
+OffsetTime = how long to offset view (number of shakes)
+*/
+function ShakeView(
+	vector shRotMag,	vector shRotRate,		float shRotTime, 
+	vector shOffsetMag,	vector shOffsetRate,	float shOffsetTime )
+{
+    // VSizeSquared is faster than VSize
+	if ( VSizeSquared(shRotMag) > VSizeSquared(ShakeRotMax) )  {
+        ShakeRotMax  = shRotMag;
+        ShakeRotRate = shRotRate;
+        ShakeRotTime = shRotTime * vect(1.0, 1.0, 1.0);
+    }
+
+    // VSizeSquared is faster than VSize
+	if ( VSizeSquared(shOffsetMag) > VSizeSquared(ShakeOffsetMax) )  {
+        ShakeOffsetMax  = shOffsetMag;
+        ShakeOffsetRate = shOffsetRate;
+        ShakeOffsetTime = shOffsetTime * vect(1.0, 1.0, 1.0);
+    }
+}
+
+function StopViewShaking()
+{
+	ShakeRotMax  = vect(0, 0, 0);
+	ShakeRotRate = vect(0, 0, 0);
+	ShakeRotTime = vect(0, 0, 0);		// It's a vector here
+	ShakeOffsetMax  = vect(0, 0, 0);
+	ShakeOffsetRate = vect(0, 0, 0);
+	ShakeOffsetTime = vect(0, 0, 0);	// It's a vector here
+}
+
+event ShakeViewEvent(
+	vector shRotMag,	vector shRotRate,		float shRotTime, 
+	vector shOffsetMag,	vector shOffsetRate,	float shOffsetTime )
+{
+	ShakeView( shRotMag, shRotRate, shRotTime, shOffsetMag, shOffsetRate, shOffsetTime );
+}
+
+function WeaponShakeView(
+	vector shRotMag,	vector shRotRate,		float shRotTime,
+	vector shOffsetMag,	vector shOffsetRate,	float shOffsetTime )
+{
+	if ( bWeaponViewShake )
+		ShakeView( (shRotMag * (1.0 - ZoomLevel)), shRotRate, shRotTime, (shOffsetMag * (1.0 - ZoomLevel)), shOffsetRate, shOffsetTime );
+}
+//[end]
 
 function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int aimerror)
 {

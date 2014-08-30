@@ -20,8 +20,20 @@ class UM_BaseWeaponMuzzle extends UM_BaseWeaponModule
 //========================================================================
 //[block] Variables
 
-var			float		MuzzleVelocityScale;
-var			float		SpreadScale;
+var	protected	UM_BaseProjectileWeaponFire		FireMode;
+var		UM_BaseWeapon		Weapon;
+
+var		float				MuzzleVelocityScale;
+var		float				SpreadScale;
+
+// This view shakes variables will be added to the same variables in the fire class.
+// Use this variables to add the different effects from the different muzzles.
+var		vector				RelativeShakeRotMag;		// how far to rot view
+var		vector				RelativeShakeRotRate;		// how fast to rot view
+var		float				RelativeShakeRotTime;		// how much time to rot the instigator's view
+var		vector				RelativeShakeOffsetMag;		// max view offset vertically
+var		vector				RelativeShakeOffsetRate;	// how fast to offset view vertically
+var		float				RelativeShakeOffsetTime;	// how much time to offset view
 
 //[end] Varibles
 //====================================================================
@@ -35,9 +47,16 @@ var			float		SpreadScale;
 //========================================================================
 //[block] Functions
 
+function SpawnProjectiles()  {
+	
+}
+
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
+     MuzzleVelocityScale=1.000000
+	 SpreadScale=1.000000
+	 bReplicateMovement=True
 }

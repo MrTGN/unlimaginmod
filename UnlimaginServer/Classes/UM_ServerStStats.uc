@@ -146,7 +146,7 @@ function Timer()
 		Rep.SendClientPerks();
 	}
 	
-	if( bStatsChecking )  {
+	if ( bStatsChecking )  {
 		bStatsChecking = False;
 		CheckPerks(false);
 	}
@@ -190,12 +190,12 @@ final function RepCopyStats()
 
 function ServerSelectPerkName( name N )
 {
-	local byte i;
+	local	byte	i;
 
-	if( N=='' )
-		return;
+	if ( N == '' )
+		Return;
 
-	for( i=0; i<Rep.CachePerks.Length; i++ )  {
+	for ( i = 0; i < Rep.CachePerks.Length; ++i )  {
 		if ( Rep.CachePerks[i].PerkClass.Name == N )  {
 			ServerSelectPerk(Rep.CachePerks[i].PerkClass);
 			Break;
@@ -209,6 +209,7 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 
 	if ( !bStatsReadyNow )
 		Return;
+	
 	if ( VetType == None || !SelectionOK(VetType) )  {
 		if ( !bSwitchIsOKNow )
 			PlayerOwner.ClientMessage("Your desired perk is unavailable.");
@@ -246,13 +247,15 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 	
 	SelectingPerk = None;
 	
-	for( i=0; i<Rep.CachePerks.Length; i++ )  {
+	for ( i = 0; i < Rep.CachePerks.Length; ++i )  {
 		if ( Rep.CachePerks[i].PerkClass == VetType )  {
 			if ( Rep.CachePerks[i].CurrentLevel == 0 )
 				Return;
+			
 			PlayerOwner.SelectedVeterancy = VetType;
 			KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill = VetType;
-			KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel-1;
+			KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel - 1;
+			
 			if ( KFHumanPawn(PlayerOwner.Pawn) != None )  {
 				KFHumanPawn(PlayerOwner.Pawn).VeterancyChanged();
 				DropToCarryLimit(KFHumanPawn(PlayerOwner.Pawn));
@@ -279,11 +282,11 @@ final function DropToCarryLimit( KFHumanPawn P )
 
 final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
 {
-	local byte i;
+	local	byte	i;
 
-	for( i=0; i<Rep.CachePerks.Length; i++ )  {
+	for ( i = 0; i < Rep.CachePerks.Length; ++i )  {
 		if ( Rep.CachePerks[i].PerkClass == VetType )
-			Return (Rep.CachePerks[i].CurrentLevel > 0);
+			Return Rep.CachePerks[i].CurrentLevel > 0;
 	}
 	
 	Return False;
@@ -291,29 +294,35 @@ final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
 
 final function CheckPerks( bool bInit )
 {
-	local byte i,NewLevel;
+	local	byte	i, NewLevel;
 
 	if ( !bStatsReadyNow )
 		Return;
 	
-	if( bInit )  {
-		for( i=0; i<Rep.CachePerks.Length; i++ )
+	if ( bInit )  {
+		for( i = 0; i < Rep.CachePerks.Length; ++i )
 			Rep.CachePerks[i].CurrentLevel = Rep.CachePerks[i].PerkClass.Static.PerkIsAvailable(Rep);
 		
 		Return;
 	}
 	
-	for( i=0; i<Rep.CachePerks.Length; i++ )  {
-		if ( Rep.CachePerks[i].CurrentLevel<=Rep.MaximumLevel )  {
+	// Checking perks for the new level
+	for( i = 0; i < Rep.CachePerks.Length; ++i )  {
+		if ( Rep.CachePerks[i].CurrentLevel <= Rep.MaximumLevel )  {
 			NewLevel = Rep.CachePerks[i].PerkClass.Static.PerkIsAvailable(Rep);
+			// New Level is Available
 			if ( NewLevel > Rep.CachePerks[i].CurrentLevel )  {
-				if( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill==Rep.CachePerks[i].PerkClass )
-					KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = NewLevel-1;
+				if ( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill == Rep.CachePerks[i].PerkClass )
+					KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = NewLevel - 1;
+				
 				Rep.CachePerks[i].CurrentLevel = NewLevel;
-				Rep.ClientPerkLevel(i,NewLevel);
+				Rep.ClientPerkLevel(i, NewLevel);
+				// Notifying pawn that the Veterancy info has changed
+				if ( KFHumanPawn(PlayerOwner.Pawn) != None )
+					KFHumanPawn(PlayerOwner.Pawn).VeterancyChanged();
 				
 				if ( MutatorOwner.bMessageAnyPlayerLevelUp )
-					BroadcastLocalizedMessage(Class'UM_SRVetEarnedMessage',(NewLevel-1),PlayerOwner.PlayerReplicationInfo,,Rep.CachePerks[i].PerkClass);
+					BroadcastLocalizedMessage( Class'UM_SRVetEarnedMessage',(NewLevel - 1), PlayerOwner.PlayerReplicationInfo,, Rep.CachePerks[i].PerkClass );
 			}
 		}
 	}
@@ -408,25 +417,26 @@ function AddFlameThrowerDamage(int Amount)
 {
 	bHasChanged = true;
 	Rep.RFlameThrowerDamageStat+=Amount;
-	if( MyStatsObject!=None )
+	if ( MyStatsObject != None )
 		MyStatsObject.FlameThrowerDamageStat+=Amount;
 	DelayedStatCheck();
 }
 
 function WaveEnded()
 {
-	if( SelectingPerk!=None )
-	{
-		bSwitchIsOKNow = true;
+	if ( SelectingPerk != None )  {
+		bSwitchIsOKNow = True;
 		ServerSelectPerk(SelectingPerk);
-		bSwitchIsOKNow = false;
-		bHadSwitchedVet = true;
+		bSwitchIsOKNow = False;
+		bHadSwitchedVet = True;
 	}
-	else bHadSwitchedVet = false;
+	else 
+		bHadSwitchedVet = False;
 }
+
 function MatchStarting()
 {
-	bHadSwitchedVet = false;
+	bHadSwitchedVet = False;
 }
 
 function AddKill(bool bLaserSightedEBRM14Headshotted, bool bMeleeKill, bool bZEDTimeActive, bool bM4Kill, bool bBenelliKill, bool bRevolverKill, bool bMK23Kill, bool bFNFalKill, bool bBullpupKill, string MapName)

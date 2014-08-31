@@ -84,8 +84,7 @@ simulated final function float GetRandMult( float MinMult, float MaxMult )
 simulated final function float GetRandExtraScale(
 	range		ScaleRange,
 	float		ExtraScaleChance,
-	range		ExtraScaleRange
-)
+	range		ExtraScaleRange )
 {
 	if ( FRand() <= ExtraScaleChance )
 		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();

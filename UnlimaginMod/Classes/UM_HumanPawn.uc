@@ -12,23 +12,23 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	MeterInUU = BaseActor.MeterInUU;
 const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 
-var		bool						bDefaultPropertiesCalculated;
-var		UM_SRClientPerkRepLink		PerkLink;
-var		name						LeftHandWeaponBone, RightHandWeaponBone;
+// Player Info
+var				UM_SRClientPerkRepLink		PerkLink;
+var	transient	PlayerReplicationInfo		LastPlayerReplicationInfo;	// Used to detect changes in PlayerReplicationInfo
+var				KFPlayerReplicationInfo		KFPlayerReplicationInfo;
+var				Class<UM_SRVeterancyTypes>	CurrentVeterancy;	// Current Veterancy Class
 
+
+var		bool						bDefaultPropertiesCalculated;
+var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		float						FireSpeedModif;
 var		range						JumpRandRange;
-
-// Player Info
-var		KFPlayerReplicationInfo		KFPlayerReplicationInfo;
-var		Class<UM_SRVeterancyTypes>	CurrentVeterancy;	// Current Veterancy Class
 
 // Bouncing from the walls and actors
 var		Vector						BounceMomentum;
 var		float						LowGravBounceMomentumScale, NextBounceTime, BounceDelay, BounceCheckDistance;
 var		int							BounceRemaining;
 var		Pawn						BounceVictim;
-
 
 var		float						IntuitiveShootingRange;		// The distance in meters at which the shooter can shoot without aiming
 
@@ -41,7 +41,7 @@ var		float						IntuitiveShootingRange;		// The distance in meters at which the 
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FireSpeedModif;
+		FireSpeedModif, CurrentVeterancy;
 }
 
 //[end] Replication
@@ -70,6 +70,20 @@ simulated event PreBeginPlay()
 	}
 }
 
+simulated event PostNetReceive()
+{
+	// if PlayerReplicationInfo has changed
+	if ( PlayerReplicationInfo != LastPlayerReplicationInfo )  {
+		if ( PlayerReplicationInfo != None )  {
+			KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
+			Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
+		}
+		else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )  {
+			KFPlayerReplicationInfo = KFPlayerReplicationInfo(DrivenVehicle.PlayerReplicationInfo);
+			Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
+		}
+	}
+}
 
 simulated final function float GetRandMult( float MinMult, float MaxMult )
 {
@@ -79,8 +93,7 @@ simulated final function float GetRandMult( float MinMult, float MaxMult )
 simulated final function float GetRandExtraScale(
 	range		ScaleRange,
 	float		ExtraScaleChance,
-	range		ExtraScaleRange
-)
+	range		ExtraScaleRange )
 {
 	if ( FRand() <= ExtraScaleChance )
 		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();
@@ -103,7 +116,7 @@ function PossessedBy(Controller C)
 		OwnerName = PlayerReplicationInfo.PlayerName;
 		if ( KFPlayerReplicationInfo(PlayerReplicationInfo) != None )  {
 			KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
-			CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+			VeterancyChanged();
 		}
 	}
 	
@@ -126,13 +139,19 @@ function UnPossessed()
 {
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	if ( DrivenVehicle != None )
-		NetUpdateFrequency = 5;
+		NetUpdateFrequency = 5.0;
 
 	PlayerReplicationInfo = None;
 	KFPlayerReplicationInfo = None;
-	CurrentVeterancy = None;
+	VeterancyChanged();
 	SetOwner(None);
 	Controller = None;
+}
+
+function UpdateCurrentVeterancy()
+{
+	CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
 // Notify that veterancy has been changed
@@ -141,11 +160,9 @@ function VeterancyChanged()
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
 
-	if ( KFPlayerReplicationInfo != None )  {
-		CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
-		if ( CurrentVeterancy != None )
-			BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
-	}
+	UpdateCurrentVeterancy();
+	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
+		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
 	
 	Super.VeterancyChanged();
 }
@@ -162,27 +179,6 @@ function float GetIntuitiveShootingRange()
 		Return IntuitiveShootingRange;
 }
 
-function vector GetAimTargetLocation(Actor Target, optional float AimingRange )  {
-	
-	local	vector	TraceEnd, EyeLocation, HitLocation, HitNormal;
-	
-	if ( Controller != None )  {
-	}
-	else  {
-		if ( AimingRange <= 0.0 )
-			AimingRange = GetIntuitiveShootingRange();
-		EyeLocation = EyePosition() + Location;
-		TraceEnd = EyeLocation + vector(Rotation) * AimingRange;
-		// Tracing from the eyes to find the target
-		Target = Trace( HitLocation, HitNormal, TraceEnd, EyeLocation, True );
-		
-		if ( Target != None )
-			Return HitLocation;
-		else
-			Return TraceEnd;
-	}
-}
-
 simulated function rotator GetViewRotation()
 {
 	if ( Controller != None )
@@ -194,6 +190,40 @@ simulated function rotator GetViewRotation()
 simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
 {
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
+}
+
+final function vector GetFireTargetLocation( UM_BaseProjectileWeaponFire WeaponFire, optional float AimingRange )
+{
+	local	vector	FireDirection, TraceEnd, TraceStart, TargetLocation, HitNormal;
+	
+	if ( AimingRange <= 0.0 )
+		AimingRange = GetIntuitiveShootingRange();
+	
+	if ( Controller != None && UM_PlayerController(Controller) != None )
+		UM_PlayerController(Controller).GetCameraPosition( TraceStart, FireDirection );
+	else  {
+		TraceStart = EyePosition() + Location;
+		FireDirection = vector(GetViewRotation());
+	}
+	TraceEnd = TraceStart + FireDirection * AimingRange;
+	
+	// Tracing from the eyes to find the target
+	foreach TraceActors( Class'Actor', Target, TargetLocation, HitNormal, TraceEnd, TraceStart )  {
+		if ( Target != Self && Target.Base != Self && (Target == Level || Target.bWorldGeometry || Target.bProjTarget || Target.bBlockActors) )
+			Break;	// We have found the Target
+		else
+			Target = None;	// Target is not satisfy the conditions of the search
+	}
+	
+	if ( Target != None )  {
+		InstantWarnTarget( Target, WeaponFire.SavedFireProperties, FireDirection );
+		ShotTarget = Pawn(Target);
+	}
+	// If we didn't find the Target just get the TraceEnd location
+	else
+		TargetLocation = TraceEnd;
+	
+	Return TargetLocation;
 }
 
 function DoDoubleJump( bool bUpdating )
@@ -849,4 +879,5 @@ defaultproperties
      RequiredEquipment(2)="UnlimaginMod.UM_Weapon_HandGrenade"
      RequiredEquipment(3)="KFMod.Syringe"
      RequiredEquipment(4)="KFMod.Welder"
+	 bNetNotify=True
 }

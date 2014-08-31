@@ -123,7 +123,8 @@ var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedC
 var				float		MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
 
 // This variables used to decrease the load on the CPU
-var				float		NextProjectileUpdateTime, UpdateTimeDelay, InitialUpdateTimeDelay;
+var	transient	float		NextProjectileUpdateTime;
+var				float		UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
 // ProjectileEnergy Calculates automatically before initial replication.

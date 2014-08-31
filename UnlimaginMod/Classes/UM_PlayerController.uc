@@ -171,9 +171,9 @@ function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int
 	else 
 		TraceRange = 4000.f;
 
-	PlayerCalcView(CamActor,CamPos,CamRot);
-	foreach Pawn.TraceActors(Class'Actor', Other,HitLocation, HitNormal, (CamPos + TraceRange * vector(CamRot)), CamPos)  {
-		if ( Other != Pawn && (Other==Level || Other.bBlockActors || Other.bProjTarget || Other.bWorldGeometry)
+	PlayerCalcView(CamActor, CamPos, CamRot);
+	foreach Pawn.TraceActors(Class'Actor', Other, HitLocation, HitNormal, (CamPos + TraceRange * vector(CamRot)), CamPos)  {
+		if ( Other != Pawn && (Other == Level || Other.bBlockActors || Other.bProjTarget || Other.bWorldGeometry)
 			 && KFPawn(Other) == None && KFBulletWhipAttachment(Other) == None )
 			Break;
 	}
@@ -189,10 +189,27 @@ function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int
 
 simulated function rotator GetViewRotation()
 {
-	if ( bBehindView && (Vehicle(Pawn) != None || (!bUseAdvBehindview && Pawn != None)) )
+	if ( bBehindView && Pawn != None && (Vehicle(Pawn) != None || !bUseAdvBehindview) )
 		Return Pawn.Rotation;
 	
 	Return Rotation;
+}
+
+// Returns camera location, camera rotation vector (if needed) and camera rotation (if needed)
+function GetCameraPosition( 
+			out	vector	CameraLoc, 
+ optional	out	vector	CameraRotVect, 
+ optional	out	rotator	CameraRot )
+{
+	if ( Vehicle(Pawn) != None ) {
+		CameraLoc = Vehicle(Pawn).GetCameraLocationStart;
+		CameraRot = GetViewRotation();
+		CameraRotVect = vector(CameraRot);
+	}
+	else  {
+		PlayerCalcView(CamActor, CameraLoc, CameraRot);
+		CameraRotVect = vector(CameraRot);
+	}
 }
 
 simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
@@ -203,7 +220,7 @@ simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
 		Return False;
 	
 	Pos = Other.Location + Other.EyePosition();
-	CamPos = vect(-40,20,10) >> Rotation;
+	CamPos = vect(-40, 20, 10) >> Rotation;
 	
 	if ( Pawn.Trace(HL, HN, (Pos + Normal(CamPos) * (VSize(CamPos) + 10.f)), Pos, false) != None )
 		Pos = Pos + Normal(CamPos) * (VSize(HL - Pos) -10.f);
@@ -213,7 +230,7 @@ simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
 	Return True;
 }
 
-event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )
+event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )
 {
     local Pawn PTarget;
 
@@ -222,9 +239,9 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
 
 	if ( LastPlayerCalcView == Level.TimeSeconds && CalcViewActor != None 
 		 && CalcViewActor.Location == CalcViewActorLocation )  {
-		ViewActor	= CalcViewActor;
-		CameraLocation	= CalcViewLocation;
-		CameraRotation	= CalcViewRotation;
+		ViewActor = CalcViewActor;
+		CameraLocation = CalcViewLocation;
+		CameraRotation = CalcViewRotation;
 		Return;
 	}
 
@@ -232,11 +249,11 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
 	// try the 'special' calcview. This may return false if its not applicable, and we do the usual.
 	if ( Pawn != None && Pawn.bSpecialCalcView && ViewTarget == Pawn
 		 && (Pawn.SpecialCalcView(ViewActor, CameraLocation, CameraRotation)) )  {
-		CacheCalcView(ViewActor,CameraLocation,CameraRotation);
+		CacheCalcView(ViewActor, CameraLocation, CameraRotation);
 		Return;
 	}
 
-    if ( ( ViewTarget == None ) || ViewTarget.bDeleteMe )  {
+    if ( ViewTarget == None || ViewTarget.bDeleteMe )  {
 		if ( Pawn != None && !Pawn.bDeleteMe )
 			SetViewTarget(Pawn);
 		else if ( RealViewTarget != None )
@@ -251,36 +268,35 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
 	if ( ViewTarget == Pawn )  {
 		// up and behind
 		if ( bBehindView )  {
-			if ( !bUseAdvBehindview || !GetShoulderCam(CameraLocation,Pawn) )
-				CalcBehindView(CameraLocation, CameraRotation, (CameraDist * Pawn.Default.CollisionRadius));
+			if ( !bUseAdvBehindview || !GetShoulderCam(CameraLocation, Pawn) )
+				CalcBehindView( CameraLocation, CameraRotation, (CameraDist * Pawn.Default.CollisionRadius) );
 			else 
 				CameraRotation = Rotation;
 		}
 		else 
 			CalcFirstPersonView( CameraLocation, CameraRotation );
 
-		CacheCalcView(ViewActor,CameraLocation,CameraRotation);
-        
+		CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 		Return;
     }
 	
 	if ( ViewTarget == self )  {
 		CameraRotation = Rotation;
-		CacheCalcView(ViewActor, CameraLocation, CameraRotation);
+		CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 		Return;
 	}
 
     if ( ViewTarget.IsA('Projectile') )  {
         if ( Projectile(ViewTarget).bSpecialCalcView 
 			 && Projectile(ViewTarget).SpecialCalcView(ViewActor, CameraLocation, CameraRotation, bBehindView) )  {
-            CacheCalcView(ViewActor,CameraLocation,CameraRotation);
+            CacheCalcView( ViewActor,CameraLocation,CameraRotation );
             Return;
         }
 
         if ( !bBehindView )  {
             CameraLocation += (ViewTarget.CollisionHeight) * vect(0,0,1);
             CameraRotation = Rotation;
-    		CacheCalcView(ViewActor,CameraLocation,CameraRotation);
+    		CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 			Return;
         }
     }
@@ -308,10 +324,10 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
     
 	if ( bBehindView )  {
         CameraLocation = CameraLocation + (ViewTarget.Default.CollisionHeight - ViewTarget.CollisionHeight) * vect(0,0,1);
-        CalcBehindView(CameraLocation, CameraRotation, (CameraDist * ViewTarget.Default.CollisionRadius));
+        CalcBehindView( CameraLocation, CameraRotation, (CameraDist * ViewTarget.Default.CollisionRadius) );
     }
 
-	CacheCalcView(ViewActor,CameraLocation,CameraRotation);
+	CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 }
 
 exec function ChangeCharacter(string newCharacter, optional string inClass)

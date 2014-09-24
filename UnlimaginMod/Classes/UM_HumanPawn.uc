@@ -41,7 +41,10 @@ var		float						IntuitiveShootingRange;		// The distance in meters at which the 
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FireSpeedModif, CurrentVeterancy;
+		FireSpeedModif;
+	
+	reliable if ( Role == ROLE_Authority )
+		ClientUpdateCurrentVeterancy;
 }
 
 //[end] Replication
@@ -74,14 +77,10 @@ simulated event PostNetReceive()
 {
 	// if PlayerReplicationInfo has changed
 	if ( PlayerReplicationInfo != LastPlayerReplicationInfo )  {
-		if ( PlayerReplicationInfo != None )  {
-			KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
+		if ( PlayerReplicationInfo != None )
 			Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
-		}
-		else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )  {
-			KFPlayerReplicationInfo = KFPlayerReplicationInfo(DrivenVehicle.PlayerReplicationInfo);
+		else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
 			Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
-		}
 	}
 }
 
@@ -114,10 +113,7 @@ function PossessedBy(Controller C)
 	if ( C.PlayerReplicationInfo != None )  {
 		PlayerReplicationInfo = C.PlayerReplicationInfo;
 		OwnerName = PlayerReplicationInfo.PlayerName;
-		if ( KFPlayerReplicationInfo(PlayerReplicationInfo) != None )  {
-			KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
-			VeterancyChanged();
-		}
+		VeterancyChanged();
 	}
 	
 	if ( C.IsA('PlayerController') )  {
@@ -142,25 +138,46 @@ function UnPossessed()
 		NetUpdateFrequency = 5.0;
 
 	PlayerReplicationInfo = None;
-	KFPlayerReplicationInfo = None;
 	VeterancyChanged();
 	SetOwner(None);
 	Controller = None;
 }
 
-function UpdateCurrentVeterancy()
+// Notify clients that veterancy has been changed
+simulated function ClientVeterancyChanged()
 {
-	CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
-	NetUpdateTime = Level.TimeSeconds - 1.0;
+	/* Use this function to update Veterancy bonuses 
+		on the client side */
 }
 
-// Notify that veterancy has been changed
+simulated final function ClientUpdateCurrentVeterancy(
+	KFPlayerReplicationInfo		NewKFPlayerReplicationInfo, 
+	Class<UM_SRVeterancyTypes>	NewVeterancy )
+{
+	// Update varibles on the client side
+	if ( Role < ROLE_Authority )  {
+		KFPlayerReplicationInfo = NewKFPlayerReplicationInfo;
+		CurrentVeterancy = NewVeterancy;
+		ClientVeterancyChanged();
+	}
+}
+
+final function UpdateCurrentVeterancy()
+{
+	KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
+	CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+	// Sending to the clients
+	ClientUpdateCurrentVeterancy( KFPlayerReplicationInfo, CurrentVeterancy );
+}
+
+// Notify on server side that veterancy has been changed
 function VeterancyChanged()
 {
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
 
 	UpdateCurrentVeterancy();
+	
 	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
 		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
 	
@@ -192,12 +209,19 @@ simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out ve
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
-final function vector GetFireTargetLocation( UM_BaseProjectileWeaponFire WeaponFire, optional float AimingRange )
+// Find the target
+final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFire, vector SpawnLocation )
 {
-	local	vector	FireDirection, TraceEnd, TraceStart, TargetLocation, HitNormal;
+	local	vector		FireDirection, TraceEnd, TraceStart, TargetLocation, HitNormal;
+	local	float		AimingRange, AimError;
+	local	rotator		AimRotation;
 	
-	if ( AimingRange <= 0.0 )
+	if ( WeaponFire.UMWeapon.bAimingRifle )
+		AimingRange = WeaponFire.MaxRange();
+	else
 		AimingRange = GetIntuitiveShootingRange();
+	
+	AimError = WeaponFire.GetAimError();
 	
 	if ( Controller != None && UM_PlayerController(Controller) != None )
 		UM_PlayerController(Controller).GetCameraPosition( TraceStart, FireDirection );
@@ -207,7 +231,7 @@ final function vector GetFireTargetLocation( UM_BaseProjectileWeaponFire WeaponF
 	}
 	TraceEnd = TraceStart + FireDirection * AimingRange;
 	
-	// Tracing from the eyes to find the target
+	// Tracing from the player camera to find the target
 	foreach TraceActors( Class'Actor', Target, TargetLocation, HitNormal, TraceEnd, TraceStart )  {
 		if ( Target != Self && Target.Base != Self && (Target == Level || Target.bWorldGeometry || Target.bProjTarget || Target.bBlockActors) )
 			Break;	// We have found the Target
@@ -223,7 +247,14 @@ final function vector GetFireTargetLocation( UM_BaseProjectileWeaponFire WeaponF
 	else
 		TargetLocation = TraceEnd;
 	
-	Return TargetLocation;
+	AimRotation = rotator(TargetLocation - SpawnLocation);
+	// Adjusting AimError to the AimRotation
+	if ( AimError > 0.0 )  {
+		AimRotation.Yaw += AimError * (FRand() - 0.5);
+		AimRotation.Pitch += AimError * (FRand() - 0.5);
+	}
+	
+	Return AimRotation;
 }
 
 function DoDoubleJump( bool bUpdating )

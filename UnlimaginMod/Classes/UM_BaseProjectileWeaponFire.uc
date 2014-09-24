@@ -23,41 +23,6 @@ class UM_BaseProjectileWeaponFire extends KFShotgunFire
 const	DefaultAnimRate = 1.000000;
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
-struct	AnimData
-{
-	var	name	Anim;
-	var	float	Rate;
-	var	float	StartFrame;		// The frame number at which start to playing animation
-	var	float	TweenTime;
-	var	int		Channel;
-};
-
-// Sound slots for weapons.
-enum ESoundSlot
-{
-	SLOT_None,
-	SLOT_Misc,
-	SLOT_Pain,
-	SLOT_Interact,
-	SLOT_Ambient,
-	SLOT_Talk,
-	SLOT_Interface,
-};
-
-// Read http://udn.epicgames.com/Two/SoundReference.html for more info
-struct	SoundData
-{
-	var	string		Ref;
-	var	sound		Snd;
-	var	ESoundSlot	Slot;
-	var	float		Vol;
-	var	bool		bNoOverride;
-	var	float		Radius;
-	var	Range		PitchRange;	// Random pitching within this range
-	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
-};
-
 // Projectile Spawn Offset
 struct	ProjSpawnData
 {
@@ -80,6 +45,8 @@ struct	PerkProjData
 	var		float				SecondPerkProjSpread;
 	var		float				SecondPerkProjMaxSpread;
 };
+
+var(Object)		name			InitialStateName;	// After the first initialization object will be set to this state
 
 var				UM_BaseWeapon	UMWeapon;
 var				bool			bCanDryFire;
@@ -118,7 +85,6 @@ var				float			FirstShotMovingSpeedScale, FireMovingSpeedScale;
 
 // Movement
 var				float			InstigatorMovingSpeed;
-var(Movement)	float			CrouchedMovingBonus;	// Decrease InstigatorMovingSpeed by this multiplier when Instigator is crouching
 var(Movement)	float			MaxMoveShakeScale;		// Increases the fire screen shake effects while player is moving up to MaxMoveShakeScale * ShakeRotMag.
 var(Movement)	float			MovingAimErrorScale;	// Increases AimError when player is moving. Must be > 1.000000
 var(Movement)	float			MovingSpreadScale;		// Increases Spread when player is moving. Must be > 1.000000
@@ -145,16 +111,11 @@ var		array< ProjSpawnData >	ProjSpawnOffsets;
 
 // Fire Animation arrays
 // Switches between elements by MuzzleNum.
-var		array< AnimData >		PreFireAnims,
-								PreFireAimedAnims,
-								FireAnims,
-								FireAimedAnims,
-								FireLoopAnims,
-								FireLoopAimedAnims,
-								EmptyFireAnims,
-								EmptyFireAimedAnims,
-								FireEndAnims,
-								FireEndAimedAnims;
+var		array< BaseActor.AnimData >	PreFireAnims,	PreFireAimedAnims, 
+									FireAnims,		FireAimedAnims, 
+									FireLoopAnims,	FireLoopAimedAnims,
+									EmptyFireAnims,	EmptyFireAimedAnims,
+									FireEndAnims,	FireEndAimedAnims;
 
 // Arrays with Muzzles and ShellEjectes bones names.
 // Switches between elements by MuzzleNum.
@@ -221,6 +182,16 @@ simulated static function bool UnloadAssets()
 	Return True;
 }
 
+// Initialization state. 
+// Weapon can't fire because some properties are not initialized yet.
+state Initialization
+{
+	simulated function bool AllowFire()
+	{
+		Return False;
+	}
+}
+
 simulated function name GetMuzzleBoneName()
 {
 	local	name	BoneName;
@@ -246,6 +217,7 @@ simulated function CheckAnimArrays()
 {
 	local	byte	i;
 	
+	//ToDo: отпилить!
 	//[block] Checking arrays with animations data
 	// If somebody forget to set ainmation Rate in arrays it will be set to DefaultAnimRate
 	// and same for the TweenTime.
@@ -352,6 +324,21 @@ simulated event PostBeginPlay()
 	SetMuzzleNum(default.MuzzleNum);
 }
 
+// Called after PostBeginPlay.
+simulated event SetInitialState()
+{
+	GotoState(InitialStateName);
+}
+
+// MaxRange
+function float MaxRange()
+{
+	if ( Instigator.Region.Zone.bDistanceFog )
+		Return Min(Instigator.Region.Zone.DistanceFogEnd, EffectiveRange);
+	else 
+		Return EffectiveRange;
+}
+
 function InitWeaponMuzzles()
 {
 	local	byte	i;
@@ -362,6 +349,7 @@ function InitWeaponMuzzles()
 				Muzzles[i] = UMWeapon.Spawn( MuzzleClasses[i] );
 				if ( Muzzles[i] != None )  {
 					UMWeapon.AttachToBone( Muzzles[i], MuzzleBones[i] );
+					Muzzles[i].Instigator = Instigator;
 					Muzzles[i].Weapon = UMWeapon;
 					Muzzles[i].FireMode = Self;
 				}
@@ -605,13 +593,14 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 	if ( ProjectileClass != None )
 		P = Weapon.Spawn(ProjectileClass, Weapon,, Start, Dir);
 	
+	/*
 	if ( P == None )
 		P = ForceSpawnProjectile(Start,Dir);
 	
 	if ( P != None )
 		PostSpawnProjectile(P);
 	else
-		Return None;
+		Return None; */
 	
 	Return P;
 }
@@ -633,10 +622,12 @@ function UpdateSavedFireProperties()
 //Issue #186
 function Rotator AdjustAim(Vector Start, float InAimError)
 {
+	/*
 	if ( !SavedFireProperties.bInitialized )
-		UpdateSavedFireProperties();
+		//UpdateSavedFireProperties();
 
-	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError);
+	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError); */
+	
 }
 
 function DoFireEffect()
@@ -649,7 +640,8 @@ function DoFireEffect()
 	Instigator.MakeNoise(1.0);
     Weapon.GetViewAxes(VX, VY, VZ);
 
-	StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
+	//StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
+	StartProj = Muzzles[MuzzleNum].Location;
     Aim = AdjustAim(StartProj, AimError);
 	
 	switch (SpreadStyle)
@@ -777,6 +769,29 @@ function float UpdateAimError(float NewAimError)
 		NewAimError *= CrouchedAimErrorBonus;
 	
 	Return NewAimError;
+}
+
+// This function returns the current AimError with all bonuses and 
+// all weapon modules modifiers.
+function float GetAimError()
+{
+	local	float	CurrentAimError;
+	
+	CurrentAimError = default.AimError;
+	
+	// Scale AimError by Instigator moving speed
+	if ( !KFWeap.bSteadyAim && InstigatorMovingSpeed > 0.0 )
+		CurrentAimError += InstigatorMovingSpeed * MovingAimErrorScale;
+	
+	// AimError bonus for firing aiming
+	if ( KFWeap.bAimingRifle )
+		CurrentAimError *= AimingAimErrorBonus;
+	
+	// Small AimError bonus for firing crouched
+	if ( Instigator != None && Instigator.bIsCrouched )
+		CurrentAimError *= CrouchedAimErrorBonus;
+	
+	Return CurrentAimError;
 }
 
 function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
@@ -925,12 +940,8 @@ event ModeDoFire()
 	
 	bTheLastShot = KFWeap.MagAmmoRemaining <= AmmoPerFire;
 	// Storing InstigatorMovingSpeed
-	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )  {
-		if ( Instigator.bIsCrouched )
-			InstigatorMovingSpeed = VSize(Instigator.Velocity) * CrouchedMovingBonus;
-		else
-			InstigatorMovingSpeed = VSize(Instigator.Velocity);
-	}
+	if ( Instigator.Velocity != Vect(0.0,0.0,0.0) )
+		InstigatorMovingSpeed = VSize(Instigator.Velocity);
 	else
 		InstigatorMovingSpeed = 0.0;
 	
@@ -1084,15 +1095,6 @@ function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SR
  	}
 }
 
-// MaxRange
-function float MaxRange()
-{
-	if ( Instigator.Region.Zone.bDistanceFog )
-		Return Min(Instigator.Region.Zone.DistanceFogEnd, EffectiveRange);
-	else 
-		Return EffectiveRange;
-}
-
 // Overriden because I'm using my own functions to update Spread and AimError.
 // More info in the UpdateFireProperties function.
 simulated function AccuracyUpdate(float Velocity) { }
@@ -1225,6 +1227,7 @@ function PlayFireEnd()
 
 defaultproperties
 {
+	 InitialStateName=""
 	 bCanDryFire=True
 	 MuzzleNum=0
 	 bDoFiringEffects=True

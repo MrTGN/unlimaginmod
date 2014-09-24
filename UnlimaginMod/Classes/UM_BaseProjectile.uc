@@ -193,7 +193,7 @@ simulated final function float GetRandPitch( range PitchRange )
 		if ( PitchRange.Min != PitchRange.Max )
 			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
 		else
-			Return PitchRange.Max;	// Just return Max Pitch
+			Return PitchRange.Min;	// Just return Min Pitch
 	}
 	else
 		Return 1.0;

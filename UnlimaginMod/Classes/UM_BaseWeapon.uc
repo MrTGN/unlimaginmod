@@ -23,51 +23,28 @@ class UM_BaseWeapon extends KFWeapon
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-// Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
-struct	AnimData
-{
-	var	name	Anim;
-	var	float	Rate;
-	var	float	StartFrame;		// The frame number at which start to playing animation
-	var	float	TweenTime;
-	var	int		Channel;
-};
+var		BaseActor.SoundData		ModeSwitchSound;
 
-// Read http://udn.epicgames.com/Two/SoundReference.html for more info
-struct	SoundData
-{
-	var	string		Ref;
-	var	sound		Snd;
-	var	ESoundSlot	Slot;
-	var	float		Vol;
-	var	bool		bNoOverride;
-	var	float		Radius;
-	var	Range		PitchRange;	// Random pitching within range
-	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
-};
+var		bool					bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload allows to turn on/off TacticalReload
+var		int						TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
 
-var		SoundData			ModeSwitchSound;
-
-var		bool				bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload allows to turn on/off TacticalReload
-var		int					TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
-
-var		AnimData			TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
-var		float				TacticalReloadTime;		// Time needed to play TacticalReloadAnim
+var		BaseActor.AnimData		TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
+var		float					TacticalReloadTime;		// Time needed to play TacticalReloadAnim
 
 //Todo: перенести эти переменные на AnimData
-var()	name				EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
-var()	name				EmptySelectAnim, EmptyPutDownAnim;	// Empty weapon animation
+var()	name					EmptyIdleAimAnim, EmptyIdleAnim;	// Empty weapon animation
+var()	name					EmptySelectAnim, EmptyPutDownAnim;	// Empty weapon animation
 
-var		bool				bAssetsLoaded;
-var		bool				bAllowAutoReload;
-var		byte				AutoReloadRequestsNum;
+var		bool					bAssetsLoaded;
+var		bool					bAllowAutoReload;
+var		byte					AutoReloadRequestsNum;
 
 var		Class< UM_BaseTacticalModule >			TacticalModuleClass;
 var		UM_BaseTacticalModule					TacticalModule;
 var		name									TacticalModuleBone;
-var		AnimData								TacticalModuleToggleAnim;
+var		BaseActor.AnimData						TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
-var		SoundData								TacticalModuleToggleSound;
+var		BaseActor.SoundData						TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
 
 //[end] Varibles
@@ -233,14 +210,66 @@ simulated final function LoopAnimData( AnimData AD, optional float RateMult )
 }
 //[end]
 
+// Called immediately after gameplay begins.
 simulated event PostBeginPlay()
 {
+	local	int		m;
+	
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(self, true);
 
-	// Weapon will handle FireMode instantiation
-	Super(BaseKFWeapon).PostBeginPlay();
-
+	//[block] Copied from the Weapon class to add some changes
+	// Creating the FireMode objects
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireModeClass[m] != None )  {
+			FireMode[m] = new(self) FireModeClass[m];
+			if ( FireMode[m] != None )  {
+				if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+					UM_BaseProjectileWeaponFire(FireMode[m]).GotoState('Initialization');
+				//ToDo: переработать и вынести поиск патронов в отдельную функцию.
+				AmmoClass[m] = FireMode[m].AmmoClass;
+			}
+		}
+	}
+	
+	// Native WeaponFires instantiation
+	InitWeaponFires();
+	
+	// Adjusting WeaponFires properties
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireMode[m] != None )  {
+			FireMode[m].ThisModeNum = m;
+			FireMode[m].Level = Level;
+			FireMode[m].Owner = self;
+			FireMode[m].Instigator = Instigator;
+			FireMode[m].Weapon = self;
+			// Calling actor spawning-like Events
+			FireMode[m].PreBeginPlay();
+			FireMode[m].BeginPlay();
+			FireMode[m].PostBeginPlay();
+			FireMode[m].SetInitialState();
+			FireMode[m].PostNetBeginPlay();
+		}
+	}
+	
+	if ( Level.bDropDetail || Level.DetailMode == DM_Low )
+		MaxLights = Min(4, MaxLights);
+	
+	if ( SmallViewOffset == vect(0.0,0.0,0.0) )
+		SmallViewOffset = default.PlayerviewOffset;
+	
+	if ( SmallEffectOffset == vect(0.0,0.0,0.0) )
+		SmallEffectOffset = EffectOffset + default.PlayerViewOffset - SmallViewOffset;
+	
+	if ( bUseOldWeaponMesh && OldMesh != None )  {
+		bInitOldMesh = True;
+		LinkMesh(OldMesh);
+	}
+	
+	if ( Level.GRI != None )
+		CheckSuperBerserk();
+	//[end]
+	
 	//[block] Client code
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( !bHasScope )

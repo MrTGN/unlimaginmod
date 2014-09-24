@@ -72,6 +72,19 @@ struct	SoundData
 //========================================================================
 //[block] Functions
 
+// RandPitch
+simulated final function float GetRandPitch( range PitchRange )
+{
+	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )  {
+		if ( PitchRange.Min != PitchRange.Max )
+			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
+		else
+			Return PitchRange.Min;	// Just return Min Pitch
+	}
+	else
+		Return 1.0;
+}
+
 //[block] Sound functions
 // Play a sound effect from the SoundData struct with replication from the server to the clients.
 final function ServerPlaySoundData( SoundData SD, optional float VolMult )

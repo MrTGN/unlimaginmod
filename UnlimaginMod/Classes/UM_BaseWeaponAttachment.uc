@@ -31,7 +31,7 @@ var		Class<UM_MeshActor>			SecondMeshActorClass;
 var		UM_MeshActor				SecondMeshActor;	
 
 var		bool						bAssetsLoaded;
-var		byte						MuzzleNums[2];		// Muzzles Numbers for the 2 FireModes
+var		byte						MuzzleNums[Class'Weapon'.NUM_FIRE_MODES];		// Muzzles Numbers for the FireModes
 
 enum EMeshNum
 {
@@ -39,6 +39,7 @@ enum EMeshNum
 	MN_Two
 };
 
+//ToDo: перенести это в Muzzle Actor
 struct FireModeData
 {
 	var	array< EMeshNum >			MeshNums;
@@ -51,7 +52,7 @@ struct FireModeData
 	var	array< Class<xEmitter> >	ShellEjectClasses;
 	var	array< xEmitter >			ShellEjects;
 };
-var		FireModeData				FireModeEffects[2];
+var		FireModeData				FireModeEffects[Class'Weapon'.NUM_FIRE_MODES];
 
 var		bool						bAttachFlashEmitter, bAttachSmokeEmitter;
 

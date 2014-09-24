@@ -22,7 +22,14 @@ Class UnlimaginMutator extends Mutator
 //========================================================================
 //[block] Variables
 
-var		array< string >			ModServerPackages;
+const		UnlimaginModVersion = "0.001a";
+//const		UnlimaginModBuildDate = ;
+
+struct ReplacedPickupData
+{
+	var		string		DefaultClass;
+	var		string		ReplaceByClass;
+};
 
 struct ChatIconType
 {
@@ -55,8 +62,9 @@ var()	globalconfig	bool	bForceGivePerk, bNoSavingProgress, bUseRemoteDatabase,
 
 var						bool	bEnabledEmoIcons;
 
-const		UnlimaginModVersion = "0.001a";
-//const		UnlimaginModBuildDate = ;
+var		array< string >			ModServerPackages;
+
+var		array< ReplacedPickupData >	ReplacedPickups;
 
 //[end] Varibles
 //====================================================================
@@ -250,9 +258,20 @@ event Timer()
 	PendingPlayers.Length = 0;
 }
 
-function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
+function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 {
-	if ( PlayerController(Other) != None ) {
+	local	int		i;
+	
+	// Check for the ReplacedPickups
+	if ( Class<Pickup>(Other.Class) != None )  {
+		for ( i = 0; i < ReplacedPickups.Length; ++i )  {
+			if ( ReplacedPickups[i].DefaultClass != "" && string(Other.Class) ~= ReplacedPickups[i].DefaultClass )  {
+				ReplaceWith( Other, ReplacedPickups[i].ReplaceByClass );
+				Return False;
+			}
+		}
+	}
+	else if ( PlayerController(Other) != None )  {
 		PendingPlayers[PendingPlayers.Length] = PlayerController(Other);
 		SetTimer(0.15, false);
 	}
@@ -583,7 +602,7 @@ defaultproperties
 {
 	GroupName="KFUnlimaginMod"
 	FriendlyName="Unlimagin Mod"
-	Description="Hardcore gameplay Mod for Killing Floor. Copyright © 2012-2013 Tsiryuta G. N."
+	Description="Global Killing Floor Mod. Copyright © 2012-2014 Tsiryuta G. N."
 	Perks(0)="UnlimaginMod.UM_SRVetSupportSpec"
 	Perks(1)="UnlimaginMod.UM_SRVetBerserker"
 	Perks(2)="UnlimaginMod.UM_SRVetCommando"
@@ -603,6 +622,24 @@ defaultproperties
 	bEnhancedShoulderView=true
 	MidGameSaveWaves=1
 
+	ReplacedPickups(0)=(DefaultClass="KFMod.ShotgunPickup",ReplaceByClass="UnlimaginMod.UM_BenelliM3Pickup")
+	ReplacedPickups(1)=(DefaultClass="KFMod.WinchesterPickup",ReplaceByClass="UnlimaginMod.UM_WinchesterM1894Pickup")
+	ReplacedPickups(2)=(DefaultClass="KFMod.CrossbowPickup",ReplaceByClass="UnlimaginMod.UM_CrossbowPickup")
+	ReplacedPickups(3)=(DefaultClass="KFMod.BullpupPickup",ReplaceByClass="UnlimaginMod.UM_L22A1Pickup")
+	ReplacedPickups(4)=(DefaultClass="KFMod.AK47Pickup",ReplaceByClass="UnlimaginMod.UM_AK47Pickup")
+	ReplacedPickups(5)=(DefaultClass="KFMod.SCARMK17Pickup",ReplaceByClass="UnlimaginMod.UM_SCARMK17Pickup")
+	ReplacedPickups(6)=(DefaultClass="KFMod.FlameThrowerPickup",ReplaceByClass="UnlimaginMod.UM_FlameThrowerPickup")
+	ReplacedPickups(7)=(DefaultClass="KFMod.MAC10Pickup",ReplaceByClass="UnlimaginMod.UM_MAC10Pickup")
+	ReplacedPickups(8)=(DefaultClass="KFMod.BenelliPickup",ReplaceByClass="UnlimaginMod.UM_BenelliM4Pickup")
+	ReplacedPickups(9)=(DefaultClass="KFMod.M4Pickup",ReplaceByClass="UnlimaginMod.UM_M4Pickup")
+	ReplacedPickups(10)=(DefaultClass="KFMod.M4203Pickup",ReplaceByClass="UnlimaginMod.UM_M4203Pickup")
+	ReplacedPickups(11)=(DefaultClass="KFMod.KSGPickup",ReplaceByClass="UnlimaginMod.UM_KSGPickup")
+	ReplacedPickups(12)=(DefaultClass="KFMod.MK23Pickup",ReplaceByClass="UnlimaginMod.UM_MK23Pickup")
+	ReplacedPickups(13)=(DefaultClass="KFMod.DualMK23Pickup",ReplaceByClass="UnlimaginMod.UM_DualMK23Pickup")
+	ReplacedPickups(14)=(DefaultClass="KFMod.FNFAL_ACOG_Pickup",ReplaceByClass="UnlimaginMod.UM_FNFAL_ACOG_Pickup")
+	//ReplacedPickups()=(DefaultClass="",ReplaceByClass="")
+	
+	/*
 	TraderInventory(0)="4:KFMod.MP7MPickup"
 	TraderInventory(1)="2:KFMod.ShotgunPickup"
 	TraderInventory(2)="2:KFMod.BoomStickPickup"
@@ -642,7 +679,7 @@ defaultproperties
 	TraderInventory(34)="2:KFMod.KSGPickup"
 	TraderInventory(35)="1:KFMod.MK23Pickup"
 	TraderInventory(36)="1:KFMod.DualMK23Pickup"
-	TraderInventory(37)="4:KFMod.FNFAL_ACOG_Pickup"
+	TraderInventory(37)="4:KFMod.FNFAL_ACOG_Pickup" */
 
 	WeaponCategories(0)="Melee"
 	WeaponCategories(1)="Pistol"

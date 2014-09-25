@@ -15,7 +15,7 @@ const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 // Player Info
 var				UM_SRClientPerkRepLink		PerkLink;
 var	transient	PlayerReplicationInfo		LastPlayerReplicationInfo;	// Used to detect changes in PlayerReplicationInfo
-var				KFPlayerReplicationInfo		KFPlayerReplicationInfo;
+var				UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 var				Class<UM_SRVeterancyTypes>	CurrentVeterancy;	// Current Veterancy Class
 
 
@@ -151,12 +151,13 @@ simulated function ClientVeterancyChanged()
 }
 
 simulated final function ClientUpdateCurrentVeterancy(
-	KFPlayerReplicationInfo		NewKFPlayerReplicationInfo, 
+	UM_PlayerReplicationInfo	NewPlayerReplicationInfo, 
 	Class<UM_SRVeterancyTypes>	NewVeterancy )
 {
 	// Update varibles on the client side
 	if ( Role < ROLE_Authority )  {
-		KFPlayerReplicationInfo = NewKFPlayerReplicationInfo;
+		UM_PlayerReplicationInfo = NewPlayerReplicationInfo;
+		//ToDo: похоже эту переменную можно будет убрать
 		CurrentVeterancy = NewVeterancy;
 		ClientVeterancyChanged();
 	}
@@ -164,10 +165,10 @@ simulated final function ClientUpdateCurrentVeterancy(
 
 final function UpdateCurrentVeterancy()
 {
-	KFPlayerReplicationInfo = KFPlayerReplicationInfo(PlayerReplicationInfo);
-	CurrentVeterancy = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo.ClientVeteranSkill);
+	UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
+	CurrentVeterancy = Class<UM_SRVeterancyTypes>(UM_PlayerReplicationInfo.ClientVeteranSkill);
 	// Sending to the clients
-	ClientUpdateCurrentVeterancy( KFPlayerReplicationInfo, CurrentVeterancy );
+	ClientUpdateCurrentVeterancy( UM_PlayerReplicationInfo, CurrentVeterancy );
 }
 
 // Notify on server side that veterancy has been changed
@@ -178,8 +179,8 @@ function VeterancyChanged()
 
 	UpdateCurrentVeterancy();
 	
-	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
-		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
+	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
+		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( UM_PlayerReplicationInfo );
 	
 	Super.VeterancyChanged();
 }
@@ -357,8 +358,8 @@ function bool DoJump( bool bUpdating )
     } */
 	
 	if ( !bIsCrouched && !bWantsToCrouch )  {
-		if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
-			JumpModif = CurrentVeterancy.static.GetPawnJumpModifier( KFPlayerReplicationInfo ) * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
+		if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
+			JumpModif = CurrentVeterancy.static.GetPawnJumpModifier( UM_PlayerReplicationInfo ) * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
 		else
 			JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
 		
@@ -407,8 +408,8 @@ event Landed(vector HitNormal)
 {
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
-	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
-		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( KFPlayerReplicationInfo );
+	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
+		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( UM_PlayerReplicationInfo );
 	
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();
@@ -529,8 +530,8 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 
 	Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
 
-	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
-		Price *= CurrentVeterancy.static.GetCostScaling( KFPlayerReplicationInfo, WClass.Default.PickupClass );
+	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
+		Price *= CurrentVeterancy.static.GetCostScaling( UM_PlayerReplicationInfo, WClass.Default.PickupClass );
 
 	Weight = Class<KFWeapon>(WClass).Default.Weight;
 
@@ -612,8 +613,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 			{
 				Price = (class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75);
 
-				if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None )
-					Price *= CurrentVeterancy.static.GetCostScaling( KFPlayerReplicationInfo, WClass.default.PickupClass );
+				if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
+					Price *= CurrentVeterancy.static.GetCostScaling( UM_PlayerReplicationInfo, WClass.default.PickupClass );
 			}
 
 			if ( I.Class==Class'Dualies' )
@@ -689,8 +690,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	LastDamagedBy = InstigatedBy;
 	
 	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-	if ( KFPlayerReplicationInfo != None && CurrentVeterancy != None
-		 && CurrentVeterancy.static.ReduceDamage( KFPlayerReplicationInfo, self, InstigatedBy, Damage, DamageType ) < 1 )
+	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None
+		 && CurrentVeterancy.static.ReduceDamage( UM_PlayerReplicationInfo, self, InstigatedBy, Damage, DamageType ) < 1 )
 		Return;
 	
 	//ToDo: #188

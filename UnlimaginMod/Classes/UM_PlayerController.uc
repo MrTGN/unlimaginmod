@@ -1,12 +1,12 @@
 class UM_PlayerController extends KFPlayerController;
 
+var				bool		bUseAdvBehindview;
 var transient	vector		CamPos;
 var transient	rotator		CamRot;
 var transient	Actor		CamActor;
-var				bool		bUseAdvBehindview;
 
-var				string		SteamStatsAndAchievementsClassName; 
-var				string		MidGameMenuClassName, InputClassName;
+var				string		SteamStatsAndAchievementsClassName;
+var				string		BuyMenuClassName, MidGameMenuClassName, InputClassName;
 
 replication
 {
@@ -23,6 +23,197 @@ simulated event PreBeginPlay()
 	Super.PreBeginPlay();
 }*/
 
+//[block] Server menu functions. Function calls also replicated from the clients.
+// ClientOpenMenu
+event ClientOpenMenu( string Menu, optional bool bDisconnect, optional string Msg1, optional string Msg2 )
+{
+	if ( Player == None )
+		Return;
+	
+	// GUIController calls UnpressButtons() after it's been activated...once active, it swallows
+	// all input events, preventing GameEngine from parsing script execs commands -- rjp
+	if ( !Player.GUIController.OpenMenu(Menu, Msg1, Msg2) )
+		UnPressButtons();
+
+	if ( bDisconnect )  {
+		// Use delayed console command, in case the menu that was opened had bDisconnectOnOpen=True -- rjp
+		if ( Player.Console != None )
+			Player.Console.DelayedConsoleCommand("DISCONNECT");
+		else
+			ConsoleCommand("Disconnect");
+	}
+}
+
+// ClientReplaceMenu
+event ClientReplaceMenu( string Menu, optional bool bDisconnect, optional string Msg1, optional string Msg2 )
+{
+	if ( Player == None )
+		Return;
+	
+	if ( !Player.GUIController.bActive )  {
+		if ( !Player.GUIController.ReplaceMenu(Menu, Msg1, Msg2) )
+			UnpressButtons();
+	}
+	else 
+		Player.GUIController.ReplaceMenu(Menu, Msg1, Msg2);
+
+	if ( bDisconnect )  {
+		// Use delayed console command, in case the menu that was opened had bDisconnectOnOpen=True -- rjp
+		if ( Player.Console != None )
+			Player.Console.DelayedConsoleCommand("Disconnect");
+		else
+			ConsoleCommand("Disconnect");
+	}
+}
+
+// ClientCloseMenu
+event ClientCloseMenu( optional bool bCloseAll, optional bool bCancel )
+{
+	if ( Player == None )
+		Return;
+	
+	if ( bCloseAll )
+		Player.GUIController.CloseAll(bCancel, True);
+	else
+		Player.GUIController.CloseMenu(bCancel);
+}
+//[end]
+
+// Spawn PlayerReplicationInfo on the server
+function InitPlayerReplicationInfo()
+{
+	if ( !bDeleteMe && bIsPlayer && PlayerReplicationInfoClass != None )  {
+		PlayerReplicationInfo = Spawn( PlayerReplicationInfoClass, self,, vect(0.0,0.0,0.0), rot(0,0,0) );
+		if ( PlayerReplicationInfo != None )  {
+			// PlayerName
+			if ( PlayerReplicationInfo.PlayerName == "" )
+				PlayerReplicationInfo.SetPlayerName(class'GameInfo'.Default.DefaultPlayerName);
+			// bNoTeam
+			PlayerReplicationInfo.bNoTeam = !Level.Game.bTeamGame;
+		}
+	}
+}
+
+// Spawn ChatManager on the server
+function InitChatManager()
+{
+	local	class<PlayerChatManager>	PlayerChatClass;
+	
+	if ( PlayerChatType != "" )  {
+		PlayerChatClass = class<PlayerChatManager>( DynamicLoadObject(PlayerChatType, class'Class') );
+		if ( PlayerChatClass != None )
+			ChatManager = Spawn( PlayerChatClass, self );
+	}
+}
+
+simulated function PrecacheAnnouncements()
+{
+	if ( RewardAnnouncer != None )
+		RewardAnnouncer.PrecacheAnnouncements(true);
+	
+	if ( StatusAnnouncer != None )
+		StatusAnnouncer.PrecacheAnnouncements(false);
+}
+
+// Spawn VoiceAnnouncers on the clients
+simulated function InitVoiceAnnouncers()
+{
+	local	class<AnnouncerVoice>	VoiceClass;
+	
+	// CustomRewardAnnouncerPack
+	if ( CustomRewardAnnouncerPack != "" )  {
+		VoiceClass = class<AnnouncerVoice>( DynamicLoadObject(CustomRewardAnnouncerPack, Class'Class') );
+		RewardAnnouncer = Spawn(VoiceClass);
+	}
+	
+	// CustomStatusAnnouncerPack
+	if ( CustomStatusAnnouncerPack != "" )  {
+		VoiceClass = class<AnnouncerVoice>( DynamicLoadObject(CustomStatusAnnouncerPack, Class'Class') );
+		StatusAnnouncer = Spawn(VoiceClass);
+	}
+	
+	PrecacheAnnouncements();
+}
+
+simulated function LoadComboList()
+{
+	local	int		c;
+	
+	for ( c = 0; c < ArrayCount(ComboList); ++c )  {
+		if ( ComboNameList[c] != "" )  {
+			ComboList[c] = Class<Combo>( DynamicLoadObject(ComboNameList[c], Class'Class') );
+			if ( ComboList[c] == None )
+				Break;
+			MinAdrenalineCost = FMin(MinAdrenalineCost, ComboList[c].Default.AdrenalineCost);
+		}
+	}
+}
+
+simulated function UpdateHintManagement(bool bUseHints)
+{
+	if ( Level.GetLocalPlayerController() == self )  {
+		if ( bUseHints )  {
+			if ( HintManager == None )  {
+				HintManager = Spawn(class'KFHintManager', self);
+				// Still None
+				if ( HintManager == None )
+					Warn("Unable to spawn hint manager");
+			}
+		}
+		else  {
+			if ( HintManager != None )  {
+				HintManager.Destroy();
+				HintManager = None;
+			}
+			if ( HUDKillingFloor(myHUD) != None )
+				HUDKillingFloor(myHUD).bDrawHint = False;
+		}
+	}
+}
+
+// Optimized PostBeginPlay() version
+simulated event PostBeginPlay()
+{
+	MaxTimeMargin = Level.MaxTimeMargin;
+	MaxResponseTime = default.MaxResponseTime * Level.TimeDilation;
+	
+	if ( Level.NetMode != NM_Client )
+		InitPlayerReplicationInfo();
+	else
+		SpawnDefaultHUD();
+	
+	FixFOV();
+    SetViewDistance();
+    SetViewTarget(self);  // MUST have a view target!
+	LastActiveTime = Level.TimeSeconds;
+	
+	if ( Level.LevelEnterText != "" )
+		ClientMessage(Level.LevelEnterText);
+	
+	if ( Level.NetMode == NM_Standalone )
+        AddCheats();
+	
+	// Precache
+	bForcePrecache = Role < ROLE_Authority;
+	ForcePrecacheTime = Level.TimeSeconds + 1.2;
+	
+	if ( Level.Game != None )
+		MapHandler = Level.Game.MaplistHandler;
+	
+	if ( Role == ROLE_Authority )
+		InitChatManager();
+	
+	if ( Level.NetMode != NM_DedicatedServer )
+		InitVoiceAnnouncers();
+	
+	LoadComboList();
+	FillCameraList();
+    LastKillTime = -5.0;
+	
+	// Spawn hint manager (if needed)
+	UpdateHintManagement(bShowHints);
+}
+
 // Set up the widescreen FOV values for this player
 // Optimized version of the InitFOV() function
 simulated function SetUpWidescreenFOV()
@@ -36,42 +227,96 @@ simulated function SetUpWidescreenFOV()
     ResY = float(GUIController(Player.GUIController).ResY);
     AspectRatio = ResX / ResY;
 
-	//1.6 = 16/10 which is 16:10 ratio and 16:9 comes to 1.77
+	// 1.6 = 16/10 which is 16:10 ratio and 16:9 comes to 1.77
 	if ( bUseTrueWideScreenFOV && AspectRatio >= 1.60 )  {
-		// 4 / 3 - OriginalAspectRatio
-		// 360.0 / 90.0 = 4.0
-        NewFOV = ATan((Tan(Pi / 4.0) * (AspectRatio * 3.0 / 4.0)), 1.0) * 360.0 / Pi;
-        default.DefaultFOV = NewFOV;
-        DefaultFOV = NewFOV;
+		/* --- Optimized NewFOV calculation ---
+		OriginalAspectRatio = 4 / 3
+		AspectRatio * 3.0 / 4.0 = AspectRatio / OriginalAspectRatio
+		Pi / 4.0 = 90.0 * Pi / 360.0
+		*/
+		NewFOV = ATan((Tan(Pi / 4.0) * (AspectRatio * 3.0 / 4.0)), 1.0) * 360.0 / Pi;
+		default.DefaultFOV = NewFOV;
+		DefaultFOV = NewFOV;
 		/*
 		// 16X9
-        if( AspectRatio >= 1.70 )
-            log("Detected 16X9: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
-        else
-            log("Detected 16X10: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
-        */
+		if ( AspectRatio >= 1.70 )
+			log("Detected 16X9: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+		else
+			log("Detected 16X10: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+		*/
     }
 	else  {
-            //log("Detected 4X3: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
-            default.DefaultFOV = 90.0;
-            DefaultFOV = 90.0;
+		//log("Detected 4X3: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
+		default.DefaultFOV = 90.0;
+		DefaultFOV = 90.0;
 	}
 
-    // Initialize the FOV of all the weapons the player is carrying
+	// Initialize the FOV of all the weapons the player is carrying
 	if ( Pawn != None )  {
-    	for ( Inv = Pawn.Inventory; Inv != None; Inv = Inv.Inventory )  {
-    		if ( KFWeapon(Inv) != None )
-                KFWeapon(Inv).InitFOV();
-			
-    		// Little hack to catch possible runaway loops. Gotta love those linked listed in UE2.5 - Ramm
+		for ( Inv = Pawn.Inventory; Inv != None; Inv = Inv.Inventory )  {
+			if ( KFWeapon(Inv) != None )
+				KFWeapon(Inv).InitFOV();
+
+			// Little hack to catch possible runaway loops. Gotta love those linked listed in UE2.5 - Ramm
 			++i;
-    		if ( i > 10000 )
-    		  Break;
-    	}
+			if ( i > 10000 )
+				Break;
+		}
 	}
 
 	// Set the FOV to the default FOV
 	TransitionFOV(DefaultFOV, 0.0);
+}
+
+function ShowBuyMenu( string wlTag, float maxweight )
+{
+	if ( Level.NetMode != NM_DedicatedServer )
+		StopForceFeedback();  // jdf - no way to pause feedback
+	// Open menu
+	if ( BuyMenuClassName != "" )
+		ClientOpenMenu(BuyMenuClassName,, wlTag, string(maxweight));
+}
+
+function ShowLobbyMenu()
+{
+	if ( Level.NetMode != NM_DedicatedServer )
+		StopForceFeedback();  // jdf - no way to pause feedback
+	
+	bPendingLobbyDisplay = False;
+	// Open menu
+	if ( LobbyMenuClassString != "" )
+		ClientOpenMenu(LobbyMenuClassString);
+}
+
+function ShowMidGameMenu(bool bPause)
+{
+	if ( HUDKillingFloor(MyHud).bDisplayInventory )
+		HUDKillingFloor(MyHud).HideInventory();
+	else  {
+		// Pause if not already
+		if ( Level.Pauser == None && Level.NetMode == NM_StandAlone )
+			SetPause(True);
+
+		if ( Level.NetMode != NM_DedicatedServer )
+			StopForceFeedback();  // jdf - no way to pause feedback
+
+		// Open menu
+		if ( bDemoOwner )
+			ClientOpenMenu(DemoMenuClass);
+		else if ( LoginMenuClass != "" )
+			ClientOpenMenu(LoginMenuClass);
+		else 
+			ClientOpenMenu(MidGameMenuClassName);
+	}
+}
+
+simulated function ShowLoginMenu()
+{
+	if ( Pawn != None && (Pawn.Health > 0 || (Pawn.PlayerReplicationInfo != None && Pawn.PlayerReplicationInfo.bReadyToPlay)) )
+		Return;
+	
+	if ( LobbyMenuClassString != "" && GameReplicationInfo != None )
+		ClientReplaceMenu(LobbyMenuClassString);
 }
 
 function ServerSetReadyToStart()
@@ -80,26 +325,28 @@ function ServerSetReadyToStart()
 }
 
 /* InitInputSystem()
-Spawn the appropriate class of PlayerInput
-Only called for playercontrollers that belong to local players
+ Spawn the appropriate class of PlayerInput
+ Only called for playercontrollers that belong to local players
 */
 simulated event InitInputSystem()
 {
-	InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
+	// Loading InputClass
+	if ( InputClassName != None )
+		InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
+	
 	if ( InputClass == None )
-		log("Warning! No InputClass to initialise!");
-	else
+		log("Warning! No InputClass to initialise!", Name);
+	else if ( Role == ROLE_Authority )
 		Super(PlayerController).InitInputSystem();
 
-	// Set up the widescreen FOV values for this player
-	// Had to replace InitFOV() with my own function because it was a final function.
+	// InitFOV() has been replaced by my own SetUpWidescreenFOV() function because it was a final function.
 	SetUpWidescreenFOV();
 	
-	if ( LoginMenuClass != "" )
+	if ( Level.NetMode == NM_Client )
 		ShowLoginMenu();
 
-	bReadyToStart = True;
 	ServerSetReadyToStart();
+	bReadyToStart = True;
 }
 
 //[block] View Shakers
@@ -389,36 +636,6 @@ function ServerToggleBehindview()
 	}
 }
 
-function ShowBuyMenu(string wlTag,float maxweight)
-{
-	StopForceFeedback();
-	// Open menu
-	ClientOpenMenu("UnlimaginMod.UM_SRGUIBuyMenu",,wlTag,string(maxweight));
-}
-
-function ShowMidGameMenu(bool bPause)
-{
-	if ( HUDKillingFloor(MyHud).bDisplayInventory )
-		HUDKillingFloor(MyHud).HideInventory();
-	else  {
-		// Pause if not already
-		if ( Level.Pauser == None && Level.NetMode == NM_StandAlone )
-			SetPause(True);
-
-		if ( Level.NetMode != NM_DedicatedServer )
-			StopForceFeedback();  // jdf - no way to pause feedback
-
-		// Open menu
-		if ( bDemoOwner )
-			ClientopenMenu(DemoMenuClass);
-		else if ( LoginMenuClass != "" )
-			ClientOpenMenu(LoginMenuClass);
-		else 
-			ClientOpenMenu(MidGameMenuClassName);
-	}
-}
-
-
 // Fix for vehicle mod crashes.
 simulated function postfxon(int i)
 {
@@ -467,10 +684,12 @@ function ServerSpeech( name Type, int Index, string Callsign )
 
 defaultproperties
 {
+	PlayerReplicationInfoClass="UnlimaginMod.UM_PlayerReplicationInfo"
 	InputClass=None
 	InputClassName="UnlimaginMod.UM_PlayerInput"
 	LobbyMenuClassString="UnlimaginMod.UM_SRLobbyMenu"
 	MidGameMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
+	BuyMenuClassName="UnlimaginMod.UM_SRGUIBuyMenu"
 	SteamStatsAndAchievementsClass=None
 	SteamStatsAndAchievementsClassName="UnlimaginServer.UM_ServerStStats"
 	PawnClass=Class'UnlimaginMod.UM_HumanPawn'

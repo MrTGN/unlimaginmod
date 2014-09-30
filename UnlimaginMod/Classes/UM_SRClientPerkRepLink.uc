@@ -81,6 +81,7 @@ simulated final function string GetCustomValue( class<UM_SRCustomProgress> C )
 			return S.GetProgress();
 	return "";
 }
+
 simulated final function int GetCustomValueInt( class<UM_SRCustomProgress> C )
 {
 	local UM_SRCustomProgress S;
@@ -90,6 +91,7 @@ simulated final function int GetCustomValueInt( class<UM_SRCustomProgress> C )
 			return S.GetProgressInt();
 	return 0;
 }
+
 final function UM_SRCustomProgress AddCustomValue( class<UM_SRCustomProgress> C )
 {
 	local UM_SRCustomProgress S,Last;
@@ -109,6 +111,7 @@ final function UM_SRCustomProgress AddCustomValue( class<UM_SRCustomProgress> C 
 	else CustomLink = S;
 	return S;
 }
+
 final function ProgressCustomValue( class<UM_SRCustomProgress> C, int Count )
 {
 	local UM_SRCustomProgress S;

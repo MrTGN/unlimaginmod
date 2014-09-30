@@ -19,7 +19,7 @@ class UM_PlayerReplicationInfo extends KFPlayerReplicationInfo;
 //========================================================================
 //[block] Variables
 
-var		bool			bVeterancyHasChanged, bClientVeterancyUpdated, bForcedNetNotify;
+var		bool			bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
 var		UM_HumanPawn	PawnOwner;
 
 //[end] Varibles
@@ -31,13 +31,7 @@ var		UM_HumanPawn	PawnOwner;
 replication
 {
 	if ( Role == ROLE_Authority && bNetDirty )
-		PawnOwner, bVeterancyHasChanged;
-	
-	if ( Role == ROLE_Authority )
-		ClientForceNetNotifyOn;
-	
-	if ( Role < ROLE_Authority )
-		ServerNotifyVeterancyUpdated;
+		PawnOwner, bVeterancyChangedTrigger;
 }
 
 //[end] Replication
@@ -49,14 +43,7 @@ replication
 function SetPawnOwner( UM_HumanPawn NewPawnOwner )
 {
 	PawnOwner = NewPawnOwner;
-}
-
-simulated final function ClientForceNetNotifyOn()
-{
-	if ( Role < ROLE_Authority )  {
-		bForcedNetNotify = True;
-		bNetNotify = True;
-	}
+	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
 simulated function bool NeedNetNotify()
@@ -86,20 +73,21 @@ simulated function NotifyPawnsAboutTeamChanged()
 
 function NotifyVeterancyChanged()
 {
-	ClientForceNetNotifyOn();
-	bVeterancyHasChanged = True;
-}
-
-function ServerNotifyVeterancyUpdated()
-{
-	bVeterancyHasChanged = False;
+	bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( PawnOwner != None )
+		PawnOwner.NotifyVeterancyChanged();
 }
 
 simulated function ClientNotifyVeterancyChanged()
 {
-	bVeterancyHasChanged = False;
-	bForcedNetNotify = False;
-	ServerNotifyClientVeterancyUpdated();
+	bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
+	if ( PawnOwner != None )  {
+		if ( PawnOwner.UM_PlayerReplicationInfo == None )
+			PawnOwner.UM_PlayerReplicationInfo = self;
+		
+		PawnOwner.ClientNotifyVeterancyChanged();
+	}
 }
 
 simulated event PostNetReceive()
@@ -113,15 +101,11 @@ simulated event PostNetReceive()
 		VoiceInfo.AddVoiceChatter(Self);
 	}
 	
-	if ( bVeterancyHasChanged )
+	if ( Role < ROLE_Authority && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
 		ClientNotifyVeterancyChanged();
-
-	if ( !bForcedNetNotify )
-		bNetNotify = NeedNetNotify();
 }
 
-
-
+//[block] --- Perk bonuses ---
 simulated function int GetReducedDamage( UM_HumanPawn Injured, int Damage, Pawn Instigator, class<DamageType> DmgType )
 {
 	if ( ClientVeteranSkill != None )
@@ -136,6 +120,22 @@ simulated function float GetPickupCostScaling( class<Pickup> Item )
 		Return ClientVeteranSkill.static.GetCostScaling(self, Item);
 	
 	Return 1.0;
+}
+
+simulated function int GetMaxAmmoFor( Class<Ammunition> AmmoType )
+{
+	if ( ClientVeteranSkill != None )
+		Return int( float(AmmoType.default.MaxAmmo) * ClientVeteranSkill.static.AddExtraAmmoFor(self, AmmoType) );
+	
+	Return AmmoType.default.MaxAmmo;
+}
+
+simulated function float GetPawnMaxCarryWeight( float MaxCarryWeight )
+{
+	if ( ClientVeteranSkill != None )
+		Return MaxCarryWeight + float(ClientVeteranSkill.static.AddCarryMaxWeight(self));
+	
+	Return MaxCarryWeight;
 }
 
 simulated function float GetPawnJumpModifier()
@@ -153,6 +153,7 @@ simulated function int GetPawnMaxBounce()
 	
 	Return 0;
 }
+//[end]
 
 //[end] Functions
 //====================================================================

@@ -600,7 +600,8 @@ function SetPawnClass(string inClass, string inCharacter)
 	}
 }
 
-function SendSelectedVeterancyToServer(optional bool bForceChange)
+// Called from GameType actor from DoWaveEnd() function in MatchInProgress state
+simulated function SendSelectedVeterancyToServer(optional bool bForceChange)
 {
 	if ( Level.NetMode != NM_Client && UM_SRStatsBase(SteamStatsAndAchievements) != None )
 		UM_SRStatsBase(SteamStatsAndAchievements).WaveEnded();

@@ -21,13 +21,13 @@ function SetID( int ID )
 
 function PreBeginPlay()
 {
-	Super.PreBeginPlay();
-	
-	// Spawning stat replication actor
+	// Spawning the stat replication actor before the MutatorOwner check us by CheckReplacement function
 	if ( Rep == None )  {
 		Rep = Spawn(Class'UM_SRClientPerkRepLink', Owner);
 		Rep.StatObject = self;
 	}
+	
+	Super.PreBeginPlay();
 }
 
 function PostBeginPlay()
@@ -112,8 +112,8 @@ final function GetData( string D )
 	bStatsReadyNow = True;
 	MyStatsObject.SetSaveData(D);
 	RepCopyStats();
-	bHasChanged = true;
-	bSwitchIsOKNow = true;
+	bHasChanged = True;
+	bSwitchIsOKNow = True;
 
 	// Apply selected character.
 	if ( MyStatsObject.SelectedChar != "" )
@@ -127,7 +127,7 @@ final function GetData( string D )
 	ServerSelectPerkName(MyStatsObject.GetSelectedPerk());
 	Rep.SendClientPerks();
 	
-	if( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
+	if ( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
 		ServerSelectPerk(Rep.PickRandomPerk());
 	
 	bHadSwitchedVet = False;
@@ -153,7 +153,7 @@ function Timer()
 	
 	if ( bStatsChecking )  {
 		bStatsChecking = False;
-		CheckPerks(false);
+		CheckPerks(False);
 	}
 }
 
@@ -208,20 +208,34 @@ function ServerSelectPerkName( name N )
 	}
 }
 
+final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
+{
+	local	byte	i;
+
+	for ( i = 0; i < Rep.CachePerks.Length; ++i )  {
+		if ( Rep.CachePerks[i].PerkClass == VetType )
+			Return Rep.CachePerks[i].CurrentLevel > 0;
+	}
+	
+	Return False;
+}
+
 function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 {
-	local byte i;
+	local	UM_PlayerReplicationInfo	UMPRI;
+	local	byte	i;
 
 	if ( !bStatsReadyNow )
 		Return;
 	
+	UMPRI = UM_PlayerReplicationInfo(OwnerController.PlayerReplicationInfo);
 	if ( VetType == None || !SelectionOK(VetType) )  {
 		if ( !bSwitchIsOKNow )
 			OwnerController.ClientMessage("Your desired perk is unavailable.");
 		
 		Return;
 	}
-	else if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == VetType )  {
+	else if ( UMPRI != None && UMPRI.ClientVeteranSkill == VetType )  {
 		if ( SelectingPerk != None )  {
 			SelectingPerk = None;
 			OwnerController.ClientMessage("You will remain the same perk now.");
@@ -233,21 +247,15 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 	if ( MyStatsObject != None )
 		MyStatsObject.SetSelectedPerk(VetType.Name);
 	
-	if ( !Level.Game.bWaitingToStartMatch && !bSwitchIsOKNow 
-		 && OwnerController.Pawn != None && !MutatorOwner.bAllowAlwaysPerkChanges )  {
-		if ( KFGameReplicationInfo(Level.GRI).bWaveInProgress || bHadSwitchedVet )
-			i = 1;
-		else  {
-			bHadSwitchedVet = True;
-			i = 0;
-		}
-		
-		if ( i == 1 )  {
+	if ( !Level.Game.bWaitingToStartMatch && !bSwitchIsOKNow && OwnerController.Pawn != None && !MutatorOwner.bAllowAlwaysPerkChanges )  {
+		if ( KFGameReplicationInfo(Level.GRI).bWaveInProgress || bHadSwitchedVet )  {
 			OwnerController.ClientMessage(Repl(OwnerController.YouWillBecomePerkString, "%Perk%", VetType.Default.VeterancyName));
 			SelectingPerk = VetType;
 			OwnerController.SelectedVeterancy = VetType; // Force KFGameType update this.
 			Return;
 		}
+		else
+			bHadSwitchedVet = True;
 	}
 	
 	SelectingPerk = None;
@@ -257,28 +265,15 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 			if ( Rep.CachePerks[i].CurrentLevel == 0 )
 				Return;
 			
-			OwnerController.SelectedVeterancy = VetType;
-			KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill = VetType;
-			KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel - 1;
-			
-			if ( UM_HumanPawn(OwnerController.Pawn) != None )  {
-				UM_HumanPawn(OwnerController.Pawn).VeterancyChanged();
-				UM_HumanPawn(OwnerController.Pawn).DropWeaponsToCarryLimit();
+			if ( UMPRI != None )  {
+				OwnerController.SelectedVeterancy = VetType;
+				UMPRI.ClientVeteranSkill = VetType;
+				UMPRI.ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel - 1;
+				// Notifying that the Veterancy info has changed
+				UMPRI.NotifyVeterancyChanged();
 			}
 		}
 	}
-}
-
-final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
-{
-	local	byte	i;
-
-	for ( i = 0; i < Rep.CachePerks.Length; ++i )  {
-		if ( Rep.CachePerks[i].PerkClass == VetType )
-			Return Rep.CachePerks[i].CurrentLevel > 0;
-	}
-	
-	Return False;
 }
 
 final function CheckPerks( bool bInit )
@@ -301,14 +296,15 @@ final function CheckPerks( bool bInit )
 			NewLevel = Rep.CachePerks[i].PerkClass.Static.PerkIsAvailable(Rep);
 			// New Level is Available
 			if ( NewLevel > Rep.CachePerks[i].CurrentLevel )  {
-				if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == Rep.CachePerks[i].PerkClass )
-					KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkillLevel = NewLevel - 1;
-				
+				UMPRI = UM_PlayerReplicationInfo(OwnerController.PlayerReplicationInfo);
 				Rep.CachePerks[i].CurrentLevel = NewLevel;
 				Rep.ClientPerkLevel(i, NewLevel);
-				// Notifying pawn that the Veterancy info has changed
-				if ( KFHumanPawn(OwnerController.Pawn) != None )
-					KFHumanPawn(OwnerController.Pawn).VeterancyChanged();
+				// If this is a current ClientVeteranSkill
+				if ( UMPRI != None && UMPRI.ClientVeteranSkill == Rep.CachePerks[i].PerkClass )  {
+					UMPRI.ClientVeteranSkillLevel = NewLevel - 1;
+					// Notifying that the Veterancy info has changed
+					UMPRI.NotifyVeterancyChanged();
+				}
 				
 				if ( MutatorOwner.bMessageAnyPlayerLevelUp )
 					BroadcastLocalizedMessage( Class'UM_SRVetEarnedMessage', (NewLevel - 1), OwnerController.PlayerReplicationInfo,, Rep.CachePerks[i].PerkClass );
@@ -331,7 +327,7 @@ final function DelayedStatCheck()
 
 function NotifyStatChanged()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	DelayedStatCheck();
 }
 

@@ -52,6 +52,7 @@ function bool MyOnDraw(Canvas C)
 			}
 		}
 		
+		//ToDo: what is this?
 		for( i = j; i < ArrayCount(PerkSelectIcons); ++i )  {
 			PerkSelectIcons[i].Image = None;
 			PerkSelectIcons[i].Index = -1;
@@ -99,7 +100,7 @@ function CheckPerksX( UM_SRClientPerkRepLink S )
 
 	// Grab the Player Controller for later use
 	PRI = KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo);
-                                                                                         
+	
 	// Hold onto our reference
 	if ( S == None )
 		Return;

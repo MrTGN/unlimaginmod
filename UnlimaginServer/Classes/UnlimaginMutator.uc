@@ -245,13 +245,11 @@ event Timer()
 		if ( PendingPlayers[i] != None && PendingPlayers[i].Player != None )  {
 			// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
 			UM_PlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
-			// No stats was spawned yet
-			if ( PendingPlayers[i].SteamStatsAndAchievements == None )
-				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[i]);
-			// Has stats but not what we need
-			else if ( UM_ServerStStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
+			if ( UM_ServerStStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
+				// Has stats but not what we need
 				if ( PendingPlayers[i].SteamStatsAndAchievements != None )
 					PendingPlayers[i].SteamStatsAndAchievements.Destroy();
+				// Spawning a new stats for the player
 				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[i]);
 			}
 		}
@@ -264,7 +262,7 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 	local	int		i;
 	
 	// Check for the ReplacedPickups
-	if ( Class<Pickup>(Other.Class) != None )  {
+	if ( Other != None && Class<Pickup>(Other.Class) != None )  {
 		for ( i = 0; i < ReplacedPickups.Length; ++i )  {
 			if ( ReplacedPickups[i].DefaultClass != "" && string(Other.Class) ~= ReplacedPickups[i].DefaultClass )  {
 				ReplaceWith( Other, ReplacedPickups[i].ReplaceByClass );
@@ -272,12 +270,13 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 			}
 		}
 	}
-	else if ( PlayerController(Other) != None )  {
-		PendingPlayers[PendingPlayers.Length] = PlayerController(Other);
-		SetTimer(0.15, false);
-	}
+	// Finding a new joined players
+	else if ( UM_PlayerController(Other) != None )
+		AddPlayerToPendingPlayers( UM_PlayerController(Other) );
+	// Finding a new stats objects
 	else if ( UM_ServerStStats(Other) != None )
 		SetServerPerks( UM_ServerStStats(Other) );
+	// Finding new stats replication actors
 	else if ( UM_SRClientPerkRepLink(Other) != None )
 		SetupRepLink( UM_SRClientPerkRepLink(Other) );
 

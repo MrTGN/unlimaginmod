@@ -20,6 +20,7 @@ var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		float						FireSpeedModif;
 var		range						JumpRandRange;
+var		float						VeterancyJumpBonus;
 
 // Bouncing from the walls and actors
 var		Vector						BounceMomentum;
@@ -70,12 +71,18 @@ simulated event PreBeginPlay()
 // my PRI now has a new team
 simulated function NotifyTeamChanged()
 {
-	if ( PlayerReplicationInfo != None )
+	if ( PlayerReplicationInfo != None )  {
 		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
-	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
+		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
+	}
+	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )  {
 		Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
-	else if ( PlayerReplicationInfo == None )
-		
+		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(DrivenVehicle.PlayerReplicationInfo);
+	}
+	else
+		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
+	
+	ClientNotifyVeterancyChanged();
 }
 
 simulated event ClientTrigger()
@@ -101,24 +108,76 @@ simulated final function float GetRandExtraScale(
 		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
+function CheckVeterancyCarryWeightLimit()
+{
+	local	byte		t;
+	local	Inventory	I;
+	
+	if ( UM_PlayerReplicationInfo != None )
+		MaxCarryWeight = UM_PlayerReplicationInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
+	else
+		MaxCarryWeight = default.MaxCarryWeight;
+	
+	// If we carrying too much, drop something.
+	while ( CurrentWeight > MaxCarryWeight && t < 6 )  {
+		++t; // Incrementing up to 5 to restrict the number of attempts to drop weapon
+		// Find the weapon to drop
+		for ( I = Inventory; I != None; I = I.Inventory )  {
+			// If it's a weapon and it can be thrown
+			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
+				I.Velocity = Velocity;
+				I.DropFrom(Location + VRand() * 10.0);
+				Break;	// Stop searching
+			}
+		}
+	}
+}
+
+function CheckVeterancyAmmoLimit()
+{
+	local	int			MaxAmmo;
+	local	Inventory	I;
+	
+	// Make sure nothing is over the Max Ammo amount when changing Veterancy
+	for ( I = Inventory; I != None; I = I.Inventory )  {
+		if ( Ammunition(I) != None )  {
+			if ( UM_PlayerReplicationInfo != None )
+				MaxAmmo = UM_PlayerReplicationInfo.GetMaxAmmoFor( Ammunition(I).Class );
+			else
+				MaxAmmo = Ammunition(I).default.MaxAmmo;
+			
+			if ( Ammunition(I).AmmoAmount > MaxAmmo )
+				Ammunition(I).AmmoAmount = MaxAmmo;
+		}
+	}
+}
+
 // Notify clients that veterancy has been changed
-simulated function ClientVeterancyChanged()
+// Called from UM_PlayerReplicationInfo
+simulated function ClientNotifyVeterancyChanged()
 {
 	/* Use this function to update Veterancy bonuses 
 		on the client side */
 }
 
 // Notify on server side that veterancy has been changed
-function VeterancyChanged()
+// Called from UM_PlayerReplicationInfo
+function NotifyVeterancyChanged()
 {
+	VeterancyJumpBonus = default.VeterancyJumpBonus;
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
-
-	if ( UM_PlayerReplicationInfo != None )
+	if ( UM_PlayerReplicationInfo != None )  {
+		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+	}
 	
-	Super.VeterancyChanged();
+	CheckVeterancyCarryWeightLimit();
+	CheckVeterancyAmmoLimit();
 }
+
+// Clearing out the old function
+function VeterancyChanged() { }
 
 /* PossessedBy()
  Pawn is possessed by Controller
@@ -136,10 +195,10 @@ function PossessedBy( Controller C )
 	
 	if ( C.PlayerReplicationInfo != None )  {
 		PlayerReplicationInfo = C.PlayerReplicationInfo;
-		// OwnerPRI from KFPawn is not used anywhere.
-		//OwnerPRI = PlayerReplicationInfo;
 		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 		OwnerName = PlayerReplicationInfo.PlayerName;
+		// OwnerPRI from KFPawn is not used anywhere.
+		//OwnerPRI = PlayerReplicationInfo;
 	}
 	
 	if ( C.IsA('PlayerController') )  {
@@ -155,12 +214,13 @@ function PossessedBy( Controller C )
 	SetOwner(Controller);	// for network replication
 	EyeHeight = BaseEyeHeight;
 	ChangeAnimation();
-	// Notifying clients about changes by ClientTrigger() event
-	bClientTrigger = !bClientTrigger;
+	
 	if ( UM_PlayerReplicationInfo != None )  {
 		UM_PlayerReplicationInfo.SetPawnOwner(self);
 		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
 	}
+	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
+	bClientTrigger = !bClientTrigger;
 }
 
 function UnPossessed()
@@ -170,32 +230,16 @@ function UnPossessed()
 		NetUpdateFrequency = 5.0;
 
 	PlayerReplicationInfo = None;
-	UM_PlayerReplicationInfo = None;
-	VeterancyChanged();
+	if ( UM_PlayerReplicationInfo != None )  {
+		UM_PlayerReplicationInfo.SetPawnOwner(None);
+		UM_PlayerReplicationInfo = None;
+	}
 	SetOwner(None);
 	Controller = None;
-	// Notifying clients about changes by ClientTrigger() event
+	
+	NotifyVeterancyChanged();
+	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
 	bClientTrigger = !bClientTrigger;
-	
-}
-
-function DropWeaponsToCarryLimit()
-{
-	local	byte		t;
-	local	Inventory	I;
-	
-	while ( CurrentWeight > MaxCarryWeight && t < 10 )  {
-		++t; // Incrementing up to 9 to restrict the number of attempts to drop weapon
-		// Find the weapon to drop
-		for ( I = Inventory; I != None; I = I.Inventory )  {
-			// If it's a weapon and it can be thrown
-			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
-				I.Velocity = Velocity;
-				I.DropFrom(Location + VRand() * 10.0);
-				Break;	// Stop searching
-			}
-		}
-	}
 }
 
 /* Accessor function that returns Intuitive Shooting (not aiming) Range 
@@ -370,11 +414,7 @@ function bool DoJump( bool bUpdating )
     } */
 	
 	if ( !bIsCrouched && !bWantsToCrouch )  {
-		if ( UM_PlayerReplicationInfo != None )
-			JumpModif = UM_PlayerReplicationInfo.GetPawnJumpModifier() * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
-		else
-			JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
-		
+		JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max ) * VeterancyJumpBonus;
 		JumpZ = default.JumpZ * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
@@ -908,7 +948,8 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     IntuitiveShootingRange=150.000000
+     VeterancyJumpBonus=1.0
+	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)
 	 BounceRemaining=0
 	 BounceCheckDistance=9.000000

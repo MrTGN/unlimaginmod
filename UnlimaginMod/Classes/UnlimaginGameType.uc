@@ -1053,17 +1053,10 @@ State MatchInProgress
 				C.PlayerReplicationInfo.bOutOfLives = false;
 				C.PlayerReplicationInfo.NumLives = 0;
 
-				if ( KFPlayerController(C) != none )
-				{
-					if ( KFPlayerReplicationInfo(C.PlayerReplicationInfo) != none )
-					{
-						KFPlayerController(C).bChangedVeterancyThisWave = false;
-
-						if ( KFPlayerReplicationInfo(C.PlayerReplicationInfo).ClientVeteranSkill != KFPlayerController(C).SelectedVeterancy )
-						{
-							KFPlayerController(C).SendSelectedVeterancyToServer();
-						}
-					}
+				if ( KFPlayerController(C) != None && KFPlayerReplicationInfo(C.PlayerReplicationInfo) != None )  {
+					KFPlayerController(C).bChangedVeterancyThisWave = False;
+					if ( KFPlayerReplicationInfo(C.PlayerReplicationInfo).ClientVeteranSkill != KFPlayerController(C).SelectedVeterancy )
+						KFPlayerController(C).SendSelectedVeterancyToServer();
 				}
 
 				if ( C.Pawn != none )
@@ -1535,7 +1528,7 @@ event GameEnding()
 // Mod this to include the choices made in the GUIClassMenu
 function RestartPlayer( Controller aPlayer )
 {
-	if ( aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
+	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
 		Return;
 
 	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {
@@ -1547,9 +1540,10 @@ function RestartPlayer( Controller aPlayer )
 
 	Super(GameInfo).RestartPlayer(aPlayer);
 
-	if ( KFHumanPawn(aPlayer.Pawn) != None )
-		KFHumanPawn(aPlayer.Pawn).VeterancyChanged();
-
+	// Notifying that the Veterancy info has changed
+	if ( UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo) != None )
+		UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo).NotifyVeterancyChanged();
+	
 	// Disable pawn collision during trader time
 	if ( bTradingDoorsOpen && aPlayer.bIsPlayer )
 		aPlayer.Pawn.bBlockActors = False;

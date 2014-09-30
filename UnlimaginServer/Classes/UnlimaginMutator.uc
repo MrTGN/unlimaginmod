@@ -46,7 +46,7 @@ var()	globalconfig	array< ChatIconType >	SmileyTags;
 var		array< byte >									LoadInvCategory;
 var		array< class<UM_SRVeterancyTypes> >				LoadPerks;
 var		array< class<Pickup> >							LoadInventory;
-var		array< PlayerController >						PendingPlayers;
+var		array< UM_PlayerController >					PendingPlayers;
 var		array<UM_StatsObject>							ActiveStats;
 var		localized		string							ServerPerksGroup;
 var		transient		UM_DatabaseUdpLink				Link;
@@ -230,32 +230,33 @@ final function ImplementPackage( name N )
 	ModServerPackages[ModServerPackages.Length] = S;
 }
 
+final function AddPlayerToPendingPlayers( UM_PlayerController PC )
+{
+	PendingPlayers[PendingPlayers.Length] = PC;
+	SetTimer(0.15, false);
+}
+
 event Timer()
 {
-	local int i;
+	local	int		i;
 	
-	for ( i = (PendingPlayers.Length - 1); i >= 0; --i )  {
-		// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
-		if ( UM_PlayerController(PendingPlayers[i]) != None )
-			UM_PlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
-		
-		// If UM_ServerStStats is not spawned, destroying SteamStatsAndAchievements and Spawn UM_ServerStStats
+	while ( PendingPlayers.Length > 0 )  {
+		i = PendingPlayers.Length - 1;
 		if ( PendingPlayers[i] != None && PendingPlayers[i].Player != None )  {
+			// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
+			UM_PlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
+			// No stats was spawned yet
 			if ( PendingPlayers[i].SteamStatsAndAchievements == None )
 				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[i]);
-				//PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[0]);
+			// Has stats but not what we need
 			else if ( UM_ServerStStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
 				if ( PendingPlayers[i].SteamStatsAndAchievements != None )
 					PendingPlayers[i].SteamStatsAndAchievements.Destroy();
-				//ToDo: почему-то тут PendingPlayers[0] были вписаны, т.е. всегда владелец - контроллер
-				// по нулевому индексу. Проверить не отвалится ли что-то из-за того, что я вписал сюда [i]
 				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[i]);
-				//PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[0]);
 			}
 		}
+		PendingPlayers.Remove(i, 1);
 	}
-	
-	PendingPlayers.Length = 0;
 }
 
 function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
@@ -368,27 +369,30 @@ static final function string GetPlayerID( PlayerController PC )
 
 final function UM_StatsObject GetStatsForPlayer( PlayerController PC )
 {
-	local UM_StatsObject S;
-	local string SId;
-	local int i;
+	local	UM_StatsObject	S;
+	local	string			sID;
+	local	int				i;
 
-	if( bNoSavingProgress || Level.Game.bGameEnded )
-		return None;
-	SId = GetPlayerID(PC);
-	for( i=0; i<ActiveStats.Length; ++i )
-		if( string(ActiveStats[i].Name)~=SId )
-		{
+	if ( bNoSavingProgress || Level.Game.bGameEnded )
+		Return None;
+	
+	sID = GetPlayerID(PC);
+	for ( i = 0; i < ActiveStats.Length; ++i )  {
+		if ( string(ActiveStats[i].Name) ~= sID )  {
 			S = ActiveStats[i];
-			break;
+			Break;
 		}
-	if( S==None )
-	{
-		S = new(None,SId) Class'UM_StatsObject';
+	}
+	
+	if ( S == None )  {
+		S = new(None, sID) Class'UM_StatsObject';
 		ActiveStats[ActiveStats.Length] = S;
 	}
+	
 	S.PlayerName = PC.PlayerReplicationInfo.PlayerName;
 	S.PlayerIP = PC.GetPlayerNetworkAddress();
-	return S;
+	
+	Return S;
 }
 
 final function SaveStats()
@@ -417,27 +421,21 @@ final function SaveStats()
 
 final function CheckWinOrLose()
 {
-	local bool bWin;
-	local Controller P;
-	local PlayerController Player;
+	local	bool	bWin;
+	local	Controller	P;
+	local	PlayerController	Player;
 
-	bWin = (KFGameReplicationInfo(Level.GRI)!=None && KFGameReplicationInfo(Level.GRI).EndGameType==2);
-	for ( P = Level.ControllerList; P != none; P = P.nextController )
-	{
+	bWin = (KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType == 2);
+	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
 		Player = PlayerController(P);
-
-		if ( Player != none )
-		{
-			if ( UM_ServerStStats(Player.SteamStatsAndAchievements)!=None )
-				UM_ServerStStats(Player.SteamStatsAndAchievements).WonLostGame(bWin);
-		}
+		if ( Player != None && UM_ServerStStats(Player.SteamStatsAndAchievements) != None )
+			UM_ServerStStats(Player.SteamStatsAndAchievements).WonLostGame(bWin);
 	}
 }
 
 final function InitNextWave()
 {
-	if( ++WaveCounter>=MidGameSaveWaves )
-	{
+	if ( ++WaveCounter >= MidGameSaveWaves )  {
 		WaveCounter = 0;
 		SaveStats();
 	}
@@ -515,12 +513,14 @@ final function GetRemoteStatsForPlayer( UM_ServerStStats Other )
 {
 	local int i;
 
-	if( Link==None || !Link.bConnectionReady )
-		return;
+	if ( Link==None || !Link.bConnectionReady )
+		Return;
 	Link.SendText(Link.A,Chr(Link.ENetID.ID_NewPlayer)$Other.MyStatsObject.Name$"*"$GetSafeName(Other.PlayerOwner.PlayerReplicationInfo.PlayerName));
-	for( i=0; i<PendingData.Length; ++i )
-		if( PendingData[i]==Other )
-			return;
+	
+	for ( i = 0; i < PendingData.Length; ++i )
+		if ( PendingData[i] == Other )
+			Return;
+	
 	PendingData[PendingData.Length] = Other;
 }
 

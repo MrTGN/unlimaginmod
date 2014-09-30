@@ -1,11 +1,13 @@
 // Written by .:..: (2009)
 Class UM_ServerStStats extends UM_SRStatsBase;
 
-var UM_StatsObject MyStatsObject;
-var UnlimaginMutator MutatorOwner;
-var bool bHasChanged,bStatsChecking,bStHasInit,bHadSwitchedVet,bSwitchIsOKNow;
 
-var class<UM_SRVeterancyTypes> SelectingPerk;
+var		UM_StatsObject				MyStatsObject;
+var		UnlimaginMutator			MutatorOwner;
+var		bool						bHasChanged, bStatsChecking, bStHasInit;
+var		bool						bHadSwitchedVet,bSwitchIsOKNow;
+var		class<UM_SRVeterancyTypes>	SelectingPerk;
+
 
 function int GetID()
 {
@@ -19,12 +21,13 @@ function SetID( int ID )
 
 function PreBeginPlay()
 {
-	if ( Rep == None )  {
-		Rep = Spawn(Class'UM_SRClientPerkRepLink',Owner);
-		Rep.StatObject = Self;
-	}
-	
 	Super.PreBeginPlay();
+	
+	// Spawning stat replication actor
+	if ( Rep == None )  {
+		Rep = Spawn(Class'UM_SRClientPerkRepLink', Owner);
+		Rep.StatObject = self;
+	}
 }
 
 function PostBeginPlay()
@@ -33,16 +36,18 @@ function PostBeginPlay()
 		Rep.SpawnCustomLinks();
 
 	bStatsReadyNow = !MutatorOwner.bUseRemoteDatabase;
-	PlayerOwner = KFPlayerController(Owner);
-	MyStatsObject = MutatorOwner.GetStatsForPlayer(PlayerOwner);
-	KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill = None;
+	OwnerController = UM_PlayerController(Owner);
+	MyStatsObject = MutatorOwner.GetStatsForPlayer(OwnerController);
+	KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill = None;
 	
 	if ( !bStatsReadyNow )  {
 		Timer();
-		SetTimer(1+FRand(),true);
-		return;
+		SetTimer((1.0 + FRand()), True);
+		Return;
 	}
-	bSwitchIsOKNow = true;
+	
+	bSwitchIsOKNow = True;
+	
 	if ( MyStatsObject != None )  {
 		// Apply selected character.
 		if ( MyStatsObject.SelectedChar != "" )
@@ -53,28 +58,28 @@ function PostBeginPlay()
 		}
 
 		RepCopyStats();
-		bHasChanged = true;
-		CheckPerks(true);
+		bHasChanged = True;
+		CheckPerks(True);
 		ServerSelectPerkName(MyStatsObject.GetSelectedPerk());
 	}
 	else 
-		CheckPerks(true);
+		CheckPerks(True);
 	
-	if ( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill == None )
+	if ( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
 		ServerSelectPerk(Rep.PickRandomPerk());
 	
 	bSwitchIsOKNow = False;
 	bHadSwitchedVet = False;
-	SetTimer(0.1,false);
+	SetTimer(0.1, False);
 }
 
 function ApplyCharacter( string CN )
 {
-	PlayerOwner.PawnSetupRecord = class'xUtil'.static.FindPlayerRecord(CN);
-	if ( PlayerOwner.PawnSetupRecord.VoiceClassName != "" )
-		PlayerOwner.PlayerReplicationInfo.SetCharacterVoice(PlayerOwner.PawnSetupRecord.VoiceClassName);
+	OwnerController.PawnSetupRecord = class'xUtil'.static.FindPlayerRecord(CN);
+	if ( OwnerController.PawnSetupRecord.VoiceClassName != "" )
+		OwnerController.PlayerReplicationInfo.SetCharacterVoice(OwnerController.PawnSetupRecord.VoiceClassName);
 	
-	PlayerOwner.PlayerReplicationInfo.SetCharacterName(CN);
+	OwnerController.PlayerReplicationInfo.SetCharacterName(CN);
 }
 
 function ChangeCharacter( string CN )
@@ -122,7 +127,7 @@ final function GetData( string D )
 	ServerSelectPerkName(MyStatsObject.GetSelectedPerk());
 	Rep.SendClientPerks();
 	
-	if( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill == None )
+	if( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
 		ServerSelectPerk(Rep.PickRandomPerk());
 	
 	bHadSwitchedVet = False;
@@ -138,10 +143,10 @@ function Timer()
 	}
 	
 	if ( !bStHasInit )  {
-		if ( PlayerOwner.SteamStatsAndAchievements != None && PlayerOwner.SteamStatsAndAchievements != Self )
-			PlayerOwner.SteamStatsAndAchievements.Destroy();
-		PlayerOwner.SteamStatsAndAchievements = Self;
-		PlayerOwner.PlayerReplicationInfo.SteamStatsAndAchievements = Self;
+		if ( OwnerController.SteamStatsAndAchievements != None && OwnerController.SteamStatsAndAchievements != Self )
+			OwnerController.SteamStatsAndAchievements.Destroy();
+		OwnerController.SteamStatsAndAchievements = Self;
+		OwnerController.PlayerReplicationInfo.SteamStatsAndAchievements = Self;
 		bStHasInit = true;
 		Rep.SendClientPerks();
 	}
@@ -212,14 +217,14 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 	
 	if ( VetType == None || !SelectionOK(VetType) )  {
 		if ( !bSwitchIsOKNow )
-			PlayerOwner.ClientMessage("Your desired perk is unavailable.");
+			OwnerController.ClientMessage("Your desired perk is unavailable.");
 		
 		Return;
 	}
-	else if ( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill == VetType )  {
+	else if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == VetType )  {
 		if ( SelectingPerk != None )  {
 			SelectingPerk = None;
-			PlayerOwner.ClientMessage("You will remain the same perk now.");
+			OwnerController.ClientMessage("You will remain the same perk now.");
 		}
 		
 		Return;
@@ -229,7 +234,7 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 		MyStatsObject.SetSelectedPerk(VetType.Name);
 	
 	if ( !Level.Game.bWaitingToStartMatch && !bSwitchIsOKNow 
-		 && PlayerOwner.Pawn != None && !MutatorOwner.bAllowAlwaysPerkChanges )  {
+		 && OwnerController.Pawn != None && !MutatorOwner.bAllowAlwaysPerkChanges )  {
 		if ( KFGameReplicationInfo(Level.GRI).bWaveInProgress || bHadSwitchedVet )
 			i = 1;
 		else  {
@@ -238,9 +243,9 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 		}
 		
 		if ( i == 1 )  {
-			PlayerOwner.ClientMessage(Repl(PlayerOwner.YouWillBecomePerkString, "%Perk%", VetType.Default.VeterancyName));
+			OwnerController.ClientMessage(Repl(OwnerController.YouWillBecomePerkString, "%Perk%", VetType.Default.VeterancyName));
 			SelectingPerk = VetType;
-			PlayerOwner.SelectedVeterancy = VetType; // Force KFGameType update this.
+			OwnerController.SelectedVeterancy = VetType; // Force KFGameType update this.
 			Return;
 		}
 	}
@@ -252,29 +257,13 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 			if ( Rep.CachePerks[i].CurrentLevel == 0 )
 				Return;
 			
-			PlayerOwner.SelectedVeterancy = VetType;
-			KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill = VetType;
-			KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel - 1;
+			OwnerController.SelectedVeterancy = VetType;
+			KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill = VetType;
+			KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkillLevel = Rep.CachePerks[i].CurrentLevel - 1;
 			
-			if ( KFHumanPawn(PlayerOwner.Pawn) != None )  {
-				KFHumanPawn(PlayerOwner.Pawn).VeterancyChanged();
-				DropToCarryLimit(KFHumanPawn(PlayerOwner.Pawn));
-			}
-		}
-	}
-}
-
-final function DropToCarryLimit( KFHumanPawn P )
-{
-	local byte c;
-	local Inventory I;
-
-	while( P.CurrentWeight>P.MaxCarryWeight && ++c<6 )  {
-		for ( I = P.Inventory; I != none; I = I.Inventory )  {
-			if ( KFWeapon(I) != none && !KFWeapon(I).bKFNeverThrow )  {
-				I.Velocity = P.Velocity;
-				I.DropFrom(P.Location + VRand() * 10);
-				Break; // Drop weapons until player is capable of carrying them all.
+			if ( UM_HumanPawn(OwnerController.Pawn) != None )  {
+				UM_HumanPawn(OwnerController.Pawn).VeterancyChanged();
+				UM_HumanPawn(OwnerController.Pawn).DropWeaponsToCarryLimit();
 			}
 		}
 	}
@@ -312,17 +301,17 @@ final function CheckPerks( bool bInit )
 			NewLevel = Rep.CachePerks[i].PerkClass.Static.PerkIsAvailable(Rep);
 			// New Level is Available
 			if ( NewLevel > Rep.CachePerks[i].CurrentLevel )  {
-				if ( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkill == Rep.CachePerks[i].PerkClass )
-					KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).ClientVeteranSkillLevel = NewLevel - 1;
+				if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == Rep.CachePerks[i].PerkClass )
+					KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkillLevel = NewLevel - 1;
 				
 				Rep.CachePerks[i].CurrentLevel = NewLevel;
 				Rep.ClientPerkLevel(i, NewLevel);
 				// Notifying pawn that the Veterancy info has changed
-				if ( KFHumanPawn(PlayerOwner.Pawn) != None )
-					KFHumanPawn(PlayerOwner.Pawn).VeterancyChanged();
+				if ( KFHumanPawn(OwnerController.Pawn) != None )
+					KFHumanPawn(OwnerController.Pawn).VeterancyChanged();
 				
 				if ( MutatorOwner.bMessageAnyPlayerLevelUp )
-					BroadcastLocalizedMessage( Class'UM_SRVetEarnedMessage',(NewLevel - 1), PlayerOwner.PlayerReplicationInfo,, Rep.CachePerks[i].PerkClass );
+					BroadcastLocalizedMessage( Class'UM_SRVetEarnedMessage', (NewLevel - 1), OwnerController.PlayerReplicationInfo,, Rep.CachePerks[i].PerkClass );
 			}
 		}
 	}
@@ -742,13 +731,9 @@ event Destroyed()
 		Rep = None;
 	}
 	
-	if ( PlayerOwner != None && !PlayerOwner.bDeleteMe )  {
-		// Was destroyed mid-game for random reason, respawn.
-		MutatorOwner.PendingPlayers[MutatorOwner.PendingPlayers.Length] = PlayerOwner;
-		// Исправил на 0,15, посмотрим что из-зп этого будет
-		//MutatorOwner.SetTimer(0.10, false);
-		MutatorOwner.SetTimer(0.15, false);
-	}
+	// Was destroyed mid-game for random reason, respawn.
+	if ( OwnerController != None && !OwnerController.bDeleteMe )
+		MutatorOwner.AddPlayerToPendingPlayers( OwnerController );
 	
 	Super.Destroyed();
 }
@@ -758,7 +743,7 @@ Auto state PlaytimeTimer
 Begin:
 	while( true )  {
 		Sleep(1.f);
-		if ( bStatsReadyNow && !PlayerOwner.PlayerReplicationInfo.bOnlySpectator )  {
+		if ( bStatsReadyNow && !OwnerController.PlayerReplicationInfo.bOnlySpectator )  {
 			++Rep.TotalPlayTime;
 			if ( MyStatsObject != None )
 				++MyStatsObject.TotalPlayTime;

@@ -2,9 +2,10 @@
 Class UM_SRStatsBase extends KFSteamStatsAndAchievements
 	Abstract;
 
-var UM_SRClientPerkRepLink Rep;
-var KFPlayerController PlayerOwner;
-var bool bStatsReadyNow;
+var UM_SRClientPerkRepLink	Rep;
+var UM_PlayerController		OwnerController;
+var	bool					bStatsReadyNow;
+
 
 function int GetID();
 function SetID( int ID );

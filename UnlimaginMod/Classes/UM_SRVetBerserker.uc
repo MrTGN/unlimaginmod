@@ -103,9 +103,9 @@ static function float GetPawnJumpModifier(KFPlayerReplicationInfo KFPRI)
 	Return 1.00 + (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 25% extra jump height
 }
 
-static function int GetPawnMaxBounce(KFPlayerReplicationInfo KFPRI)
+static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
 {
-	Return Min(KFPRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
+	Return Min(PRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
 }
 
 static function float GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo KFPRI)

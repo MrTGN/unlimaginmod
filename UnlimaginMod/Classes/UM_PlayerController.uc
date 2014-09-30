@@ -331,6 +331,7 @@ function ServerSetReadyToStart()
 simulated event InitInputSystem()
 {
 	// Loading InputClass
+	// Need to do this because InputClass is a config variable
 	if ( InputClassName != None )
 		InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
 	
@@ -404,6 +405,7 @@ function WeaponShakeView(
 }
 //[end]
 
+// Old Aim function
 function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int aimerror)
 {
 	local Actor Other;

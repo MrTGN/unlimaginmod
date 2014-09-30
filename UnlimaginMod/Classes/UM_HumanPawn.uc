@@ -14,10 +14,7 @@ const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 
 // Player Info
 var				UM_SRClientPerkRepLink		PerkLink;
-var	transient	PlayerReplicationInfo		LastPlayerReplicationInfo;	// Used to detect changes in PlayerReplicationInfo
 var				UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
-var				Class<UM_SRVeterancyTypes>	CurrentVeterancy;	// Current Veterancy Class
-
 
 var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
@@ -42,9 +39,6 @@ replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		FireSpeedModif;
-	
-	reliable if ( Role == ROLE_Authority )
-		ClientUpdateCurrentVeterancy;
 }
 
 //[end] Replication
@@ -73,16 +67,23 @@ simulated event PreBeginPlay()
 	}
 }
 
-simulated event PostNetReceive()
+// my PRI now has a new team
+simulated function NotifyTeamChanged()
 {
-	// if PlayerReplicationInfo has changed
-	if ( PlayerReplicationInfo != LastPlayerReplicationInfo )  {
-		if ( PlayerReplicationInfo != None )
-			Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
-		else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
-			Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
-	}
+	if ( PlayerReplicationInfo != None )
+		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
+	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
+		Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
+	else if ( PlayerReplicationInfo == None )
+		
 }
+
+simulated event ClientTrigger()
+{
+	NotifyTeamChanged();
+}
+
+simulated event PostNetReceive() { }
 
 simulated final function float GetRandMult( float MinMult, float MaxMult )
 {
@@ -100,20 +101,45 @@ simulated final function float GetRandExtraScale(
 		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
+// Notify clients that veterancy has been changed
+simulated function ClientVeterancyChanged()
+{
+	/* Use this function to update Veterancy bonuses 
+		on the client side */
+}
+
+// Notify on server side that veterancy has been changed
+function VeterancyChanged()
+{
+	BounceRemaining = default.BounceRemaining;
+	BounceMomentum = default.BounceMomentum;
+
+	if ( UM_PlayerReplicationInfo != None )
+		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+	
+	Super.VeterancyChanged();
+}
+
 /* PossessedBy()
  Pawn is possessed by Controller
 */
-function PossessedBy(Controller C)
+function PossessedBy( Controller C )
 {
+	if ( C == None )
+		Return;
+	
 	Controller = C;
+	OldController = Controller;
 	NetPriority = 3.0;
 	NetUpdateFrequency = 100.0;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	
 	if ( C.PlayerReplicationInfo != None )  {
 		PlayerReplicationInfo = C.PlayerReplicationInfo;
+		// OwnerPRI from KFPawn is not used anywhere.
+		//OwnerPRI = PlayerReplicationInfo;
+		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 		OwnerName = PlayerReplicationInfo.PlayerName;
-		VeterancyChanged();
 	}
 	
 	if ( C.IsA('PlayerController') )  {
@@ -127,8 +153,14 @@ function PossessedBy(Controller C)
 		RemoteRole = Default.RemoteRole;
 
 	SetOwner(Controller);	// for network replication
-	Eyeheight = BaseEyeHeight;
+	EyeHeight = BaseEyeHeight;
 	ChangeAnimation();
+	// Notifying clients about changes by ClientTrigger() event
+	bClientTrigger = !bClientTrigger;
+	if ( UM_PlayerReplicationInfo != None )  {
+		UM_PlayerReplicationInfo.SetPawnOwner(self);
+		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
+	}
 }
 
 function UnPossessed()
@@ -138,53 +170,33 @@ function UnPossessed()
 		NetUpdateFrequency = 5.0;
 
 	PlayerReplicationInfo = None;
+	UM_PlayerReplicationInfo = None;
 	VeterancyChanged();
 	SetOwner(None);
 	Controller = None;
+	// Notifying clients about changes by ClientTrigger() event
+	bClientTrigger = !bClientTrigger;
+	
 }
 
-// Notify clients that veterancy has been changed
-simulated function ClientVeterancyChanged()
+function DropWeaponsToCarryLimit()
 {
-	/* Use this function to update Veterancy bonuses 
-		on the client side */
-}
-
-simulated final function ClientUpdateCurrentVeterancy(
-	UM_PlayerReplicationInfo	NewPlayerReplicationInfo, 
-	Class<UM_SRVeterancyTypes>	NewVeterancy )
-{
-	// Update varibles on the client side
-	if ( Role < ROLE_Authority )  {
-		UM_PlayerReplicationInfo = NewPlayerReplicationInfo;
-		//ToDo: похоже эту переменную можно будет убрать
-		CurrentVeterancy = NewVeterancy;
-		ClientVeterancyChanged();
+	local	byte		t;
+	local	Inventory	I;
+	
+	while ( CurrentWeight > MaxCarryWeight && t < 10 )  {
+		++t; // Incrementing up to 9 to restrict the number of attempts to drop weapon
+		// Find the weapon to drop
+		for ( I = Inventory; I != None; I = I.Inventory )  {
+			// If it's a weapon and it can be thrown
+			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
+				I.Velocity = Velocity;
+				I.DropFrom(Location + VRand() * 10.0);
+				Break;	// Stop searching
+			}
+		}
 	}
 }
-
-final function UpdateCurrentVeterancy()
-{
-	UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
-	CurrentVeterancy = Class<UM_SRVeterancyTypes>(UM_PlayerReplicationInfo.ClientVeteranSkill);
-	// Sending to the clients
-	ClientUpdateCurrentVeterancy( UM_PlayerReplicationInfo, CurrentVeterancy );
-}
-
-// Notify on server side that veterancy has been changed
-function VeterancyChanged()
-{
-	BounceRemaining = default.BounceRemaining;
-	BounceMomentum = default.BounceMomentum;
-
-	UpdateCurrentVeterancy();
-	
-	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
-		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( UM_PlayerReplicationInfo );
-	
-	Super.VeterancyChanged();
-}
-
 
 /* Accessor function that returns Intuitive Shooting (not aiming) Range 
 	with veterancy bonuses and other side effects */
@@ -358,8 +370,8 @@ function bool DoJump( bool bUpdating )
     } */
 	
 	if ( !bIsCrouched && !bWantsToCrouch )  {
-		if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
-			JumpModif = CurrentVeterancy.static.GetPawnJumpModifier( UM_PlayerReplicationInfo ) * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
+		if ( UM_PlayerReplicationInfo != None )
+			JumpModif = UM_PlayerReplicationInfo.GetPawnJumpModifier() * GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
 		else
 			JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max );
 		
@@ -408,8 +420,8 @@ event Landed(vector HitNormal)
 {
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
-	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
-		BounceRemaining = CurrentVeterancy.static.GetPawnMaxBounce( UM_PlayerReplicationInfo );
+	if ( UM_PlayerReplicationInfo != None )
+		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
 	
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();
@@ -530,8 +542,8 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 
 	Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
 
-	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
-		Price *= CurrentVeterancy.static.GetCostScaling( UM_PlayerReplicationInfo, WClass.Default.PickupClass );
+	if ( UM_PlayerReplicationInfo != None )
+		Price *= UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.Default.PickupClass );
 
 	Weight = Class<KFWeapon>(WClass).Default.Weight;
 
@@ -613,8 +625,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 			{
 				Price = (class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75);
 
-				if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None )
-					Price *= CurrentVeterancy.static.GetCostScaling( UM_PlayerReplicationInfo, WClass.default.PickupClass );
+				if ( UM_PlayerReplicationInfo != None )
+					Price *= UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.default.PickupClass );
 			}
 
 			if ( I.Class==Class'Dualies' )
@@ -690,8 +702,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	LastDamagedBy = InstigatedBy;
 	
 	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-	if ( UM_PlayerReplicationInfo != None && CurrentVeterancy != None
-		 && CurrentVeterancy.static.ReduceDamage( UM_PlayerReplicationInfo, self, InstigatedBy, Damage, DamageType ) < 1 )
+	if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.GetReducedDamage(self, Damage, InstigatedBy, DamageType) < 1 )
 		Return;
 	
 	//ToDo: #188
@@ -911,5 +922,5 @@ defaultproperties
      RequiredEquipment(2)="UnlimaginMod.UM_Weapon_HandGrenade"
      RequiredEquipment(3)="KFMod.Syringe"
      RequiredEquipment(4)="KFMod.Welder"
-	 bNetNotify=True
+	 bNetNotify=False
 }

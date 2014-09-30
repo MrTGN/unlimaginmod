@@ -219,12 +219,12 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 }
 
 // New function for the extra jump height
-static function float GetPawnJumpModifier( KFPlayerReplicationInfo KFPRI )
+static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 {
 	Return 1.0;
 }
 
-static function int GetPawnMaxBounce( KFPlayerReplicationInfo KFPRI )
+static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
 {
 	Return 0;
 }

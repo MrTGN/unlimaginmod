@@ -1532,6 +1532,29 @@ event GameEnding()
 	Super.GameEnding();
 } */
 
+// Mod this to include the choices made in the GUIClassMenu
+function RestartPlayer( Controller aPlayer )
+{
+	if ( aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
+		Return;
+
+	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {
+		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
+		aPlayer.PlayerReplicationInfo.NumLives = 1;
+		aPlayer.GoToState('Spectating');
+		Return;
+	}
+
+	Super(GameInfo).RestartPlayer(aPlayer);
+
+	if ( KFHumanPawn(aPlayer.Pawn) != None )
+		KFHumanPawn(aPlayer.Pawn).VeterancyChanged();
+
+	// Disable pawn collision during trader time
+	if ( bTradingDoorsOpen && aPlayer.bIsPlayer )
+		aPlayer.Pawn.bBlockActors = False;
+}
+
 function EndGame( PlayerReplicationInfo Winner, string Reason )
 {
 	if ( Class'UM_AData'.default.ActorPool != None )  {

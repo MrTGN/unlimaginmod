@@ -49,6 +49,7 @@ struct	PerkProjData
 var(Object)		name			InitialStateName;	// After the first initialization object will be set to this state
 
 var				UM_BaseWeapon	UMWeapon;
+var				UM_HumanPawn	HumanOwner;
 var				bool			bCanDryFire;
 var				bool			bIsDryFiring;
 var				float			NextDryFireTime;
@@ -192,6 +193,11 @@ state Initialization
 	}
 }
 
+simulated event PreBeginPlay();
+
+// Called after PreBeginPlay().
+simulated event BeginPlay();
+
 simulated function name GetMuzzleBoneName()
 {
 	local	name	BoneName;
@@ -303,16 +309,18 @@ simulated function CheckAnimArrays()
 	//[end]
 }
 
+// Called after BeginPlay().
 simulated event PostBeginPlay()
 {
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(Level, self);
 	
+	HumanOwner = UM_HumanPawn(Instigator);
 	KFWeap = KFWeapon(Weapon);
 	UMWeapon = UM_BaseWeapon(Weapon);
 	CheckAnimArrays();
 	
-	//[block] Copeid from WeaponFire.uc with some changes
+	//[block] Copeid from WeaponFire class with some changes
 	Load = AmmoPerFire;
 	if ( bFireOnRelease )
 		bWaitForRelease = True;
@@ -324,11 +332,14 @@ simulated event PostBeginPlay()
 	SetMuzzleNum(default.MuzzleNum);
 }
 
-// Called after PostBeginPlay.
+// Called after PostBeginPlay().
 simulated event SetInitialState()
 {
 	GotoState(InitialStateName);
 }
+
+// Called after SetInitialState().
+simulated event PostNetBeginPlay();
 
 // MaxRange
 function float MaxRange()
@@ -339,11 +350,16 @@ function float MaxRange()
 		Return EffectiveRange;
 }
 
+// Initializate weapon muzzle actors
+// Called from Weapon simulated event Timer()
 function InitWeaponMuzzles()
 {
 	local	byte	i;
 	
 	if ( UMWeapon != None )  {
+		if ( !IsInState('Initialization') )
+			GotoState('Initialization');
+		
 		for ( i = 0; i < MuzzleClasses.Length; ++i )  {
 			if ( MuzzleClasses[i] != None )  {
 				Muzzles[i] = UMWeapon.Spawn( MuzzleClasses[i] );
@@ -355,10 +371,13 @@ function InitWeaponMuzzles()
 				}
 			}
 		}
+		
+		SetInitialState();
 	}
 }
 
 // Called from Weapon simulated event Timer()
+// ToDo: move this to the WeaponMuzzle
 simulated function InitEffects()
 {
     local	byte	i;
@@ -402,6 +421,7 @@ simulated function InitEffects()
 }
 
 // Called from Weapon simulated event Timer()
+// ToDo: move this to the WeaponMuzzle
 simulated function DestroyEffects()
 {
 	local	byte	i;
@@ -429,6 +449,7 @@ simulated function DestroyEffects()
 }
 
 // Called from weapon simulated event RenderOverlays
+// ToDo: move this to the WeaponMuzzle
 simulated function DrawMuzzleFlash(Canvas Canvas)
 {
 	local	Vector			EffectStart;
@@ -619,15 +640,12 @@ function UpdateSavedFireProperties()
 	SavedFireProperties.bInitialized = True;
 }
 
-//Issue #186
 function Rotator AdjustAim(Vector Start, float InAimError)
 {
-	/*
-	if ( !SavedFireProperties.bInitialized )
+	//if ( !SavedFireProperties.bInitialized )
 		//UpdateSavedFireProperties();
 
-	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError); */
-	
+	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError);
 }
 
 function DoFireEffect()
@@ -642,7 +660,10 @@ function DoFireEffect()
 
 	//StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
 	StartProj = Muzzles[MuzzleNum].Location;
-    Aim = AdjustAim(StartProj, AimError);
+    if ( HumanOwner != None )
+		Aim = HumanOwner.GetFireAimRotation(self, StartProj);
+	else
+		Aim = AdjustAim(StartProj, AimError);
 	
 	switch (SpreadStyle)
 	{

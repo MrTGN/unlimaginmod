@@ -43,7 +43,6 @@ replication
 function SetPawnOwner( UM_HumanPawn NewPawnOwner )
 {
 	PawnOwner = NewPawnOwner;
-	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
 simulated function bool NeedNetNotify()
@@ -152,6 +151,14 @@ simulated function int GetPawnMaxBounce()
 		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetPawnMaxBounce(self);
 	
 	Return 0;
+}
+
+simulated function float GetIntuitiveShootingModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetIntuitiveShootingModifier(self);
+	
+	Return 1.0;
 }
 //[end]
 

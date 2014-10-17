@@ -469,10 +469,10 @@ simulated event PostBeginPlay()
 		if ( bReplicateSpawnLocation )
 			SpawnLocation = Location;
 		// InstigatorController
-		if ( Instigator != None && Instigator.Controller != None )  {
-			if ( Instigator.Controller.ShotTarget != None && Instigator.Controller.ShotTarget.Controller != None )
-				Instigator.Controller.ShotTarget.Controller.ReceiveProjectileWarning( Self );
+		if ( Instigator != None )  {
 			InstigatorController = Instigator.Controller;
+			if ( InstigatorController != None && InstigatorController.ShotTarget != None && InstigatorController.ShotTarget.Controller != None )
+				InstigatorController.ShotTarget.Controller.ReceiveProjectileWarning( Self );
 		}
     }
 	

@@ -32,7 +32,7 @@ enum	EFireMode
 };
 
 var		Class< CriticalEventPlus >	FireModeSwitchMessageClass;
-var		array< EFireMode >			SelectiveFireModes;		// Array with weapon fire modes. Used for switching between Auto and Semi-Auto modes and etc.
+var		array< EFireMode >			SelectiveFireModes;		// Array with weapon fire modes. Used for switching between Auto and Semi-Auto modes etc.
 var		byte						SelectiveFireModeNum;
 var		AnimData					FireModeSwitchAnim;
 var		float						FireModeSwitchTime;
@@ -45,11 +45,11 @@ var		float						FireModeSwitchTime;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority )
-		SetFireMode;
-	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SelectiveFireModeNum;
+	
+	reliable if ( Role == ROLE_Authority )
+		SetFireMode;
 }
 
 //[end] Replication
@@ -58,25 +58,35 @@ replication
 //========================================================================
 //[block] Functions
 
-function bool AllowSwitchFireMode()
+simulated function bool FireModesAreReadyToFire()
 {
 	local	int		Mode;
 	
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
 		if ( FireMode[Mode] == None )
 			Continue;
-		else if ( (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring)
-				 || FireMode[Mode].IsInState('FireLoop')
-				 || FireMode[Mode].IsInState('Bursting')
-				 || FireMode[Mode].IsInState('SwitchingFireMode') 
-				 || FireMode[Mode].IsInState('SwitchingTacticalModule') )
+		else if ( FireMode[Mode].IsInState('Initialization') || (FireMode[Mode].bModeExclusive 
+					 && (FireMode[Mode].bIsFiring || FireMode[Mode].IsInState('FireLoop') || FireMode[Mode].IsInState('Bursting'))) )
 			Return False;
 	}
+	
+	Return True;
+}
 
-	if ( bIsReloading )
+function bool AllowToggleTacticalModule()
+{
+	if ( IsInState('SwitchingFireMode') )
 		Return False;
 	
-	Return SelectiveFireModes.Length > 0;
+	Return Super.AllowToggleTacticalModule();
+}
+
+function bool AllowSwitchFireMode()
+{
+	if ( bIsReloading || IsInState('TogglingTacticalModule') || IsInState('SwitchingFireMode') )
+		Return False;
+	
+	Return FireModesAreReadyToFire() && SelectiveFireModes.Length > 0;
 }
 
 exec function SwitchFireMode()
@@ -117,18 +127,18 @@ state SwitchingFireMode
 {
 	simulated function BeginState()
 	{
+		local	PlayerController	Player;
+		
 		++SelectiveFireModeNum;
 		if ( SelectiveFireModeNum >= SelectiveFireModes.Length )
 			SelectiveFireModeNum = 0;
 		
 		SetFireMode(SelectiveFireModes[SelectiveFireModeNum]);
 		SetTimer(FireModeSwitchTime, false);
-	}
-	
-	simulated function Timer()
-	{
-		local	PlayerController	Player;
-
+		
+		if ( Instigator.IsLocallyControlled() && HasAnim(FireModeSwitchAnim.Anim) )
+			PlayAnim(FireModeSwitchAnim.Anim, FireModeSwitchAnim.Rate, FireModeSwitchAnim.TweenTime);
+		
 		Player = Level.GetLocalPlayerController();
 		if ( Player != None )  {
 			if ( ModeSwitchSound.Snd != None )
@@ -136,27 +146,18 @@ state SwitchingFireMode
 			//ToDo: в дальнейшем заменить это на отдельную строку на экране и менять её содержимое
 			Player.ReceiveLocalizedMessage(FireModeSwitchMessageClass, SelectiveFireModeNum);
 		}
-		
-		if ( Instigator.IsLocallyControlled() && Mesh != None && HasAnim(FireModeSwitchAnim.Anim) )
-			PlayAnim(FireModeSwitchAnim.Anim, FireModeSwitchAnim.Rate, FireModeSwitchAnim.TweenTime);
-		
+	}
+	
+	simulated function Timer()
+	{
 		SetTimer(0.0, false);
-		GotoState('');
+		GotoState(InitialState);
 	}
 }
 
 simulated function bool ReadyToFire(int Mode)
 {
-	local int	alt;
-
-	if ( Mode == 0 )
-		alt = 1;
-	else
-		alt = 0;
-	
-	if ( FireMode[Mode].IsInState('FireLoop') || FireMode[alt].IsInState('FireLoop')
-	     || FireMode[Mode].IsInState('Bursting') || FireMode[alt].IsInState('Bursting') 
-		 || FireMode[Mode].IsInState('SwitchingFireMode') || FireMode[alt].IsInState('SwitchingFireMode') )
+	if ( IsInState('SwitchingFireMode') )
 		Return False;
 	
 	Return Super.ReadyToFire(Mode);

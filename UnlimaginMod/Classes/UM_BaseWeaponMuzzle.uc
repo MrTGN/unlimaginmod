@@ -47,10 +47,6 @@ var		float				RelativeShakeOffsetTime;	// how much time to offset view
 //========================================================================
 //[block] Functions
 
-function SpawnProjectiles()  {
-	
-}
-
 //[end] Functions
 //====================================================================
 

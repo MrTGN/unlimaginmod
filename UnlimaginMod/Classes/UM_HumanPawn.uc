@@ -13,8 +13,8 @@ const	MeterInUU = BaseActor.MeterInUU;
 const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 
 // Player Info
-var				UM_SRClientPerkRepLink		PerkLink;
-var				UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
+var		UM_SRClientPerkRepLink		PerkLink;
+var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
 var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
@@ -167,9 +167,11 @@ function NotifyVeterancyChanged()
 	VeterancyJumpBonus = default.VeterancyJumpBonus;
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
+	IntuitiveShootingRange = default.IntuitiveShootingRange;
 	if ( UM_PlayerReplicationInfo != None )  {
 		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+		IntuitiveShootingRange *= UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
 	}
 	
 	CheckVeterancyCarryWeightLimit();
@@ -242,11 +244,9 @@ function UnPossessed()
 	bClientTrigger = !bClientTrigger;
 }
 
-/* Accessor function that returns Intuitive Shooting (not aiming) Range 
-	with veterancy bonuses and other side effects */
+// Accessor function that returns Intuitive Shooting (not aiming) Range
 function float GetIntuitiveShootingRange()
 {
-	// ToDo: вписать бонусы перкам
 	if ( Region.Zone.bDistanceFog )
 		Return Min( IntuitiveShootingRange, Region.Zone.DistanceFogEnd );
 	else

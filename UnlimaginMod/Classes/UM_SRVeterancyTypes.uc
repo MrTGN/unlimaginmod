@@ -224,43 +224,50 @@ static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 	Return 1.0;
 }
 
+// The Max number this pawn can Bounce from the walls and other pawns
 static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
 {
 	Return 0;
 }
 
+// Bonus for the Pawn IntuitiveShootingRange
+static function float GetIntuitiveShootingModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0;
+}
+
 // Weapon Fire Spread
-static function float GetSpreadModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetSpreadModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
 // Weapon Fire AimError
-static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
 // Weapon Fire Recoil
-static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
 // Weapon Fire ShakeView
-static function float GetShakeViewModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	Return 1.0;
 }
 
 // Projectile Penetration Bonus
-static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+static function float GetProjectilePenetrationBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
 {
 	Return 1.0;
 }
 
 // Projectile Bounce Bonus
-static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
 {
 	Return 1.0;
 }

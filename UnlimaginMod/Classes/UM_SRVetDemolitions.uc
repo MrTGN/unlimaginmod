@@ -172,18 +172,18 @@ static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pi
 	Return 1.00;
 }
 
-static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
-	if ( KFPRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
-		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
+		Return 1.00 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
 	
 	Return 1.0;
 }
 
-static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
-	if ( KFPRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
-		Return 1.00 - (0.02 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
+		Return 1.00 - (0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
 	
 	Return 1.0;
 }

@@ -224,6 +224,7 @@ simulated event PostBeginPlay()
 		if ( FireModeClass[m] != None )  {
 			FireMode[m] = new(self) FireModeClass[m];
 			if ( FireMode[m] != None )  {
+				// Go to State 'Initialization'
 				if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
 					UM_BaseProjectileWeaponFire(FireMode[m]).GotoState('Initialization');
 				//ToDo: переработать и вынести поиск патронов в отдельную функцию.
@@ -279,6 +280,14 @@ simulated event PostBeginPlay()
 	//[end]
 }
 
+// Called after PostBeginPlay.
+simulated event SetInitialState()
+{
+	bScriptInitialized = True;
+	GotoState(InitialState);
+}
+
+
 simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
 {
 	GetAxes( Instigator.GetViewRotation(), XAxis, YAxis, ZAxis );
@@ -316,25 +325,27 @@ simulated function DestroyTacticalModule()
 	}
 }
 
-function bool AllowToggleTacticalModule()
+simulated function bool FireModesAreReadyToFire()
 {
 	local	int		Mode;
 	
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
 		if ( FireMode[Mode] == None )
 			Continue;
-		else if ( (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring)
-				 || FireMode[Mode].IsInState('FireLoop')
-				 || FireMode[Mode].IsInState('Bursting')
-				 || FireMode[Mode].IsInState('SwitchingFireMode') 
-				 || FireMode[Mode].IsInState('TogglingTacticalModule') )
+		else if ( FireMode[Mode].IsInState('Initialization')
+				 || (FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring) )
 			Return False;
 	}
-
-	if ( bIsReloading || TacticalModule == None )
-		Return False;
 	
 	Return True;
+}
+
+function bool AllowToggleTacticalModule()
+{
+	if ( bIsReloading || TacticalModule == None || IsInState('TogglingTacticalModule') )
+		Return False;
+	
+	Return FireModesAreReadyToFire();
 }
 
 exec function ToggleTacticalModule()
@@ -349,15 +360,14 @@ state TogglingTacticalModule
 	{
 		TacticalModule.Toggle();
 		SetTimer(TacticalModuleToggleTime, False);
+		if ( Instigator.IsLocallyControlled() && HasAnim( TacticalModuleToggleAnim.Anim ) )
+			PlayAnim(TacticalModuleToggleAnim.Anim, TacticalModuleToggleAnim.Rate, TacticalModuleToggleAnim.TweenTime);
 	}
 	
 	simulated function Timer()
-	{
-		if ( Instigator.IsLocallyControlled() && HasAnim( TacticalModuleToggleAnim.Anim ) )
-			PlayAnimData(TacticalModuleToggleAnim);
-		
+	{		
 		SetTimer(0.0, false);
-		GotoState('');
+		GotoState(InitialState);
 	}
 }
 
@@ -675,20 +685,11 @@ simulated function ClientForceAmmoUpdate(int Mode, int NewAmount) { }
 
 simulated function bool ReadyToFire(int Mode)
 {
-	local int	alt;
-
-	if ( Mode == 0 )
-		alt = 1;
-	else
-		alt = 0;
-
-	if ( (FireMode[alt] != None && FireMode[alt] != FireMode[Mode] 
-			&& FireMode[alt].bModeExclusive && FireMode[alt].bIsFiring) 
-		 || !FireMode[Mode].AllowFire()
-		 || FireMode[Mode].NextFireTime > (Level.TimeSeconds + FireMode[Mode].PreFireTime) )
+	if ( IsInState('TogglingTacticalModule') || !FireMode[Mode].AllowFire() 
+		  || FireMode[Mode].NextFireTime > (Level.TimeSeconds + FireMode[Mode].PreFireTime) )
 		Return False;
 
-	Return True;
+	Return FireModesAreReadyToFire();
 }
 
 simulated function bool StartFire(int Mode)
@@ -941,14 +942,6 @@ function bool AllowReload()
 	
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	//Firing
-	for ( Mode = 0; Mode < NUM_FIRE_MODES; ++Mode )  {
-		if ( FireMode[Mode] == None )
-			Continue;
-		else if ( FireMode[Mode].bModeExclusive && FireMode[Mode].bIsFiring )
-			Return False;
-	}
-	
 	//Bots Reloading
 	if ( (KFInvasionBot(Instigator.Controller) != None || KFFriendlyAI(Instigator.Controller) != None) &&
 		 !bIsReloading && MagAmmoRemaining < MagCapacity && AmmoAmount(0) > MagAmmoRemaining)
@@ -960,7 +953,7 @@ function bool AllowReload()
 		 (FireMode[0].NextFireTime - Level.TimeSeconds) > 0.1 )
 		Return False;
 	
-	Return True;
+	Return FireModesAreReadyToFire();
 }
 
 exec function ReloadMeNow()

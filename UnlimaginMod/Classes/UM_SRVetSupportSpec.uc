@@ -233,38 +233,38 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 	Return 1.00;
 }
 
-static function float GetAimErrorModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
-	if ( KFPRI.ClientVeteranSkillLevel > 0 && UM_BaseShotgunFire(WF) != None )
-		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseShotgunFire(WF) != None )
+		Return 1.00 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
 	
 	Return 1.0;
 }
 
-static function float GetRecoilModifier( KFPlayerReplicationInfo KFPRI, WeaponFire WF )
+static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
-	if ( KFPRI.ClientVeteranSkillLevel > 0 && UM_BaseShotgunFire(WF) != None )
-		Return 1.00 - (0.02 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseShotgunFire(WF) != None )
+		Return 1.00 - (0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
 	
 	Return 1.0;
 }
 
 // Projectile Penetration Bonus
-static function float GetProjectilePenetrationBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+static function float GetProjectilePenetrationBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
 {
 	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None || Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None )
-		Return 2.0 + float(Min(KFPRI.ClientVeteranSkillLevel, 6));	// Up to 800% bonus
+		Return 2.0 + float(Min(PRI.ClientVeteranSkillLevel, 6));	// Up to 800% bonus
 	
 	Return 1.0;
 }
 
 // Projectile Bounce Bonus
-static function float GetProjectileBounceBonus( KFPlayerReplicationInfo KFPRI, Class<UM_BaseProjectile> ProjClass )
+static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
 {
-	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.03 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 30% bonus
-	else if ( Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 50% bonus
+	if ( Class<UM_BaseProjectile_Buckshot>(ProjClass) != None && PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.00 + (0.03 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// Up to 30% bonus
+	else if ( Class<UM_BaseProjectile_Shrapnel>(ProjClass) != None && PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.00 + (0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// Up to 50% bonus
 	
 	Return 1.0;
 }

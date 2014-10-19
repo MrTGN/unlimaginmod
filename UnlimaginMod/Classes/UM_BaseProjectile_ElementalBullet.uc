@@ -151,14 +151,14 @@ simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation,
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
 				if ( DamageType == DisintegrateDamageTypes[i] )  {
 					if ( bCanDisintegrate )
-						Disintegrate(HitLocation, Normal(Vector(Rotation)));
+						Disintegrate(HitLocation, Vector(Rotation));
 					
 					Return;
 				}
 			}
 		}
 		
-		Explode(HitLocation, Normal(Vector(Rotation)));
+		Explode(HitLocation, Vector(Rotation));
 	}
 }
 

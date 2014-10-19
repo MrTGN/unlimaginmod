@@ -33,7 +33,7 @@ event Timer()
 {
 	if ( IsArmed() )  {
 		if ( !FriendlyPawnIsInRadius(DamageRadius) )
-			Explode(Location, Normal(Vector(Rotation)));
+			Explode(Location, Vector(Rotation));
 		else  { 
 			if ( !bDelayedExplode )  {
 				bDelayedExplode = True;

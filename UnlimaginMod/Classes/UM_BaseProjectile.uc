@@ -103,8 +103,9 @@ var(Headshots)	float				HeadShotDamageMult;	// Headshot damage multiplier
 
 var				SurfaceTypeImpactData		ImpactSurfaces[20];
 
-var				float		SurfaceTraceRange;
 var				Vector		CollisionExtent;
+var				float		CollisionExtentVSize;
+var				float		SurfaceTraceRange;
 var				float		LandedPrePivotCollisionScale;
 // Projectile Expansion Coefficient.
 // For FMJ bullets ExpansionCoefficient less then 1.01 (approximately 1.0)
@@ -209,80 +210,90 @@ simulated final function float GetBallisticRandMult()
 	Return BallisticRandRange.Min + (BallisticRandRange.Max - BallisticRandRange.Min) * FRand();
 }
 
-simulated function CalcDefaultProperties()
+simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
 {
 	local	int		i;
 	
 	if ( default.ProjectileDiameter > 0.0 )  {
 		default.ProjectileCrossSectionalArea = Pi * default.ProjectileDiameter * default.ProjectileDiameter / 4.0;
-		ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
+		if ( Proj != None )
+			Proj.ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
 		// ImpactSurfaces
 		for ( i = 0; i < ArrayCount(ImpactSurfaces); ++i )  {
 			// Surfaces ImpactStrength for this projectile
 			default.ImpactSurfaces[i].ImpactStrength *= default.ProjectileCrossSectionalArea;
-			ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
-			// ProjectileEnergyToStuck
 			default.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ImpactStrength * FMax((default.ProjectileDiameter / 2.0), 1.0);
-			ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
+			if ( Proj != None )  {
+				Proj.ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
+				Proj.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
+			}
 		}
 	}
 	
 	// EffectiveRange
 	if ( default.EffectiveRange > 0.0 )  {
 		default.EffectiveRange = default.EffectiveRange * MeterInUU;
-		EffectiveRange = default.EffectiveRange;
+		if ( Proj != None )
+			Proj.EffectiveRange = default.EffectiveRange;
 	}
 	// MaxEffectiveRange
 	if ( default.MaxEffectiveRange > 0.0 )  {
 		default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
-		MaxEffectiveRange = default.MaxEffectiveRange;
+		if ( Proj != None )
+			Proj.MaxEffectiveRange = default.MaxEffectiveRange;
 	}
 	
 	// Speed
 	if ( default.MuzzleVelocity > 0.0 )  {
-		// Assign Speed defaults
 		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
-		MaxSpeed = default.MaxSpeed;
 		default.Speed = default.MaxSpeed;
-		Speed = default.MaxSpeed;
+		if ( Proj != None )  {
+			Proj.MaxSpeed = default.MaxSpeed;
+			Proj.Speed = default.MaxSpeed;
+		}
 	}
 	
 	if ( default.MaxSpeed > 0.0 )  {
 		if ( default.MinSpeed <= 0.0 )  {
 			default.MinSpeed = default.MaxSpeed * FullStopSpeedCoefficient;
-			MinSpeed = default.MinSpeed;
+			if ( Proj != None )
+				Proj.MinSpeed = default.MinSpeed;
 		}
 		
 		// Calculating LifeSpan
-		if ( bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
+		if ( default.bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
 			default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
 			if ( default.bTrueBallistics )  {
 				default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
 				if ( default.bInitialAcceleration )
 					default.LifeSpan += default.InitialAccelerationTime;
 			}
-			LifeSpan = default.LifeSpan;
+			if ( Proj != None )
+				Proj.LifeSpan = default.LifeSpan;
 		}
 		
 		// Calculating SpeedSquaredToEnergy and EnergyToSpeedSquared
 		// (2 * SquareMeterInUU) because we need to convert 
 		// speed square from uu/sec to meter/sec
 		if ( default.ProjectileMass > 0.0 )  {
-			// SpeedSquaredToEnergy
 			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * SquareMeterInUU);
-			SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
-			// EnergyToSpeedSquared
 			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
-			EnergyToSpeedSquared = default.EnergyToSpeedSquared;
+			if ( Proj != None )  {
+				Proj.SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
+				Proj.EnergyToSpeedSquared = default.EnergyToSpeedSquared;
+			}
 		}
 	}
 	
 	// CollisionExtent
-	default.CollisionExtent = GetDefaultCollisionExtent();
-	CollisionExtent = default.CollisionExtent;
-	// SurfaceTraceRange
-	default.SurfaceTraceRange = VSize(default.CollisionExtent) + 16.0;
-	SurfaceTraceRange = default.SurfaceTraceRange;
+	default.CollisionExtent = static.GetDefaultCollisionExtent();
+	default.CollisionExtentVSize = VSize(default.CollisionExtent);
+	default.SurfaceTraceRange = default.CollisionExtentVSize + 16.0;
+	if ( Proj != None )  {
+		Proj.CollisionExtent = default.CollisionExtent;
+		Proj.CollisionExtentVSize = default.CollisionExtentVSize;
+		Proj.SurfaceTraceRange = default.SurfaceTraceRange;
+	}
 	
 	// Logging
 	/* if ( bEnableLogging )
@@ -294,7 +305,8 @@ simulated function CalcDefaultProperties()
 	// Assign BCInverse of this Projectile
 	if ( default.BCInverse <= 0.0 )  {
 		default.BCInverse = 1 / default.BallisticCoefficient;
-		BCInverse = default.BCInverse;
+		if ( Proj != None )
+			Proj.BCInverse = default.BCInverse;
 	}
 	
 	default.bDefaultPropertiesCalculated = True;
@@ -325,7 +337,7 @@ simulated event PreBeginPlay()
 	Super(Actor).PreBeginPlay();
 	
 	if ( !default.bDefaultPropertiesCalculated )
-		CalcDefaultProperties();
+		CalcDefaultProperties(Self);
 
 	// Level.Game variable exists only on the server-side
 	if ( Role == ROLE_Authority )
@@ -639,7 +651,7 @@ simulated function UpdateProjectilePerformance(
 		// Just update current projectile performance
 		else  {
 			Speed = VSize(Velocity);
-			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
+			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
 		}
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}

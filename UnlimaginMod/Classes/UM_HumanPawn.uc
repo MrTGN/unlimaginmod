@@ -152,30 +152,35 @@ function CheckVeterancyAmmoLimit()
 	}
 }
 
+// Notify on server side that veterancy has been changed
+// Called from UM_PlayerReplicationInfo
+function NotifyVeterancyChanged()
+{
+	BounceMomentum = default.BounceMomentum;
+	if ( UM_PlayerReplicationInfo != None )  {
+		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
+		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
+	}
+	else  {
+		VeterancyJumpBonus = default.VeterancyJumpBonus;
+		BounceRemaining = default.BounceRemaining;
+		IntuitiveShootingRange = default.IntuitiveShootingRange;
+	}
+	CheckVeterancyCarryWeightLimit();
+	CheckVeterancyAmmoLimit();
+	if ( UM_BaseWeapon(Weapon) != None )
+		UM_BaseWeapon(Weapon).NotifyOwnerVeterancyChanged();
+}
+
 // Notify clients that veterancy has been changed
 // Called from UM_PlayerReplicationInfo
 simulated function ClientNotifyVeterancyChanged()
 {
 	/* Use this function to update Veterancy bonuses 
 		on the client side */
-}
-
-// Notify on server side that veterancy has been changed
-// Called from UM_PlayerReplicationInfo
-function NotifyVeterancyChanged()
-{
-	VeterancyJumpBonus = default.VeterancyJumpBonus;
-	BounceRemaining = default.BounceRemaining;
-	BounceMomentum = default.BounceMomentum;
-	IntuitiveShootingRange = default.IntuitiveShootingRange;
-	if ( UM_PlayerReplicationInfo != None )  {
-		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
-		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
-		IntuitiveShootingRange *= UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
-	}
-	
-	CheckVeterancyCarryWeightLimit();
-	CheckVeterancyAmmoLimit();
+	if ( UM_BaseWeapon(Weapon) != None )
+		UM_BaseWeapon(Weapon).ClientNotifyOwnerVeterancyChanged();
 }
 
 // Clearing out the old function
@@ -266,19 +271,17 @@ simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out ve
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
-// Find the target
-final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFire, vector SpawnLocation )
+// Find the target to fire
+final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
 	local	vector		FireDirection, TraceEnd, TraceStart, TargetLocation, HitNormal;
-	local	float		AimingRange, AimError;
+	local	float		f;
 	local	rotator		AimRotation;
 	
 	if ( WeaponFire.UMWeapon.bAimingRifle )
-		AimingRange = WeaponFire.MaxRange();
+		f = WeaponFire.MaxRange();
 	else
-		AimingRange = GetIntuitiveShootingRange();
-	
-	AimError = WeaponFire.GetAimError();
+		f = GetIntuitiveShootingRange();
 	
 	if ( Controller != None && UM_PlayerController(Controller) != None )
 		UM_PlayerController(Controller).GetCameraPosition( TraceStart, FireDirection );
@@ -286,7 +289,7 @@ final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFir
 		TraceStart = EyePosition() + Location;
 		FireDirection = vector(GetViewRotation());
 	}
-	TraceEnd = TraceStart + FireDirection * AimingRange;
+	TraceEnd = TraceStart + FireDirection * f;
 	
 	// Tracing from the player camera to find the target
 	foreach TraceActors( Class'Actor', Target, TargetLocation, HitNormal, TraceEnd, TraceStart )  {
@@ -304,11 +307,22 @@ final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFir
 	else
 		TargetLocation = TraceEnd;
 	
+	// If target is closer to the screen than the SpawnLocation
+	if ( VSizeSquared(TargetLocation - TraceStart) <= VSizeSquared(SpawnLocation - TraceStart) )  {
+		if ( WeaponFire.ProjClass != None )
+			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 6.0;
+		else
+			f = 6.0;
+		// Change SpawnLocation
+		SpawnLocation = TargetLocation + Normal(TraceStart - TargetLocation) * f;
+	}
+	
+	f = WeaponFire.GetAimError();
 	AimRotation = rotator(TargetLocation - SpawnLocation);
 	// Adjusting AimError to the AimRotation
-	if ( AimError > 0.0 )  {
-		AimRotation.Yaw += AimError * (FRand() - 0.5);
-		AimRotation.Pitch += AimError * (FRand() - 0.5);
+	if ( f > 0.0 )  {
+		AimRotation.Yaw += f * (FRand() - 0.5);
+		AimRotation.Pitch += f * (FRand() - 0.5);
 	}
 	
 	Return AimRotation;

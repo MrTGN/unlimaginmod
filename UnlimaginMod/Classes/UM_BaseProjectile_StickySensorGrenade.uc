@@ -58,7 +58,7 @@ event Timer()
 			bEnemyDetected = MonsterIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
 				if ( !FriendlyPawnIsInRadius(DamageRadius) )
-					Explode(Location, Normal(Vector(Rotation)));
+					Explode(Location, Vector(Rotation));
 				else if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 			}

@@ -21,7 +21,7 @@ simulated event PreBeginPlay()
 		SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( DynamicLoadObject(SteamStatsAndAchievementsClassName, Class'Class', True) );
 	
 	Super.PreBeginPlay();
-}*/
+} */
 
 //[block] Server menu functions. Function calls also replicated from the clients.
 // ClientOpenMenu

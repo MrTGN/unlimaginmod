@@ -50,6 +50,7 @@ var(Object)		name			InitialStateName;	// After the first initialization object w
 
 var				UM_BaseWeapon	UMWeapon;
 var				UM_HumanPawn	HumanOwner;
+var	class< UM_BaseProjectile >	ProjClass;
 var				bool			bCanDryFire;
 var				bool			bIsDryFiring;
 var				float			NextDryFireTime;
@@ -69,6 +70,7 @@ var(KickMomentum)	bool		bOnlyLowGravKickMomentum;	// Only gets KickMomentum on l
 var(Spread)		float			LastFireTime;	// Used for Spread bonus calculations. More info in KFFire
 var(Spread)		float			AimingSpreadBonus;
 var(Spread)		float			CrouchedSpreadBonus;
+var(Spread)		float			VeterancySpreadBonus;
 var(Spread)		float			MaxSpread;			// The maximum spread this weapon will ever have (like when firing in long bursts, etc)
 var(Spread)		int				NumShotsInBurst, ShotsForMaxSpread;	// How many shots fired recently
 var(Spread)		float			SpreadCooldownTime;	// Spread Cooldown from MaxSpread to Spread
@@ -77,6 +79,7 @@ var(Spread)		float			SpreadCooldownTime;	// Spread Cooldown from MaxSpread to Sp
 //[block] AimError Bonuses
 var(AimError)	float			AimingAimErrorBonus;
 var(AimError)	float			CrouchedAimErrorBonus;
+var(AimError)	float			VeterancyAimErrorBonus;
 //[end]
 
 var(ShakeView)	float			AimingShakeBonus;	// Decreases the fire screen shake effects if player is aiming.
@@ -191,6 +194,26 @@ state Initialization
 	{
 		Return False;
 	}
+}
+
+// Notify on server side that human Owner veterancy has been changed
+function NotifyOwnerVeterancyChanged()
+{
+	if ( HumanOwner != None && HumanOwner.UM_PlayerReplicationInfo != None )  {
+		VeterancySpreadBonus = default.VeterancySpreadBonus * HumanOwner.UM_PlayerReplicationInfo.GetSpreadModifier(Self);
+		VeterancyAimErrorBonus = default.VeterancyAimErrorBonus * HumanOwner.UM_PlayerReplicationInfo.GetAimErrorModifier(Self);
+	}
+	else  {
+		VeterancySpreadBonus = default.VeterancySpreadBonus;
+		VeterancyAimErrorBonus = default.VeterancyAimErrorBonus;
+	}
+}
+
+// Notify clients that human Owner veterancy has been changed
+simulated function ClientNotifyOwnerVeterancyChanged()
+{
+	/* Use this function to update Veterancy bonuses 
+		on the client side */
 }
 
 simulated event PreBeginPlay();
@@ -330,6 +353,7 @@ simulated event PostBeginPlay()
 	//[end]
 
 	SetMuzzleNum(default.MuzzleNum);
+	UpdateSavedFireProperties();
 }
 
 // Called after PostBeginPlay().
@@ -510,6 +534,7 @@ function EjectShell()
 
 // Delivered this code into a separate function because
 // dual weapons changes muzzle at each shot
+/*
 function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 {
 	local	Vector		SpawnOffset, TraceStart, HitLocation, HitNormal;
@@ -563,6 +588,33 @@ function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 	}
 
 	Return SpawnOffset;
+} */
+
+function UpdateSavedFireProperties()
+{
+	SavedFireProperties.AmmoClass = AmmoClass;
+	SavedFireProperties.ProjectileClass = ProjectileClass;
+	SavedFireProperties.WarnTargetPct = WarnTargetPct;
+	SavedFireProperties.MaxRange = MaxRange();
+	SavedFireProperties.bTossed = bTossed;
+	SavedFireProperties.bTrySplash = bRecommendSplashDamage;
+	SavedFireProperties.bLeadTarget = bLeadTarget;
+	SavedFireProperties.bInstantHit = bInstantHit;
+	SavedFireProperties.bInitialized = True;
+	
+	/* ToDo: в дальнейшем эта функция должна вызываться еще 
+		при сменене типа снаряда в оружии. Issue #199. */
+	ProjClass = ProjectileClass;
+	if ( ProjClass != None && !ProjClass.default.bDefaultPropertiesCalculated )
+		ProjClass.static.CalcDefaultProperties();
+}
+
+function Rotator AdjustAim(Vector Start, float InAimError)
+{
+	//if ( !SavedFireProperties.bInitialized )
+		//UpdateSavedFireProperties();
+
+	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError);
 }
 
 //[block] Copied from BaseProjectileFire
@@ -577,6 +629,7 @@ function class<Projectile> GetDesiredProjectileClass()
 // to spawn inside the collision bounds of an object with properties that ignore 
 // zero extent traces. We need to do a non-zero extent trace so we can
 // find a safe spawn loc for our projectile ..
+// ToDo: переписать всю функцию!!! Issue #202
 function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 {
     local	Vector		HitLocation, HitNormal, StartTrace;
@@ -590,10 +643,12 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 
     CP = GetDesiredProjectileClass();
 	
+	//ToDo: переписать!!!
 	if ( CP != None )  {
 		if ( Other != None )
 			Start = (2.0 + FMax(CP.default.CollisionRadius, CP.default.CollisionHeight)) * -Normal(HitLocation - Start) + HitLocation;
-		P = Weapon.Spawn(CP, Weapon,, Start, Dir);
+		//P = Weapon.Spawn(CP, Weapon,, Start, Dir);
+		P = Muzzles[MuzzleNum].Spawn(CP, Muzzles[MuzzleNum],, Start, Dir);
 	}
 	else
 		Return None;
@@ -607,17 +662,17 @@ function PostSpawnProjectile(Projectile P)
     //P.Damage *= DamageAtten;
 }
 
+//ToDo: нужна ли эта функция вообще?
 function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 {
     local	Projectile	P;
 
-	if ( ProjectileClass != None )
-		P = Weapon.Spawn(ProjectileClass, Weapon,, Start, Dir);
-	
+	//P = Weapon.Spawn(ProjectileClass, Weapon,, Start, Dir);
+	P = Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, Start, Dir);
 	/*
 	if ( P == None )
-		P = ForceSpawnProjectile(Start,Dir);
-	
+		P = ForceSpawnProjectile(Start, Dir);
+
 	if ( P != None )
 		PostSpawnProjectile(P);
 	else
@@ -627,27 +682,6 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 }
 //[end]
 
-function UpdateSavedFireProperties()
-{
-	SavedFireProperties.AmmoClass = AmmoClass;
-	SavedFireProperties.ProjectileClass = ProjectileClass;
-	SavedFireProperties.WarnTargetPct = WarnTargetPct;
-	SavedFireProperties.MaxRange = MaxRange();
-	SavedFireProperties.bTossed = bTossed;
-	SavedFireProperties.bTrySplash = bRecommendSplashDamage;
-	SavedFireProperties.bLeadTarget = bLeadTarget;
-	SavedFireProperties.bInstantHit = bInstantHit;
-	SavedFireProperties.bInitialized = True;
-}
-
-function Rotator AdjustAim(Vector Start, float InAimError)
-{
-	//if ( !SavedFireProperties.bInitialized )
-		//UpdateSavedFireProperties();
-
-	Return Instigator.AdjustAim(SavedFireProperties, Start, InAimError);
-}
-
 function DoFireEffect()
 {
     local	Vector		StartProj, VX, VY, VZ;
@@ -655,6 +689,9 @@ function DoFireEffect()
     local	int			p;
     local	float		theta;
 
+	if ( ProjectileClass == None || Muzzles[MuzzleNum] == None )
+		Return;
+	
 	Instigator.MakeNoise(1.0);
     Weapon.GetViewAxes(VX, VY, VZ);
 
@@ -665,51 +702,36 @@ function DoFireEffect()
 	else
 		Aim = AdjustAim(StartProj, AimError);
 	
+	
 	switch (SpreadStyle)
 	{
 		case SS_Random:
 			VX = Vector(Aim);
-			if ( ProjPerFire > 1 )  {
-				for ( p = 0; p < ProjPerFire; ++p )  {
-					R.Yaw = Spread * (FRand() - 0.5);
-					R.Pitch = Spread * (FRand() - 0.5);
-					R.Roll = Spread * (FRand() - 0.5);
-					SpawnProjectile(StartProj, Rotator(VX >> R));
-				}
-			}
-			else  {
+			for ( p = 0; p < ProjPerFire; ++p )  {
 				R.Yaw = Spread * (FRand() - 0.5);
 				R.Pitch = Spread * (FRand() - 0.5);
 				R.Roll = Spread * (FRand() - 0.5);
-				SpawnProjectile(StartProj, Rotator(VX >> R));
-			}			
+				//SpawnProjectile(StartProj, Rotator(VX >> R));
+				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Rotator(VX >> R));
+			}
 			Break;
-			
+		
 		case SS_Line:
-			if ( ProjPerFire > 1 )  {
-				for ( p = 0; p < ProjPerFire; ++p )  {
-					theta = Spread * PI / 32768 * (p - float(ProjPerFire - 1) / 2.0);
-					VX.X = Cos(theta);
-					VX.Y = Sin(theta);
-					VX.Z = 0.0;
-					SpawnProjectile(StartProj, Rotator(VX >> Aim));
-				}
-			}
-			else  {
-				VX.X = 1.0; // Cos(0.0)
-				VX.Y = 0.0;	// Sin(0.0)
+			for ( p = 0; p < ProjPerFire; ++p )  {
+				theta = Spread * PI / 32768 * (p - float(ProjPerFire - 1) / 2.0);
+				VX.X = Cos(theta);
+				VX.Y = Sin(theta);
 				VX.Z = 0.0;
-				SpawnProjectile(StartProj, Rotator(VX >> Aim));
+				//SpawnProjectile(StartProj, Rotator(VX >> Aim));
+				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Rotator(VX >> Aim));
 			}
 			Break;
-			
+		
 		default:
-			if ( ProjPerFire > 1 )  {
-				for ( p = 0; p < ProjPerFire; ++p )
-					SpawnProjectile(StartProj, Aim);
+			for ( p = 0; p < ProjPerFire; ++p )  {
+				//SpawnProjectile(StartProj, Aim);
+				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Aim);
 			}
-			else
-				SpawnProjectile(StartProj, Aim);
 			Break;
 	}
 }
@@ -748,6 +770,8 @@ function UpdateFireRate()
 		FireRate = default.FireRate;
 }
 
+/* ToDo: после реализации переключения боеприспасов эту функцию 
+	нужно переписать аналогично GetAimError(). Issue #201 */
 // Calculate modifications to spread bonus
 function float UpdateSpread(float NewSpread)
 {
@@ -770,26 +794,10 @@ function float UpdateSpread(float NewSpread)
 	// Small spread bonus for firing crouched
 	if ( Instigator != None && Instigator.bIsCrouched )
 		NewSpread *= CrouchedSpreadBonus;
+	
+	NewSpread *= VeterancySpreadBonus;
 		
 	Return NewSpread;
-}
-
-// Calculate modifications to AimError bonus
-function float UpdateAimError(float NewAimError)
-{
-	// Scale AimError by Instigator moving speed
-	if ( !KFWeap.bSteadyAim && InstigatorMovingSpeed > 0.0 )
-		NewAimError += InstigatorMovingSpeed * MovingAimErrorScale;
-	
-	// AimError bonus for firing aiming
-	if ( KFWeap.bAimingRifle )
-		NewAimError *= AimingAimErrorBonus;
-	
-	// Small AimError bonus for firing crouched
-	if ( Instigator != None && Instigator.bIsCrouched )
-		NewAimError *= CrouchedAimErrorBonus;
-	
-	Return NewAimError;
 }
 
 // This function returns the current AimError with all bonuses and 
@@ -798,7 +806,7 @@ function float GetAimError()
 {
 	local	float	CurrentAimError;
 	
-	CurrentAimError = default.AimError;
+	CurrentAimError = default.AimError * VeterancyAimErrorBonus;
 	
 	// Scale AimError by Instigator moving speed
 	if ( !KFWeap.bSteadyAim && InstigatorMovingSpeed > 0.0 )
@@ -823,7 +831,6 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 	ProjPerFire = default.ProjPerFire;
 	Spread = default.Spread;
 	MaxSpread = default.MaxSpread;
-	AimError = default.AimError;
 		
 	//[block] Switching ProjectileClass, ProjPerFire and Spread by Perk Index if Perk exist
 	if ( KFPRI != None && SRVT != None )  {
@@ -848,16 +855,11 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
 			}
 		}
-		// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-		Spread = UpdateSpread(Spread) * SRVT.static.GetSpreadModifier( KFPRI, Self );
-		AimError = UpdateAimError(AimError) * SRVT.static.GetAimErrorModifier( KFPRI, Self );
-	}
-	else  {
-		// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-		Spread = UpdateSpread(Spread);
-		AimError = UpdateAimError(AimError);
 	}
 	//[end]
+	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
+	Spread = UpdateSpread(Spread);
+	UpdateSavedFireProperties();
 }
 
 // Cleaning up the old function
@@ -1301,9 +1303,11 @@ defaultproperties
 	 SpreadCooldownTime=0.500000
 	 AimingSpreadBonus=0.900000
 	 CrouchedSpreadBonus=0.950000
+	 VeterancySpreadBonus=1.000000
 	 //AimError
      AimingAimErrorBonus=0.600000
      CrouchedAimErrorBonus=0.850000
+	 VeterancyAimErrorBonus=1.00000
 	 //ShakeView
 	 AimingShakeBonus=0.950000
 	 //Movement

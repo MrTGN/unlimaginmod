@@ -87,7 +87,7 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 	
 	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
 	Spread = UpdateSpread(Spread) * SpreadModif;
-	AimError = UpdateAimError(AimError) * AimErrorModif;
+	AimError = GetAimError() * AimErrorModif;
 }
 
 defaultproperties

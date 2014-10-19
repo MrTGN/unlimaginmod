@@ -105,6 +105,24 @@ simulated event PostNetReceive()
 }
 
 //[block] --- Perk bonuses ---
+// Weapon Fire Spread
+simulated function float GetSpreadModifier( WeaponFire WF )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetSpreadModifier(self, WF);
+	
+	Return 1.0;
+}
+
+// Weapon Fire AimError
+simulated function float GetAimErrorModifier( WeaponFire WF )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetAimErrorModifier(self, WF);
+	
+	Return 1.0;
+}
+
 simulated function int GetReducedDamage( UM_HumanPawn Injured, int Damage, Pawn Instigator, class<DamageType> DmgType )
 {
 	if ( ClientVeteranSkill != None )

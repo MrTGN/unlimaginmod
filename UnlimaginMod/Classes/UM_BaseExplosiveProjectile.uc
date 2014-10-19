@@ -130,9 +130,9 @@ simulated static function bool UnloadAssets()
 simulated event PostNetReceive()
 {
 	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, Normal(Vector(Rotation)));
+		Disintegrate(Location, Vector(Rotation));
 	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, Normal(Vector(Rotation)));
+		Explode(Location, Vector(Rotation));
 }
 
 // Detonator is armed
@@ -415,7 +415,7 @@ simulated function ShakePlayersView()
 event Timer()
 {
 	if ( IsArmed() )
-		Explode(Location, Normal(Vector(Rotation)));
+		Explode(Location, Vector(Rotation));
 	else
 		Destroy();
 }
@@ -500,7 +500,7 @@ event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Mo
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
 				if ( DamageType == DisintegrateDamageTypes[i] )  {
 					if ( FRand() <= DisintegrateChance )
-						Disintegrate(HitLocation, Normal(Vector(Rotation)));
+						Disintegrate(HitLocation, Vector(Rotation));
 					
 					Return;
 				}
@@ -508,7 +508,7 @@ event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Mo
 		}
 		
 		if ( IsArmed() )
-			Explode(HitLocation, Normal(Vector(Rotation)));
+			Explode(HitLocation, Vector(Rotation));
 	}
 }
 
@@ -524,9 +524,9 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 simulated event Destroyed()
 {
 	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, Normal(Vector(Rotation)));
+		Disintegrate(Location, Vector(Rotation));
 	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, Normal(Vector(Rotation)));
+		Explode(Location, Vector(Rotation));
 	
 	Super.Destroyed();
 }

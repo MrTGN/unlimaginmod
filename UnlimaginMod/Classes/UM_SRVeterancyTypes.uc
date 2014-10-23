@@ -218,6 +218,12 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 	Return Min(Level, 15);
 }
 
+// New function to reduce taken damage
+static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
+{
+	Return 1.0;
+}
+
 // New function for the extra jump height
 static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 {

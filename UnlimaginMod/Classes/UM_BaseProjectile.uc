@@ -344,12 +344,12 @@ simulated event PreBeginPlay()
 		bFriendlyFireIsAllowed = TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0;
 	
 	if ( UM_BaseWeapon(Owner) != None )  {
-		Weapon = UM_BaseWeapon(Owner);	
+		[!]Weapon = UM_BaseWeapon(Owner);	
 		//[!] Todo: подумать где и как хранить настройки и данные стволов, оружия и тп.
 		// Думаю, что это может быть функция, возвращающая данные по последнему выстрелу.
 		// Сами настройки хранить в Fire классе, а из оружия получать через функцию нужные
 		// характеристики по последнему выстрелу.
-		Instigator = Weapon.Instigator;
+		[!]Instigator = Weapon.Instigator;
 		UpdateBonuses();
 	}
 	
@@ -462,7 +462,7 @@ function ServerSetInitialVelocity()
 		Speed *= GetBallisticRandMult();
 		// Calculating ProjectileEnergy before initial replication
 		if ( default.ProjectileMass > 0.0 )
-			ProjectileEnergy = Speed * Speed * SpeedSquaredToEnergy;
+			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
 		// Initial velocity
 		Velocity = Vector(Rotation) * Speed;
 	}
@@ -772,7 +772,7 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 		if ( LastTouched != None && (A == LastTouched || A.Base == LastTouched) )
 			Return False;
 		
-		if ( Pawn(A.Base) != None || Mover(A.Base) != None )
+		if ( Mover(A.Base) != None )
 			A = A.Base;
 		
 		if ( Velocity == Vect(0.0, 0.0, 0.0) )  {

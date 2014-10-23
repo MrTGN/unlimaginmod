@@ -41,9 +41,9 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function CalcDefaultProperties()
+simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
 {
-	Super.CalcDefaultProperties();
+	Super.CalcDefaultProperties(Proj);
 	
 	if ( default.MaxSpeed > 0.0 && default.ArmingRange > 0.0 )  {
 		// ArmingDelay
@@ -51,7 +51,8 @@ simulated function CalcDefaultProperties()
 		// InitialAccelerationTime
 		if ( default.bTrueBallistics && default.bInitialAcceleration )
 			default.ArmingDelay += default.InitialAccelerationTime;
-		ArmingDelay = default.ArmingDelay;
+		if ( Proj != None )
+			Proj.ArmingDelay = default.ArmingDelay;
 	}
 }
 

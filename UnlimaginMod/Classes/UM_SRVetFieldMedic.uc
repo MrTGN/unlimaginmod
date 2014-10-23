@@ -93,15 +93,21 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 	Return InDamage;
 }
 
-static function int ReduceDamage(KFPlayerReplicationInfo KFPRI, KFPawn Injured, Pawn Instigator, int InDamage, class<DamageType> DmgType)
+// New function to reduce taken damage
+static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( DmgType == class'DamTypeVomit' )
-		Return float(InDamage) * (0.95 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10)))); // 75% decrease in damage from Bloat's Bile
-	else if ( KFPRI.ClientVeteranSkillLevel > 0 && KFHumanPawn(Injured).ShieldStrength > 0
-			  && (DmgType == Class'UM_ZombieDamType_SirenScream' || DmgType == class'SirenScreamDamage') )
-		Return float(InDamage) * (1.00 - (0.03 * float(Min(KFPRI.ClientVeteranSkillLevel,10))));
-
-	Return InDamage;
+	if ( DamageType == class'DamTypeVomit' )  {
+		// Medics don't damage themselves with the bile shooter
+		if ( Aggressor == Victim )
+			Return 0.0;
+		else
+			Return 0.95 - (0.07 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// 75% decrease in damage from Bloat's Bile
+	}
+	else if ( (DamageType == Class'UM_ZombieDamType_SirenScream' || DamageType == class'SirenScreamDamage')
+			 && Victim.ShieldStrength > 0 && PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.0 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// Up to 40% reduce taken damage
+	
+	Return 1.0;
 }
 
 static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon Other)

@@ -42,9 +42,9 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function CalcDefaultProperties()
+simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
 {
-	Super.CalcDefaultProperties();
+	Super.CalcDefaultProperties(Proj);
 	
 	// FlyingTime
 	if ( default.MaxSpeed > 0.0 && default.EffectiveRange > 0.0 )  {
@@ -54,7 +54,8 @@ simulated function CalcDefaultProperties()
 			if ( default.bInitialAcceleration )
 				default.FlyingTime += default.InitialAccelerationTime;
 		}
-		FlyingTime = default.FlyingTime;
+		if ( Proj != None )
+			Proj.FlyingTime = default.FlyingTime;
 	}
 }
 

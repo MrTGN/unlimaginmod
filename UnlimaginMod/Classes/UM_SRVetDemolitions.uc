@@ -118,18 +118,19 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 	Return InDamage;
 }
 
-static function int ReduceDamage(KFPlayerReplicationInfo KFPRI, KFPawn Injured, Pawn Instigator, int InDamage, class<DamageType> DmgType)
+// New function to reduce taken damage
+static function float GetTakenDamageModifier( UM_PlayerReplicationInfo PRI, Pawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( class<UM_BaseDamType_ExplosiveBullets>(DmgType) != None )
-		Return float(InDamage) * (0.30 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,6))));
-	else if ( class<DamTypeFrag>(DmgType) != none || class<DamTypePipeBomb>(DmgType) != none ||
-		 class<DamTypeM79Grenade>(DmgType) != none || class<DamTypeM32Grenade>(DmgType) != none ||
-		 class<DamTypeM203Grenade>(DmgType) != none || class<DamTypeRocketImpact>(DmgType) != none ||
-		 Class<UM_BaseDamType_Explosive>(DmgType) != None || Class<UM_BaseDamType_ExplosiveProjImpact>(DmgType) != None ||
-		 class<DamTypeSPGrenade>(DmgType) != none)
-		Return float(InDamage) * (0.9 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,8))));
-
-	Return InDamage;
+	if ( class<UM_BaseDamType_ExplosiveBullets>(DamageType) != None )
+		Return 0.3 - (0.05 * float(Min(PRI.ClientVeteranSkillLevel, 6)));	// After the 6 lvl no damage at all
+	else if ( Class<UM_BaseDamType_Explosive>(DamageType) != None || Class<UM_BaseDamType_ExplosiveProjImpact>(DamageType) != None
+			 || class<DamTypeFrag>(DamageType) != None || class<DamTypePipeBomb>(DamageType) != None
+			 || class<DamTypeM79Grenade>(DamageType) != None || class<DamTypeM32Grenade>(DamageType) != None
+			 || class<DamTypeM203Grenade>(DamageType) != None || class<DamTypeRocketImpact>(DamageType) != None
+			 || class<DamTypeSPGrenade>(DamageType) != None )
+		Return 0.9 - (0.05 * float(Min(PRI.ClientVeteranSkillLevel, 8)));	// Up to 50% reduce taken damage
+	
+	Return 1.0;
 }
 
 /*

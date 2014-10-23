@@ -90,16 +90,19 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function CalcDefaultProperties()
+simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
 {
-	Super.CalcDefaultProperties();
+	Super.CalcDefaultProperties(Proj);
+	
 	// ArmingRange
 	if ( default.ArmingRange > 0.0 )  {
 		default.ArmingRange = default.ArmingRange * MeterInUU;
-		ArmingRange = default.ArmingRange;
 		// Squared ArmingRange
-		default.SquaredArmingRange = default.ArmingRange * default.ArmingRange;
-		SquaredArmingRange = default.SquaredArmingRange;
+		default.SquaredArmingRange = Square(default.ArmingRange);
+		if ( Proj != None )  {
+			Proj.ArmingRange = default.ArmingRange;
+			Proj.SquaredArmingRange = default.SquaredArmingRange;
+		}
 	}
 }
 

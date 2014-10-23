@@ -171,6 +171,87 @@ simulated function UpdateHintManagement(bool bUseHints)
 	}
 }
 
+// Possess a pawn
+function Possess(Pawn aPawn)
+{
+	// From KFPlayerController
+	bVomittedOn = False;
+	bScreamedAt = False;
+	
+	// Spectator
+	if ( PlayerReplicationInfo.bOnlySpectator )
+		Return;
+
+	bSpawnedThisWave = True;
+	ResetFOV();
+	Pawn = aPawn;
+	aPawn.PossessedBy(self);
+	Pawn.bStasis = False;
+	ResetTimeMargin();
+	CleanOutSavedMoves();  // don't replay moves previous to possession
+
+	if ( Vehicle(Pawn) != None && Vehicle(Pawn).Driver != None )
+		PlayerReplicationInfo.bIsFemale = Vehicle(Pawn).Driver.bIsFemale;
+	else
+		PlayerReplicationInfo.bIsFemale = Pawn.bIsFemale;
+
+	ServerSetHandedness(Handedness);
+	ServerSetAutoTaunt(bAutoTaunt);
+	Restart();
+
+	if ( xPawn(aPawn) != None )
+		xPawn(aPawn).Setup(PawnSetupRecord, True);
+	
+	if ( Level.NetMode != NM_DedicatedServer )
+		ServerSetClassicTrans(bClassicTrans);
+}
+
+// Overidden to support resetting shake and blur values when you posses the pawn
+function AcknowledgePossession(Pawn P)
+{
+	// Tell the server if we want the trader path or not
+    if ( Role < ROLE_Authority )
+        ServerSetWantsTraderPath(bWantsTraderPath);
+
+	if ( P != None )  {
+		StopViewShaking();
+		if ( Level.NetMode != NM_DedicatedServer )
+			SetBlur(0);
+		if ( KFHumanPawn(P) != None )
+            KFHumanPawn(P).KFPC = self;
+	}
+	
+	if ( Viewport(Player) != None )  {
+		AcknowledgedPawn = P;
+		if ( P != None )
+			P.SetBaseEyeHeight();
+		ServerAcknowledgePossession(P, Handedness, bAutoTaunt);
+	}
+}
+
+function ServerAcknowledgePossession(Pawn P, float NewHand, bool bNewAutoTaunt)
+{
+	ResetTimeMargin();
+    AcknowledgedPawn = P;
+    ServerSetHandedness(NewHand);
+    ServerSetAutoTaunt(bNewAutoTaunt);
+}
+
+// unpossessed a pawn (not because pawn was killed)
+function UnPossess()
+{
+    if ( Pawn != None )  {
+        SetLocation(Pawn.Location);
+        Pawn.RemoteRole = ROLE_SimulatedProxy;
+        Pawn.UnPossessed();
+		CleanOutSavedMoves();  // don't replay moves previous to unpossession
+        if ( Viewtarget == Pawn )
+            SetViewTarget(self);
+    }
+    Pawn = None;
+    GotoState('Spectating');
+}
+
 // Optimized PostBeginPlay() version
 simulated event PostBeginPlay()
 {

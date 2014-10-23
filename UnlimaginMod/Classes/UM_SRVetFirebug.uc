@@ -144,15 +144,16 @@ static function int ExtraRange(KFPlayerReplicationInfo KFPRI)
 	Return 2; // 100% Longer Range
 }
 
-static function int ReduceDamage(KFPlayerReplicationInfo KFPRI, KFPawn Injured, Pawn Instigator, int InDamage, class<DamageType> DmgType)
+// New function to reduce taken damage
+static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( class<DamTypeBurned>(DmgType) != none || class<DamTypeFlamethrower>(DmgType) != none ||
-		 class<DamTypeHuskGunProjectileImpact>(DmgType) != none || class<DamTypeFlareProjectileImpact>(DmgType) != none ||
-		 Class<UM_BaseDamType_Flame>(DmgType) != None || Class<UM_BaseDamType_IncendiaryBullet>(DmgType) != None ||
-		 Class<UM_BaseDamType_IncendiaryProjImpact>(DmgType) != None )
-		Return float(InDamage) * (0.50 - (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,5)))); // Up to 100% reduction in damage from fire
- 
-	Return InDamage;
+	if ( Class<UM_BaseDamType_Flame>(DamageType) != None || Class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None
+		 || Class<UM_BaseDamType_IncendiaryProjImpact>(DamageType) != None || class<DamTypeBurned>(DamageType) != None
+		 || class<DamTypeFlamethrower>(DamageType) != None || class<DamTypeHuskGunProjectileImpact>(DamageType) != None
+		 || class<DamTypeFlareProjectileImpact>(DamageType) != None )
+		Return 0.5 - (0.1 * float(Min(PRI.ClientVeteranSkillLevel, 5))); // Up to 100% reduction in damage from fire
+	
+	Return 1.0;
 }
 
 /*

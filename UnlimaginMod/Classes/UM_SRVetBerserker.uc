@@ -98,9 +98,9 @@ static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Othe
 	Return 1.00;
 }
 
-static function float GetPawnJumpModifier(KFPlayerReplicationInfo KFPRI)
+static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 {
-	Return 1.00 + (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 25% extra jump height
+	Return 1.00 + (0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 25% extra jump height
 }
 
 static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
@@ -113,16 +113,15 @@ static function float GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo KFPR
 	Return 0.00 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 40% increase in movement speed while wielding Melee Weapon
 }
 
-static function int ReduceDamage(KFPlayerReplicationInfo KFPRI, KFPawn Injured, Pawn Instigator, int InDamage, class<DamageType> DmgType)
+// New function to reduce taken damage
+static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( DmgType == class'Fell' )
-		Return float(InDamage) * (1.00 - (0.075 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)))); // Up to 75% reduced Damage by falling
-	else if ( DmgType == class'DamTypeVomit' )
-		Return float(InDamage) * (1.00 - 0.09 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 90% reduced Bloat Bile damage
-	else if ( DmgType == class'DamTypeBurned' && KFHumanPawn(Injured).ShieldStrength > 0 )
-		Return float(InDamage) * (1.00 - (0.08 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)))); // Up to 30% reduced husk fire damage
-
-	Return float(InDamage) * (1.00 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)))); // Up to 50% reduced all Damage
+	if ( DamageType == Class'Fell' )
+		Return 1.0 - (0.075 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 75% reduced Damage by falling
+	else if ( DamageType == class'DamTypeVomit' )
+		Return 1.0 - (0.09 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 90% reduced Bloat Bile damage
+		
+	Return 1.0;
 }
 
 // Added in Balance Round 1(returned false then, by accident, fixed in Balance Round 2)

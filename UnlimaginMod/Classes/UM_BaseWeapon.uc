@@ -407,10 +407,10 @@ function ServerRequestAutoReload()
 	++NumClicks;
 }
 
-// Request an auto reload
+// Request an auto reload on the client-side
 simulated function RequestAutoReload( byte Mode )
 {
-	if ( bAllowAutoReload && Role < ROLE_Authority )  {
+	if ( bAllowAutoReload && Role < ROLE_Authority && !bIsReloading )  {
 		if ( !FireMode[Mode].bWaitForRelease && FireMode[Mode].bIsFiring )
 			ClientStopFire(Mode);
 		// AutoReloadRequests

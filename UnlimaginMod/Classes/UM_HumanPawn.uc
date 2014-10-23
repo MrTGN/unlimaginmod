@@ -16,6 +16,14 @@ const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 var		UM_SRClientPerkRepLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
+var		int							DyingMessageHealth;
+var		float						NextDyingMessageTime;
+
+// Healing
+var		int							HealAmountRemaining;
+var		float						HealDelay, NextHealTime;
+var		bool						bCanBeHealedNow;	// Prevents from changing Healt by several function at the same time
+
 var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		float						FireSpeedModif;
@@ -68,6 +76,25 @@ simulated event PreBeginPlay()
 	}
 }
 
+simulated event PostBeginPlay()
+{
+	Super(UnrealPawn).PostBeginPlay();
+	AssignInitialPose();
+	
+	if ( Level.NetMode != NM_DedicatedServer && bActorShadows && bPlayerShadows )  {
+		if ( bDetailedShadows )
+			PlayerShadow = Spawn(class'KFShadowProject',Self,'',Location);
+		else
+			PlayerShadow = Spawn(class'ShadowProjector',Self,'',Location);
+		PlayerShadow.ShadowActor = self;
+		PlayerShadow.bBlobShadow = bBlobShadow;
+		PlayerShadow.LightDirection = Normal(vect(1,1,3));
+		PlayerShadow.InitShadow();
+	}
+	
+	DyingMessageHealth = HealthMax * 0.25;
+}
+
 // my PRI now has a new team
 simulated function NotifyTeamChanged()
 {
@@ -82,7 +109,8 @@ simulated function NotifyTeamChanged()
 	else
 		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 	
-	ClientNotifyVeterancyChanged();
+	if ( UM_PlayerReplicationInfo == None )
+		ClientNotifyVeterancyChanged();
 }
 
 simulated event ClientTrigger()
@@ -204,11 +232,11 @@ function PossessedBy( Controller C )
 		PlayerReplicationInfo = C.PlayerReplicationInfo;
 		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 		OwnerName = PlayerReplicationInfo.PlayerName;
-		// OwnerPRI from KFPawn is not used anywhere.
+		// OwnerPRI from KFPawn does not used anywhere.
 		//OwnerPRI = PlayerReplicationInfo;
 	}
 	
-	if ( C.IsA('PlayerController') )  {
+	if ( PlayerController(C) != None )  {
 		if ( bSetPCRotOnPossess )
 			C.SetRotation(Rotation);
 		if ( Level.NetMode != NM_Standalone )
@@ -224,6 +252,8 @@ function PossessedBy( Controller C )
 	
 	if ( UM_PlayerReplicationInfo != None )  {
 		UM_PlayerReplicationInfo.SetPawnOwner(self);
+		// To be sure that all ReplicationInfo will be received by clients
+		// notifing by UM_PlayerReplicationInfo
 		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
 	}
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
@@ -738,11 +768,206 @@ simulated function StopHitCamEffects()
 		Super.StopHitCamEffects();
 }
 
-//[block] copied from KFHumanPawn to fix some bugs
-// server only
-event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+simulated function RemoveFlamingEffects()
 {
-	if ( Controller != None && Controller.bGodMode )
+    local	int		i;
+
+    if ( Level.NetMode == NM_DedicatedServer )
+        Return;
+
+    for ( i = 0; i < Attached.Length; ++i )  {
+        if ( xEmitter(Attached[i]) != None && BloodJet(Attached[i]) == None )
+			xEmitter(Attached[i]).mRegen = False;
+		else if ( KFMonsterFlame(Attached[i]) != None )
+			Attached[i].LifeSpan = 0.1;
+    }
+}
+
+simulated function StartBurnFX()
+{
+	if ( bDeleteMe )
+		Return;
+
+	if ( ItBUURRNNNS == None )  {
+		ItBUURRNNNS = Spawn(BurnEffect);
+		ItBUURRNNNS.SetBase(Self);
+		ItBUURRNNNS.Emitters[0].SkeletalMeshActor = self;
+		ItBUURRNNNS.Emitters[0].UseSkeletalLocationAs = PTSU_SpawnOffset;
+	}
+
+	bBurnApplied = True;
+}
+
+simulated function StopBurnFX()
+{
+	RemoveFlamingEffects();
+	if ( ItBUURRNNNS != None )
+		ItBUURRNNNS.Kill();
+    
+	bBurnApplied = False;
+}
+
+//ToDo: дописать Overheal issue #208
+function bool GiveHealth( int HealAmount, int HealMax )
+{
+	// If someone gets healed while burning, reduce the burn length/damage
+	if ( BurnDown > 0 )  {
+		LastBurnDamage *= 0.5;
+		if ( BurnDown > 1 )
+			BurnDown *= 0.5;
+	}
+	
+	if ( Health < HealMax )  {
+		// Don't let heal more than the max health
+		//ToDo: это можно сократить и написать в виде Min функции.
+		// переписать с учетом Overheal issue #208
+		if ( (Health + HealAmountRemaining + HealAmount) > int(HealthMax) )  {
+			HealAmount = int(HealthMax) - (Health + HealAmountRemaining);
+			if ( HealAmount < 1 )
+				Return False;
+		}
+		NextHealTime = Level.TimeSeconds + HealDelay;
+		HealAmountRemaining += HealAmount;
+		Return True;
+	}
+
+	Return False;
+}
+
+
+function AddHealth()
+{
+    local	int		tempHeal;
+	
+	//[!] ToDo: дописать эту функцию, я с ней не закончил!
+    if ( bCanBeHealedNow && Level.TimeSeconds >= NextHealTime )  {
+		if ( Health < HealthMax )  {
+			tempHeal = int(10 * (Level.TimeSeconds - lastHealTime));
+			if ( tempHeal > 0 )
+				lastHealTime = level.TimeSeconds;
+
+			Health = Min(Health + tempHeal, HealthMax);
+			HealAmountRemaining -= tempHeal;
+		}
+		else  {
+			lastHealTime = Level.TimeSeconds;
+			// if we are all healed, there's gonna be no more healing
+			HealAmountRemaining = 0;
+		}
+    }
+}
+
+//ToDo: дописать Tick. Смотреть оставшееся в классе KFPawn.
+simulated event Tick( float DeltaTime )
+{
+	local	float	BlurAmount;
+	
+	// Client
+	if ( Role < ROLE_Authority )  {
+		if ( bThrowingNade )  {
+			if ( NadeThrowTimeout > 0.0 )
+				NadeThrowTimeout -= DeltaTime;
+			/* This is a hack to clear this flag on the client after a bit of time. 
+				This fixes a bug where you could get stuck unable to use weapons */
+			if ( NadeThrowTimeout <= 0.0 )  {
+				NadeThrowTimeout = 0.0;
+				ThrowGrenadeFinished();
+			}
+		}
+	}
+	// Server
+	else  {
+		if ( HealAmountRemaining > 0 && Health > 0 )
+			AddHealth() ;
+		else if ( HealAmountRemaining < 0 )
+			HealAmountRemaining = 0;
+	}
+	
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( !bBurnApplied && bBurnified && !bGibbed )
+			StartBurnFX();
+		else if ( bBurnApplied && !bBurnified )
+			StopBurnFX();
+	}
+	
+	// Reset replication.
+	if ( bResetingAnimAct && AnimActResetTime < Level.TimeSeconds )  {
+		bResetingAnimAct = False;
+		AnimAction = '';
+	}
+	
+	Super(xPawn).Tick(DeltaTime);
+	
+	if ( KFPC != None )  {
+		if ( KFPlayerReplicationInfo(KFPC.PlayerReplicationInfo).ThreeSecondScore > 0 && AlphaAmount > 0 )
+			AlphaAmount -= 2;
+
+		if ( AlphaAmount <= 0 )  {
+			KFPlayerReplicationInfo(KFPC.PlayerReplicationInfo).ThreeSecondScore = 0;
+			ScoreCounter = 0;
+		}
+	}
+	
+	// HitBlur Effect
+	if ( IsLocallyControlled() && !bUsingHitBlur && BlurFadeOutTime > 0 )  {
+		BlurFadeOutTime	-= DeltaTime;
+		BlurAmount = BlurFadeOutTime / StartingBlurFadeOutTime * CurrentBlurIntensity;
+
+		if ( BlurFadeOutTime <= 0.0 )  {
+			BlurFadeOutTime = 0.0;
+			StopHitCamEffects();
+		}
+		else if( bUseBlurEffect )  {
+			if ( KFPC != None && KFPC.PostFX_IsReady() )
+				KFPC.SetBlur(BlurAmount);
+			else if( CameraEffectFound != none )
+				UnderWaterBlur(CameraEffectFound).BlurAlpha = Lerp( BlurAmount, 255, UnderWaterBlur(CameraEffectFound).default.BlurAlpha );
+		}
+    }
+}
+
+//[block] copied from KFHumanPawn to fix some bugs
+event Timer()
+{
+	if ( BurnDown > 0 )  {
+		LastBurnDamage *= 0.5;
+        TakeFireDamage(LastBurnDamage, BurnInstigator);
+	}
+	else  {
+		RemoveFlamingEffects();
+		StopBurnFX();
+	}
+
+	//ToDo: выпилить это! Issue #207
+	// Flashlight Drain
+	if ( KFWeapon(Weapon) != None && KFWeapon(Weapon).FlashLight != None )  {
+		// Increment / Decrement battery life
+		if ( KFWeapon(Weapon).FlashLight.bHasLight && TorchBatteryLife > 0 )
+			TorchBatteryLife -= 10;
+		else if ( !KFWeapon(Weapon).FlashLight.bHasLight && TorchBatteryLife < default.TorchBatteryLife )  {
+			TorchBatteryLife += 20;
+			if ( TorchBatteryLife > default.TorchBatteryLife )
+				TorchBatteryLife = default.TorchBatteryLife;
+		}
+	}
+	else if ( TorchBatteryLife < default.TorchBatteryLife )  {
+		TorchBatteryLife += 20;
+		if ( TorchBatteryLife > default.TorchBatteryLife )
+			TorchBatteryLife = default.TorchBatteryLife;
+	}
+
+	// Instantly set the animation to arms at sides Idle if we've got no weapon (rather than Pointing an invisible gun!)
+	if ( Weapon == None || (WeaponAttachment(Weapon.ThirdPersonActor) == None && VSizeSquared(Velocity) <= 0.0) )
+		IdleWeaponAnim = IdleRestAnim;
+}
+
+// server only
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex)
+{
+	// GodMode and FriendlyFire
+	if ( (Controller != None && Controller.bGodMode)
+		 || (InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
+			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
 		Return;
 	
 	if ( KFMonster(InstigatedBy) != None )
@@ -752,41 +977,35 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( InstigatedBy != None && KFHumanPawn(InstigatedBy) != None )
 		Momentum = vect(0,0,0);
 	
-	LastHitDamType = damageType;
+	LastHitDamType = DamageType;
 	LastDamagedBy = InstigatedBy;
 	
-	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-	if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.GetReducedDamage(self, Damage, InstigatedBy, DamageType) < 1 )
-		Return;
-	
-	//ToDo: #188
-	healthtoGive -= 5;
-	
-	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, damageType);
-
-	if ( class<DamTypeBurned>(damageType) != None || class<DamTypeFlamethrower>(damageType) != None )  {
-		// FriendlyFire
-		if ( InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum() )
+	if ( UM_PlayerReplicationInfo != None )  {
+		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
+		// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
+		if ( Damage < 1 )
 			Return;
+	}
+	bCanBeHealedNow = False;
+	//ToDo: #188
+	HealAmountRemaining -= 5;
+	
+	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, DamageType);
 
-		// Do burn damage if the damage was significant enough
-		if ( Damage > 2 )  {
-			// If we are already burning, and this damage is more than our current burn amount, add more burn time
-			if ( BurnDown > 0 && Damage > LastBurnDamage )  {
-				BurnDown = 5;
-				BurnInstigator = InstigatedBy;
-			}
-
-			LastBurnDamage = Damage;
-
-			if ( BurnDown <= 0 )  {
-				bBurnified = True;
-				BurnDown = 5;
-				BurnInstigator = InstigatedBy;
-				SetTimer(1.5, True);
-			}
+	// Do burn damage if the damage was significant enough
+	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None) && Damage > 2 )  {
+		if ( BurnDown < 1 )  {
+			bBurnified = True;
+			BurnDown = 5;
+			BurnInstigator = InstigatedBy;
+			SetTimer(1.5, True);
 		}
+		// If we are already burning, and this damage is more than our current burn amount, add more burn time
+		else if ( Damage > LastBurnDamage )  {
+			BurnDown = 5;
+			BurnInstigator = InstigatedBy;
+		}
+		LastBurnDamage = Damage;
 	}
 	
 	if ( Controller == None || KFPlayerController(Controller) == None )
@@ -813,14 +1032,13 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			Controller.SetTimer(10.0, false);
 	}
 	
-	if ( Level.Game.NumPlayers > 1 && Health < (HealthMax * 0.25) 
-		 && (Level.TimeSeconds - LastDyingMessageTime) > DyingMessageDelay )  {
+	if ( Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
+		NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
 		// Tell everyone we're dying
 		KFPlayerController(Controller).Speech('AUTO', 6, "");
-		LastDyingMessageTime = Level.TimeSeconds;
 	}
-
-	//Todo: #189
+	bCanBeHealedNow = default.bCanBeHealed;
+	//Todo: Issue #189
 	/*
 	//Simulated Bloody Overlays
 	if ( (Health - Damage) <= (HealthMax * 0.4) )
@@ -828,6 +1046,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 }
 //[end]
 
+//ToDo: Issue #203
 function TakeBileDamage()
 {
 	local	vector	BileVect, HitMomentum;
@@ -836,10 +1055,10 @@ function TakeBileDamage()
 	RandBileDamage = 2 + Rand(3);
     Super(Pawn).TakeDamage(RandBileDamage, BileInstigator, Location, vect(0,0,0), LastBileDamagedByType);
     
-	healthToGive -= 5;
+	HealAmountRemaining -= 5;
 
     HitMomentum = vect(0,0,0);
-    ActualDamage = Level.Game.ReduceDamage(RandBileDamage, self, BileInstigator, Location, HitMomentum, LastBileDamagedByType);
+ //   ActualDamage = Level.Game.ReduceDamage(RandBileDamage, self, BileInstigator, Location, HitMomentum, LastBileDamagedByType);
 
     if ( ActualDamage <= 0 || Controller == None || PlayerController(Controller) == None || Controller.bGodMode )
         Return;
@@ -866,11 +1085,9 @@ function ExtendedCreateInventoryVeterancy(
 
 	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
 	
-	if( InventoryClass != None && FindInventoryType(InventoryClass) == None )
-	{
+	if ( InventoryClass != None && FindInventoryType(InventoryClass) == None )  {
 		Inv = Spawn(InventoryClass);
-		if( Inv != none )
-		{
+		if ( Inv != none )  {
 			Inv.GiveTo(self);
 			
 			if ( Inv != None )
@@ -879,19 +1096,16 @@ function ExtendedCreateInventoryVeterancy(
 			if ( KFGameType(Level.Game) != none )
 				KFGameType(Level.Game).WeaponSpawned(Inv);
 			
-			if ( KFWeapon(Inv) != none )
-			{
+			if ( KFWeapon(Inv) != none )  {
 				KFWeapon(Inv).SellValue = float(class<KFWeaponPickup>(InventoryClass.default.PickupClass).default.Cost) * SellValueScale * 0.75;
 				
-				if ( AddExtraAmmo > 0 )
-				{
+				if ( AddExtraAmmo > 0 )  {
 					if ( FireModeNum <= 0 )
 						FireModeNum = 0;
 					else
 						FireModeNum = 1;
 					
-					if ( KFWeapon(Inv).AmmoAmount(FireModeNum) < KFWeapon(Inv).MaxAmmo(FireModeNum) )
-					{
+					if ( KFWeapon(Inv).AmmoAmount(FireModeNum) < KFWeapon(Inv).MaxAmmo(FireModeNum) )  {
 						if ( AddExtraAmmo > (KFWeapon(Inv).MaxAmmo(FireModeNum) - KFWeapon(Inv).AmmoAmount(FireModeNum)) )
 							AddExtraAmmo = KFWeapon(Inv).MaxAmmo(FireModeNum) - KFWeapon(Inv).AmmoAmount(FireModeNum);
 						
@@ -908,7 +1122,7 @@ function bool CanCarry( float Weight )
 	if ( Weight <= 0 )
 		Return True;
 
-	Return ( (CurrentWeight + Weight) <= MaxCarryWeight );
+	Return (CurrentWeight + Weight) <= MaxCarryWeight;
 }
 
 function ThrowGrenade()
@@ -962,7 +1176,8 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     VeterancyJumpBonus=1.0
+     HealDelay=0.1
+	 VeterancyJumpBonus=1.0
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)
 	 BounceRemaining=0

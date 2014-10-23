@@ -47,7 +47,7 @@ function SetPawnOwner( UM_HumanPawn NewPawnOwner )
 
 simulated function bool NeedNetNotify()
 {
-	Return ( !bRegisteredChatRoom || (!bNoTeam && Team == None) );
+	Return !bRegisteredChatRoom || (!bNoTeam && Team == None);
 }
 
 simulated function NotifyPawnsAboutTeamChanged()
@@ -123,12 +123,13 @@ simulated function float GetAimErrorModifier( WeaponFire WF )
 	Return 1.0;
 }
 
-simulated function int GetReducedDamage( UM_HumanPawn Injured, int Damage, Pawn Instigator, class<DamageType> DmgType )
+// New function to reduce taken damage
+simulated function float GetHumanTakenDamageModifier( UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( ClientVeteranSkill != None )
-		Return ClientVeteranSkill.static.ReduceDamage(self, Injured, Instigator, Damage, DmgType);
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetTakenDamageModifier(Self, Victim, Aggressor, DamageType);
 	
-	Return Damage;
+	Return 1.0;
 }
 
 simulated function float GetPickupCostScaling( class<Pickup> Item )

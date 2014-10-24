@@ -93,6 +93,18 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 	Return InDamage;
 }
 
+// On how much this human can overheal somebody
+static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.5 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 100% bonus
+}
+
+// Maximum Health that Human can have when he has been overhealed
+static function float GetOverhealedHealthMaxModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.25 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 75% bonus
+}
+
 // New function to reduce taken damage
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {

@@ -20,9 +20,13 @@ var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
 
 // Healing
-var		int							HealAmountRemaining;
+var		bool						bCanBeHealedNow;	// Prevents from changing Health by several functions at the same time
 var		float						HealDelay, NextHealTime;
-var		bool						bCanBeHealedNow;	// Prevents from changing Healt by several function at the same time
+var		float						HealIntensity;		// How much health to heal at once
+
+var		int							OverhealedHealthMax;
+
+var		float						DrugsAimErrorScale;
 
 var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
@@ -186,11 +190,13 @@ function NotifyVeterancyChanged()
 {
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )  {
+		OverhealedHealthMax =  HealthMax * UM_PlayerReplicationInfo.GetOverhealedHealthMaxModifier();
 		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
 		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
 	}
 	else  {
+		OverhealedHealthMax = HealthMax;
 		VeterancyJumpBonus = default.VeterancyJumpBonus;
 		BounceRemaining = default.BounceRemaining;
 		IntuitiveShootingRange = default.IntuitiveShootingRange;
@@ -256,6 +262,8 @@ function PossessedBy( Controller C )
 		// notifing by UM_PlayerReplicationInfo
 		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
 	}
+	else
+		NotifyVeterancyChanged();
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
 	bClientTrigger = !bClientTrigger;
 }
@@ -347,7 +355,7 @@ final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFir
 		SpawnLocation = TargetLocation + Normal(TraceStart - TargetLocation) * f;
 	}
 	
-	f = WeaponFire.GetAimError();
+	f = WeaponFire.GetAimError() * DrugsAimErrorScale;
 	AimRotation = rotator(TargetLocation - SpawnLocation);
 	// Adjusting AimError to the AimRotation
 	if ( f > 0.0 )  {
@@ -812,22 +820,18 @@ function bool GiveHealth( int HealAmount, int HealMax )
 {
 	// If someone gets healed while burning, reduce the burn length/damage
 	if ( BurnDown > 0 )  {
-		LastBurnDamage *= 0.5;
+		LastBurnDamage = float(LastBurnDamage) * 0.5;
 		if ( BurnDown > 1 )
-			BurnDown *= 0.5;
+			BurnDown = float(BurnDown) * 0.5;
 	}
 	
-	if ( Health < HealMax )  {
-		// Don't let heal more than the max health
-		//ToDo: это можно сократить и написать в виде Min функции.
-		// переписать с учетом Overheal issue #208
-		if ( (Health + HealAmountRemaining + HealAmount) > int(HealthMax) )  {
-			HealAmount = int(HealthMax) - (Health + HealAmountRemaining);
-			if ( HealAmount < 1 )
-				Return False;
-		}
-		NextHealTime = Level.TimeSeconds + HealDelay;
-		HealAmountRemaining += HealAmount;
+	// Don't let heal more than the max overhealed health
+	if ( Health < OverhealedHealthMax && Health < HealMax )  {
+		// Restrict HealAmount to not heal more than OverhealedHealthMax
+		HealAmount = Min( (Min(HealMax, OverhealedHealthMax) - Health), HealAmount );
+		HealIntensity = FMax( (float(HealAmount) * 0.5), 1.0 );
+		NextHealTime = FMax( (NextHealTime + HealDelay), Level.TimeSeconds );
+		
 		Return True;
 	}
 
@@ -837,10 +841,12 @@ function bool GiveHealth( int HealAmount, int HealMax )
 
 function AddHealth()
 {
-    local	int		tempHeal;
+    
+	
+	local	int		tempHeal;
 	
 	//[!] ToDo: дописать эту функцию, я с ней не закончил!
-    if ( bCanBeHealedNow && Level.TimeSeconds >= NextHealTime )  {
+    if ( bCanBeHealedNow && Level.TimeSeconds > NextHealTime )  {
 		if ( Health < HealthMax )  {
 			tempHeal = int(10 * (Level.TimeSeconds - lastHealTime));
 			if ( tempHeal > 0 )
@@ -857,7 +863,6 @@ function AddHealth()
     }
 }
 
-//ToDo: дописать Tick. Смотреть оставшееся в классе KFPawn.
 simulated event Tick( float DeltaTime )
 {
 	local	float	BlurAmount;
@@ -891,10 +896,25 @@ simulated event Tick( float DeltaTime )
 	}
 	
 	// Reset replication.
-	if ( bResetingAnimAct && AnimActResetTime < Level.TimeSeconds )  {
+	if ( bResetingAnimAct && Level.TimeSeconds > AnimActResetTime )  {
 		bResetingAnimAct = False;
 		AnimAction = '';
 	}
+	
+	if ( BileCount > 0 && Level.TimeSeconds > NextBileTime )  {
+		--BileCount;
+		NextBileTime = Level.TimeSeconds + BileFrequency;
+		TakeBileDamage();
+	}
+	
+	if ( bDestroyAfterRagDollTick && Physics == PHYS_KarmaRagdoll
+		 && !bProcessedRagTickDestroy && GetRagDollFrames() > 0 )  {
+		bProcessedRagTickDestroy = True;
+		Destroy();
+	}
+	// If we've flagged this character to be destroyed next tick, handle that
+	else if ( bDestroyNextTick && Level.TimeSeconds > TimeSetDestroyNextTickTime )
+		Destroy();
 	
 	Super(xPawn).Tick(DeltaTime);
 	
@@ -1177,6 +1197,7 @@ exec function SwitchToLastWeapon()
 defaultproperties
 {
      HealDelay=0.1
+	 DrugsAimErrorScale=1.0
 	 VeterancyJumpBonus=1.0
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)

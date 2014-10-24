@@ -218,6 +218,21 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 	Return Min(Level, 15);
 }
 
+// On how much this human can overheal somebody
+static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0;
+}
+
+// Maximum Health that Human can have when he has been overhealed
+static function float GetOverhealedHealthMaxModifier( UM_PlayerReplicationInfo PRI )
+{
+	if ( PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.0 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 5));	// Up to 25% bonus for the all perks
+	
+	Return 1.0;
+}
+
 // New function to reduce taken damage
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {

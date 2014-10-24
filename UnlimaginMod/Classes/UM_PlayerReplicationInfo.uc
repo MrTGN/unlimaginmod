@@ -123,6 +123,24 @@ simulated function float GetAimErrorModifier( WeaponFire WF )
 	Return 1.0;
 }
 
+// On how much this human can overheal somebody
+simulated function float GetOverhealingModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealingModifier(Self);
+	
+	Return 1.0;
+}
+
+// Maximum Health that Human can have when he has been overhealed
+simulated function float GetOverhealedHealthMaxModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealedHealthMaxModifier(Self);
+	
+	Return 1.0;
+}
+
 // New function to reduce taken damage
 simulated function float GetHumanTakenDamageModifier( UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {

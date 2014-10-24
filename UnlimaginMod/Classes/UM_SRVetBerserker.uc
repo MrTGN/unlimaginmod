@@ -89,6 +89,12 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 	Return ret;
 }
 
+// Maximum Health that Human can have when he has been overhealed
+static function float GetOverhealedHealthMaxModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.5 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 100% bonus
+}
+
 static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Other)
 {
 	if ( (KFMeleeGun(Other) != none || Crossbuzzsaw(Other) != none)
@@ -100,7 +106,7 @@ static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Othe
 
 static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 {
-	Return 1.00 + (0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 25% extra jump height
+	Return 1.00 + 0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 25% extra jump height
 }
 
 static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
@@ -117,9 +123,9 @@ static function float GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo KFPR
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
 	if ( DamageType == Class'Fell' )
-		Return 1.0 - (0.075 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 75% reduced Damage by falling
+		Return 1.0 - 0.075 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 75% reduced Damage by falling
 	else if ( DamageType == class'DamTypeVomit' )
-		Return 1.0 - (0.09 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 90% reduced Bloat Bile damage
+		Return 1.0 - 0.09 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 90% reduced Bloat Bile damage
 		
 	Return 1.0;
 }
@@ -144,7 +150,7 @@ static function bool CanBeGrabbed(KFPlayerReplicationInfo KFPRI, KFMonster Other
 static function int ZedTimeExtensions(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel > 0 )
-		Return (5 * Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50 Zed Time Extensions
+		Return 5 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 50 Zed Time Extensions
 	
 	Return 0;
 }
@@ -158,7 +164,7 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 		 Item == class'MachetePickup' || Item == class'AxePickup' || 
 		 Item == class'DwarfAxePickup' || Item == class'Whisky_HammerPickup' || 
 		 Item == class'GoldenChainsawPickup' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on Melee Weapons
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount on Melee Weapons
 	
 	Return 1.0;
 }
@@ -166,7 +172,7 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {
 	if ( Item == class'CrossbuzzsawPickup' && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 - (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 60% discount on ammo
+		Return 1.00 - 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 60% discount on ammo
 
 	Return 1.00;
 }

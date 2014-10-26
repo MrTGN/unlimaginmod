@@ -71,24 +71,24 @@ static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 
 static function float GetSyringeChargeRate(KFPlayerReplicationInfo KFPRI)
 {
-	Return 1.25 + (0.225 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 250% more faster recharges
+	Return 1.25 + 0.225 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 250% more faster recharges
 }
 
 static function float GetHealPotency(KFPlayerReplicationInfo KFPRI)
 {
-	Return 1.10 + (0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 100% more heals
+	Return 1.1 + 0.1 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 110% more heals
 }
 
 static function float GetMovementSpeedModifier(KFPlayerReplicationInfo KFPRI, KFGameReplicationInfo KFGRI)
 {
-	Return 1.05 + (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Moves up to 30% faster with all wepons
+	Return 1.05 + 0.025 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Moves up to 30% faster with all wepons
 }
 
 static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, KFPawn Instigator, int InDamage, class<DamageType> DmgType)
 {
 	if ( Class<UM_BaseDamType_PoisonGas>(DmgType) != None || 
 			Class<UM_DamTypeAA12MedGasImpact>(DmgType) != None)
-		Return float(InDamage) * (1.05 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); //  Up to 65% extra damage
+		Return float(InDamage) * (1.05 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,6))); //  Up to 65% extra damage
 
 	Return InDamage;
 }
@@ -96,7 +96,7 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 // On how much this human can overheal somebody
 static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
 {
-	Return 1.5 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 100% bonus
+	Return 1.1 + 0.1 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 110% bonus
 }
 
 // Maximum Health that Human can have when he has been overhealed
@@ -113,11 +113,11 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 		if ( Aggressor == Victim )
 			Return 0.0;
 		else
-			Return 0.95 - (0.07 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// 75% decrease in damage from Bloat's Bile
+			Return 0.95 - 0.07 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// 75% decrease in damage from Bloat's Bile
 	}
 	else if ( (DamageType == Class'UM_ZombieDamType_SirenScream' || DamageType == class'SirenScreamDamage')
 			 && Victim.ShieldStrength > 0 && PRI.ClientVeteranSkillLevel > 0 )
-		Return 1.0 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10)));	// Up to 40% reduce taken damage
+		Return 1.0 - 0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 40% reduce taken damage
 	
 	Return 1.0;
 }
@@ -127,7 +127,7 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 	if ( (MP7MMedicGun(Other) != none || MP5MMedicGun(Other) != none || 
 			 M7A3MMedicGun(Other) != none || KrissMMedicGun(Other) != none) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // 100% increase in MP7 Medic weapon ammo carry
+		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // 100% increase in MP7 Medic weapon ammo carry
 
 	Return 1.00;
 }
@@ -137,7 +137,7 @@ static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmuniti
 	if ( (MP7MAmmo(Other) != none || MP5MAmmo(Other) != none || 
 			 M7A3MAmmo(Other) != none || KrissMAmmo(Other) != none)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // 100% increase in MP7 Medic weapon ammo carry
+		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // 100% increase in MP7 Medic weapon ammo carry
 
 	Return 1.00;
 }
@@ -146,13 +146,13 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 {
 	if ( (Class<UM_BaseFlameThrowerAmmo>(AmmoType) != None || AmmoType == class'FlameAmmo') 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.025 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 25% larger fuel ammo
+		Return 1.00 + 0.025 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 25% larger fuel ammo
 	else if ( AmmoType == class'FragAmmo' && KFPRI.ClientVeteranSkillLevel >= 5 )
-		Return 0.2 + (0.20 * float(Min(KFPRI.ClientVeteranSkillLevel,7))); // Up to 8 grenades on 7 lvl
+		Return 0.2 + 0.20 * float(Min(KFPRI.ClientVeteranSkillLevel, 7)); // Up to 8 grenades on 7 lvl
 	else if ( (AmmoType==class'MP7MAmmo' || AmmoType==class'MP5MAmmo' || 
 				AmmoType==class'M7A3MAmmo' || AmmoType == class'KrissMAmmo')
 			 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 50 increase MediGun ammo carry
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50 increase MediGun ammo carry
 	else if ( (AmmoType == class'AA12Ammo' || AmmoType == class'ShotgunAmmo'|| 
 				AmmoType == class'Hemi_Braindead_Moss12Ammo') 
 				 && KFPRI.ClientVeteranSkillLevel > 3 )
@@ -169,10 +169,10 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {
 	if ( Item == class'Vest' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));  // Up to 75% discount on Body Armor
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));  // Up to 75% discount on Body Armor
 	else if ( Item == class'MP7MPickup' || Item == class'MP5MPickup' || 
 			 Item == class'M7A3MPickup' || Item == class'KrissMPickup' )
-		Return 0.25 - (0.015 * float(Min(KFPRI.ClientVeteranSkillLevel,10)));  // Up to 90% discount on Medic Gun
+		Return 0.25 - 0.015 * float(Min(KFPRI.ClientVeteranSkillLevel,10));  // Up to 90% discount on Medic Gun
 
 	Return 1.00;
 }
@@ -180,7 +180,7 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 // Reduce damage when wearing Armor
 static function float GetBodyArmorDamageModifier(KFPlayerReplicationInfo KFPRI)
 {
-	Return 1.00 - (0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 80% Better Body Armor
+	Return 1.00 - 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 80% Better Body Armor
 }
 
 // Give Extra Items as Default

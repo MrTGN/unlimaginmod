@@ -65,9 +65,9 @@ static function int GetPerkProgressInt( UM_SRClientPerkRepLink StatOther, out in
 static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
 	if ( UM_BaseFlameThrower(Other) != none && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 100% larger fuel canister
+		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% larger fuel canister
 	else if ( (MAC10MP(Other) != None || UM_MAC10MP(Other) != None || M4203AssaultRifle(Other) != None) && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 60% larger mag in MAC10
+		Return 1.00 + 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 60% larger mag in MAC10
 
 	Return 1.00;
 }
@@ -76,11 +76,11 @@ static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmuniti
 {
 	if ( (UM_BaseFlameThrowerAmmo(Other) != none || FlameAmmo(Other) != none) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 100% larger fuel canister
+		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% larger fuel canister
 	else if ( (MAC10Ammo(Other) != none || HuskGunAmmo(Other) != none || 
 			TrenchgunAmmo(Other) != none || FlareRevolverAmmo(Other) != none)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 60% larger fuel canister/MAC10 ammo/Husk gun ammo
+		Return 1.00 + 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 60% larger fuel canister/MAC10 ammo/Husk gun ammo
 
 	Return 1.00;
 }
@@ -128,7 +128,7 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 		 class<DamTypeHuskGunProjectileImpact>(DmgType) != none || class<DamTypeFlareProjectileImpact>(DmgType) != none ||
 		 Class<UM_BaseDamType_Flame>(DmgType) != None || Class<UM_BaseDamType_IncendiaryBullet>(DmgType) != None ||
 		 Class<UM_BaseDamType_IncendiaryProjImpact>(DmgType) != None )
-		Return float(InDamage) * (1.06 + (0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); //  Up to 60% extra damage
+		Return float(InDamage) * (1.06 + 0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,6))); //  Up to 60% extra damage
 
 	Return InDamage;
 }
@@ -151,7 +151,7 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 		 || Class<UM_BaseDamType_IncendiaryProjImpact>(DamageType) != None || class<DamTypeBurned>(DamageType) != None
 		 || class<DamTypeFlamethrower>(DamageType) != None || class<DamTypeHuskGunProjectileImpact>(DamageType) != None
 		 || class<DamTypeFlareProjectileImpact>(DamageType) != None )
-		Return 0.5 - (0.1 * float(Min(PRI.ClientVeteranSkillLevel, 5))); // Up to 100% reduction in damage from fire
+		Return 0.5 - 0.1 * float(Min(PRI.ClientVeteranSkillLevel, 5)); // Up to 100% reduction in damage from fire
 	
 	Return 1.0;
 }
@@ -171,7 +171,7 @@ static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWe
 			MAC10MP(Other) != none ||
 			Trenchgun(Other) != none || FlareRevolver(Other) != none ||
 			DualFlareRevolver(Other) != none) && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster reload speed
+		Return 1.00 + 0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 70% faster reload speed
 
 	Return 1.00;
 }
@@ -184,7 +184,7 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 		 Item == class'HuskGunPickup' || Item == class'TrenchgunPickup' || 
 		 Item == class'FlareRevolverPickup' || Item == class'DualFlareRevolverPickup' ||
 		 Item == class'GoldenFTPickup' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on Flame Weapons
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount on Flame Weapons
 
 	Return 1.00;
 }
@@ -192,7 +192,7 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseFlameThrowerFire(WF) != None )
-		Return 1.00 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+		Return 1.00 - 0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 40% bonus
 	
 	Return 1.0;
 }
@@ -200,7 +200,7 @@ static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseFlameThrowerFire(WF) != None )
-		Return 1.00 - (0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+		Return 1.00 - 0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 20% bonus
 	
 	Return 1.0;
 }

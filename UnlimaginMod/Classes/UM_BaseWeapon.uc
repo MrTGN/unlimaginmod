@@ -700,7 +700,7 @@ simulated function ClientForceMagAmmoUpdate( int NewMagAmmoRemaining, int Mode, 
 		Ammo[Mode].AmmoAmount = NewAmount;
 }
 
-// Clearing this ****!
+// Clearing this
 simulated function ClientForceKFAmmoUpdate(int NewMagAmmoRemaining, int TotalAmmoRemaining) { }
 
 //[block] Copied from Engine/Weapon.uc with some optimizations
@@ -1396,11 +1396,11 @@ function AccuracyUpdate(float Velocity) { }
 // Overwrited to add bonus bullet in MagCapacity if MagAmmoRemaining >= TacticalReloadCapacityBonus
 function UpdateMagCapacity(PlayerReplicationInfo PRI)
 {
-	local	float	NewMagCapacity;
+	local	int		NewMagCapacity;
 	
 	if ( default.MagCapacity > 1 )  {
 		if ( KFPlayerReplicationInfo(PRI) != None && KFPlayerReplicationInfo(PRI).ClientVeteranSkill != None )
-			NewMagCapacity = default.MagCapacity * KFPlayerReplicationInfo(PRI).ClientVeteranSkill.Static.GetMagCapacityMod(KFPlayerReplicationInfo(PRI), self);
+			NewMagCapacity = Round( default.MagCapacity * KFPlayerReplicationInfo(PRI).ClientVeteranSkill.Static.GetMagCapacityMod(KFPlayerReplicationInfo(PRI), self) );
 		else
 			NewMagCapacity = default.MagCapacity;
 		

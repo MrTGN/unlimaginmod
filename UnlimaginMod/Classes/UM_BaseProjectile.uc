@@ -714,7 +714,7 @@ simulated function ProcessHitActor(
 	P = Pawn(A);
 	// If projectile hit a Pawn
 	if ( P != None )  {
-		if ( P.IsHeadShot(HitLocation, VelNormal, 1.1) )  {
+		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
 			DamageAmount *= HeadShotDamageMult;
 			if ( HeadShotDamageType != None )
 				DmgType = HeadShotDamageType;

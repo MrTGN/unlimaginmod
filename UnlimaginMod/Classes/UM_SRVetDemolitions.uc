@@ -147,12 +147,12 @@ static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {
 	if ( Class<UM_BaseGrenadeLauncherPickup>(Item) != None )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount
 	else if ( Item == class'PipeBombPickup' || Item == class'M79Pickup' || 
 		 Item == class'M32Pickup' || Item == class'LAWPickup' || 
 		 Item == class'M4203Pickup' || Item == class'GoldenM79Pickup' ||
 		 Item == class'SPGrenadePickup' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on PipeBomb/M79/M32/LAW/M4203
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount on PipeBomb/M79/M32/LAW/M4203
 	
 	Return 1.00;
 }
@@ -161,14 +161,14 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {
 	if ( Class<UM_BaseGrenadeLauncherPickup>(Item) != None )
-		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 40% discount
+		Return 1.00 - 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 40% discount
 	else if ( Item == class'PipeBombPickup' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on PipeBomb
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount on PipeBomb
 	else if ( (Item == class'M79Pickup' || Item == class'M32Pickup' || 
 				Item == class'LAWPickup' || Item == class'M4203Pickup' ||
 				Item == class'GoldenM79Pickup' || Item == class'SPGrenadePickup') 
 			 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 - (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 40% discount
+		Return 1.00 - 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 40% discount
 	
 	Return 1.00;
 }
@@ -176,7 +176,7 @@ static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pi
 static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
-		Return 1.00 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+		Return 1.00 - 0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 40% bonus
 	
 	Return 1.0;
 }
@@ -184,7 +184,7 @@ static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponF
 static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFire WF )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseGrenadeLauncherFire(WF) != None )
-		Return 1.00 - (0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+		Return 1.00 - 0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 20% bonus
 	
 	Return 1.0;
 }

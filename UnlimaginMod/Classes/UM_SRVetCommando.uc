@@ -137,7 +137,7 @@ static function bool ShowStalkers(KFPlayerReplicationInfo KFPRI)
 static function float GetStalkerViewDistanceMulti(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel > 0 )
-		Return (0.15 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));	// Up to 1.5 * 800 unreal units
+		Return 0.15 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));	// Up to 1.5 * 800 unreal units
 	
 	Return 0.0625; // 25%
 }
@@ -148,7 +148,7 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 			 UM_BasePDW(Other) != None ||
 			 UM_BaseSMG(Other) != None ) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 50% more MagCapacity 
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50% more MagCapacity 
 	else if ( (Bullpup(Other) != none || AK47AssaultRifle(Other) != none || 
 			 SCARMK17AssaultRifle(Other) != none || M4AssaultRifle(Other) != none || 
 			 FNFAL_ACOG_AssaultRifle(Other) != none || M4203AssaultRifle(Other) != none ||
@@ -163,7 +163,7 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 			 OperationY_UMP45SMG(Other) != none || OperationY_PKM(Other) != none ||
 			 ThompsonDrumSMG(Other) != none || SPThompsonSMG(Other) != none)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 50% more MagCapacity 
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50% more MagCapacity 
 
 	Return 1.00;
 }
@@ -173,7 +173,7 @@ static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmuniti
 	if ( (UM_BaseAssaultRifleAmmo(Other) != None || UM_BaseMachineGunAmmo(Other) != None ||
 			 UM_BasePDWAmmo(Other) != None || UM_BaseSMGAmmo(Other) != None) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));
 	else if ( (BullpupAmmo(Other) != none || AK47Ammo(Other) != none || 
 			 SCARMK17Ammo(Other) != none || M4Ammo(Other) != none || 
 			 FNFALAmmo(Other) != none || MAC10Ammo(Other) != none ||
@@ -186,7 +186,7 @@ static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmuniti
 			 OperationY_PKMAmmo(Other) != none || ThompsonDrumAmmo(Other) != none || 
 			 SPThompsonAmmo(Other) != none || OperationY_VALDTAmmo(Other) != none) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)));
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));
 	
 	Return 1.00;
 }
@@ -198,11 +198,11 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 			 Class<UM_BasePDWAmmo>(AmmoType) != None || 
 			 Class<UM_BaseSMGAmmo>(AmmoType) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 0.00 + (1.0 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // 25% increase ammo carry
+		Return 0.00 + 1.0 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // 25% increase ammo carry
 	else if ( AmmoType == class'FragAmmo' && KFPRI.ClientVeteranSkillLevel >= 5 )
-		Return 0.2 + (0.20 * float(Min(KFPRI.ClientVeteranSkillLevel, 6))); // Up to 7 nades on 6 lvl
+		Return 0.2 + 0.20 * float(Min(KFPRI.ClientVeteranSkillLevel, 6)); // Up to 7 nades on 6 lvl
 	else if ( AmmoType == class'M203Ammo' && KFPRI.ClientVeteranSkillLevel > 6 )
-		Return 0.40 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 40% increase M203 ammo
+		Return 0.40 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 40% increase M203 ammo
 	else if ( (AmmoType == class'BullpupAmmo' || AmmoType == class'AK47Ammo' || 
 				AmmoType == class'M4Ammo' || AmmoType == class'M4203Ammo' || 
 				AmmoType == class'MAC10Ammo' || AmmoType == class'ThompsonAmmo' ||
@@ -214,28 +214,28 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 				AmmoType == class'ThompsonDrumAmmo' || AmmoType == class'SPThompsonAmmo' ||
 				AmmoType == class'OperationY_VALDTAmmo' || AmmoType == class'GoldenAK47Ammo')
 			 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // 25% increase in assault rifle ammo carry
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // 25% increase in assault rifle ammo carry
 	else if ( (AmmoType == class'JSullivan_L85A2Ammo' ||
 				AmmoType == class'ZedekPD_XM8Ammo' ||
 				AmmoType == class'FluX_G36CAmmo')
 			 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.08 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // Up to 40% more ammo
+		Return 1.00 + 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // Up to 40% more ammo
 	else if ( (AmmoType == class'SCARMK17Ammo' ||
 				AmmoType == class'Braindead_MP5SDAmmo' ||
 				AmmoType == class'Braindead_MP5A4Ammo' ||
 				AmmoType == class'ZedekPD_Type19Ammo') 
 				 && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // 20% increase in assault rifle ammo carry
+		Return 1.00 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // 20% increase in assault rifle ammo carry
 	else if ( AmmoType == class'FNFALAmmo'
 			&& KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 6))); // 30% increase in assault rifle ammo carry
+		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 6)); // 30% increase in assault rifle ammo carry
 	else if ( AmmoType == class'OperationY_UMP45Ammo'
 			&& KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // 35% increase in assault rifle ammo carry
+		Return 1.00 + 0.07 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // 35% increase in assault rifle ammo carry
 	else if  ( (AmmoType == class'OperationY_PKMAmmo' ||
 				AmmoType == class'OperationY_AUG_A1ARAmmo')
 			&& KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel, 5))); // 50% increase in PKM ammo carry 
+		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)); // 50% increase in PKM ammo carry 
 		
 	Return 1.00;
 }
@@ -298,13 +298,13 @@ static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWe
 		 Braindead_MP5SD(Other) != none || OperationY_UMP45SMG(Other) != none )
 		Return 1.10 + (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster reload speed on Bonus weapons (SMG, M4, etc.)
 
-	Return 1.05 + (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 45% faster reload speed on all other weapons
+	Return 1.05 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 45% faster reload speed on all other weapons
 }
 
 // Set number times Zed Time can be extended
 static function int ZedTimeExtensions(KFPlayerReplicationInfo KFPRI)
 {
-	Return 10 + (5 * Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 60 Zed Time Extensions
+	Return 10 + 5 * Min(KFPRI.ClientVeteranSkillLevel, 10); // Up to 60 Zed Time Extensions
 }
 
 /*
@@ -339,9 +339,9 @@ static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup
 		 Item == class'OperationY_PKMPickup' || Item == class'OperationY_UMP45EOTechPickup' ||
 		 Item == class'ThompsonDrumPickup' || Item == class'SPThompsonPickup' ||
 		 Item == class'OperationY_VALDTPickup' )
-		Return 0.90 - (0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10))); // Up to 75% discount on Assault Rifles
+		Return 0.90 - 0.065 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 75% discount on Assault Rifles
 	else if ( Item == class'M4203Pickup' && KFPRI.ClientVeteranSkillLevel > 0 )
-		Return 1.00 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 50% discount on M4203
+		Return 1.00 - 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 50% discount on M4203
 	
 	Return 1.00;
 }
@@ -353,7 +353,7 @@ static function float GetSpreadModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 			 || UM_BaseMachineGunFire(WF) != None
 			 || UM_BasePDWFire(WF) != None 
 			 || UM_BaseSMGFire(WF) != None) )
-		Return 1.000 - (0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 25% bonus
+		Return 1.000 - 0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 25% bonus
 	
 	Return 1.0;
 }
@@ -365,7 +365,7 @@ static function float GetAimErrorModifier( UM_PlayerReplicationInfo PRI, WeaponF
 			 || UM_BaseMachineGunFire(WF) != None
 			 || UM_BasePDWFire(WF) != None
 			 || UM_BaseSMGFire(WF) != None) )
-		Return 1.000 - (0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 50% bonus
+		Return 1.000 - 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 50% bonus
 	
 	Return 1.0;
 }
@@ -377,7 +377,7 @@ static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 			 || UM_BaseMachineGunFire(WF) != None
 			 || UM_BasePDWFire(WF) != None
 			 || UM_BaseSMGFire(WF) != None) )
-		Return 1.000 - (0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 40% bonus
+		Return 1.000 - 0.04 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 40% bonus
 	
 	Return 1.0;
 }
@@ -389,7 +389,7 @@ static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, Weapon
 			 || UM_BaseMachineGunFire(WF) != None
 			 || UM_BasePDWFire(WF) != None
 			 || UM_BaseSMGFire(WF) != None) )
-		Return 1.000 - (0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10))); // Up to 20% bonus
+		Return 1.000 - 0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 20% bonus
 	
 	Return 1.0;
 }

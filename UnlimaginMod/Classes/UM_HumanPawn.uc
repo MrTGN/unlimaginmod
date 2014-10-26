@@ -24,7 +24,9 @@ var		bool						bCanBeHealedNow;	// Prevents from changing Health by several func
 var		float						HealDelay, NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
 
+// Overheal
 var		int							OverhealedHealthMax;
+var		float						OverhealReductionPerSecond;
 
 var		float						DrugsAimErrorScale;
 
@@ -815,52 +817,59 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
-//ToDo: дописать Overheal issue #208
-function bool GiveHealth( int HealAmount, int HealMax )
+function bool CanBeHealed( out int HealAmount, int HealMax )
 {
-	// If someone gets healed while burning, reduce the burn length/damage
-	if ( BurnDown > 0 )  {
-		LastBurnDamage = float(LastBurnDamage) * 0.5;
-		if ( BurnDown > 1 )
-			BurnDown = float(BurnDown) * 0.5;
-	}
-	
 	// Don't let heal more than the max overhealed health
-	if ( Health < OverhealedHealthMax && Health < HealMax )  {
-		// Restrict HealAmount to not heal more than OverhealedHealthMax
-		HealAmount = Min( (Min(HealMax, OverhealedHealthMax) - Health), HealAmount );
-		HealIntensity = FMax( (float(HealAmount) * 0.5), 1.0 );
-		NextHealTime = FMax( (NextHealTime + HealDelay), Level.TimeSeconds );
+	if ( bCanBeHealed && Health < OverhealedHealthMax && Health < HealMax )  {
+		// If someone gets healed while burning, reduce the burn length/damage
+		if ( BurnDown > 0 )  {
+			LastBurnDamage = float(LastBurnDamage) * 0.5;
+			if ( BurnDown > 1 )
+				BurnDown = float(BurnDown) * 0.5;
+		}
+		LastHealTime = Level.TimeSeconds;
+		NextHealTime = LastHealTime + HealDelay;
+		HealAmount = Min( (HealMax - Health), HealAmount );
+		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
 		
 		Return True;
 	}
-
+	
 	Return False;
 }
 
+// Left this function for the old or third-party healing logic
+function bool GiveHealth( int HealAmount, int HealMax )
+{
+	Return CanBeHealed(HealAmount, HealMax );
+}
 
+// Overheal Reduction
+function ReduceOverheal()
+{
+	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
+	Health = Max( (Health - 1), int(HealthMax) );
+}
+
+// Healing with HealIntensity decreasing
 function AddHealth()
 {
-    
+	local	int		DeltaHealIntensity;
 	
-	local	int		tempHeal;
-	
-	//[!] ToDo: дописать эту функцию, € с ней не закончил!
-    if ( bCanBeHealedNow && Level.TimeSeconds > NextHealTime )  {
-		if ( Health < HealthMax )  {
-			tempHeal = int(10 * (Level.TimeSeconds - lastHealTime));
-			if ( tempHeal > 0 )
-				lastHealTime = level.TimeSeconds;
-
-			Health = Min(Health + tempHeal, HealthMax);
-			HealAmountRemaining -= tempHeal;
+	NextHealTime = Level.TimeSeconds + HealDelay;
+	if ( Health > 0 )  {
+		// Rounding HealIntensity per delay
+		DeltaHealIntensity = Round(HealIntensity * (Level.TimeSeconds - LastHealTime));
+		if ( DeltaHealIntensity > 0 )  {
+			LastHealTime = Level.TimeSeconds;
+			if ( Health < OverhealedHealthMax )
+				Health = Min( (Health + DeltaHealIntensity), OverhealedHealthMax );
+			HealIntensity -= float(DeltaHealIntensity) * 0.5;
 		}
-		else  {
-			lastHealTime = Level.TimeSeconds;
-			// if we are all healed, there's gonna be no more healing
-			HealAmountRemaining = 0;
-		}
-    }
+		// Checking HealIntensity
+		if ( Round(HealIntensity) < 1 )
+			HealIntensity = 0.0;
+	}
 }
 
 simulated event Tick( float DeltaTime )
@@ -869,6 +878,7 @@ simulated event Tick( float DeltaTime )
 	
 	// Client
 	if ( Role < ROLE_Authority )  {
+		// From KFPawn
 		if ( bThrowingNade )  {
 			if ( NadeThrowTimeout > 0.0 )
 				NadeThrowTimeout -= DeltaTime;
@@ -881,11 +891,13 @@ simulated event Tick( float DeltaTime )
 		}
 	}
 	// Server
-	else  {
-		if ( HealAmountRemaining > 0 && Health > 0 )
-			AddHealth() ;
-		else if ( HealAmountRemaining < 0 )
-			HealAmountRemaining = 0;
+	else ( bCanBeHealedNow )  {
+		// Overheal Reduction
+		if ( Health > int(HealthMax) && Level.TimeSeconds > NextOverhealReductionTime )
+			ReduceOverheal();
+		// Healing
+		if ( HealIntensity > 0.0 && Level.TimeSeconds > NextHealTime )
+			AddHealth();
 	}
 	
 	if ( Level.NetMode != NM_DedicatedServer )  {
@@ -1008,7 +1020,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	}
 	bCanBeHealedNow = False;
 	//ToDo: #188
-	HealAmountRemaining -= 5;
+	//HealAmountRemaining -= 5;
 	
 	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, DamageType);
 
@@ -1057,7 +1069,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		// Tell everyone we're dying
 		KFPlayerController(Controller).Speech('AUTO', 6, "");
 	}
-	bCanBeHealedNow = default.bCanBeHealed;
+	bCanBeHealedNow = bCanBeHealed;
 	//Todo: Issue #189
 	/*
 	//Simulated Bloody Overlays
@@ -1197,6 +1209,7 @@ exec function SwitchToLastWeapon()
 defaultproperties
 {
      HealDelay=0.1
+	 OverhealReductionPerSecond=2.0
 	 DrugsAimErrorScale=1.0
 	 VeterancyJumpBonus=1.0
 	 IntuitiveShootingRange=150.000000

@@ -28,7 +28,15 @@ var		float						HealIntensity;		// How much health to heal at once
 var		int							OverhealedHealthMax;
 var		float						OverhealReductionPerSecond;
 
+// Drugs effects
+var		bool						bClientOnDrugs;	// Client-side bOnDrugs
+var		float						DrugEffectHealIntensity;
+var		float						LoseDrugEffectHealIntensity;
 var		float						DrugsAimErrorScale;
+var		float						DrugsMovementBonus;
+var		float						DrugsDamageScale;
+var		float						DrugsBlurDuration;
+var		float						DrugsBlurIntensity;
 
 var		bool						bDefaultPropertiesCalculated;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
@@ -43,6 +51,8 @@ var		int							BounceRemaining;
 var		Pawn						BounceVictim;
 
 var		float						IntuitiveShootingRange;		// The distance in meters at which the shooter can shoot without aiming
+
+var		class<MotionBlur>			UnderWaterBlurCameraEffectClass;
 
 //[end] Varibles
 //====================================================================
@@ -357,8 +367,11 @@ final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFir
 		SpawnLocation = TargetLocation + Normal(TraceStart - TargetLocation) * f;
 	}
 	
-	f = WeaponFire.GetAimError() * DrugsAimErrorScale;
 	AimRotation = rotator(TargetLocation - SpawnLocation);
+	if ( bOnDrugs )
+		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
+	else
+		f = WeaponFire.GetAimError();
 	// Adjusting AimError to the AimRotation
 	if ( f > 0.0 )  {
 		AimRotation.Yaw += f * (FRand() - 0.5);
@@ -366,6 +379,32 @@ final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFir
 	}
 	
 	Return AimRotation;
+}
+
+simulated function Fire( optional float F )
+{
+	if ( Weapon != None )  {
+		if ( Weapon.bBerserk != bBerserk )  {
+			if ( bBerserk )
+				Weapon.StartBerserk();
+			else
+				Weapon.StopBerserk();
+		}
+		Weapon.Fire(F);
+	}
+}
+
+simulated function AltFire( optional float F )
+{
+	if ( Weapon != None )  {
+		if ( Weapon.bBerserk != bBerserk )  {
+			if ( bBerserk )
+				Weapon.StartBerserk();
+			else
+				Weapon.StopBerserk();
+		}
+		Weapon.AltFire(F);
+	}
 }
 
 function DoDoubleJump( bool bUpdating )
@@ -760,10 +799,24 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	}
 }
 
-simulated function AddBlur(Float BlurDuration, float Intensity)
+simulated function AddBlur( float BlurDuration, float Intensity )
 {
-	if ( KFPC != None && Viewport(KFPC.Player) != None )
-		Super.AddBlur(BlurDuration, Intensity);
+	if ( KFPC != None && Viewport(KFPC.Player) != None && !bUsingHitBlur && bUseBlurEffect )  {
+		StartingBlurFadeOutTime = BlurDuration;
+		BlurFadeOutTime = StartingBlurFadeOutTime;
+		if ( CurrentBlurIntensity < Intensity )
+			CurrentBlurIntensity = Intensity;
+		
+		if ( KFPC.PostFX_IsReady() )
+			KFPC.SetBlur(CurrentBlurIntensity);
+		else if ( UnderWaterBlurCameraEffectClass != None )  {
+			if ( CameraEffectFound == None )
+				FindCameraEffect(UnderWaterBlurCameraEffectClass);
+			
+			if ( MotionBlur(CameraEffectFound) != None )
+				MotionBlur(CameraEffectFound).BlurAlpha = UnderWaterBlurCameraEffectClass.default.BlurAlpha;
+		}
+	}
 }
 
 simulated function DoHitCamEffects(vector HitDirection, float JarrScale, float BlurDuration, float JarDurationScale )
@@ -774,8 +827,14 @@ simulated function DoHitCamEffects(vector HitDirection, float JarrScale, float B
 
 simulated function StopHitCamEffects()
 {
-	if ( KFPC != None && Viewport(KFPC.Player) != None )
-		Super.StopHitCamEffects();
+	if ( KFPC != None && Viewport(KFPC.Player) != None )  {
+		CurrentBlurIntensity = 0.0;
+		if ( CameraEffectFound != None )
+			RemoveCameraEffect(RemoveCameraEffect);
+		
+		KFPC.StopViewShaking();
+		KFPC.SetBlur(0);
+	}
 }
 
 simulated function RemoveFlamingEffects()
@@ -795,10 +854,7 @@ simulated function RemoveFlamingEffects()
 
 simulated function StartBurnFX()
 {
-	if ( bDeleteMe )
-		Return;
-
-	if ( ItBUURRNNNS == None )  {
+	if ( ItBUURRNNNS == None && !bGibbed && !bDeleteMe )  {
 		ItBUURRNNNS = Spawn(BurnEffect);
 		ItBUURRNNNS.SetBase(Self);
 		ItBUURRNNNS.Emitters[0].SkeletalMeshActor = self;
@@ -817,20 +873,54 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
+// Clearing out
+function Drugs() { }
+
+simulated function SetOnDrugs()
+{
+	if ( Role == ROLE_Authority )  {
+		bOnDrugs = True;
+		PlaySound(BreathingSound, SLOT_Talk, TransientSoundVolume,, TransientSoundRadius,, True);
+	}
+	else  {
+		bClientOnDrugs = True;
+		if ( IsLocallyControlled() )
+			AddBlur(DrugsBlurDuration, DrugsBlurIntensity);
+	}
+		
+	if ( Weapon != None )
+		Weapon.StartBerserk();
+}
+
+simulated function SetNotOnDrugs()
+{
+	if ( Role == ROLE_Authority )
+		bOnDrugs = False;
+	else
+		bClientOnDrugs = False;
+		
+	if ( Weapon != None )
+		Weapon.StopBerserk();
+}
+
 function bool CanBeHealed( out int HealAmount, int HealMax )
 {
 	// Don't let heal more than the max overhealed health
-	if ( bCanBeHealed && Health < OverhealedHealthMax && Health < HealMax )  {
+	if ( bCanBeHealed && Health < HealMax )  {
 		// If someone gets healed while burning, reduce the burn length/damage
+		/*
 		if ( BurnDown > 0 )  {
 			LastBurnDamage = float(LastBurnDamage) * 0.5;
 			if ( BurnDown > 1 )
 				BurnDown = float(BurnDown) * 0.5;
-		}
+		} */
 		LastHealTime = Level.TimeSeconds;
 		NextHealTime = LastHealTime + HealDelay;
-		HealAmount = Min( (HealMax - Health), HealAmount );
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
+		if ( !bOnDrugs && HealIntensity >= DrugEffectHealIntensity )
+			SetOnDrugs();
+		// Calculating out HealAmount for the medic reward
+		HealAmount = Min( (HealMax - Health), HealAmount );
 		
 		Return True;
 	}
@@ -862,10 +952,13 @@ function AddHealth()
 		DeltaHealIntensity = Round(HealIntensity * (Level.TimeSeconds - LastHealTime));
 		if ( DeltaHealIntensity > 0 )  {
 			LastHealTime = Level.TimeSeconds;
-			if ( Health < OverhealedHealthMax )
+			if ( Health < OverhealedHealthMax )  {
 				Health = Min( (Health + DeltaHealIntensity), OverhealedHealthMax );
 			HealIntensity -= float(DeltaHealIntensity) * 0.5;
 		}
+		// turn off drug effects
+		if ( bOnDrugs && HealIntensity <= LoseDrugEffectHealIntensity )
+			SetNotOnDrugs();
 		// Checking HealIntensity
 		if ( Round(HealIntensity) < 1 )
 			HealIntensity = 0.0;
@@ -889,21 +982,28 @@ simulated event Tick( float DeltaTime )
 				ThrowGrenadeFinished();
 			}
 		}
+		// Drugs effects on the client-side
+		if ( bOnDrugs != bClientOnDrugs )  {
+			if ( bOnDrugs )
+				SetOnDrugs();
+			else
+				SetNotOnDrugs();
+		}
 	}
 	// Server
 	else ( bCanBeHealedNow )  {
 		// Overheal Reduction
-		if ( Health > int(HealthMax) && Level.TimeSeconds > NextOverhealReductionTime )
+		if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
 			ReduceOverheal();
 		// Healing
-		if ( HealIntensity > 0.0 && Level.TimeSeconds > NextHealTime )
+		if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
 			AddHealth();
 	}
 	
-	if ( Level.NetMode != NM_DedicatedServer )  {
-		if ( !bBurnApplied && bBurnified && !bGibbed )
+	if ( Level.NetMode != NM_DedicatedServer && bBurnified != bBurnApplied )  {
+		if ( bBurnified )
 			StartBurnFX();
-		else if ( bBurnApplied && !bBurnified )
+		else
 			StopBurnFX();
 	}
 	
@@ -940,8 +1040,9 @@ simulated event Tick( float DeltaTime )
 		}
 	}
 	
+	// Locally controlled client camera effect
 	// HitBlur Effect
-	if ( IsLocallyControlled() && !bUsingHitBlur && BlurFadeOutTime > 0 )  {
+	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )  {
 		BlurFadeOutTime	-= DeltaTime;
 		BlurAmount = BlurFadeOutTime / StartingBlurFadeOutTime * CurrentBlurIntensity;
 
@@ -949,13 +1050,13 @@ simulated event Tick( float DeltaTime )
 			BlurFadeOutTime = 0.0;
 			StopHitCamEffects();
 		}
-		else if( bUseBlurEffect )  {
+		else if ( bUseBlurEffect )  {
 			if ( KFPC != None && KFPC.PostFX_IsReady() )
 				KFPC.SetBlur(BlurAmount);
-			else if( CameraEffectFound != none )
+			else if( CameraEffectFound != None )
 				UnderWaterBlur(CameraEffectFound).BlurAlpha = Lerp( BlurAmount, 255, UnderWaterBlur(CameraEffectFound).default.BlurAlpha );
 		}
-    }
+	}
 }
 
 //[block] copied from KFHumanPawn to fix some bugs
@@ -1009,21 +1110,22 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( InstigatedBy != None && KFHumanPawn(InstigatedBy) != None )
 		Momentum = vect(0,0,0);
 	
+	if ( UM_PlayerReplicationInfo != None )
+		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
+	
+	if ( bOnDrugs )
+		Damage = float(Damage) * DrugsDamageScale;
+	
+	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
+	if ( Damage < 1 )
+		Return;
+	
+	bCanBeHealedNow = False;
 	LastHitDamType = DamageType;
 	LastDamagedBy = InstigatedBy;
 	
-	if ( UM_PlayerReplicationInfo != None )  {
-		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
-		// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
-		if ( Damage < 1 )
-			Return;
-	}
-	bCanBeHealedNow = False;
-	//ToDo: #188
-	//HealAmountRemaining -= 5;
-	
 	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, DamageType);
-
+	
 	// Do burn damage if the damage was significant enough
 	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None) && Damage > 2 )  {
 		if ( BurnDown < 1 )  {
@@ -1087,8 +1189,6 @@ function TakeBileDamage()
 	RandBileDamage = 2 + Rand(3);
     Super(Pawn).TakeDamage(RandBileDamage, BileInstigator, Location, vect(0,0,0), LastBileDamagedByType);
     
-	HealAmountRemaining -= 5;
-
     HitMomentum = vect(0,0,0);
  //   ActualDamage = Level.Game.ReduceDamage(RandBileDamage, self, BileInstigator, Location, HitMomentum, LastBileDamagedByType);
 
@@ -1151,7 +1251,7 @@ function ExtendedCreateInventoryVeterancy(
 
 function bool CanCarry( float Weight )
 {
-	if ( Weight <= 0 )
+	if ( Weight <= 0.0 )
 		Return True;
 
 	Return (CurrentWeight + Weight) <= MaxCarryWeight;
@@ -1210,7 +1310,13 @@ defaultproperties
 {
      HealDelay=0.1
 	 OverhealReductionPerSecond=2.0
-	 DrugsAimErrorScale=1.0
+	 DrugsBlurDuration=5.0
+	 DrugsBlurIntensity=0.5
+	 DrugEffectHealIntensity=30.0
+	 LoseDrugEffectHealIntensity=20.0
+	 DrugsAimErrorScale=1.2
+	 DrugsMovementBonus=1.2
+	 DrugsDamageScale=0.85
 	 VeterancyJumpBonus=1.0
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)
@@ -1227,4 +1333,5 @@ defaultproperties
      RequiredEquipment(3)="KFMod.Syringe"
      RequiredEquipment(4)="KFMod.Welder"
 	 bNetNotify=False
+	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'
 }

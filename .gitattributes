@@ -1,6 +1,3 @@
-# Auto detect text files and perform LF normalization
-*			text=auto
-
 # Standard file types
 *.txt		text=auto
 
@@ -43,3 +40,6 @@
 # Textures
 *.pcx		binary
 *.dds		binary
+
+# Auto detect all other text files and perform LF normalization
+*			text=auto

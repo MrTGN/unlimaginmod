@@ -76,7 +76,7 @@ static function float GetSyringeChargeRate(KFPlayerReplicationInfo KFPRI)
 
 static function float GetHealPotency(KFPlayerReplicationInfo KFPRI)
 {
-	Return 1.1 + 0.1 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 110% more heals
+	Return 1.2 + 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% more heals
 }
 
 static function float GetMovementSpeedModifier(KFPlayerReplicationInfo KFPRI, KFGameReplicationInfo KFGRI)

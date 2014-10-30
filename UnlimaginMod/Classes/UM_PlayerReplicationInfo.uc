@@ -105,6 +105,14 @@ simulated event PostNetReceive()
 }
 
 //[block] --- Perk bonuses ---
+simulated function float GetMovementSpeedModifier()
+{
+	if ( ClientVeteranSkill != None )
+		Return ClientVeteranSkill.static.GetMovementSpeedModifier( self, KFGameReplicationInfo(Level.GRI) );
+	
+	Return 1.0;
+}
+
 // Weapon Fire Spread
 simulated function float GetSpreadModifier( WeaponFire WF )
 {

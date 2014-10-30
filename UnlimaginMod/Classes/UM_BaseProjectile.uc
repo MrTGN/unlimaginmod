@@ -83,7 +83,6 @@ var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
 var(Logging)	bool		bEnableLogging;
 var				bool		bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
-var				bool		bFriendlyFireIsAllowed;	// Friendly fire is allowed or not. Replicates from the server to the clients.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
 var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
@@ -159,9 +158,6 @@ var				float						WeaponRecoilScale;
 
 replication
 {
-    reliable if ( Role == ROLE_Authority && bNetDirty )
-		bFriendlyFireIsAllowed;
-	
 	reliable if ( Role == ROLE_Authority && bNetInitial )
 		ProjectileEnergy;
 	
@@ -339,10 +335,6 @@ simulated event PreBeginPlay()
 	if ( !default.bDefaultPropertiesCalculated )
 		CalcDefaultProperties(Self);
 
-	// Level.Game variable exists only on the server-side
-	if ( Role == ROLE_Authority )
-		bFriendlyFireIsAllowed = TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0;
-	
 	if ( UM_BaseWeapon(Owner) != None )  {
 		[!]Weapon = UM_BaseWeapon(Owner);	
 		//[!] Todo: подумать где и как хранить настройки и данные стволов, оружия и тп.
@@ -760,7 +752,8 @@ simulated function bool CanHitThisActor( Actor A )
 	
 	P = Pawn(A);
 	if ( Instigator != None && (A == Instigator || A.Base == Instigator 
-			|| (P != None && !bFriendlyFireIsAllowed && P.GetTeamNum() == Instigator.GetTeamNum())) )
+			|| (P != None && UM_GameReplicationInfo(Level.GRI) != None 
+				 && !UM_GameReplicationInfo(Level.GRI).bFriendlyFireIsEnabled && P.GetTeamNum() == Instigator.GetTeamNum())) )
 		Return False;
 	
 	Return True;

@@ -16,6 +16,7 @@
 //================================================================================
 class UM_Weapon_HandGrenade extends Frag;
 
+/*
 var		bool		bPawnCurrentWeightReduced;
 
 function Tick( float DeltaTime )
@@ -65,7 +66,7 @@ function Tick( float DeltaTime )
 			}
 		}
 	}
-}
+} */
 
 defaultproperties
 {

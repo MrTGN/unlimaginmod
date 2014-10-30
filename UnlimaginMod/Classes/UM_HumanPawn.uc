@@ -12,12 +12,20 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	MeterInUU = BaseActor.MeterInUU;
 const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 
+var		bool						bDefaultPropertiesCalculated;
+
 // Player Info
 var		UM_SRClientPerkRepLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
 var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
+
+// Movement Modifiers
+var		float						HealthMovementModifier;
+var		float						CarryWeightMovementModifier;
+var		float						CarryWeightJumpModifier;
+var		float						VeterancyMovementModifier;
 
 // Healing
 var		bool						bCanBeHealedNow;	// Prevents from changing Health by several functions at the same time
@@ -27,6 +35,13 @@ var		float						HealIntensity;		// How much health to heal at once
 // Overheal
 var		int							OverhealedHealthMax;
 var		float						OverhealReductionPerSecond;
+var		float						OverhealMovementBonus;	// Additional scalable movement modifier. Look into the SetHealth() calculation.
+
+// Overweight
+var		float						MaxOverweightScale;
+var		float						MaxCarryOverweight;
+var		float						OverweightMovementModifier;
+var		float						OverweightJumpModifier;
 
 // Drugs effects
 var		bool						bClientOnDrugs;	// Client-side bOnDrugs
@@ -38,7 +53,7 @@ var		float						DrugsDamageScale;
 var		float						DrugsBlurDuration;
 var		float						DrugsBlurIntensity;
 
-var		bool						bDefaultPropertiesCalculated;
+// Jumping
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		float						FireSpeedModif;
 var		range						JumpRandRange;
@@ -152,6 +167,49 @@ simulated final function float GetRandExtraScale(
 		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
+// GroundSpeed always replicated from the server to the clients
+function UpdateGroundSpeed()
+{
+	GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * VeterancyMovementModifier;
+}
+
+// Sets the current Health
+protected function SetHealth( int NewHealth )
+{
+	Health = Max(NewHealth, 0);
+	if ( Health == 0 )  {
+		Pawn Dies!
+		//ToDO: дописать этот блок!
+		Return;
+	}
+	// Changing GroundSpeed according to the healths
+	else if ( Health > int(HealthMax) )
+		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementBonus) + (1.0 - OverhealMovementBonus);
+	else
+		HealthMovementModifier = ((float(Health) / HealthMax) * HealthSpeedModifier) + (1.0 - HealthSpeedModifier);
+	
+	UpdateGroundSpeed();
+}
+
+// Sets the current CarryWeight
+function SetCarryWeight( float NewCarryWeight )
+{
+	CurrentWeight = NewCarryWeight;
+	// Using NewCarryWeight float var like a Weight ratio
+	NewCarryWeight = CurrentWeight / MaxCarryWeight;
+	// Overweight
+	if ( CurrentWeight > MaxCarryWeight )  {
+		CarryWeightJumpModifier = 1.0 - NewCarryWeight * OverweightJumpModifier;
+		CarryWeightMovementModifier = 1.0 - NewCarryWeight * OverweightMovementModifier;
+	}
+	else  {
+		CarryWeightJumpModifier = default.CarryWeightJumpModifier;
+		CarryWeightMovementModifier = 1.0 - NewCarryWeight * WeightSpeedModifier;
+	}
+	
+	UpdateGroundSpeed();
+}
+
 function CheckVeterancyCarryWeightLimit()
 {
 	local	byte		t;
@@ -161,6 +219,8 @@ function CheckVeterancyCarryWeightLimit()
 		MaxCarryWeight = UM_PlayerReplicationInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
 	else
 		MaxCarryWeight = default.MaxCarryWeight;
+	
+	MaxCarryOverweight = MaxCarryWeight * MaxOverweightScale;
 	
 	// If we carrying too much, drop something.
 	while ( CurrentWeight > MaxCarryWeight && t < 6 )  {
@@ -202,12 +262,14 @@ function NotifyVeterancyChanged()
 {
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )  {
+		VeterancyMovementModifier = UM_PlayerReplicationInfo.GetMovementSpeedModifier();
 		OverhealedHealthMax =  HealthMax * UM_PlayerReplicationInfo.GetOverhealedHealthMaxModifier();
 		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
 		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
 	}
 	else  {
+		VeterancyMovementModifier = default.VeterancyMovementModifier;
 		OverhealedHealthMax = HealthMax;
 		VeterancyJumpBonus = default.VeterancyJumpBonus;
 		BounceRemaining = default.BounceRemaining;
@@ -215,6 +277,9 @@ function NotifyVeterancyChanged()
 	}
 	CheckVeterancyCarryWeightLimit();
 	CheckVeterancyAmmoLimit();
+	SetHealth(Health);	// Just to update HealthMovementModifier
+	SetCarryWeight(CurrentWeight);	// To update CarryWeight modifiers
+	
 	if ( UM_BaseWeapon(Weapon) != None )
 		UM_BaseWeapon(Weapon).NotifyOwnerVeterancyChanged();
 }
@@ -505,12 +570,15 @@ function bool DoJump( bool bUpdating )
         
 		Return True;
     } */
-	
 	if ( !bIsCrouched && !bWantsToCrouch )  {
 		JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max ) * VeterancyJumpBonus;
-		JumpZ = default.JumpZ * JumpModif;
+		JumpZ = default.JumpZ * CarryWeightJumpModifier * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
+			// Do not allow to jump if somebody has grabbed this Pawn
+			if ( bMovementDisabled )
+				Return False;
+			
 			NextBounceTime = Level.TimeSeconds + BounceDelay * GetRandMult(0.95, 1.05);
 			// Take you out of ironsights if you jump on a non-lowgrav map
 			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
@@ -628,6 +696,53 @@ simulated function StartFiringX(bool bAltFire, bool bRapid)
     IdleTime = Level.TimeSeconds;
 }
 
+function bool CanCarry( float Weight )
+{
+	if ( Weight <= 0.0 )
+		Return True;
+
+	Return (CurrentWeight + Weight) <= MaxCarryOverweight;
+}
+
+// Add Item to this pawn's inventory.
+// Returns true if successfully added, false if not.
+function bool AddInventory( Inventory NewItem )
+{
+	if ( KFWeapon(NewItem) != None ) )  {
+		if ( CanCarry( KFWeapon(NewItem).Weight ) && Super(Pawn).AddInventory(NewItem) )  {
+			SetCarryWeight( CurrentWeight + KFWeapon(NewItem).Weight );
+			Return True;
+		}
+		
+		Return False;
+	}
+	
+	Return Super(Pawn).AddInventory(NewItem);
+}
+
+function DeleteInventory( Inventory Item )
+{
+	local	Inventory	I;
+	local	int			Count;
+	
+	//ToDo: issue #218
+	if ( Role != ROLE_Authority )
+		Return;
+	
+	if ( KFWeapon(Item) != None )  {
+		for ( I = Inventory; I != None; I = I.Inventory )  {
+			if ( I == Item )  {
+				SetCarryWeight( CurrentWeight - KFWeapon(Item).Weight );
+				Break;
+			}
+			// To prevent the infinity loop because of the LinkedList error
+			if ( Count > 1000 )
+				Break;
+		}
+	}
+	
+	Super(Pawn).DeleteInventory(Item);
+}
 
 function ServerSellAmmo( Class<Ammunition> AClass );
 
@@ -903,7 +1018,7 @@ simulated function SetNotOnDrugs()
 		Weapon.StopBerserk();
 }
 
-function bool CanBeHealed( out int HealAmount, int HealMax )
+function bool Heal( out int HealAmount, int HealMax )
 {
 	// Don't let heal more than the max overhealed health
 	if ( bCanBeHealed && Health < HealMax )  {
@@ -931,7 +1046,7 @@ function bool CanBeHealed( out int HealAmount, int HealMax )
 // Left this function for the old or third-party healing logic
 function bool GiveHealth( int HealAmount, int HealMax )
 {
-	Return CanBeHealed(HealAmount, HealMax );
+	Return Heal( HealAmount, HealMax );
 }
 
 // Overheal Reduction
@@ -969,8 +1084,24 @@ simulated event Tick( float DeltaTime )
 {
 	local	float	BlurAmount;
 	
+	// Server
+	if ( Role == ROLE_Authority )  {
+		if ( bMovementDisabled && Level.TimeSeconds >= StopDisabledTime )  {
+			bMovementDisabled = False;
+			NetUpdateTime = Level.TimeSeconds - 1.0;
+		}
+		
+		if ( bCanBeHealedNow )  {
+			// Overheal Reduction
+			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
+				ReduceOverheal();
+			// Healing
+			if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
+				AddHealth();
+		}
+	}
 	// Client
-	if ( Role < ROLE_Authority )  {
+	else  {
 		// From KFPawn
 		if ( bThrowingNade )  {
 			if ( NadeThrowTimeout > 0.0 )
@@ -989,15 +1120,6 @@ simulated event Tick( float DeltaTime )
 			else
 				SetNotOnDrugs();
 		}
-	}
-	// Server
-	else ( bCanBeHealedNow )  {
-		// Overheal Reduction
-		if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
-			ReduceOverheal();
-		// Healing
-		if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
-			AddHealth();
 	}
 	
 	if ( Level.NetMode != NM_DedicatedServer && bBurnified != bBurnApplied )  {
@@ -1205,6 +1327,21 @@ function TakeBileDamage()
 		DoHitCamEffects( BileVect, 0.35, 2.0,1.0 );
 }
 
+// Don't let this pawn move for a certain amount of time
+function DisableMovement( float DisableDuration )
+{
+    StopDisabledTime = Level.TimeSeconds + DisableDuration;
+    bMovementDisabled = True;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+/*	Modify velocity called by physics before applying new velocity for this tick.
+	Velocity,Acceleration, etc. have been updated by the physics, but location hasn't.	*/
+simulated event ModifyVelocity(float DeltaTime, vector OldVelocity)
+{
+	if ( bMovementDisabled && Physics == PHYS_Walking )
+		Velocity = Vect(0.0, 0.0, 0.0);
+}
 
 function ExtendedCreateInventoryVeterancy(
 			string	InventoryClassName, 
@@ -1247,14 +1384,6 @@ function ExtendedCreateInventoryVeterancy(
 			}
 		}
 	}
-}
-
-function bool CanCarry( float Weight )
-{
-	if ( Weight <= 0.0 )
-		Return True;
-
-	Return (CurrentWeight + Weight) <= MaxCarryWeight;
 }
 
 function ThrowGrenade()
@@ -1308,16 +1437,31 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     HealDelay=0.1
+     // CarryWeight
+	 WeightSpeedModifier=0.14
+	 MaxOverweightScale=1.2
+	 OverweightMovementModifier=0.3
+	 OverweightJumpModifier=0.15
+	 // Healing
+	 HealDelay=0.1
 	 OverhealReductionPerSecond=2.0
+	 OverhealMovementBonus=0.2
+	 // Drugs
 	 DrugsBlurDuration=5.0
 	 DrugsBlurIntensity=0.5
 	 DrugEffectHealIntensity=30.0
 	 LoseDrugEffectHealIntensity=20.0
-	 DrugsAimErrorScale=1.2
+	 DrugsAimErrorScale=1.15
 	 DrugsMovementBonus=1.2
 	 DrugsDamageScale=0.85
+	 // Veterancy
 	 VeterancyJumpBonus=1.0
+	 VeterancyMovementModifier=1.0
+	 // Default values for the modifiers
+	 HealthMovementModifier=1.0
+	 CarryWeightMovementModifier=1.0
+	 CarryWeightJumpModifier=1.0
+	 //
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)
 	 BounceRemaining=0

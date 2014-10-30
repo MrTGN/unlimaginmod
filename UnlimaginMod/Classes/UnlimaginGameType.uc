@@ -168,10 +168,13 @@ event InitGame( string Options, out string Error )
 	//	FallbackMonster = class'EliteKrall';
 
 	MaxLives = 1;
-	bForceRespawn = true;
+	bForceRespawn = True;
 
 	MaxPlayers = Clamp( UM_MaximumPlayers, 0, 32);
-
+	
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
+		UM_GameReplicationInfo(GameReplicationInfo).bFriendlyFireIsEnabled = FriendlyFireScale > 0.0;
+	
 
 	foreach DynamicActors(class'KFLevelRules',KFLRit)
 	{
@@ -318,6 +321,15 @@ simulated function PrepareSpecialSquadsFromCollection()
 simulated function PrepareSpecialSquads()
 {
 	PrepareSpecialSquadsFromCollection();
+}
+
+exec function SetFriendlyFireScale( float NewFriendlyFireScale )
+{
+	FriendlyFireScale = FClamp(NewFriendlyFireScale, 0.0, 1.0);
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
+		UM_GameReplicationInfo(GameReplicationInfo).bFriendlyFireIsEnabled = FriendlyFireScale > 0.0;
+		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
 }
 
 // For the GUI buy menu
@@ -1396,8 +1408,8 @@ function SetupWave()
 	MaxMonsters = Clamp(TotalMaxMonsters,5,MaxZombiesOnce);
 	//log("****** "$MaxMonsters$" Max at once!");
 
-	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonsters=TotalMaxMonsters;
-	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonstersOn=true;
+	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonsters = TotalMaxMonsters;
+	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonstersOn = True;
 	WaveEndTime = Level.TimeSeconds + Waves[WaveNum].WaveDuration;
 	AdjustedDifficulty = GameDifficulty + Waves[WaveNum].WaveDifficulty;
 
@@ -1732,11 +1744,9 @@ defaultproperties
 	 PlayerControllerClass=Class'UnlimaginMod.UM_PlayerController'
      PlayerControllerClassName="UnlimaginMod.UM_PlayerController"
 	 DefaultLevelRulesClass=Class'UnlimaginMod.UM_SRGameRules'
-	 
+	 GameReplicationInfoClass=Class'UnlimaginMod.UM_GameReplicationInfo'
 	 
      UM_MaximumPlayers=12
-	  
-     //GameReplicationInfoClass=Class'UnlimaginMod.UnlimaginGameReplicationInfo'
 	  
      GameName="Unlimagin Mod"
 }

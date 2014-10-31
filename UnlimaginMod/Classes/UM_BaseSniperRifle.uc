@@ -21,5 +21,6 @@ class UM_BaseSniperRifle extends UM_BaseWeapon
 
 defaultproperties
 {
-     bHasTacticalReload=True
+     OwnerMovementModifier=0.95
+	 bHasTacticalReload=True
 }

@@ -336,7 +336,7 @@ simulated event PreBeginPlay()
 		CalcDefaultProperties(Self);
 
 	if ( UM_BaseWeapon(Owner) != None )  {
-		[!]Weapon = UM_BaseWeapon(Owner);	
+		[!]Weapon = UM_BaseWeapon(Owner);
 		//[!] Todo: подумать где и как хранить настройки и данные стволов, оружия и тп.
 		// Думаю, что это может быть функция, возвращающая данные по последнему выстрелу.
 		// Сами настройки хранить в Fire классе, а из оружия получать через функцию нужные
@@ -344,6 +344,8 @@ simulated event PreBeginPlay()
 		[!]Instigator = Weapon.Instigator;
 		UpdateBonuses();
 	}
+	else if ( Pawn(Owner) != None )
+		Instigator = Pawn(Owner);
 	
 	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )

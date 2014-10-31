@@ -744,6 +744,15 @@ simulated function postfxbw(float f, optional bool bDoNotTurnOffFadeFromBlackEff
 		Super.postfxbw(f,bDoNotTurnOffFadeFromBlackEffect);
 }
 
+// Just changed to pendingWeapon
+function ChangedWeapon()
+{
+	if ( Pawn != None && Pawn.Weapon != None )  {
+		Pawn.Weapon.SetHand(Handedness);
+		LastPawnWeapon = Pawn.Weapon.Class;
+	}
+}
+
 // Hide weapon highlight when using this shortcut key.
 exec function SwitchWeapon(byte F)
 {

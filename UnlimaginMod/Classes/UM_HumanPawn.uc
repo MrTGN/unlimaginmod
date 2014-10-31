@@ -24,7 +24,7 @@ var		float						NextDyingMessageTime;
 // Movement Modifiers
 var		float						HealthMovementModifier;
 var		float						CarryWeightMovementModifier;
-var		float						CarryWeightJumpModifier;
+var		float						InventoryMovementModifier;
 var		float						VeterancyMovementModifier;
 
 // Healing
@@ -58,6 +58,8 @@ var		name						LeftHandWeaponBone, RightHandWeaponBone;
 var		float						FireSpeedModif;
 var		range						JumpRandRange;
 var		float						VeterancyJumpBonus;
+var		float						WeightJumpModifier;
+var		float						CarryWeightJumpModifier;
 
 // Bouncing from the walls and actors
 var		Vector						BounceMomentum;
@@ -167,10 +169,19 @@ simulated final function float GetRandExtraScale(
 		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
-// GroundSpeed always replicated from the server to the clients
+// GroundSpeed always replicated from the server to the client
 function UpdateGroundSpeed()
 {
-	GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * VeterancyMovementModifier;
+	GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+}
+
+// GroundSpeed according to the healths
+function UpdateHealthMovementModifiers()
+{
+	if ( Health > int(HealthMax) )
+		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementBonus) + (1.0 - OverhealMovementBonus);
+	else
+		HealthMovementModifier = ((float(Health) / HealthMax) * HealthSpeedModifier) + (1.0 - HealthSpeedModifier);
 }
 
 // Sets the current Health
@@ -182,31 +193,33 @@ protected function SetHealth( int NewHealth )
 		//ToDO: дописать этот блок!
 		Return;
 	}
-	// Changing GroundSpeed according to the healths
-	else if ( Health > int(HealthMax) )
-		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementBonus) + (1.0 - OverhealMovementBonus);
-	else
-		HealthMovementModifier = ((float(Health) / HealthMax) * HealthSpeedModifier) + (1.0 - HealthSpeedModifier);
 	
+	UpdateHealthMovementModifiers();
 	UpdateGroundSpeed();
+}
+
+function UpdateCarryWeightMovementModifiers()
+{
+	local	float	WeightRatio;
+	
+	WeightRatio = CurrentWeight / MaxCarryWeight;
+	// Overweight
+	if ( CurrentWeight > MaxCarryWeight )  {
+		CarryWeightJumpModifier = 1.0 - WeightRatio * OverweightJumpModifier;
+		CarryWeightMovementModifier = 1.0 - WeightRatio * OverweightMovementModifier;
+	}
+	else  {
+		CarryWeightJumpModifier = 1.0 - WeightRatio * WeightJumpModifier;
+		CarryWeightMovementModifier = 1.0 - WeightRatio * WeightSpeedModifier;
+	}
 }
 
 // Sets the current CarryWeight
 function SetCarryWeight( float NewCarryWeight )
 {
 	CurrentWeight = NewCarryWeight;
-	// Using NewCarryWeight float var like a Weight ratio
-	NewCarryWeight = CurrentWeight / MaxCarryWeight;
-	// Overweight
-	if ( CurrentWeight > MaxCarryWeight )  {
-		CarryWeightJumpModifier = 1.0 - NewCarryWeight * OverweightJumpModifier;
-		CarryWeightMovementModifier = 1.0 - NewCarryWeight * OverweightMovementModifier;
-	}
-	else  {
-		CarryWeightJumpModifier = default.CarryWeightJumpModifier;
-		CarryWeightMovementModifier = 1.0 - NewCarryWeight * WeightSpeedModifier;
-	}
 	
+	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
 }
 
@@ -214,6 +227,7 @@ function CheckVeterancyCarryWeightLimit()
 {
 	local	byte		t;
 	local	Inventory	I;
+	local	int			Count;
 	
 	if ( UM_PlayerReplicationInfo != None )
 		MaxCarryWeight = UM_PlayerReplicationInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
@@ -226,24 +240,26 @@ function CheckVeterancyCarryWeightLimit()
 	while ( CurrentWeight > MaxCarryWeight && t < 6 )  {
 		++t; // Incrementing up to 5 to restrict the number of attempts to drop weapon
 		// Find the weapon to drop
-		for ( I = Inventory; I != None; I = I.Inventory )  {
+		for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 			// If it's a weapon and it can be thrown
 			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
 				I.Velocity = Velocity;
 				I.DropFrom(Location + VRand() * 10.0);
 				Break;	// Stop searching
 			}
+			// To prevent the infinity loop because of the error in the LinkedList
+			++Count;
 		}
 	}
 }
 
 function CheckVeterancyAmmoLimit()
 {
-	local	int			MaxAmmo;
+	local	int			MaxAmmo, Count;
 	local	Inventory	I;
 	
 	// Make sure nothing is over the Max Ammo amount when changing Veterancy
-	for ( I = Inventory; I != None; I = I.Inventory )  {
+	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 		if ( Ammunition(I) != None )  {
 			if ( UM_PlayerReplicationInfo != None )
 				MaxAmmo = UM_PlayerReplicationInfo.GetMaxAmmoFor( Ammunition(I).Class );
@@ -253,13 +269,17 @@ function CheckVeterancyAmmoLimit()
 			if ( Ammunition(I).AmmoAmount > MaxAmmo )
 				Ammunition(I).AmmoAmount = MaxAmmo;
 		}
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
 	}
 }
 
 // Notify on server side that veterancy has been changed
-// Called from UM_PlayerReplicationInfo
 function NotifyVeterancyChanged()
 {
+	local	Inventory	I;
+	local	int			Count;
+	
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )  {
 		VeterancyMovementModifier = UM_PlayerReplicationInfo.GetMovementSpeedModifier();
@@ -277,24 +297,43 @@ function NotifyVeterancyChanged()
 	}
 	CheckVeterancyCarryWeightLimit();
 	CheckVeterancyAmmoLimit();
-	SetHealth(Health);	// Just to update HealthMovementModifier
-	SetCarryWeight(CurrentWeight);	// To update CarryWeight modifiers
+	UpdateHealthMovementModifiers();
+	UpdateCarryWeightMovementModifiers();
+	UpdateGroundSpeed();
 	
-	if ( UM_BaseWeapon(Weapon) != None )
-		UM_BaseWeapon(Weapon).NotifyOwnerVeterancyChanged();
+	// If no PRI, Notifying clients about changes by ClientTrigger() event
+	if ( UM_PlayerReplicationInfo == None )
+		bClientTrigger = !bClientTrigger;
+	
+	// Notify all weapons in the Inventory list
+	// Inventory var exists only on the server and on the client-owner
+	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+		if ( UM_BaseWeapon(I) != None )
+			UM_BaseWeapon(I).NotifyOwnerVeterancyChanged();
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
+	}
 }
 
-// Notify clients that veterancy has been changed
-// Called from UM_PlayerReplicationInfo
+/*	Notify clients that veterancy has been changed.
+	Use this function to update Veterancy bonuses 
+	on the client side */
 simulated function ClientNotifyVeterancyChanged()
 {
-	/* Use this function to update Veterancy bonuses 
-		on the client side */
-	if ( UM_BaseWeapon(Weapon) != None )
-		UM_BaseWeapon(Weapon).ClientNotifyOwnerVeterancyChanged();
+	local	Inventory	I;
+	local	int			Count;
+	
+	// Notify all weapons in the Inventory list
+	// Inventory var exists only on the server and on the client-owner
+	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+		if ( UM_BaseWeapon(I) != None )
+			UM_BaseWeapon(I).ClientNotifyOwnerVeterancyChanged();
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
+	}
 }
 
-// Clearing out the old function
+// Clearing the old function
 function VeterancyChanged() { }
 
 /* PossessedBy()
@@ -730,29 +769,141 @@ function DeleteInventory( Inventory Item )
 		Return;
 	
 	if ( KFWeapon(Item) != None )  {
-		for ( I = Inventory; I != None; I = I.Inventory )  {
+		for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 			if ( I == Item )  {
 				SetCarryWeight( CurrentWeight - KFWeapon(Item).Weight );
 				Break;
 			}
-			// To prevent the infinity loop because of the LinkedList error
-			if ( Count > 1000 )
-				Break;
+			// To prevent the infinity loop because of the error in the LinkedList
+			++Count;
 		}
 	}
 	
 	Super(Pawn).DeleteInventory(Item);
 }
 
+// From the xPawn class
+function SetWeaponOverlay( Material Mat, float Time, bool Override )
+{
+	if ( Weapon != None )  {
+		Weapon.SetOverlayMaterial(Mat, Time, Override);
+		if ( WeaponAttachment(Weapon.ThirdPersonActor) != None )
+			WeaponAttachment(Weapon.ThirdPersonActor).SetOverlayMaterial(Mat, Time, Override);
+	}
+}
+
+// Replicated to the server if was called on the client-side
+function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
+{
+	local	float	InvisTime;
+
+	// From the xPawn class
+	if ( bInvis )  {
+		if ( OldWeapon != None && OldWeapon.OverlayMaterial == InvisMaterial )
+			InvisTime = OldWeapon.ClientOverlayCounter;
+		else
+			InvisTime = 20000.0;
+		SetWeaponOverlay(None, 0.0, True);
+	}
+	else if ( HasUDamage() )
+		SetWeaponOverlay(None, 0.0, True);
+	
+	// From the Pawn class
+	if ( OldWeapon != None )  {
+		OldWeapon.SetDefaultDisplayProperties();
+		OldWeapon.DetachFromPawn(self);
+		OldWeapon.GotoState('Hidden');
+		OldWeapon.NetUpdateFrequency = 2;
+	}
+
+	Weapon = NewWeapon;
+	PendingWeapon = None;
+	if ( Controller != None )
+		Controller.ChangedWeapon();
+	
+	if ( Weapon != None )  {
+		Weapon.NetUpdateFrequency = 100;
+		Weapon.AttachToPawn(self);
+		Weapon.BringUp(OldWeapon);
+		PlayWeaponSwitch(NewWeapon);
+		
+		if ( bInvis )
+			SetWeaponOverlay(InvisMaterial, InvisTime, True);
+		else if ( HasUDamage() )
+			SetWeaponOverlay(UDamageWeaponMaterial, (UDamageTime - Level.TimeSeconds), False);
+		
+		// From the xPawn class
+		if ( Weapon.bBerserk != bBerserk )  {
+			if ( bBerserk )
+				Weapon.StartBerserk();
+			else
+				Weapon.StopBerserk();
+		}
+		
+		if ( UM_BaseWeapon(Weapon) != None )
+			InventoryMovementModifier = UM_BaseWeapon(Weapon).OwnerMovementModifier;
+		else if ( KFWeapon(Weapon) != None && KFWeapon(Weapon).bSpeedMeUp )
+			InventoryMovementModifier = default.BaseMeleeIncrease;
+		else
+			InventoryMovementModifier = default.InventoryMovementModifier;
+		
+		if ( UM_PlayerReplicationInfo != None )
+			InventoryMovementModifier *= UM_PlayerReplicationInfo.GetWeaponPawnMovementBonus(Weapon);
+	}
+	else
+		InventoryMovementModifier = default.InventoryMovementModifier;
+	
+	// tell inventory that weapon changed (in case any effect was being applied)
+	if ( Inventory != None )
+		Inventory.OwnerEvent('ChangedWeapon');
+	
+	UpdateGroundSpeed();
+}
+
+// Called to change current weapon to the PendingWeapon
+simulated function ChangedWeapon()
+{
+	local	Weapon	OldWeapon;
+	
+	if ( PendingWeapon != None && AllowHoldWeapon(PendingWeapon) )  {
+		// From the Pawn class
+		ServerChangedWeapon(Weapon, PendingWeapon);
+		// Clients
+		if ( Role < ROLE_Authority )  {
+			OldWeapon = Weapon;
+			Weapon = PendingWeapon;
+			PendingWeapon = None;
+			if ( Controller != None )
+				Controller.ChangedWeapon();
+			// BringUp weapon
+			if ( Weapon != None )  {
+				Weapon.BringUp(OldWeapon);
+				// From the xPawn class
+				if ( Weapon.bBerserk != bBerserk )  {
+					if ( bBerserk )
+						Weapon.StartBerserk();
+					else
+						Weapon.StopBerserk();
+				}
+			}			
+		}
+	}
+	else
+		PendingWeapon = None;
+}
+
 function ServerSellAmmo( Class<Ammunition> AClass );
 
 final function bool HasWeaponClass( class<Inventory> IC )
 {
-	local Inventory I;
+	local	Inventory	I;
+	local	int			Count;
 	
-	for ( I = Inventory; I != None; I = I.Inventory )  {
+	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 		if ( I.Class == IC )
 			Return True;
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
 	}
 	
 	Return False;
@@ -988,11 +1139,12 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
-// Clearing out
+// Clearing
 function Drugs() { }
 
 simulated function SetOnDrugs()
 {
+	bBerserk = True;
 	if ( Role == ROLE_Authority )  {
 		bOnDrugs = True;
 		PlaySound(BreathingSound, SLOT_Talk, TransientSoundVolume,, TransientSoundRadius,, True);
@@ -1009,6 +1161,7 @@ simulated function SetOnDrugs()
 
 simulated function SetNotOnDrugs()
 {
+	bBerserk = False;
 	if ( Role == ROLE_Authority )
 		bOnDrugs = False;
 	else
@@ -1050,14 +1203,14 @@ function bool GiveHealth( int HealAmount, int HealMax )
 }
 
 // Overheal Reduction
-function ReduceOverheal()
+protected function ReduceOverheal()
 {
 	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
-	Health = Max( (Health - 1), int(HealthMax) );
+	SetHealth( Max((Health - 1), int(HealthMax)) );
 }
 
 // Healing with HealIntensity decreasing
-function AddHealth()
+protected function AddHealth()
 {
 	local	int		DeltaHealIntensity;
 	
@@ -1068,7 +1221,7 @@ function AddHealth()
 		if ( DeltaHealIntensity > 0 )  {
 			LastHealTime = Level.TimeSeconds;
 			if ( Health < OverhealedHealthMax )  {
-				Health = Min( (Health + DeltaHealIntensity), OverhealedHealthMax );
+				SetHealth( Min((Health + DeltaHealIntensity), OverhealedHealthMax) );
 			HealIntensity -= float(DeltaHealIntensity) * 0.5;
 		}
 		// turn off drug effects
@@ -1090,7 +1243,7 @@ simulated event Tick( float DeltaTime )
 			bMovementDisabled = False;
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		}
-		
+		// Operations with Pawn Health
 		if ( bCanBeHealedNow )  {
 			// Overheal Reduction
 			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
@@ -1337,7 +1490,7 @@ function DisableMovement( float DisableDuration )
 
 /*	Modify velocity called by physics before applying new velocity for this tick.
 	Velocity,Acceleration, etc. have been updated by the physics, but location hasn't.	*/
-simulated event ModifyVelocity(float DeltaTime, vector OldVelocity)
+simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
 {
 	if ( bMovementDisabled && Physics == PHYS_Walking )
 		Velocity = Vect(0.0, 0.0, 0.0);
@@ -1389,17 +1542,20 @@ function ExtendedCreateInventoryVeterancy(
 function ThrowGrenade()
 {
 	local	Inventory	Inv;
+	local	int			Count;
 
 	if ( AllowGrenadeTossing() )  {
-		for ( Inv = Inventory; Inv != None; Inv = Inv.Inventory )  {
+		for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
 			if ( Frag(Inv) != None && Frag(Inv).HasAmmo() && !bThrowingNade
 				 && KFWeapon(Weapon) != None 
 				 && (!KFWeapon(Weapon).bIsReloading || KFWeapon(Weapon).InterruptReload())
 				 && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) <= 0.1 )  {
 				KFWeapon(Weapon).ClientGrenadeState = GN_TempDown;
 				Weapon.PutDown();
-				break;
+				Break;
 			}
+			// To prevent the infinity loop because of the error in the LinkedList
+			++Count;
 		}
 	}
 }
@@ -1407,12 +1563,15 @@ function ThrowGrenade()
 function WeaponDown()
 {
     local	Inventory	Inv;
+	local	int			Count;
 
-    for( Inv = Inventory; Inv != None; Inv = Inv.Inventory )  {
+    for( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
         if ( Frag(Inv) != None && Frag(Inv).HasAmmo() )  {
             SecondaryItem = Frag(Inv);
             Frag(Inv).StartThrow();
         }
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
     }
 }
 
@@ -1439,9 +1598,10 @@ defaultproperties
 {
      // CarryWeight
 	 WeightSpeedModifier=0.14
+	 WeightJumpModifier=0.07
 	 MaxOverweightScale=1.2
 	 OverweightMovementModifier=0.3
-	 OverweightJumpModifier=0.15
+	 OverweightJumpModifier=0.2
 	 // Healing
 	 HealDelay=0.1
 	 OverhealReductionPerSecond=2.0
@@ -1459,8 +1619,10 @@ defaultproperties
 	 VeterancyMovementModifier=1.0
 	 // Default values for the modifiers
 	 HealthMovementModifier=1.0
+	 InventoryMovementModifier=1.0
 	 CarryWeightMovementModifier=1.0
 	 CarryWeightJumpModifier=1.0
+	 BaseMeleeIncrease=1.2
 	 //
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.95,Max=1.05)

@@ -20,5 +20,6 @@ class UM_BaseFlameThrower extends UM_BaseAutomaticWeapon
 
 defaultproperties
 {
-     bHasTacticalReload=False
+     OwnerMovementModifier=0.9
+	 bHasTacticalReload=False
 }

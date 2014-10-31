@@ -79,6 +79,15 @@ static function float GetHealPotency(KFPlayerReplicationInfo KFPRI)
 	Return 1.2 + 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% more heals
 }
 
+// Pawn Movement Bonus while wielding this weapon
+static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, Weapon W )
+{
+	if ( PRI.ClientVeteranSkillLevel > 0 && Syringe(W) != None )
+		Return 1.00 + 0.01 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));	// Up to 10% bonus
+	
+	Return 1.0;
+}
+
 static function float GetMovementSpeedModifier(KFPlayerReplicationInfo KFPRI, KFGameReplicationInfo KFGRI)
 {
 	Return 1.05 + 0.025 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Moves up to 30% faster with all wepons

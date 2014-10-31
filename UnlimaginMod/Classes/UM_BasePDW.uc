@@ -20,4 +20,5 @@ class UM_BasePDW extends UM_BaseAutomaticWeapon
 
 defaultproperties
 {
+     OwnerMovementModifier=1.05
 }

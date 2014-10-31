@@ -182,6 +182,15 @@ simulated function float GetPawnMaxCarryWeight( float MaxCarryWeight )
 	Return MaxCarryWeight;
 }
 
+// Pawn Movement Bonus while wielding this weapon
+simulated function float GetWeaponPawnMovementBonus( Weapon W )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetWeaponPawnMovementBonus(self, W);
+	
+	Return 1.0;
+}
+
 simulated function float GetPawnJumpModifier()
 {
 	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )

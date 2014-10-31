@@ -20,4 +20,5 @@ class UM_BaseBattleRifle extends UM_BaseAutomaticWeapon
 
 defaultproperties
 {
+     OwnerMovementModifier=0.95
 }

@@ -20,5 +20,6 @@ class UM_BaseHandgun extends UM_BaseWeapon
 
 defaultproperties
 {
-     bHasTacticalReload=True
+     OwnerMovementModifier=1.1
+	 bHasTacticalReload=True
 }

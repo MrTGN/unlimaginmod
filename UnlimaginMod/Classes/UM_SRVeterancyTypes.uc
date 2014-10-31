@@ -239,6 +239,12 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 	Return 1.0;
 }
 
+// Pawn Movement Bonus while wielding this weapon
+static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, Weapon W )
+{
+	Return 1.0;
+}
+
 // New function for the extra jump height
 static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 {

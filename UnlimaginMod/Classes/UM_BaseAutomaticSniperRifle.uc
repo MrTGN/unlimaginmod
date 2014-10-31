@@ -20,4 +20,5 @@ class UM_BaseAutomaticSniperRifle extends UM_BaseAutomaticWeapon
 
 defaultproperties
 {
+     OwnerMovementModifier=0.96
 }

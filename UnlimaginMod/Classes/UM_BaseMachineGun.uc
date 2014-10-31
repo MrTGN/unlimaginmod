@@ -20,5 +20,6 @@ class UM_BaseMachineGun extends UM_BaseAutomaticWeapon
 
 defaultproperties
 {
-     bHasTacticalReload=False
+     OwnerMovementModifier=0.85
+	 bHasTacticalReload=False
 }

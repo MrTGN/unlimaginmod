@@ -47,6 +47,8 @@ var		float									TacticalModuleToggleTime;
 var		BaseActor.SoundData						TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
 
+var		float					OwnerMovementModifier;	// Owner movement speed modifier
+
 //[end] Varibles
 //====================================================================
 
@@ -1560,7 +1562,8 @@ function DropFrom(vector StartLocation)
 
 defaultproperties
 {
-     bAllowInterruptReload=True
+     OwnerMovementModifier=1.0
+	 bAllowInterruptReload=True
 	 bAllowAutoReload=True
 	 bHasTacticalReload=False
 	 TacticalReloadCapacityBonus=1

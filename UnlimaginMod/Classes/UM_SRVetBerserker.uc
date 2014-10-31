@@ -114,9 +114,13 @@ static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
 	Return Min(PRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
 }
 
-static function float GetMeleeMovementSpeedModifier(KFPlayerReplicationInfo KFPRI)
+// Pawn Movement Bonus while wielding this weapon
+static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, Weapon W )
 {
-	Return 0.00 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 40% increase in movement speed while wielding Melee Weapon
+	if ( KFWeapon(W) != None && KFWeapon(W).bSpeedMeUp )
+		Return 1.05 + 0.035 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 40% increase in movement speed while wielding Melee Weapon
+	
+	Return 1.0;
 }
 
 // New function to reduce taken damage

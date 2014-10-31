@@ -218,6 +218,12 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 	Return Min(Level, 15);
 }
 
+// Perk weapon restriction
+static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
+{
+	Return True;
+}
+
 // On how much this human can overheal somebody
 static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
 {

@@ -105,6 +105,15 @@ simulated event PostNetReceive()
 }
 
 //[block] --- Perk bonuses ---
+// Perk weapon restriction
+simulated function bool CanUseThisWeapon( Weapon W )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.CanUseThisWeapon(self, W);
+	
+	Return True;
+}
+
 simulated function float GetMovementSpeedModifier()
 {
 	if ( ClientVeteranSkill != None )

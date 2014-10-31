@@ -753,6 +753,60 @@ function ChangedWeapon()
 	}
 }
 
+exec function SwitchToBestWeapon()
+{
+	local	float	rating;
+
+	if ( Pawn == None || Pawn.Inventory == None )
+		Return;
+
+    if ( Pawn.PendingWeapon == None || AIController(self) != None )  {
+	    Pawn.PendingWeapon = Pawn.Inventory.RecommendWeapon(rating);
+	    if ( Pawn.PendingWeapon == Pawn.Weapon )
+		    Pawn.PendingWeapon = None;
+	    if ( Pawn.PendingWeapon == None )
+    		Return;
+    }
+
+	StopFiring();
+
+	if ( Pawn.Weapon == None )  {
+		if ( Role < ROLE_Authority )
+			Pawn.ChangedWeapon();
+	}
+	else if ( Pawn.Weapon != Pawn.PendingWeapon )
+		Pawn.Weapon.PutDown();
+}
+
+// server calls this to force client to switch
+function ClientSwitchToBestWeapon()
+{
+    SwitchToBestWeapon();
+}
+
+function ClientSetWeapon( class<Weapon> WeaponClass )
+{
+	local	Inventory	Inv;
+	local	int			Count;
+
+	for( Inv = Pawn.Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
+		if ( ClassIsChildOf( Inv.Class, WeaponClass ) )  {
+			if ( Pawn.Weapon == None )  {
+				Pawn.PendingWeapon = Weapon(Inv);
+				if ( Role < ROLE_Authority )
+					Pawn.ChangedWeapon();
+			}
+			else if ( Pawn.Weapon != Weapon(Inv) )  {
+				Pawn.PendingWeapon = Weapon(Inv);
+				Pawn.Weapon.PutDown();
+			}
+			Return;
+		}
+		++Count;
+	}
+}
+
+
 // Hide weapon highlight when using this shortcut key.
 exec function SwitchWeapon(byte F)
 {

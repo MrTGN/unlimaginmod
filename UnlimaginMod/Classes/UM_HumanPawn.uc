@@ -860,6 +860,15 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 	UpdateGroundSpeed();
 }
 
+// Returns true if this pawn is able to hold a weapon of the supplied type
+simulated function bool AllowHoldWeapon( Weapon InWeapon )
+{
+    if ( UM_PlayerReplicationInfo != None )
+		Return UM_PlayerReplicationInfo.CanUseThisWeapon( InWeapon );
+	
+	Return True;
+}
+
 // Called to change current weapon to the PendingWeapon
 simulated function ChangedWeapon()
 {
@@ -891,6 +900,86 @@ simulated function ChangedWeapon()
 	else
 		PendingWeapon = None;
 }
+
+simulated function ClientCurrentWeaponSold()
+{
+	local	Inventory	I;
+	local	int			Count;
+	
+	// Client
+	if ( Role < ROLE_Authority )  {
+		for ( I = Inventory; I != None && Count < 100; I = I.Inventory )  {
+			if ( Weapon(I) != None && I != Weapon && I != PendingWeapon )  {
+				PendingWeapon = Weapon(I);
+				Break;
+			}
+			// To prevent the infinity loop because of the error in the LinkedList
+			++Count;
+		}
+		ChangedWeapon();
+	}
+}
+
+simulated function ClientForceChangeWeapon(Inventory NewWeapon)
+{
+	// Client
+	if ( Role < ROLE_Authority )  {
+		PendingWeapon = Weapon(NewWeapon);
+		ChangedWeapon();
+	}
+}
+
+// Quickly select syring, alt fire once, select old weapon again
+//ToDo: issue #213.
+// —сылка на Syringe должна хранитс€ в отдельной переменной.
+exec function QuickHeal()
+{
+	local	Syringe		S;
+	local	Inventory	I;
+	local	int			Count;
+
+	//ToDo: перписать это условие
+	if ( Health >= HealthMax )
+		Return;
+
+	// Find Syringe in the Inventory list
+	for ( I = Inventory; I != None && Count < 250 ; I = I.Inventory )  {
+		S = Syringe(I);
+		if ( S != None )
+			Break;
+		++Count;
+	}
+	// Syringe wasn't found
+	if ( S == None )
+		Return;
+
+	if ( S.ChargeBar() < 0.95 )  {
+		if ( PlayerController(Controller) != None && HUDKillingFloor(PlayerController(Controller).myHud) != None )
+			HUDKillingFloor(PlayerController(Controller).myHud).ShowQuickSyringe();
+		// Can't heal now
+		Return;
+	}
+
+	bIsQuickHealing = 1;
+	if ( Weapon == None )  {
+		PendingWeapon = S;
+		// Client owner
+		if ( Role < ROLE_Authority )
+			ChangedWeapon();
+	}
+	else if ( Weapon != S )  {
+		PendingWeapon = S;
+		Weapon.PutDown();
+	}
+	// Syringe already selected, just start healing.
+	else  {
+		bIsQuickHealing = 0;
+		S.HackClientStartFire();
+	}
+}
+
+// Clearing this function
+exec function ToggleFlashlight() { }
 
 function ServerSellAmmo( Class<Ammunition> AClass );
 
@@ -1008,8 +1097,7 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	local float Price;
 
 	if ( !CanBuyNow() || Class<KFWeapon>(WClass) == none || Class<KFWeaponPickup>(WClass.Default.PickupClass)==none
-		|| Class<KFWeapon>(WClass).Default.bKFNeverThrow )
-	{
+		|| Class<KFWeapon>(WClass).Default.bKFNeverThrow )  {
 		SetTraderUpdate();
 		Return;
 	}

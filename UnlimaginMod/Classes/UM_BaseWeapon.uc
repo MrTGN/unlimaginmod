@@ -883,13 +883,7 @@ simulated event WeaponTick(float dt)
 		}
 	}
 
-	//[block] -- Only Server-side code next! --
-	//ToDo: протеститровать. Если все ок, то удалить закомментированный блок.
-	/*
-	if ( Level.NetMode == NM_Client || Instigator == None || 
-		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )
-		Return;
-	*/
+	//[block] Server-side code
 	if ( Role < ROLE_Authority || Instigator == None || 
 		 KFFriendlyAI(Instigator.Controller) == None && Instigator.PlayerReplicationInfo == None )
 		Return;
@@ -1158,7 +1152,9 @@ simulated function Timer()
 				Tacshine.Destroy();
 			
 			ClientState = WS_Hidden;
-			Instigator.ChangedWeapon();
+			// Client side call
+			if ( Role < ROLE_Authority )
+				Instigator.ChangedWeapon();
 			
 			if ( Instigator.Weapon == self )  {
 				PlayIdle();
@@ -1252,7 +1248,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 		ClientState = WS_BringUp;
         if ( ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
-			bBringUpAfterGrenade = (ClientGrenadeState == GN_BringUp);
+			bBringUpAfterGrenade = ClientGrenadeState == GN_BringUp;
 			ClientGrenadeState = GN_None;
 			SetTimer(QuickBringUpTime, false);
 		}

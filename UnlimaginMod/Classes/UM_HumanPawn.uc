@@ -18,6 +18,9 @@ var		bool						bDefaultPropertiesCalculated;
 var		UM_SRClientPerkRepLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
+var		bool						bPRIChangedTrigger, bClientPRIChangedTrigger;
+var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
+
 var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
 
@@ -80,7 +83,10 @@ var		class<MotionBlur>			UnderWaterBlurCameraEffectClass;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FireSpeedModif;
+		FireSpeedModif, bPRIChangedTrigger;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
+		bVeterancyChangedTrigger;
 }
 
 //[end] Replication
@@ -142,13 +148,17 @@ simulated function NotifyTeamChanged()
 	else
 		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 	
-	if ( UM_PlayerReplicationInfo == None )
-		ClientNotifyVeterancyChanged();
+	if ( KFPC != KFPlayerController(Controller) )
+		KFPC = KFPlayerController(Controller);
 }
 
 simulated event ClientTrigger()
 {
-	NotifyTeamChanged();
+	if ( bPRIChangedTrigger != bClientPRIChangedTrigger )
+		NotifyTeamChanged();
+	
+	if ( bVeterancyChangedTrigger != bClientVeterancyChangedTrigger )
+		ClientNotifyVeterancyChanged();
 }
 
 simulated event PostNetReceive() { }
@@ -301,9 +311,13 @@ function NotifyVeterancyChanged()
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
 	
-	// If no PRI, Notifying clients about changes by ClientTrigger() event
-	if ( UM_PlayerReplicationInfo == None )
+	/* If there is no UM_PlayerReplicationInfo, Notifying clients about changes	
+		by ClientTrigger() event. 
+	In other case ClientNotifyVeterancyChanged() will be called from UM_PlayerReplicationInfo. */
+	if ( UM_PlayerReplicationInfo == None )  {
+		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
 		bClientTrigger = !bClientTrigger;
+	}
 	
 	// Notify all weapons in the Inventory list
 	// Inventory var exists only on the server and on the client-owner
@@ -346,6 +360,7 @@ function PossessedBy( Controller C )
 	
 	Controller = C;
 	OldController = Controller;
+	KFPC = KFPlayerController(Controller);
 	NetPriority = 3.0;
 	NetUpdateFrequency = 100.0;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
@@ -372,16 +387,17 @@ function PossessedBy( Controller C )
 	EyeHeight = BaseEyeHeight;
 	ChangeAnimation();
 	
+	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
+	bPRIChangedTrigger = !bPRIChangedTrigger;
 	if ( UM_PlayerReplicationInfo != None )  {
 		UM_PlayerReplicationInfo.SetPawnOwner(self);
 		// To be sure that all ReplicationInfo will be received by clients
 		// notifing by UM_PlayerReplicationInfo
 		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
+		bClientTrigger = !bClientTrigger;
 	}
 	else
 		NotifyVeterancyChanged();
-	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
-	bClientTrigger = !bClientTrigger;
 }
 
 function UnPossessed()
@@ -398,9 +414,9 @@ function UnPossessed()
 	SetOwner(None);
 	Controller = None;
 	
-	NotifyVeterancyChanged();
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
-	bClientTrigger = !bClientTrigger;
+	bPRIChangedTrigger = !bPRIChangedTrigger;
+	NotifyVeterancyChanged();
 }
 
 // Accessor function that returns Intuitive Shooting (not aiming) Range
@@ -656,7 +672,7 @@ function bool DoJump( bool bUpdating )
 	Return False;
 }
 
-event Landed(vector HitNormal)
+event Landed( vector HitNormal )
 {
 	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
@@ -1470,7 +1486,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		KFMonster(InstigatedBy).bDamagedAPlayer = True;
 
 	// Don't allow momentum from a player shooting a player
-	if ( InstigatedBy != None && KFHumanPawn(InstigatedBy) != None )
+	if ( KFHumanPawn(InstigatedBy) != None )
 		Momentum = vect(0,0,0);
 	
 	if ( UM_PlayerReplicationInfo != None )
@@ -1505,7 +1521,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		LastBurnDamage = Damage;
 	}
 	
-	if ( Controller == None || KFPlayerController(Controller) == None )
+	if ( KFPC == None )
 		Return;
 
 	if ( Class<DamTypeVomit>(DamageType) != None )  {
@@ -1514,17 +1530,17 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		if ( NextBileTime < Level.TimeSeconds )
 			NextBileTime = Level.TimeSeconds + BileFrequency;
 
-		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPlayerController(Controller).bVomittedOn )  {
-			KFPlayerController(Controller).bVomittedOn = True;
-			KFPlayerController(Controller).VomittedOnTime = Level.TimeSeconds;
+		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPC.bVomittedOn )  {
+			KFPC.bVomittedOn = True;
+			KFPC.VomittedOnTime = Level.TimeSeconds;
 			if ( Controller.TimerRate == 0.0 )
 				Controller.SetTimer(10.0, false);
 		}
 	}
 	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPlayerController(Controller).bScreamedAt )  {
-		KFPlayerController(Controller).bScreamedAt = True;
-		KFPlayerController(Controller).ScreamTime = Level.TimeSeconds;
+			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPC.bScreamedAt )  {
+		KFPC.bScreamedAt = True;
+		KFPC.ScreamTime = Level.TimeSeconds;
 		if ( Controller.TimerRate == 0.0 )
 			Controller.SetTimer(10.0, false);
 	}
@@ -1532,7 +1548,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
 		NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
 		// Tell everyone we're dying
-		KFPlayerController(Controller).Speech('AUTO', 6, "");
+		KFPC.Speech('AUTO', 6, "");
 	}
 	bCanBeHealedNow = bCanBeHealed;
 	//Todo: Issue #189

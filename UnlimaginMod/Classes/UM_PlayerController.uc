@@ -206,6 +206,14 @@ function Possess(Pawn aPawn)
 		ServerSetClassicTrans(bClassicTrans);
 }
 
+function ServerAcknowledgePossession(Pawn P, float NewHand, bool bNewAutoTaunt)
+{
+	ResetTimeMargin();
+    AcknowledgedPawn = P;
+    ServerSetHandedness(NewHand);
+    ServerSetAutoTaunt(bNewAutoTaunt);
+}
+
 // Overidden to support resetting shake and blur values when you posses the pawn
 function AcknowledgePossession(Pawn P)
 {
@@ -217,7 +225,7 @@ function AcknowledgePossession(Pawn P)
 		StopViewShaking();
 		if ( Level.NetMode != NM_DedicatedServer )
 			SetBlur(0);
-		if ( KFHumanPawn(P) != None )
+		if ( KFHumanPawn(P) != None && KFHumanPawn(P).KFPC != self )
             KFHumanPawn(P).KFPC = self;
 	}
 	
@@ -227,14 +235,6 @@ function AcknowledgePossession(Pawn P)
 			P.SetBaseEyeHeight();
 		ServerAcknowledgePossession(P, Handedness, bAutoTaunt);
 	}
-}
-
-function ServerAcknowledgePossession(Pawn P, float NewHand, bool bNewAutoTaunt)
-{
-	ResetTimeMargin();
-    AcknowledgedPawn = P;
-    ServerSetHandedness(NewHand);
-    ServerSetAutoTaunt(bNewAutoTaunt);
 }
 
 // unpossessed a pawn (not because pawn was killed)
@@ -293,6 +293,55 @@ simulated event PostBeginPlay()
 	
 	// Spawn hint manager (if needed)
 	UpdateHintManagement(bShowHints);
+}
+
+// Have cut out xPlayer class ComboList logic from PlayerTick for now
+event PlayerTick( float DeltaTime )
+{
+	// From the KFPlayerController class
+	if ( bHasDelayedSong && Player != None )
+		NetPlayMusic(DelayedSongToPlay, 0.5, 0);
+	
+	if ( Level.GRI != None )  {
+		if ( KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )
+			Advertising_EnterZone("mp_lobby");
+		else if ( Level.GRI.bMatchHasBegun )
+			Advertising_ExitZone();
+	}
+
+	// From the PlayerController class
+	if ( bForcePrecache )  {
+		if ( Level.TimeSeconds > ForcePrecacheTime )  {
+			bForcePrecache = False;
+			Level.FillPrecacheMaterialsArray( false );
+			Level.FillPrecacheStaticMeshesArray( false );
+		}
+	}
+	else if ( !bShortConnectTimeOut )  {
+		bShortConnectTimeOut = True;
+		ServerShortTimeout();
+	}
+
+	if ( Pawn != AcknowledgedPawn )  {
+		if ( Role < ROLE_Authority )  {
+			// make sure old pawn controller is right
+			if ( AcknowledgedPawn != None && AcknowledgedPawn.Controller == self )
+				AcknowledgedPawn.Controller = None;
+		}
+		AcknowledgePossession(Pawn);
+	}
+	
+	PlayerInput.PlayerInput(DeltaTime);
+	if ( bUpdatePosition )
+		ClientUpdatePosition();
+	
+	if ( !IsSpectating() && Pawn != None )
+		Pawn.RawInput(DeltaTime, aBaseX, aBaseY, aBaseZ, aMouseX, aMouseY, aForward, aTurn, aStrafe, aUp, aLookUp);
+
+	PlayerMove(DeltaTime);
+
+	if ( Level.NetMode != NM_DedicatedServer && (BlurTime > 0 || ColorFadeTime > 0) )
+		UpdateBlurEffect(DeltaTime);
 }
 
 // Set up the widescreen FOV values for this player

@@ -31,7 +31,10 @@ var		UM_HumanPawn	PawnOwner;
 replication
 {
 	if ( Role == ROLE_Authority && bNetDirty )
-		PawnOwner, bVeterancyChangedTrigger;
+		PawnOwner;
+		
+	if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
+		bVeterancyChangedTrigger;
 }
 
 //[end] Replication

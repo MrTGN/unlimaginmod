@@ -74,6 +74,9 @@ var		class<KFMonstersCollection>		UM_MonsterCollection;
 var		Class<KFLevelRules>				DefaultLevelRulesClass;
 var		string							UM_LoginMenuClass;
 
+var		float							ExitZedTime;
+var		float							BotAtHumanFriendlyFireScale;
+
 event PreBeginPlay()
 {
 	Super(Invasion).PreBeginPlay();
@@ -89,6 +92,38 @@ event PreBeginPlay()
 	bShowHint_2 = true;
 	bShowHint_3 = true;
 }
+
+function bool AllowGameSpeedChange()
+{
+	if ( Level.NetMode == NM_Standalone )
+		Return True;
+	
+	Return bAllowMPGameSpeed;
+}
+
+// Set gameplay speed.
+function SetGameSpeed( float T )
+{
+    local	float	OldSpeed;
+
+    if ( !AllowGameSpeedChange() )  {
+        Level.TimeDilation = 1.1;
+        GameSpeed = 1.0;
+        default.GameSpeed = GameSpeed;
+    }
+    else  {
+        OldSpeed = GameSpeed;
+        GameSpeed = FMax(T, 0.1);
+        Level.TimeDilation = 1.1 * GameSpeed;
+        if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
+            default.GameSpeed = GameSpeed;
+            class'GameInfo'.static.StaticSaveConfig();
+        }
+    }
+	
+    SetTimer((Level.TimeDilation / GameSpeed), True);
+}
+
 
 function LoadUpMonsterList()
 {
@@ -170,10 +205,12 @@ event InitGame( string Options, out string Error )
 	MaxLives = 1;
 	bForceRespawn = True;
 
+	DefaultGameSpeed = default.GameSpeed;
 	MaxPlayers = Clamp( UM_MaximumPlayers, 0, 32);
 	
+	FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0);
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
-		UM_GameReplicationInfo(GameReplicationInfo).bFriendlyFireIsEnabled = FriendlyFireScale > 0.0;
+		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
 	
 
 	foreach DynamicActors(class'KFLevelRules',KFLRit)
@@ -327,7 +364,7 @@ exec function SetFriendlyFireScale( float NewFriendlyFireScale )
 {
 	FriendlyFireScale = FClamp(NewFriendlyFireScale, 0.0, 1.0);
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
-		UM_GameReplicationInfo(GameReplicationInfo).bFriendlyFireIsEnabled = FriendlyFireScale > 0.0;
+		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
 		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
 }
@@ -345,6 +382,153 @@ function UpdateGameLength()
 	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
 		if ( PlayerController(C) != None && PlayerController(C).SteamStatsAndAchievements != None )
 			PlayerController(C).SteamStatsAndAchievements.bUsedCheats = PlayerController(C).SteamStatsAndAchievements.bUsedCheats || bCustomGameLength;
+	}
+}
+
+function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector HitLocation, out vector Momentum, class<DamageType> DamageType )
+{
+	local	bool		bDamageByWeaponOrVehicle;
+	local	Controller	InjuredController, InstigatorController;
+	local	int			InjuredTeamNum, InstigatorTeamNum;
+	
+	if ( Injured.InGodMode() || Injured.PhysicsVolume.bNeutralZone )  {
+		Momentum = vect(0.0, 0.0, 0.0);
+		Return 0;
+	}
+	
+	InjuredController = Injured.Controller;
+	InstigatorController = InstigatedBy.Controller;
+	if ( InstigatorController == None )  {
+		InstigatorController = Injured.DelayedDamageInstigatorController;
+		// Nothing to do in this case. Just Return Damage.
+		if ( InstigatorController == None )
+			Return Damage;
+		else
+			InstigatedBy = InstigatorController.Pawn;
+	}
+	
+	// Not a self damaging
+	if ( Injured != InstigatedBy || InjuredController != InstigatorController )  {
+		bDamageByWeaponOrVehicle = (Class<WeaponDamageType>(DamageType) != None || Class<VehicleDamageType>(DamageType) != None);
+		// SpawnProtection
+		if ( bDamageByWeaponOrVehicle && (Level.TimeSeconds - Injured.SpawnTime) < SpawnProtectionTime )  {
+			Momentum = vect(0.0, 0.0, 0.0);
+			Return 0;
+		}
+		
+		if ( InstigatedBy == None )  {
+			InjuredTeamNum = InjuredController.GetTeamNum();
+			InstigatorTeamNum = InstigatorController.GetTeamNum();
+		}
+		else  {
+			InjuredTeamNum = Injured.GetTeamNum();
+			InstigatorTeamNum = InstigatedBy.GetTeamNum();
+		}
+		
+		// Friendly Fire
+		if ( InjuredTeamNum == InstigatorTeamNum )  {
+			/*
+			// GameRulesModifiers
+			if ( FriendlyFireScale <= 0.0 || (Vehicle(Injured) != None && Vehicle(Injured).bNoFriendlyFire) )  {
+				if ( GameRulesModifiers != None )
+					Return GameRulesModifiers.NetDamage( Damage, 0, Injured, InstigatedBy, HitLocation, Momentum, DamageType );
+				else  {
+					Momentum *= 0.0;
+					Return 0;
+				}
+			} */
+			// FriendlyFire is not allowed
+			if ( FriendlyFireScale <= 0.0 )  {
+				Momentum = vect(0.0, 0.0, 0.0);
+				Return 0;
+			}
+			
+			// Injured is a Bot. Yell about friendly fire.
+			if ( Bot(InjuredController) != None && InstigatedBy != None )
+				Bot(InjuredController).YellAt( InstigatedBy );
+			// Human player Controller
+			else if ( PlayerController(InjuredController) != None && InstigatorController != None ) {
+				// AutoTaunt
+				if ( InjuredController.AutoTaunt() )
+					InjuredController.SendMessage(InstigatorController.PlayerReplicationInfo, 'FRIENDLYFIRE', Rand(3), 5, 'TEAM');
+				// Human player is under the friendly Bot fire.
+				if ( KFFriendSoldierController(InstigatorController) != None || KFFriendlyAI(InstigatorController) != None
+							 || FriendlyMonsterController(InstigatorController) != None || FriendlyMonsterAI(InstigatorController) != None )  {
+					Damage *= BotAtHumanFriendlyFireScale;
+					if ( bDamageByWeaponOrVehicle )
+						Momentum *= BotAtHumanFriendlyFireScale;
+				}
+			}
+			Damage *= FriendlyFireScale;
+			if ( bDamageByWeaponOrVehicle )
+				Momentum *= FriendlyFireScale;
+		}
+		// HasFlag
+		else if ( InjuredController != None && !Injured.IsHumanControlled()
+				 && InjuredController.PlayerReplicationInfo != None && InjuredController.PlayerReplicationInfo.HasFlag != None )
+			InjuredController.SendMessage(None, 'OTHER', InjuredController.GetMessageIndex('INJURED'), 15, 'TEAM');
+		
+		// If Injured is a Monster. StatsAndAchievements.
+		if ( Monster(Injured) != None && KFPlayerController(InstigatorController) != None && Class<KFWeaponDamageType>(DamageType) != None )
+			Class<KFWeaponDamageType>(DamageType).static.AwardDamage( KFSteamStatsAndAchievements(KFPlayerController(InstigatorController).SteamStatsAndAchievements), Clamp(Damage, 1, Injured.Health) );
+	}
+	// Half damage caused by self on the StandAlone server
+	else if ( Level.NetMode == NM_StandAlone && GameDifficulty <= 3.0 && Injured.IsPlayerPawn() )
+		Damage *= 0.5;
+	
+	// InvasionBot DamagedMessage
+	if ( InvasionBot(InjuredController) != None )  {
+		if ( !InvasionBot(InjuredController).bDamagedMessage && (Injured.Health - Damage) < 50 )  {
+			InvasionBot(InjuredController).bDamagedMessage = True;
+			if ( FRand() <= 0.5 )
+				InjuredController.SendMessage(None, 'OTHER', 4, 12, 'TEAM');
+			else
+				InjuredController.SendMessage(None, 'OTHER', 13, 12, 'TEAM');
+		}
+	}
+	
+	if ( InstigatedBy != None )  {
+		Momentum *= InstigatedBy.DamageScaling;
+		Return Damage * InstigatedBy.DamageScaling;
+	}
+	else
+		Return Damage;
+}
+
+event Tick( float DeltaTime )
+{
+	local	float		TrueTimeFactor;
+    local	int			Count;
+	local	Controller	C;
+	
+	// FriendlyFireScale Replication
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None && UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )  {
+		FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0);
+		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
+		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+	
+	if ( bZEDTimeActive )  {
+		TrueTimeFactor = 1.1 / Level.TimeDilation;
+		CurrentZEDTimeDuration -= DeltaTime * TrueTimeFactor;
+		if ( CurrentZEDTimeDuration > 0.0 && CurrentZEDTimeDuration < ExitZedTime )  {
+			if ( !bSpeedingBackUp )  {
+				bSpeedingBackUp = True;
+				for ( C = Level.ControllerList; C != None && Count < NumPlayers; C = C.NextController )  {
+					if ( KFPlayerController(C) != None )  {
+						KFPlayerController(C).ClientExitZedTime();
+						++Count;
+					}
+				}
+			}
+			SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
+		}
+		else if ( CurrentZEDTimeDuration <= 0.0 )  {
+			SetGameSpeed(DefaultGameSpeed);
+			bZEDTimeActive = False;
+			bSpeedingBackUp = False;
+			ZedTimeExtensionsUsed = 0;
+		}
 	}
 }
 
@@ -1574,7 +1758,7 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 defaultproperties
 {
      ActorPoolClass=Class'UnlimaginMod.UM_ActorPool'
-	 
+	 BotAtHumanFriendlyFireScale=0.5
 	 //EndGameBossClass
 	 UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss"
 	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_HALLOWEEN"
@@ -1722,7 +1906,8 @@ defaultproperties
 	 MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
 	 UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
  
-	 
+	 ZEDTimeDuration=3.000000
+	 ExitZedTime=0.500000
 	 //FinalWave
      UM_FinalWave=7
 	  

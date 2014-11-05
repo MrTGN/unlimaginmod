@@ -18,9 +18,11 @@ var		bool						bDefaultPropertiesCalculated;
 var		UM_SRClientPerkRepLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
+// Replication triggers
 var		bool						bPRIChangedTrigger, bClientPRIChangedTrigger;
 var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
 
+// DyingMessage
 var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
 
@@ -122,9 +124,9 @@ simulated event PostBeginPlay()
 	
 	if ( Level.NetMode != NM_DedicatedServer && bActorShadows && bPlayerShadows )  {
 		if ( bDetailedShadows )
-			PlayerShadow = Spawn(class'KFShadowProject',Self,'',Location);
+			PlayerShadow = Spawn(class'KFShadowProject', Self,'',Location);
 		else
-			PlayerShadow = Spawn(class'ShadowProjector',Self,'',Location);
+			PlayerShadow = Spawn(class'ShadowProjector', Self,'',Location);
 		PlayerShadow.ShadowActor = self;
 		PlayerShadow.bBlobShadow = bBlobShadow;
 		PlayerShadow.LightDirection = Normal(vect(1,1,3));
@@ -198,11 +200,8 @@ function UpdateHealthMovementModifiers()
 protected function SetHealth( int NewHealth )
 {
 	Health = Max(NewHealth, 0);
-	if ( Health == 0 )  {
-		Pawn Dies!
-		//ToDO: дописать этот блок!
+	if ( Health == 0 )
 		Return;
-	}
 	
 	UpdateHealthMovementModifiers();
 	UpdateGroundSpeed();
@@ -313,7 +312,7 @@ function NotifyVeterancyChanged()
 	
 	/* If there is no UM_PlayerReplicationInfo, Notifying clients about changes	
 		by ClientTrigger() event. 
-	In other case ClientNotifyVeterancyChanged() will be called from UM_PlayerReplicationInfo. */
+		In other case ClientNotifyVeterancyChanged() will be called from UM_PlayerReplicationInfo. */
 	if ( UM_PlayerReplicationInfo == None )  {
 		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
 		bClientTrigger = !bClientTrigger;
@@ -1324,7 +1323,7 @@ protected function AddHealth()
 		DeltaHealIntensity = Round(HealIntensity * (Level.TimeSeconds - LastHealTime));
 		if ( DeltaHealIntensity > 0 )  {
 			LastHealTime = Level.TimeSeconds;
-			if ( Health < OverhealedHealthMax )  {
+			if ( Health < OverhealedHealthMax )
 				SetHealth( Min((Health + DeltaHealIntensity), OverhealedHealthMax) );
 			HealIntensity -= float(DeltaHealIntensity) * 0.5;
 		}
@@ -1473,21 +1472,52 @@ event Timer()
 		IdleWeaponAnim = IdleRestAnim;
 }
 
-// server only
-event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex)
+//ToDo: issue #204
+function ArmorReduceDamage( out int Damage, Pawn instigatedBy, out Vector Momentum, class<DamageType> DamageType )
 {
-	// GodMode and FriendlyFire
-	if ( (Controller != None && Controller.bGodMode)
-		 || (InstigatedBy != None && InstigatedBy != Self && TeamGame(Level.Game) != None 
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
+	if ( DamageType.default.bArmorStops )
+		Damage = ShieldAbsorb( Damage );
+}
+
+// From the Pawn TakeDamage with enhancements
+function ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+{
+	local	Controller	Killer;
+	
+	// Only server
+	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
 		Return;
 	
-	if ( KFMonster(InstigatedBy) != None )
-		KFMonster(InstigatedBy).bDamagedAPlayer = True;
-
-	// Don't allow momentum from a player shooting a player
-	if ( KFHumanPawn(InstigatedBy) != None )
-		Momentum = vect(0,0,0);
+	if ( DamageType == None )  {
+		if ( InstigatedBy != None && InstigatedBy.Weapon != None )
+			Warn("No damagetype for damage by "$InstigatedBy$" with weapon "$InstigatedBy.Weapon);
+		DamageType = class'DamageType';
+	}
+	
+	if ( (InstigatedBy == None || InstigatedBy.Controller == None) && DamageType.default.bDelayedDamage && DelayedDamageInstigatorController != None )
+		InstigatedBy = DelayedDamageInstigatorController.Pawn;
+	
+	if ( Physics == PHYS_None && DrivenVehicle == None )
+		SetMovementPhysics();
+	
+	// Momentum
+	if ( Physics == PHYS_Walking && damageType.default.bExtraMomentumZ )
+		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
+	if ( InstigatedBy == self )
+		Momentum *= 0.75;
+	Momentum /= Mass;
+	
+	//[block] Damage modifiers
+	// Owner takes damage while holding this weapon - used by shield gun
+	if ( Weapon != None )
+		Weapon.AdjustPlayerDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	// Modify Damage if Pawn is driving a vehicle
+	if ( DrivenVehicle != None )
+		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
+		Damage *= 2;
 	
 	if ( UM_PlayerReplicationInfo != None )
 		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
@@ -1495,14 +1525,77 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( bOnDrugs )
 		Damage = float(Damage) * DrugsDamageScale;
 	
-	// Just return if this wouldn't even damage us. Prevents us from catching on fire for high level perks that dont take fire damage
+	if ( Level.Game != None )
+		Damage = Level.Game.ReduceDamage( Damage, self, instigatedBy, HitLocation, Momentum, DamageType );
+	
+	//ToDo: issue #204
+	// if ( Armor != None )
+		ArmorReduceDamage( Damage, instigatedBy, Momentum, DamageType );
+	//[end]
+	
+	// Just return if this wouldn't even damage us.
 	if ( Damage < 1 )
 		Return;
 	
 	bCanBeHealedNow = False;
+	// Achievements Helper
+	if ( KFMonster(InstigatedBy) != None )
+		KFMonster(InstigatedBy).bDamagedAPlayer = True;
+	
 	LastHitDamType = DamageType;
 	LastDamagedBy = InstigatedBy;
 	
+	if ( HitLocation == vect(0.0, 0.0, 0.0) )
+		HitLocation = Location;
+	
+	SetHealth( Health - Damage );
+	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
+	// Pawn died
+	if ( Health < 1 )  {
+		if ( InstigatedBy != None && InstigatedBy != self )
+			Killer = InstigatedBy.Controller;
+		else if ( DamageType.default.bCausedByWorld && LastHitBy != None )
+			Killer = LastHitBy;
+		// if no Killer
+		if ( Killer == None && DelayedDamageInstigatorController != None )
+			Killer = DelayedDamageInstigatorController;
+		
+		if ( bPhysicsAnimUpdate )
+			SetTearOffMomemtum( Momentum );
+		
+		Died( Killer, DamageType, HitLocation );
+	}
+	// Paw has lost some Health
+	else  {
+		AddVelocity( Momentum );
+		if ( Controller != None )
+			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
+		if ( InstigatedBy != None && InstigatedBy != self )
+			LastHitBy = InstigatedBy.Controller;
+		
+		if ( KFPC != None && Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
+			NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
+			// Tell everyone we're dying
+			KFPC.Speech('AUTO', 6, "");
+		}
+	}
+	MakeNoise(1.0);
+	bCanBeHealedNow = bCanBeHealed;
+}
+
+// server only
+/*ToDo:	эта функция должна использоваться как координатор получаемого урона.
+		т.е. поджигать, или отправять вызвов функции кислоты, или просто наностить урон
+		через вызов ProcessTakeDamage */
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
+{
+	// GodMode or FriendlyFire
+	if ( (Controller != None && Controller.bGodMode) || Damage < 1
+		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
+			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
+		Return;
+	
+	//ToDo: заменить на ProcessTakeDamage
 	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, DamageType);
 	
 	// Do burn damage if the damage was significant enough
@@ -1545,12 +1638,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			Controller.SetTimer(10.0, false);
 	}
 	
-	if ( Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
-		NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
-		// Tell everyone we're dying
-		KFPC.Speech('AUTO', 6, "");
-	}
-	bCanBeHealedNow = bCanBeHealed;
+	
+	
 	//Todo: Issue #189
 	/*
 	//Simulated Bloody Overlays

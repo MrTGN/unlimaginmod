@@ -569,14 +569,25 @@ simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 		GotoState('InTheWater');
 }
 
-// Server function because Level.Game variable exists only on the server-side
-function bool CanHurtPawn( Pawn P )
+simulated function bool CanHurtPawn( Pawn P )
 {
+	// Return True if it's not a pawn
+	if ( P == None )
+		Return True;
+	
 	// Do not damage a friendly Pawn
-	if ( P == None || (!bCanHurtOwner && P == Instigator) 
-		 || (Instigator != None && P != Instigator && TeamGame(Level.Game) != None
-			 && TeamGame(Level.Game).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
-		Return False;
+	if ( Instigator != None )  {
+		if ( (!bCanHurtOwner && P == Instigator ) 
+			 || (P != Instigator && UM_GameReplicationInfo(Level.GRI) != None
+				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
+			Return False;
+	}
+	else ( InstigatorController != None && P.Controller != None )  {
+		if ( (!bCanHurtOwner && InstigatorController == P.Controller) 
+			 || (InstigatorController != P.Controller && UM_GameReplicationInfo(Level.GRI) != None
+				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatorController.GetTeamNum() == P.Controller.GetTeamNum()) )
+			Return False;
+	}
 	
 	Return True;
 }
@@ -747,18 +758,10 @@ simulated function ProcessHitActor(
 
 simulated function bool CanHitThisActor( Actor A )
 {
-	local	Pawn	P;
-
-	if ( ROBulletWhipAttachment(A) != None )
+	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
 		Return False;
 	
-	P = Pawn(A);
-	if ( Instigator != None && (A == Instigator || A.Base == Instigator 
-			|| (P != None && UM_GameReplicationInfo(Level.GRI) != None 
-				 && !UM_GameReplicationInfo(Level.GRI).bFriendlyFireIsEnabled && P.GetTeamNum() == Instigator.GetTeamNum())) )
-		Return False;
-	
-	Return True;
+	Return CanHurtPawn( Pawn(A) );	// CanHurtPawn() is a safe function. If Pawn == None it returns True.
 }
 
 simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )

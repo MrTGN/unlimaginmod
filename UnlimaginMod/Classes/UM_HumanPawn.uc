@@ -26,6 +26,13 @@ var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
 var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
 
+// Bile Damaging
+var		int							BileDamage;
+var		range						BileDamageRandRange;
+var		float						BileLifeSpan;
+var		float						BileLifeTime;
+var		float						LastBileDamageTime;
+
 // Movement Modifiers
 var		float						HealthMovementModifier;
 var		float						CarryWeightMovementModifier;
@@ -33,7 +40,7 @@ var		float						InventoryMovementModifier;
 var		float						VeterancyMovementModifier;
 
 // Healing
-var		bool						bCanBeHealedNow;	// Prevents from changing Health by several functions at the same time
+var		bool						bAllowedToChangeHealth;	// Prevents from changing Health by several functions at the same time
 var		float						HealDelay, NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
 
@@ -139,6 +146,8 @@ simulated event PostBeginPlay()
 // my PRI now has a new team
 simulated function NotifyTeamChanged()
 {
+	bClientPRIChangedTrigger = bPRIChangedTrigger;
+	
 	if ( PlayerReplicationInfo != None )  {
 		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
 		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
@@ -156,14 +165,21 @@ simulated function NotifyTeamChanged()
 
 simulated event ClientTrigger()
 {
-	if ( bPRIChangedTrigger != bClientPRIChangedTrigger )
+	// PlayerReplicationInfo has changed
+	if ( bClientPRIChangedTrigger != bPRIChangedTrigger )
 		NotifyTeamChanged();
 	
-	if ( bVeterancyChangedTrigger != bClientVeterancyChangedTrigger )
+	// Veterancy has changed
+	if ( bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
 		ClientNotifyVeterancyChanged();
 }
 
 simulated event PostNetReceive() { }
+
+simulated final function float GetRandRangeMult( range RR )
+{
+	Return	RR.Min + (RR.Max - RR.Min) * FRand();
+}
 
 simulated final function float GetRandMult( float MinMult, float MaxMult )
 {
@@ -310,12 +326,15 @@ function NotifyVeterancyChanged()
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
 	
-	/* If there is no UM_PlayerReplicationInfo, Notifying clients about changes	
+	/*	If there is no UM_PlayerReplicationInfo, Notifying clients about changes	
 		by ClientTrigger() event. 
 		In other case ClientNotifyVeterancyChanged() will be called from UM_PlayerReplicationInfo. */
 	if ( UM_PlayerReplicationInfo == None )  {
 		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
 		bClientTrigger = !bClientTrigger;
+		// If it is a Standalone game or ListenServer
+		if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+			ClientNotifyVeterancyChanged();
 	}
 	
 	// Notify all weapons in the Inventory list
@@ -335,6 +354,8 @@ simulated function ClientNotifyVeterancyChanged()
 {
 	local	Inventory	I;
 	local	int			Count;
+	
+	bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
 	
 	// Notify all weapons in the Inventory list
 	// Inventory var exists only on the server and on the client-owner
@@ -388,6 +409,10 @@ function PossessedBy( Controller C )
 	
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
 	bPRIChangedTrigger = !bPRIChangedTrigger;
+	// If it is a Standalone game or ListenServer
+	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+		NotifyTeamChanged();
+	
 	if ( UM_PlayerReplicationInfo != None )  {
 		UM_PlayerReplicationInfo.SetPawnOwner(self);
 		// To be sure that all ReplicationInfo will be received by clients
@@ -415,6 +440,10 @@ function UnPossessed()
 	
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
 	bPRIChangedTrigger = !bPRIChangedTrigger;
+	// If it is a Standalone game or ListenServer
+	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+		NotifyTeamChanged();
+	
 	NotifyVeterancyChanged();
 }
 
@@ -625,7 +654,7 @@ function bool DoJump( bool bUpdating )
 		Return True;
     } */
 	if ( !bIsCrouched && !bWantsToCrouch )  {
-		JumpModif = GetRandMult( JumpRandRange.Min, JumpRandRange.Max ) * VeterancyJumpBonus;
+		JumpModif = GetRandRangeMult( JumpRandRange ) * VeterancyJumpBonus;
 		JumpZ = default.JumpZ * CarryWeightJumpModifier * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
@@ -1188,7 +1217,7 @@ simulated function AddBlur( float BlurDuration, float Intensity )
 	}
 }
 
-simulated function DoHitCamEffects(vector HitDirection, float JarrScale, float BlurDuration, float JarDurationScale )
+simulated function DoHitCamEffects( vector HitDirection, float JarrScale, float BlurDuration, float JarDurationScale )
 {
 	if ( KFPC != None && Viewport(KFPC.Player) != None )
 		Super.DoHitCamEffects(HitDirection, JarrScale, BlurDuration, JarDurationScale);
@@ -1221,57 +1250,184 @@ simulated function RemoveFlamingEffects()
     }
 }
 
-simulated function StartBurnFX()
+//ToDo: issue #204
+function ArmorAbsorbDamage( out int Damage, Pawn instigatedBy, out Vector Momentum, class<DamageType> DamageType )
 {
-	if ( ItBUURRNNNS == None && !bGibbed && !bDeleteMe )  {
-		ItBUURRNNNS = Spawn(BurnEffect);
-		ItBUURRNNNS.SetBase(Self);
-		ItBUURRNNNS.Emitters[0].SkeletalMeshActor = self;
-		ItBUURRNNNS.Emitters[0].UseSkeletalLocationAs = PTSU_SpawnOffset;
-	}
-
-	bBurnApplied = True;
+	if ( DamageType.default.bArmorStops )
+		Damage = ShieldAbsorb( Damage );
 }
 
-simulated function StopBurnFX()
+// From the Pawn TakeDamage with enhancements
+function ProcessTakeDamage( out int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
-	RemoveFlamingEffects();
-	if ( ItBUURRNNNS != None )
-		ItBUURRNNNS.Kill();
-    
-	bBurnApplied = False;
-}
-
-// Clearing
-function Drugs() { }
-
-simulated function SetOnDrugs()
-{
-	bBerserk = True;
-	if ( Role == ROLE_Authority )  {
-		bOnDrugs = True;
-		PlaySound(BreathingSound, SLOT_Talk, TransientSoundVolume,, TransientSoundRadius,, True);
+	local	Controller	Killer;
+	
+	// Only server
+	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )  {
+		Damage = 0;
+		Return;
 	}
+	
+	if ( DamageType == None )  {
+		if ( InstigatedBy != None && InstigatedBy.Weapon != None )
+			Warn("No damagetype for damage by "$InstigatedBy$" with weapon "$InstigatedBy.Weapon);
+		DamageType = class'DamageType';
+	}
+	
+	if ( (InstigatedBy == None || InstigatedBy.Controller == None) && DamageType.default.bDelayedDamage && DelayedDamageInstigatorController != None )
+		InstigatedBy = DelayedDamageInstigatorController.Pawn;
+	
+	if ( Physics == PHYS_None && DrivenVehicle == None )
+		SetMovementPhysics();
+	
+	// Momentum
+	if ( Physics == PHYS_Walking && damageType.default.bExtraMomentumZ )
+		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
+	if ( InstigatedBy == self )
+		Momentum *= 0.75;
+	Momentum /= Mass;
+	
+	//[block] Damage modifiers
+	// Owner takes damage while holding this weapon - used by shield gun
+	if ( Weapon != None )
+		Weapon.AdjustPlayerDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	// Modify Damage if Pawn is driving a vehicle
+	if ( DrivenVehicle != None )
+		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
+		Damage *= 2;
+	
+	if ( UM_PlayerReplicationInfo != None )
+		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
+	
+	if ( bOnDrugs )
+		Damage = float(Damage) * DrugsDamageScale;
+	
+	if ( Level.Game != None )
+		Damage = Level.Game.ReduceDamage( Damage, self, instigatedBy, HitLocation, Momentum, DamageType );
+	
+	//ToDo: issue #204
+	// if ( Armor != None )
+		ArmorAbsorbDamage( Damage, instigatedBy, Momentum, DamageType );
+	//[end]
+	
+	// Just return if this wouldn't even damage us.
+	if ( Damage < 1 )
+		Return;
+	
+	bAllowedToChangeHealth = False;
+	// Achievements Helper
+	if ( KFMonster(InstigatedBy) != None )
+		KFMonster(InstigatedBy).bDamagedAPlayer = True;
+	
+	LastHitDamType = DamageType;
+	LastDamagedBy = InstigatedBy;
+	
+	if ( HitLocation == vect(0.0, 0.0, 0.0) )
+		HitLocation = Location;
+	
+	SetHealth( Health - Damage );
+	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
+	// Pawn died
+	if ( Health < 1 )  {
+		if ( InstigatedBy != None && InstigatedBy != self )
+			Killer = InstigatedBy.Controller;
+		else if ( DamageType.default.bCausedByWorld && LastHitBy != None )
+			Killer = LastHitBy;
+		// if no Killer
+		if ( Killer == None && DelayedDamageInstigatorController != None )
+			Killer = DelayedDamageInstigatorController;
+		
+		if ( bPhysicsAnimUpdate )
+			SetTearOffMomemtum( Momentum );
+		
+		Died( Killer, DamageType, HitLocation );
+	}
+	// Paw has lost some Health
 	else  {
-		bClientOnDrugs = True;
-		if ( IsLocallyControlled() )
-			AddBlur(DrugsBlurDuration, DrugsBlurIntensity);
-	}
+		AddVelocity( Momentum );
+		if ( Controller != None )
+			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
+		if ( InstigatedBy != None && InstigatedBy != self )
+			LastHitBy = InstigatedBy.Controller;
 		
-	if ( Weapon != None )
-		Weapon.StartBerserk();
+		if ( KFPC != None && Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
+			NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
+			// Tell everyone we're dying
+			KFPC.Speech('AUTO', 6, "");
+		}
+	}
+	MakeNoise(1.0);
+	bAllowedToChangeHealth = True;
 }
 
-simulated function SetNotOnDrugs()
+// server only
+/*ToDo:	эта функция должна использоваться как координатор получаемого урона.
+		т.е. поджигать, или отправять вызвов функции кислоты, или просто наностить урон
+		через вызов ProcessTakeDamage */
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
-	bBerserk = False;
-	if ( Role == ROLE_Authority )
-		bOnDrugs = False;
-	else
-		bClientOnDrugs = False;
+	// GodMode or FriendlyFire
+	if ( (Controller != None && Controller.bGodMode) || Damage < 1
+		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
+			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
+		Return;
+	
+	// Do burn damage if the damage was significant enough
+	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None) && Damage > 2 )  {
+		if ( BurnDown < 1 )  {
+			bBurnified = True;
+			BurnDown = 5;
+			BurnInstigator = InstigatedBy;
+			SetTimer(1.5, True);
+		}
+		// If we are already burning, and this damage is more than our current burn amount, add more burn time
+		else if ( Damage > LastBurnDamage )  {
+			BurnDown = 5;
+			BurnInstigator = InstigatedBy;
+		}
+		LastBurnDamage = Damage;
 		
-	if ( Weapon != None )
-		Weapon.StopBerserk();
+		Return;
+	}
+	
+	// Taking a BileDamage
+	if ( Class<DamTypeVomit>(DamageType) != None )  {
+		if ( NextBileTime < Level.TimeSeconds )  {
+			LastBileDamageTime = Level.TimeSeconds;
+			NextBileTime = LastBileDamageTime + BileFrequency;
+		}
+		
+		BileDamage = Max(Damage, BileDamage);
+		BileInstigator = InstigatedBy;
+		BileLifeTime += BileLifeSpan;
+		
+		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bVomittedOn )  {
+			KFPC.bVomittedOn = True;
+			KFPC.VomittedOnTime = Level.TimeSeconds;
+			if ( Controller.TimerRate == 0.0 )
+				Controller.SetTimer(10.0, false);
+		}
+		
+		Return;	// Bile does not cause an instant damage
+	}
+	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bScreamedAt )  {
+		KFPC.bScreamedAt = True;
+		KFPC.ScreamTime = Level.TimeSeconds;
+		if ( Controller.TimerRate == 0.0 )
+			Controller.SetTimer(10.0, false);
+	}
+	
+	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	//Todo: Issue #189
+	/*
+	//Simulated Bloody Overlays
+	if ( (Health - Damage) <= (HealthMax * 0.4) )
+		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
 function bool Heal( out int HealAmount, int HealMax )
@@ -1336,10 +1492,104 @@ protected function AddHealth()
 	}
 }
 
-simulated event Tick( float DeltaTime )
+function TakeBileDamage()
+{
+	local	vector	BileCamVect;
+	local	int		DeltaBileDamage;
+	
+	NextBileTime = Level.TimeSeconds + BileFrequency;
+	BileLifeTime = FMax( (BileLifeTime - BileFrequency), 0.0 );
+	
+	DeltaBileDamage = Round(BileDamage * GetRandRangeMult(BileDamageRandRange) * (Level.TimeSeconds - LastBileDamageTime));
+	if ( DeltaBileDamage > 1 )  {
+		LastBileDamageTime = Level.TimeSeconds;
+		ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
+	
+		if ( DeltaBileDamage < 1 || Controller == None || PlayerController(Controller) == None )
+			Return;
+		
+		BileCamVect = vect( FRand(), FRand(), FRand() );
+		if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
+			DoHitCamEffects( BileCamVect, 0.25, 0.75, 0.5 );
+		else
+			DoHitCamEffects( BileCamVect, 0.35, 2.0,1.0 );
+	}
+}
+
+// Clearing
+function Drugs() { }
+
+simulated function SetOnDrugs()
+{
+	bBerserk = True;
+	if ( Role == ROLE_Authority )  {
+		bOnDrugs = True;
+		PlaySound(BreathingSound, SLOT_Talk, TransientSoundVolume,, TransientSoundRadius,, True);
+	}
+	else  {
+		bClientOnDrugs = True;
+		if ( IsLocallyControlled() )
+			AddBlur(DrugsBlurDuration, DrugsBlurIntensity);
+	}
+		
+	if ( Weapon != None )
+		Weapon.StartBerserk();
+}
+
+simulated function SetNotOnDrugs()
+{
+	bBerserk = False;
+	if ( Role == ROLE_Authority )
+		bOnDrugs = False;
+	else
+		bClientOnDrugs = False;
+		
+	if ( Weapon != None )
+		Weapon.StopBerserk();
+}
+
+simulated function StartBurnFX()
+{
+	if ( ItBUURRNNNS == None && !bGibbed && !bDeleteMe )  {
+		ItBUURRNNNS = Spawn(BurnEffect);
+		ItBUURRNNNS.SetBase(Self);
+		ItBUURRNNNS.Emitters[0].SkeletalMeshActor = self;
+		ItBUURRNNNS.Emitters[0].UseSkeletalLocationAs = PTSU_SpawnOffset;
+	}
+
+	bBurnApplied = True;
+}
+
+simulated function StopBurnFX()
+{
+	RemoveFlamingEffects();
+	if ( ItBUURRNNNS != None )
+		ItBUURRNNNS.Kill();
+    
+	bBurnApplied = False;
+}
+
+simulated function UpdateCameraBlur()
 {
 	local	float	BlurAmount;
 	
+	BlurFadeOutTime	-= DeltaTime;
+	BlurAmount = BlurFadeOutTime / StartingBlurFadeOutTime * CurrentBlurIntensity;
+
+	if ( BlurFadeOutTime <= 0.0 )  {
+		BlurFadeOutTime = 0.0;
+		StopHitCamEffects();
+	}
+	else if ( bUseBlurEffect )  {
+		if ( KFPC != None && KFPC.PostFX_IsReady() )
+			KFPC.SetBlur(BlurAmount);
+		else if( CameraEffectFound != None )
+			UnderWaterBlur(CameraEffectFound).BlurAlpha = Lerp( BlurAmount, 255, UnderWaterBlur(CameraEffectFound).default.BlurAlpha );
+	}
+}
+
+simulated event Tick( float DeltaTime )
+{
 	// Server
 	if ( Role == ROLE_Authority )  {
 		if ( bMovementDisabled && Level.TimeSeconds >= StopDisabledTime )  {
@@ -1347,13 +1597,18 @@ simulated event Tick( float DeltaTime )
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		}
 		// Operations with Pawn Health
-		if ( bCanBeHealedNow )  {
+		if ( bAllowedToChangeHealth )  {
 			// Overheal Reduction
 			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
 				ReduceOverheal();
+			
 			// Healing
 			if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
 				AddHealth();
+			
+			// Bile Damage
+			if ( BileLifeTime > 0.0 && Level.TimeSeconds >= NextBileTime )
+				TakeBileDamage();
 		}
 	}
 	// Client
@@ -1391,12 +1646,6 @@ simulated event Tick( float DeltaTime )
 		AnimAction = '';
 	}
 	
-	if ( BileCount > 0 && Level.TimeSeconds > NextBileTime )  {
-		--BileCount;
-		NextBileTime = Level.TimeSeconds + BileFrequency;
-		TakeBileDamage();
-	}
-	
 	if ( bDestroyAfterRagDollTick && Physics == PHYS_KarmaRagdoll
 		 && !bProcessedRagTickDestroy && GetRagDollFrames() > 0 )  {
 		bProcessedRagTickDestroy = True;
@@ -1418,26 +1667,12 @@ simulated event Tick( float DeltaTime )
 		}
 	}
 	
-	// Locally controlled client camera effect
-	// HitBlur Effect
-	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )  {
-		BlurFadeOutTime	-= DeltaTime;
-		BlurAmount = BlurFadeOutTime / StartingBlurFadeOutTime * CurrentBlurIntensity;
-
-		if ( BlurFadeOutTime <= 0.0 )  {
-			BlurFadeOutTime = 0.0;
-			StopHitCamEffects();
-		}
-		else if ( bUseBlurEffect )  {
-			if ( KFPC != None && KFPC.PostFX_IsReady() )
-				KFPC.SetBlur(BlurAmount);
-			else if( CameraEffectFound != None )
-				UnderWaterBlur(CameraEffectFound).BlurAlpha = Lerp( BlurAmount, 255, UnderWaterBlur(CameraEffectFound).default.BlurAlpha );
-		}
-	}
+	// Locally controlled client camera Blur Effect
+	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )
+		UpdateCameraBlur();
 }
 
-//[block] copied from KFHumanPawn to fix some bugs
+// copied from KFHumanPawn to fix some bugs
 event Timer()
 {
 	if ( BurnDown > 0 )  {
@@ -1470,207 +1705,6 @@ event Timer()
 	// Instantly set the animation to arms at sides Idle if we've got no weapon (rather than Pointing an invisible gun!)
 	if ( Weapon == None || (WeaponAttachment(Weapon.ThirdPersonActor) == None && VSizeSquared(Velocity) <= 0.0) )
 		IdleWeaponAnim = IdleRestAnim;
-}
-
-//ToDo: issue #204
-function ArmorReduceDamage( out int Damage, Pawn instigatedBy, out Vector Momentum, class<DamageType> DamageType )
-{
-	if ( DamageType.default.bArmorStops )
-		Damage = ShieldAbsorb( Damage );
-}
-
-// From the Pawn TakeDamage with enhancements
-function ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
-{
-	local	Controller	Killer;
-	
-	// Only server
-	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
-		Return;
-	
-	if ( DamageType == None )  {
-		if ( InstigatedBy != None && InstigatedBy.Weapon != None )
-			Warn("No damagetype for damage by "$InstigatedBy$" with weapon "$InstigatedBy.Weapon);
-		DamageType = class'DamageType';
-	}
-	
-	if ( (InstigatedBy == None || InstigatedBy.Controller == None) && DamageType.default.bDelayedDamage && DelayedDamageInstigatorController != None )
-		InstigatedBy = DelayedDamageInstigatorController.Pawn;
-	
-	if ( Physics == PHYS_None && DrivenVehicle == None )
-		SetMovementPhysics();
-	
-	// Momentum
-	if ( Physics == PHYS_Walking && damageType.default.bExtraMomentumZ )
-		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
-	if ( InstigatedBy == self )
-		Momentum *= 0.75;
-	Momentum /= Mass;
-	
-	//[block] Damage modifiers
-	// Owner takes damage while holding this weapon - used by shield gun
-	if ( Weapon != None )
-		Weapon.AdjustPlayerDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-	
-	// Modify Damage if Pawn is driving a vehicle
-	if ( DrivenVehicle != None )
-		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-	
-	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
-		Damage *= 2;
-	
-	if ( UM_PlayerReplicationInfo != None )
-		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
-	
-	if ( bOnDrugs )
-		Damage = float(Damage) * DrugsDamageScale;
-	
-	if ( Level.Game != None )
-		Damage = Level.Game.ReduceDamage( Damage, self, instigatedBy, HitLocation, Momentum, DamageType );
-	
-	//ToDo: issue #204
-	// if ( Armor != None )
-		ArmorReduceDamage( Damage, instigatedBy, Momentum, DamageType );
-	//[end]
-	
-	// Just return if this wouldn't even damage us.
-	if ( Damage < 1 )
-		Return;
-	
-	bCanBeHealedNow = False;
-	// Achievements Helper
-	if ( KFMonster(InstigatedBy) != None )
-		KFMonster(InstigatedBy).bDamagedAPlayer = True;
-	
-	LastHitDamType = DamageType;
-	LastDamagedBy = InstigatedBy;
-	
-	if ( HitLocation == vect(0.0, 0.0, 0.0) )
-		HitLocation = Location;
-	
-	SetHealth( Health - Damage );
-	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
-	// Pawn died
-	if ( Health < 1 )  {
-		if ( InstigatedBy != None && InstigatedBy != self )
-			Killer = InstigatedBy.Controller;
-		else if ( DamageType.default.bCausedByWorld && LastHitBy != None )
-			Killer = LastHitBy;
-		// if no Killer
-		if ( Killer == None && DelayedDamageInstigatorController != None )
-			Killer = DelayedDamageInstigatorController;
-		
-		if ( bPhysicsAnimUpdate )
-			SetTearOffMomemtum( Momentum );
-		
-		Died( Killer, DamageType, HitLocation );
-	}
-	// Paw has lost some Health
-	else  {
-		AddVelocity( Momentum );
-		if ( Controller != None )
-			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
-		if ( InstigatedBy != None && InstigatedBy != self )
-			LastHitBy = InstigatedBy.Controller;
-		
-		if ( KFPC != None && Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
-			NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
-			// Tell everyone we're dying
-			KFPC.Speech('AUTO', 6, "");
-		}
-	}
-	MakeNoise(1.0);
-	bCanBeHealedNow = bCanBeHealed;
-}
-
-// server only
-/*ToDo:	эта функция должна использоваться как координатор получаемого урона.
-		т.е. поджигать, или отправять вызвов функции кислоты, или просто наностить урон
-		через вызов ProcessTakeDamage */
-event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
-{
-	// GodMode or FriendlyFire
-	if ( (Controller != None && Controller.bGodMode) || Damage < 1
-		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
-			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
-		Return;
-	
-	//ToDo: заменить на ProcessTakeDamage
-	Super(xPawn).TakeDamage(Damage, InstigatedBy, hitLocation, momentum, DamageType);
-	
-	// Do burn damage if the damage was significant enough
-	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None) && Damage > 2 )  {
-		if ( BurnDown < 1 )  {
-			bBurnified = True;
-			BurnDown = 5;
-			BurnInstigator = InstigatedBy;
-			SetTimer(1.5, True);
-		}
-		// If we are already burning, and this damage is more than our current burn amount, add more burn time
-		else if ( Damage > LastBurnDamage )  {
-			BurnDown = 5;
-			BurnInstigator = InstigatedBy;
-		}
-		LastBurnDamage = Damage;
-	}
-	
-	if ( KFPC == None )
-		Return;
-
-	if ( Class<DamTypeVomit>(DamageType) != None )  {
-		BileCount = 7;
-		BileInstigator = InstigatedBy;
-		if ( NextBileTime < Level.TimeSeconds )
-			NextBileTime = Level.TimeSeconds + BileFrequency;
-
-		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPC.bVomittedOn )  {
-			KFPC.bVomittedOn = True;
-			KFPC.VomittedOnTime = Level.TimeSeconds;
-			if ( Controller.TimerRate == 0.0 )
-				Controller.SetTimer(10.0, false);
-		}
-	}
-	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !KFPC.bScreamedAt )  {
-		KFPC.bScreamedAt = True;
-		KFPC.ScreamTime = Level.TimeSeconds;
-		if ( Controller.TimerRate == 0.0 )
-			Controller.SetTimer(10.0, false);
-	}
-	
-	
-	
-	//Todo: Issue #189
-	/*
-	//Simulated Bloody Overlays
-	if ( (Health - Damage) <= (HealthMax * 0.4) )
-		SetOverlayMaterial(InjuredOverlay, 0, true); */
-}
-//[end]
-
-//ToDo: Issue #203
-function TakeBileDamage()
-{
-	local	vector	BileVect, HitMomentum;
-	local	int		RandBileDamage, ActualDamage;
-
-	RandBileDamage = 2 + Rand(3);
-    Super(Pawn).TakeDamage(RandBileDamage, BileInstigator, Location, vect(0,0,0), LastBileDamagedByType);
-    
-    HitMomentum = vect(0,0,0);
- //   ActualDamage = Level.Game.ReduceDamage(RandBileDamage, self, BileInstigator, Location, HitMomentum, LastBileDamagedByType);
-
-    if ( ActualDamage <= 0 || Controller == None || PlayerController(Controller) == None || Controller.bGodMode )
-        Return;
-
-	BileVect.X = FRand();
-	BileVect.Y = FRand();
-	BileVect.Z = FRand();
-
-	if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
-		DoHitCamEffects( BileVect, 0.25, 0.75, 0.5 );
-	else
-		DoHitCamEffects( BileVect, 0.35, 2.0,1.0 );
 }
 
 // Don't let this pawn move for a certain amount of time
@@ -1789,7 +1823,10 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     // CarryWeight
+     BileFrequency=0.5
+	 BileLifeSpan=4.0
+	 BileDamageRandRange=(Min=0.7,Max=1.3)
+	 // CarryWeight
 	 WeightSpeedModifier=0.14
 	 WeightJumpModifier=0.07
 	 MaxOverweightScale=1.2

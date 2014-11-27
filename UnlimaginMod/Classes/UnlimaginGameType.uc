@@ -391,6 +391,7 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 	local	Controller	InjuredController, InstigatorController;
 	local	int			InjuredTeamNum, InstigatorTeamNum;
 	
+	// GodMode check
 	if ( Injured.InGodMode() || Injured.PhysicsVolume.bNeutralZone )  {
 		Momentum = vect(0.0, 0.0, 0.0);
 		Return 0;

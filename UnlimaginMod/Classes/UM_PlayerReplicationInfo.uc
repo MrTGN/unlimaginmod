@@ -79,6 +79,10 @@ function NotifyVeterancyChanged()
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 	if ( PawnOwner != None )
 		PawnOwner.NotifyVeterancyChanged();
+	
+	// If it is a Standalone game or ListenServer
+	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+		ClientNotifyVeterancyChanged();
 }
 
 simulated function ClientNotifyVeterancyChanged()
@@ -103,7 +107,7 @@ simulated event PostNetReceive()
 		VoiceInfo.AddVoiceChatter(Self);
 	}
 	
-	if ( Role < ROLE_Authority && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
+	if ( Level.NetMode != NM_DedicatedServer && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
 		ClientNotifyVeterancyChanged();
 }
 

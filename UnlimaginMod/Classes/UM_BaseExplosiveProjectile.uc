@@ -296,7 +296,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		
 		P = Pawn(Victims);
 		// Do not damage a friendly Pawn
-		if ( (bIgnoreSameClassProj && Victims.Class == Class) || !CanHurtPawn(P) )
+		if ( (bIgnoreSameClassProj && Victims.Class == Class) || (P != None && !CanHurtPawn(P)) )
 			Return;
 				
 		if ( IgnoreVictims.Length > 0 )  {

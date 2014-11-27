@@ -571,9 +571,9 @@ simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 
 simulated function bool CanHurtPawn( Pawn P )
 {
-	// Return True if it's not a pawn
+	// Return False if Pawn == None
 	if ( P == None )
-		Return True;
+		Return False;
 	
 	// Do not damage a friendly Pawn
 	if ( Instigator != None )  {
@@ -761,7 +761,10 @@ simulated function bool CanHitThisActor( Actor A )
 	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
 		Return False;
 	
-	Return CanHurtPawn( Pawn(A) );	// CanHurtPawn() is a safe function. If Pawn == None it returns True.
+	if ( Pawn(A) != None )
+		Return CanHurtPawn( Pawn(A) );
+	
+	Return True;
 }
 
 simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )

@@ -401,9 +401,8 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 	InstigatorController = InstigatedBy.Controller;
 	if ( InstigatorController == None )  {
 		InstigatorController = Injured.DelayedDamageInstigatorController;
-		// Nothing to do in this case. Just Return Damage.
 		if ( InstigatorController == None )
-			Return Damage;
+			Return Damage; // Nothing to do in this case. Just return a Damage.
 		else
 			InstigatedBy = InstigatorController.Pawn;
 	}

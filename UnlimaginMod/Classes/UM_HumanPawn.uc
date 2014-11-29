@@ -30,8 +30,22 @@ var		float						NextDyingMessageTime;
 var		int							BileDamage;
 var		range						BileDamageRandRange;
 var		float						BileLifeSpan;
-var		float						BileLifeTime;
-var		float						LastBileDamageTime;
+var		float						BileTimeLeft;
+var		float						LastBileTime;
+
+// Drowning Damage
+var		range						DrowningDamageRandRange;
+var		float						DrowningDamageFrequency;
+var		class<DamageType>			DrowningDamageType;
+
+// Burning Damage
+var		range						BurningDamageRandRange;
+var		float						BurningIntensity;
+var		float						BurningFrequency, NextBurningTime, LastBurningTime;
+var		class<DamageType>			BurningDamageType;
+
+// Falling
+var		class<DamageType>			FallingDamageType
 
 // Movement Modifiers
 var		float						HealthMovementModifier;
@@ -1235,21 +1249,6 @@ simulated function StopHitCamEffects()
 	}
 }
 
-simulated function RemoveFlamingEffects()
-{
-    local	int		i;
-
-    if ( Level.NetMode == NM_DedicatedServer )
-        Return;
-
-    for ( i = 0; i < Attached.Length; ++i )  {
-        if ( xEmitter(Attached[i]) != None && BloodJet(Attached[i]) == None )
-			xEmitter(Attached[i]).mRegen = False;
-		else if ( KFMonsterFlame(Attached[i]) != None )
-			Attached[i].LifeSpan = 0.1;
-    }
-}
-
 //ToDo: issue #204
 function ArmorAbsorbDamage( out int Damage, Pawn instigatedBy, out Vector Momentum, class<DamageType> DamageType )
 {
@@ -1257,16 +1256,14 @@ function ArmorAbsorbDamage( out int Damage, Pawn instigatedBy, out Vector Moment
 		Damage = ShieldAbsorb( Damage );
 }
 
-// From the Pawn TakeDamage with enhancements
-function ProcessTakeDamage( out int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+// Process the damage taking and return the taken damage value
+function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
 	local	Controller	Killer;
 	
 	// Only server
-	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )  {
-		Damage = 0;
-		Return;
-	}
+	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
+		Return 0;
 	
 	if ( DamageType == None )  {
 		if ( InstigatedBy != None && InstigatedBy.Weapon != None )
@@ -1315,7 +1312,7 @@ function ProcessTakeDamage( out int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	
 	// Just return if this wouldn't even damage us.
 	if ( Damage < 1 )
-		Return;
+		Return 0;
 	
 	bAllowedToChangeHealth = False;
 	// Achievements Helper
@@ -1361,12 +1358,11 @@ function ProcessTakeDamage( out int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	}
 	MakeNoise(1.0);
 	bAllowedToChangeHealth = True;
+	
+	Return Damage;
 }
 
 // server only
-/*ToDo:	эта функция должна использоваться как координатор получаемого урона.
-		т.е. поджигать, или отправять вызвов функции кислоты, или просто наностить урон
-		через вызов ProcessTakeDamage */
 event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
 	// GodMode or FriendlyFire
@@ -1375,34 +1371,32 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
 		Return;
 	
-	// Do burn damage if the damage was significant enough
-	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None) && Damage > 2 )  {
-		if ( BurnDown < 1 )  {
-			bBurnified = True;
-			BurnDown = 5;
-			BurnInstigator = InstigatedBy;
-			SetTimer(1.5, True);
+	// Burnified if the burn damage was significant enough
+	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None) && Damage > 2 )  {
+		// Update timers only if we are not already burning
+		if ( NextBurningTime < Level.TimeSeconds )  {
+			LastBurningTime = Level.TimeSeconds;
+			NextBurningTime = LastBurningTime + BurningFrequency;
 		}
-		// If we are already burning, and this damage is more than our current burn amount, add more burn time
-		else if ( Damage > LastBurnDamage )  {
-			BurnDown = 5;
-			BurnInstigator = InstigatedBy;
-		}
-		LastBurnDamage = Damage;
 		
-		Return;
+		BurningIntensity += float(Damage);
+		BurnInstigator = InstigatedBy;
+		bBurnified = BurningIntensity > 0.0;
+		
+		Return; // Burning does not cause an instant damage
 	}
 	
-	// Taking a BileDamage
-	if ( Class<DamTypeVomit>(DamageType) != None )  {
+	// Start to taking a BileDamage if damage was significant enough
+	if ( Class<DamTypeVomit>(DamageType) != None && Damage > 2 )  {
+		// Update timers only if we are not already taking a bile damage
 		if ( NextBileTime < Level.TimeSeconds )  {
-			LastBileDamageTime = Level.TimeSeconds;
-			NextBileTime = LastBileDamageTime + BileFrequency;
+			LastBileTime = Level.TimeSeconds;
+			NextBileTime = LastBileTime + BileFrequency;
 		}
 		
 		BileDamage = Max(Damage, BileDamage);
 		BileInstigator = InstigatedBy;
-		BileLifeTime += BileLifeSpan;
+		BileTimeLeft += BileLifeSpan;
 		
 		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bVomittedOn )  {
 			KFPC.bVomittedOn = True;
@@ -1413,7 +1407,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		
 		Return;	// Bile does not cause an instant damage
 	}
-	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+	
+	// Siren Scream Damage
+	if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
 			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bScreamedAt )  {
 		KFPC.bScreamedAt = True;
 		KFPC.ScreamTime = Level.TimeSeconds;
@@ -1434,15 +1430,10 @@ function bool Heal( out int HealAmount, int HealMax )
 {
 	// Don't let heal more than the max overhealed health
 	if ( bCanBeHealed && Health < HealMax )  {
-		// If someone gets healed while burning, reduce the burn length/damage
-		/*
-		if ( BurnDown > 0 )  {
-			LastBurnDamage = float(LastBurnDamage) * 0.5;
-			if ( BurnDown > 1 )
-				BurnDown = float(BurnDown) * 0.5;
-		} */
-		LastHealTime = Level.TimeSeconds;
-		NextHealTime = LastHealTime + HealDelay;
+		if ( NextHealTime < Level.TimeSeconds )  {
+			LastHealTime = Level.TimeSeconds;
+			NextHealTime = LastHealTime + HealDelay;
+		}
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
 		if ( !bOnDrugs && HealIntensity >= DrugEffectHealIntensity )
 			SetOnDrugs();
@@ -1465,7 +1456,7 @@ function bool GiveHealth( int HealAmount, int HealMax )
 protected function ReduceOverheal()
 {
 	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
-	SetHealth( Max((Health - 1), int(HealthMax)) );
+	SetHealth( Max( (Health - 1), int(HealthMax) ) );
 }
 
 // Healing with HealIntensity decreasing
@@ -1490,30 +1481,105 @@ protected function AddHealth()
 		if ( Round(HealIntensity) < 1 )
 			HealIntensity = 0.0;
 	}
+	else
+		HealIntensity = 0.0;
 }
 
+// Take a Bile Damage (called from the Tick)
 function TakeBileDamage()
 {
 	local	vector	BileCamVect;
 	local	int		DeltaBileDamage;
 	
 	NextBileTime = Level.TimeSeconds + BileFrequency;
-	BileLifeTime = FMax( (BileLifeTime - BileFrequency), 0.0 );
+	BileTimeLeft = FMax( (BileTimeLeft - BileFrequency), 0.0 );
 	
-	DeltaBileDamage = Round(BileDamage * GetRandRangeMult(BileDamageRandRange) * (Level.TimeSeconds - LastBileDamageTime));
-	if ( DeltaBileDamage > 1 )  {
-		LastBileDamageTime = Level.TimeSeconds;
-		ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
-	
-		if ( DeltaBileDamage < 1 || Controller == None || PlayerController(Controller) == None )
-			Return;
-		
-		BileCamVect = vect( FRand(), FRand(), FRand() );
-		if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
-			DoHitCamEffects( BileCamVect, 0.25, 0.75, 0.5 );
-		else
-			DoHitCamEffects( BileCamVect, 0.35, 2.0,1.0 );
+	DeltaBileDamage = Round(float(BileDamage) * GetRandRangeMult(BileDamageRandRange) * (Level.TimeSeconds - LastBileTime));
+	if ( DeltaBileDamage > 0 )  {
+		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
+		if ( DeltaBileDamage > 0 )  {
+			LastBileTime = Level.TimeSeconds;
+			// CamEffects
+			if ( Controller != None && PlayerController(Controller) != None )  {
+				BileCamVect = vect( FRand(), FRand(), FRand() );
+				if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
+					DoHitCamEffects( BileCamVect, 0.25, 0.75, 0.5 );
+				else
+					DoHitCamEffects( BileCamVect, 0.35, 2.0,1.0 );
+			}
+		}
 	}
+}
+
+// Clearing old function
+function TakeFireDamage( int Damage, pawn BInstigator ) { }
+
+// Take a Burning Damage (called from the Tick)
+function TakeBurningDamage()
+{
+	local	int		DeltaBurningDamage;
+	
+	NextBurningTime = Level.TimeSeconds + BurningFrequency;
+	// Rounding BurningIntensity per delay
+	DeltaBurningDamage = Round(FMin(BurningIntensity, GetRandRangeMult(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime));
+	if ( DeltaBurningDamage > 0 )  {
+		BurningIntensity -= float(DeltaBurningDamage);
+		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
+		if ( DeltaBurningDamage > 0 )  {
+			LastBurningTime = Level.TimeSeconds;
+			// Shake controller
+			if ( Controller != None )
+				Controller.DamageShake( DeltaBurningDamage );
+		}
+	}
+	// Checking BurningIntensity
+	if ( Round(BurningIntensity) < 1 )  {
+		BurningIntensity = 0.0;
+		bBurnified = False;
+	}
+}
+
+// Take a Falling Damage
+function TakeFallingDamage()
+{
+	local	float	FallingSpeedRatio;
+	local	int		FallingDamage;
+	
+	// Calculating FallingSpeedRatio, taking into account PhysicsVolume gravity
+	if ( TouchingWaterVolume() )
+		FallingSpeedRatio = (Abs(Velocity.Z) - (GroundSpeed - WaterSpeed) * 2.0) / (MaxFallSpeed * Abs(Class'PhysicsVolume'.default.Gravity.Z) / Abs(PhysicsVolume.Gravity.Z));
+	else
+		FallingSpeedRatio = Abs(Velocity.Z) / (MaxFallSpeed * Abs(Class'PhysicsVolume'.default.Gravity.Z) / Abs(PhysicsVolume.Gravity.Z));
+	
+	if ( FallingSpeedRatio > 0.5 )  {
+		FallingDamage = Round(HealthMax * FallingSpeedRatio - HealthMax);
+		// Server
+		if ( Role == ROLE_Authority )  {
+			MakeNoise( FMin(FallingSpeedRatio, 1.0) );
+			// Hurt pawn if FallingSpeed is over the MaxFallSpeed
+			if ( FallingSpeedRatio > 1.0 )
+				ProcessTakeDamage( FallingDamage, None, Location, vect(0.0, 0.0, 0.0), FallingDamageType );
+		}
+		// Shake controller
+		if ( Controller != None )
+			Controller.DamageShake( FallingDamage );
+	}
+}
+
+// Take a Drowning Damage (called from the BreathTimer)
+function TakeDrowningDamage()
+{
+	ProcessTakeDamage( Round(GetRandRangeMult(DrowningDamageRandRange)), None, EyePosition(), vect(0.0, 0.0, 0.0), DrowningDamageType );
+	if ( Health > 0 )
+		BreathTime = DrowningDamageFrequency;
+}
+
+event BreathTimer()
+{
+	if ( Health < 1 || Level.NetMode == NM_Client || DrivenVehicle != None )
+		Return;
+	
+	TakeDrowningDamage();
 }
 
 // Clearing
@@ -1558,6 +1624,21 @@ simulated function StartBurnFX()
 	}
 
 	bBurnApplied = True;
+}
+
+simulated function RemoveFlamingEffects()
+{
+    local	int		i;
+
+    if ( Level.NetMode == NM_DedicatedServer )
+        Return;
+
+    for ( i = 0; i < Attached.Length; ++i )  {
+        if ( xEmitter(Attached[i]) != None && BloodJet(Attached[i]) == None )
+			xEmitter(Attached[i]).mRegen = False;
+		else if ( KFMonsterFlame(Attached[i]) != None )
+			Attached[i].LifeSpan = 0.1;
+    }
 }
 
 simulated function StopBurnFX()
@@ -1607,8 +1688,12 @@ simulated event Tick( float DeltaTime )
 				AddHealth();
 			
 			// Bile Damage
-			if ( BileLifeTime > 0.0 && Level.TimeSeconds >= NextBileTime )
+			if ( BileTimeLeft > 0.0 && Level.TimeSeconds >= NextBileTime )
 				TakeBileDamage();
+			
+			// Burning Damage
+			if ( BurningIntensity > 0.0 && Level.TimeSeconds >= NextBurningTime )
+				TakeBurningDamage();
 		}
 	}
 	// Client
@@ -1675,15 +1760,6 @@ simulated event Tick( float DeltaTime )
 // copied from KFHumanPawn to fix some bugs
 event Timer()
 {
-	if ( BurnDown > 0 )  {
-		LastBurnDamage *= 0.5;
-        TakeFireDamage(LastBurnDamage, BurnInstigator);
-	}
-	else  {
-		RemoveFlamingEffects();
-		StopBurnFX();
-	}
-
 	//ToDo: выпилить это! Issue #207
 	// Flashlight Drain
 	if ( KFWeapon(Weapon) != None && KFWeapon(Weapon).FlashLight != None )  {
@@ -1823,9 +1899,23 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     BileFrequency=0.5
+     GroundSpeed=200.000000
+     WaterSpeed=180.000000
+     AirSpeed=230.000000
+     // Damaging
+	 BileFrequency=0.5
 	 BileLifeSpan=4.0
 	 BileDamageRandRange=(Min=0.7,Max=1.3)
+	 // Drowning
+	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
+	 DrowningDamageFrequency=1.0
+     DrowningDamageType=Class'Drowned'
+	 // Burning
+	 BurningDamageRandRange=(Min=4.0,Max=6.0)
+	 BurningFrequency=0.5
+	 BurningDamageType=Class'DamTypeBurned'
+	 // Falling
+	 FallingDamageType=Class'Fell'
 	 // CarryWeight
 	 WeightSpeedModifier=0.14
 	 WeightJumpModifier=0.07

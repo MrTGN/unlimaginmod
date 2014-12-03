@@ -819,25 +819,32 @@ function bool AddInventory( Inventory NewItem )
 
 function DeleteInventory( Inventory Item )
 {
-	local	Inventory	I;
+	// If this item is in our inventory chain, unlink it.
+	local	Actor		Link;
 	local	int			Count;
 	
-	//ToDo: issue #218
-	if ( Role != ROLE_Authority )
-		Return;
+	if ( Item == Weapon )
+		Weapon = None;
 	
-	if ( KFWeapon(Item) != None )  {
-		for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
-			if ( I == Item )  {
+	if ( Item == SelectedItem )
+		SelectedItem = None;
+	
+	for ( Link = Self; Link != None && Count < 1000; Link = Link.Inventory )  {
+		if ( Link.Inventory == Item )  {
+			if ( KFWeapon(Item) != None )
 				SetCarryWeight( CurrentWeight - KFWeapon(Item).Weight );
-				Break;
-			}
-			// To prevent the infinity loop because of the error in the LinkedList
-			++Count;
+			
+			Link.Inventory = Item.Inventory;
+			Link.NetUpdateTime = Level.TimeSeconds - 1.0;
+			Item.Inventory = None;
+			Item.NetUpdateTime = Level.TimeSeconds - 1.0;
+			Break;
 		}
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
 	}
 	
-	Super(Pawn).DeleteInventory(Item);
+	Item.SetOwner(None);
 }
 
 // From the xPawn class
@@ -1392,29 +1399,32 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		if ( NextBileTime < Level.TimeSeconds )  {
 			LastBileTime = Level.TimeSeconds;
 			NextBileTime = LastBileTime + BileFrequency;
+			BileDamage = Damage;
 		}
+		else
+			BileDamage = Max(Damage, BileDamage);
 		
-		BileDamage = Max(Damage, BileDamage);
 		BileInstigator = InstigatedBy;
 		BileTimeLeft += BileLifeSpan;
 		
+		// Survived 10 Seconds After Vomit Achievement
 		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bVomittedOn )  {
 			KFPC.bVomittedOn = True;
 			KFPC.VomittedOnTime = Level.TimeSeconds;
-			if ( Controller.TimerRate == 0.0 )
-				Controller.SetTimer(10.0, false);
+			if ( KFPC.TimerRate == 0.0 )
+				KFPC.SetTimer(10.0, false);
 		}
 		
 		Return;	// Bile does not cause an instant damage
 	}
 	
-	// Siren Scream Damage
+	// Survived 10 Seconds After Scream Achievement
 	if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
 			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bScreamedAt )  {
 		KFPC.bScreamedAt = True;
 		KFPC.ScreamTime = Level.TimeSeconds;
-		if ( Controller.TimerRate == 0.0 )
-			Controller.SetTimer(10.0, false);
+		if ( KFPC.TimerRate == 0.0 )
+			KFPC.SetTimer(10.0, false);
 	}
 	
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
@@ -1472,7 +1482,7 @@ protected function AddHealth()
 			LastHealTime = Level.TimeSeconds;
 			if ( Health < OverhealedHealthMax )
 				SetHealth( Min((Health + DeltaHealIntensity), OverhealedHealthMax) );
-			HealIntensity -= float(DeltaHealIntensity) * 0.5;
+			HealIntensity = FMax( (HealIntensity - float(DeltaHealIntensity) * 0.5), 0.0 );
 		}
 		// turn off drug effects
 		if ( bOnDrugs && HealIntensity <= LoseDrugEffectHealIntensity )
@@ -1523,7 +1533,7 @@ function TakeBurningDamage()
 	// Rounding BurningIntensity per delay
 	DeltaBurningDamage = Round(FMin(BurningIntensity, GetRandRangeMult(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime));
 	if ( DeltaBurningDamage > 0 )  {
-		BurningIntensity -= float(DeltaBurningDamage);
+		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
 		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
 		if ( DeltaBurningDamage > 0 )  {
 			LastBurningTime = Level.TimeSeconds;
@@ -1592,11 +1602,12 @@ simulated function SetOnDrugs()
 		bOnDrugs = True;
 		PlaySound(BreathingSound, SLOT_Talk, TransientSoundVolume,, TransientSoundRadius,, True);
 	}
-	else  {
+	// Client NetOwner
+	else
 		bClientOnDrugs = True;
-		if ( IsLocallyControlled() )
-			AddBlur(DrugsBlurDuration, DrugsBlurIntensity);
-	}
+	
+	if ( IsLocallyControlled() )
+		AddBlur(DrugsBlurDuration, DrugsBlurIntensity);
 		
 	if ( Weapon != None )
 		Weapon.StartBerserk();
@@ -1607,6 +1618,7 @@ simulated function SetNotOnDrugs()
 	bBerserk = False;
 	if ( Role == ROLE_Authority )
 		bOnDrugs = False;
+	// Client NetOwner
 	else
 		bClientOnDrugs = False;
 		

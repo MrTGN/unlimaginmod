@@ -1437,6 +1437,63 @@ function AttachToPawn(Pawn P)
 	SpawnTacticalModule();
 }
 
+// Clear links on this weapon
+simulated function ClearLinksOnThisWeapon()
+{
+	local	int			m, Count;
+	local	Inventory	I;
+	local	bool		bSaveThisAmmo;
+	
+	Instigator.DeleteInventory(Self);
+	// Delete Ammo
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		// Resets bool
+		bSaveThisAmmo = False;
+		if ( Ammo(m) != None )  {
+			// Check Ammo to save it for other weapon
+			for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+				if ( I = Ammo(m) )  {
+					bSaveThisAmmo = True;
+					Break;
+				}
+				// To prevent the infinity loop because of the error in the LinkedList
+				++Count;
+			}
+			
+			if ( !bSaveThisAmmo )  {
+				Instigator.DeleteInventory( Ammo(m) );
+				Ammo(m).Destroy();
+				Ammo(m) = None;
+			}
+		}
+	}
+}
+
+simulated event Destroyed()
+{
+	local	int		m;
+	
+	AmbientSound = None;
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireMode[m] != None )
+			FireMode[m].DestroyEffects();
+	}
+	
+	if ( FlashLight != None )
+		FlashLight.Destroy();
+	
+	if ( TacShine != None )
+		TacShine.Destroy();
+	
+	DestroyTacticalModule();
+	ClearLinksOnThisWeapon();
+	
+	if ( ThirdPersonActor != None )  {
+		ThirdPersonActor.Destroy();
+		ThirdPersonActor = None;
+	}
+}
+
 // Called on the server from ServerChangedWeapon function in Pawn class
 function DetachFromPawn(Pawn P)
 {
@@ -1448,11 +1505,13 @@ function DetachFromPawn(Pawn P)
 	P.AmbientSound = None;
 }
 
-function GiveTo(Pawn Other, optional Pickup Pickup)
+function GiveTo( Pawn Other, optional Pickup Pickup )
 {
 	local	Inventory			I;
-	local	class<KFWeapon>		SW;
-	local	int					SWAmmo, SWMagAmmoRemaining;
+	local	class<KFWeapon>		SW;	// single weapon
+	local	int					SWAmmo, SWMagAmmoRemaining, m;
+    local	Weapon				W;
+    local	bool				bPossiblySwitch, bJustSpawned;
 	
 	UpdateMagCapacity(Other.PlayerReplicationInfo);
 
@@ -1487,13 +1546,55 @@ function GiveTo(Pawn Other, optional Pickup Pickup)
 			MagAmmoRemaining = MagCapacity;
 	}
 	
-	Super(Weapon).GiveTo(Other, Pickup);
+	// From the Weapon class
+	Instigator = Other;
+	W = Weapon(Instigator.FindInventoryType(Class));
+	// added class check because somebody made FindInventoryType() return subclasses for some reason
+	if ( W == None || W.Class != Class )  {
+		bJustSpawned = True;
+		Super.GiveTo(Other);
+		bPossiblySwitch = True;
+		W = Self;
+	}
+	else if ( !W.HasAmmo() )
+		bPossiblySwitch = True;
+	
+	if ( Pickup == None )
+		bPossiblySwitch = True;
+	
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireMode[m] != None )  {
+			FireMode[m].Instigator = Instigator;
+			W.GiveAmmo(m, WeaponPickup(Pickup), bJustSpawned);
+		}
+	}
+	
+	if ( Instigator.Weapon != W )
+		W.ClientWeaponSet( bPossiblySwitch );
+	
+	if ( !bJustSpawned )  {
+		for ( m = 0; m < NUM_FIRE_MODES; ++m )
+			Ammo(m) = None;
+		
+		Destroy();
+		Return;
+	}
 	
 	if ( SWAmmo > 0 )
 		AddAmmo(Clamp(SWAmmo, 0, MaxAmmo(0)), 0);
 }
 
-function DropFrom(vector StartLocation)
+simulated function ClientWeaponThrown()
+{
+	AmbientSound = None;
+	Instigator.AmbientSound = None;
+	
+	// Client-side only
+	if ( Level.NetMode == NM_Client )
+		ClearLinksOnThisWeapon();
+}
+
+function DropFrom( vector StartLocation )
 {
 	local	int					m, AmmoThrown, OtherAmmo;
 	local	Pickup				Pickup;

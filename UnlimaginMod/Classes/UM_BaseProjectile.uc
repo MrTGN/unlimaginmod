@@ -55,7 +55,7 @@ struct	SoundData
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
-struct SurfaceTypeImpactData
+struct SurfaceImpactData
 {
 	var	float	ImpactStrength;			// J / mm2
 	var	float	ProjectileEnergyToStuck;
@@ -100,7 +100,7 @@ var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time
 var(Headshots)	class<DamageType>	HeadShotDamageType;	// Headshot damage type
 var(Headshots)	float				HeadShotDamageMult;	// Headshot damage multiplier
 
-var				SurfaceTypeImpactData		ImpactSurfaces[20];
+var				SurfaceImpactData	ImpactSurfaces[20];
 
 var				Vector		CollisionExtent;
 var				float		CollisionExtentVSize;

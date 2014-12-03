@@ -793,6 +793,69 @@ simulated function postfxbw(float f, optional bool bDoNotTurnOffFadeFromBlackEff
 		Super.postfxbw(f,bDoNotTurnOffFadeFromBlackEffect);
 }
 
+// Sets the bWantsTraderPath var on the server, since thats where its used
+function ServerSetWantsTraderPath( bool bNewWantsTraderPath )
+{
+	bWantsTraderPath = bNewWantsTraderPath;
+}
+
+// Show the path the trader
+function Timer()
+{
+	if ( !bWantsTraderPath )  {
+        bShowTraderPath = False;
+        SetTimer(0.0, False);
+    }
+    // Fairly lame place to call this, but I need a place that is called very often that is run on the server
+	else if ( Role == ROLE_Authority && bShowTraderPath )
+		UnrealMPGameInfo(Level.Game).ShowPathTo(Self, 0);
+	
+	// Achievements
+	if ( Role == ROLE_Authority && Pawn != None && Pawn.Health > 0 )  {
+		// Survived 10 Seconds After Vomit
+		if ( bVomittedOn )  {
+			if ( (Level.TimeSeconds - VomittedOnTime) >= 10.0 )  {
+				if ( KFSteamStatsAndAchievements(SteamStatsAndAchievements) != None )  {
+					KFSteamStatsAndAchievements(SteamStatsAndAchievements).Survived10SecondsAfterVomit();
+					bVomittedOn = False;
+				}
+			}
+			else if ( !bTimerLoop || TimerRate == 0.0 )
+				SetTimer( (10.0 - (Level.TimeSeconds - VomittedOnTime)), False);
+		}
+		// Survived 10 Seconds After Scream
+		if ( bScreamedAt )  {
+			if ( (Level.TimeSeconds - ScreamTime) >= 10.0 )  {
+				if ( KFSteamStatsAndAchievements(SteamStatsAndAchievements) != None )  {
+					KFSteamStatsAndAchievements(SteamStatsAndAchievements).Survived10SecondsAfterScream();
+					bScreamedAt = False;
+				}
+			}
+			else if ( !bTimerLoop || TimerRate == 0.0 )
+				SetTimer( (10.0 - (Level.TimeSeconds - ScreamTime)), False);
+		}
+	}
+}
+
+// Handle toggling showing the path to the trader
+function SetShowPathToTrader( bool bShouldShowPath )
+{
+	if ( bWantsTraderPath && bShouldShowPath )  {
+		Timer();
+		bShowTraderPath = True;
+		SetTimer(TraderPathInterval, True);
+	}
+	else  {
+		bShowTraderPath = False;
+		SetTimer(0.0, False);
+	}
+}
+
+exec function TogglePathToTrader()
+{
+	SetShowPathToTrader( !bShowTraderPath );
+}
+
 // Just changed to pendingWeapon
 function ChangedWeapon()
 {

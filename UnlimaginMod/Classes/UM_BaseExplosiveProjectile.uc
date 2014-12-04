@@ -211,8 +211,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		P = None;
 		KFMonsterVictim = None;
 		
-		if ( Victims != None && !Victims.bDeleteMe && Victims != Self && Victims != Hurtwall
-			 && !Victims.IsA('FluidSurfaceInfo') && ExtendedZCollision(Victims) == None )  {
+		if ( Victims != None && Victims != Self && !Victims.bDeleteMe && Victims != Hurtwall
+			 && FluidSurfaceInfo(Victims) == None && ExtendedZCollision(Victims) == None )  {
 			// Ignore projectile with the same class
 			if ( bIgnoreSameClassProj && Victims.Class == Class )
 				Continue;

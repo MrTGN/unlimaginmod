@@ -167,7 +167,8 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 
 defaultproperties
 {
-     SpawnCheckRadiusScale=0.200000
+     MomentumTransfer=0.0
+	 SpawnCheckRadiusScale=0.200000
 	 bCanRebound=False
 	 bOrientToVelocity=True
 	 //Ballistic performance randomization

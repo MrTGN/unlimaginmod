@@ -147,6 +147,14 @@ simulated function float GetAimErrorModifier( WeaponFire WF )
 	Return 1.0;
 }
 
+simulated function float GetHealPotency()
+{
+	if ( ClientVeteranSkill != None )
+		Return ClientVeteranSkill.static.GetHealPotency(self);
+	
+	Return 1.0;
+}
+
 // On how much this human can overheal somebody
 simulated function float GetOverhealingModifier()
 {

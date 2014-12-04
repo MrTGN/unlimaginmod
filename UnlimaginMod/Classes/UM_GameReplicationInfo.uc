@@ -19,11 +19,12 @@
 class UM_GameReplicationInfo extends KFGameReplicationInfo;
 
 var		float		FriendlyFireScale;
+var		float		GameDifficulty;
 
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FriendlyFireScale;
+		FriendlyFireScale, GameDifficulty;
 }
 
 defaultproperties

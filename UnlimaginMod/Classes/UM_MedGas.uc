@@ -28,6 +28,7 @@ var		Class<AvoidMarker>		FearMarkerClass;
 var		int			HealBoostAmount;	// How much we heal a player by default with the medic nade
 var		int			TotalHeals;			// The total number of times this nade has healed (or hurt enemies)
 var		int			MaxHeals;			// The total number of times this nade will heal (or hurt enemies) until its done healing
+var		float		MoneyPerHealedHealth;
 
 var		float		HealInterval;		// How often to do healing
 var		string		SuccessfulHealMessage;
@@ -56,6 +57,15 @@ simulated event PostBeginPlay()
     		FearMarker.StartleBots();
 		}
 	}
+	
+	if ( UM_GameReplicationInfo(Level.GRI) != None )  {
+		if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 2.0 )
+			MoneyPerHealedHealth *= 1.8;
+		else if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 4.0 )
+			MoneyPerHealedHealth *= 1.5;
+		else if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 5.0 )
+			MoneyPerHealedHealth *= 1.2;
+	}
 }
 
 simulated event PostNetBeginPlay()
@@ -69,154 +79,97 @@ simulated event PostNetBeginPlay()
 	}
 }
 
-function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation)
+function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
-	local	actor					Victims;
-	local	float					damageScale;
-	local	vector					dir;
+	local	Pawn					Victim;
+	local	float					DamageScale, Dist;
+	local	vector					Dir;
 	local	int						i, NumKilled;
-	local	KFMonster				KFMonsterVictim;
-	local	Pawn					P;
-	local	KFPawn					KFP;
+	local	KFMonster				Monster;
+	local	UM_HumanPawn			Human;
 	local	array<Pawn>				CheckedPawns;
 	local	bool					bAlreadyChecked;
 	// Healing
-	local	KFPlayerReplicationInfo	PRI;
-	local	int						MedicReward, HealSum;
+	local	int						MedicReward;
+	local	UM_PlayerReplicationInfo	PRI;
 
 	if ( bHurtEntry )
 		Return;
 
 	bHurtEntry = True;
 
-	foreach CollidingActors (class 'Actor', Victims, DamageRadius, HitLocation)
-	{
-		// don't let blast damage affect fluid - VisibleCollisingActors doesn't really work for them - jag
-		if ( Victims != self && Hurtwall != Victims && Victims.Role == ROLE_Authority && 
-			 !Victims.IsA('FluidSurfaceInfo') && ExtendedZCollision(Victims) == None &&
-			 Victims.Class != Class )
-		{
-			if ( Instigator == None || Instigator.Controller == None )
-				Victims.SetDelayedDamageInstigatorController( InstigatorController );
-				
-			if( (Instigator == None || Instigator.Health <= 0) && KFPawn(Victims) != None )
+	// Check Only Pawns
+	foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
+		if ( Victim != None && !Victim.bDeleteMe && Victim != Hurtwall && Victim.Health > 0 )  {
+			// Resets to the default values
+			Monster = None;
+			Human = None;
+			bAlreadyChecked = False;
+			// Check CheckedPawns array
+			for ( i = 0; i < CheckedPawns.Length; ++i )  {
+				// comparison by object
+				if ( CheckedPawns[i] == Victim )  {
+					bAlreadyChecked = True;
+					Break;
+				}
+			}
+			// Ignore already Checked Pawns
+			if ( bAlreadyChecked )
 				Continue;
+			
+			CheckedPawns[CheckedPawns.Length] = Victim;
+			
+			Monster = KFMonster(Victim);
+			Human = UM_HumanPawn(Victim);
+			if ( Human != None && HealBoostAmount > 0 )  {
+				PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+				if ( PRI != None )
+					MedicReward = HealBoostAmount * PRI.GetHealPotency();
+				else
+					MedicReward = HealBoostAmount;
 
-			damageScale = 1.0;
-
-			P = Pawn(Victims);
-
-			if ( P != None )
-			{
-		        for (i = 0; i < CheckedPawns.Length; i++)
-				{
-		        	if ( CheckedPawns[i] == P )
-					{
-						bAlreadyChecked = True;
-						Break;
+				if ( Human.Heal(MedicReward, Human.HealthMax) && PRI != None )  {
+					if ( KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != None )
+						KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward);
+					
+					// Give the medic reward money as a percentage of how much of the person's health they healed
+					MedicReward = Round( 100.0 * float(MedicReward) / Human.HealthMax * MoneyPerHealedHealth );
+					PRI.Score += MedicReward;
+					PRI.ThreeSecondScore += MedicReward;
+					PRI.Team.Score += MedicReward;
+					// MedicReward text Alpha
+					if ( KFHumanPawn(Instigator) != None )  {
+						KFHumanPawn(Instigator).AlphaAmount = 255;
+						// SuccessfulHealMessage
+						if ( PlayerController(Instigator.Controller) != None )
+							PlayerController(Instigator.Controller).ClientMessage(SuccessfulHealMessage@KFP.PlayerReplicationInfo.PlayerName, 'CriticalEvent');
 					}
 				}
-
-				if ( bAlreadyChecked )
-				{
-					bAlreadyChecked = False;
-					P = None;
-					Continue;
+			}
+			else if ( Monster != None && DamageAmount > 0.0 )  {
+				Dir = Victim.Location - HitLocation;
+				Dist = FMax(VSize(Dir), 1.0);
+				Dir /= Dist;
+				// DamageScale
+				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) /DamageRadius), 0.0)) * Monster.GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
+				if ( DamageScale > 0.0 )  {
+					Victim.TakeDamage
+					(
+						(DamageScale * DamageAmount),
+						Instigator, 
+						(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
+						(DamageScale * Momentum * Dir),
+						DamageType
+					);
+					// Calculating number of Victim
+					if ( Monster != None && Monster.Health < 1 )
+						NumKilled++;
 				}
-
-                if ( KFMonster(Victims) != None && KFMonster(Victims).Health > 0 )
-					KFMonsterVictim = KFMonster(Victims);
-				else
-					KFMonsterVictim = None;
-
-                KFP = KFPawn(Victims);
-
-                if ( KFMonsterVictim != None )
-                    damageScale *= KFMonsterVictim.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-                else if ( KFP != None )
-				    damageScale *= KFP.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-
-				CheckedPawns[CheckedPawns.Length] = P;
-
-				if ( damageScale <= 0 )
-				{
-					P = None;
-					Continue;
-				}
-				else
-				{
-					//Victims = P;
-					P = none;
-				}
-				
-				if ( KFP == None )
-				{
-					if ( Pawn(Victims) != None && Pawn(Victims).Health > 0 && DamageAmount > 0.0 )
-					{
-						Victims.TakeDamage
-						(
-							(damageScale * DamageAmount),
-							Instigator, 
-							(Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir),
-							(damageScale * Momentum * dir),
-							DamageType
-						);
-						
-						if ( Vehicle(Victims) != None && Vehicle(Victims).Health > 0 )
-							Vehicle(Victims).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
-
-						// Calculating number of victims
-						if ( Role == ROLE_Authority && KFMonsterVictim != None && 
-							 KFMonsterVictim.Health <= 0 )
-							NumKilled++;
-					}
-				}
-				else
-				{
-					if ( Instigator != None && KFP.Health > 0 && KFP.Health < KFP.HealthMax && HealBoostAmount > 0 )
-					{
-						MedicReward = HealBoostAmount;
-
-						PRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-
-						if ( PRI != None && PRI.ClientVeteranSkill != None )
-							MedicReward *= PRI.ClientVeteranSkill.Static.GetHealPotency(PRI);
-
-						HealSum = MedicReward;
-
-						if ( (KFP.Health + KFP.healthToGive + MedicReward) > KFP.HealthMax )
-						{
-							MedicReward = KFP.HealthMax - (KFP.Health + KFP.healthToGive);
-							if ( MedicReward < 0 )
-								MedicReward = 0;
-						}
-
-						KFP.GiveHealth(HealSum, KFP.HealthMax);
-
-						if ( PRI != None )
-						{
-							if ( MedicReward > 0 && KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != None )
-								KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward, false, true);
-
-							// Give the medic reward money as a percentage of how much of the person's health they healed
-							MedicReward = int( (FMin(float(MedicReward), KFP.HealthMax) / KFP.HealthMax) * 60 );
-
-							PRI.Score += MedicReward;
-							PRI.ThreeSecondScore += MedicReward;
-
-							PRI.Team.Score += MedicReward;
-
-							if ( KFHumanPawn(Instigator) != None )
-								KFHumanPawn(Instigator).AlphaAmount = 255;
-
-							if ( PlayerController(Instigator.Controller) != None )
-								PlayerController(Instigator.Controller).ClientMessage(SuccessfulHealMessage@KFP.PlayerReplicationInfo.PlayerName, 'CriticalEvent');
-						}
-					}
-				}
-
-				KFMonsterVictim = None;
-				KFP = None;
+			}
+			else if ( Vehicle(Victim) != None && DamageAmount > 0.0 )  {
+				if ( Instigator == None || Instigator.Controller == None )
+					Victim.SetDelayedDamageInstigatorController( InstigatorController );
+				Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
 			}
         }
 	}
@@ -233,10 +186,8 @@ simulated event Timer()
 	//if ( FearMarker != None )
 		//FearMarker.SetCollisionSize(DamageRadius, DamageRadius);
 	
-	if ( Role == ROLE_Authority )
-	{
-		if ( TotalHeals < MaxHeals )
-		{
+	if ( Role == ROLE_Authority )  {
+		if ( TotalHeals < MaxHeals )  {
 			TotalHeals++;
 			HealOrHurt(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
 		}
@@ -260,6 +211,8 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 MoneyPerHealedHealth=0.6
+	 MomentumTransfer=0.0
 	 bInitialAcceleration=False
 	 SpeedDropScale=0.780000
 	 MaxDamageRadiusScale=1.500000

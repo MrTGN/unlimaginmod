@@ -501,11 +501,18 @@ event Tick( float DeltaTime )
     local	int			Count;
 	local	Controller	C;
 	
-	// FriendlyFireScale Replication
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None && UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )  {
-		FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0);
-		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
+		// FriendlyFireScale Replication
+		if ( UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )  {
+			FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0); // FClamp FriendlyFireScale
+			UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
+			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+		}
+		// GameDifficulty Replication
+		if ( UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty != GameDifficulty )  {
+			UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
+			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+		}
 	}
 	
 	if ( bZEDTimeActive )  {

@@ -97,6 +97,15 @@ var		float						IntuitiveShootingRange;		// The distance in meters at which the 
 
 var		class<MotionBlur>			UnderWaterBlurCameraEffectClass;
 
+// Achievements (moved here from PlayerController)
+// Survived 10 Seconds After Vomit
+var		bool						bVomittedOn, bHasSurvivedAfterVomit;
+var		float						SurvivedAfterVomitTime;
+
+// Survived 10 Seconds After Scream
+var		bool						bScreamedAt, bHasSurvivedAfterScream;
+var		float						SurvivedAfterScreamTime;
+
 //[end] Varibles
 //====================================================================
 
@@ -134,6 +143,7 @@ simulated event PreBeginPlay()
 	// Server
 	if ( Role == ROLE_Authority )  {
 		Super.PreBeginPlay();
+		// Issue #207
 		SetTimer(1.5, True);
 	}
 }
@@ -1408,11 +1418,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		BileTimeLeft += BileLifeSpan;
 		
 		// Survived 10 Seconds After Vomit Achievement
-		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bVomittedOn )  {
-			KFPC.bVomittedOn = True;
-			KFPC.VomittedOnTime = Level.TimeSeconds;
-			if ( KFPC.TimerRate == 0.0 )
-				KFPC.SetTimer(10.0, false);
+		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bVomittedOn )  {
+			SurvivedAfterVomitTime = Level.TimeSeconds + 10.0;
+			bVomittedOn = True;
 		}
 		
 		Return;	// Bile does not cause an instant damage
@@ -1420,11 +1428,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	
 	// Survived 10 Seconds After Scream Achievement
 	if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && KFPC != None && !KFPC.bScreamedAt )  {
-		KFPC.bScreamedAt = True;
-		KFPC.ScreamTime = Level.TimeSeconds;
-		if ( KFPC.TimerRate == 0.0 )
-			KFPC.SetTimer(10.0, false);
+			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
+		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
+		bScreamedAt = True;
 	}
 	
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
@@ -1439,7 +1445,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 function bool Heal( out int HealAmount, int HealMax )
 {
 	// Don't let heal more than the max overhealed health
-	if ( bCanBeHealed && Health < HealMax )  {
+	if ( bCanBeHealed && Health > 0 && Health < HealMax )  {
+		// Updating timers
 		if ( NextHealTime < Level.TimeSeconds )  {
 			LastHealTime = Level.TimeSeconds;
 			NextHealTime = LastHealTime + HealDelay;
@@ -1450,7 +1457,7 @@ function bool Heal( out int HealAmount, int HealMax )
 		// Calculating out HealAmount for the medic reward
 		HealAmount = Min( (HealMax - Health), HealAmount );
 		
-		Return True;
+		Return HealAmount > 0;
 	}
 	
 	Return False;
@@ -1707,6 +1714,25 @@ simulated event Tick( float DeltaTime )
 			if ( BurningIntensity > 0.0 && Level.TimeSeconds >= NextBurningTime )
 				TakeBurningDamage();
 		}
+		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
+		// Survived 10 Seconds After Vomit Achievement
+		if ( !bHasSurvivedAfterVomit && bVomittedOn && Health > 0 && Level.TimeSeconds >= SurvivedAfterVomitTime )  {
+			if ( PlayerReplicationInfo != None && KFSteamStatsAndAchievements(PlayerReplicationInfo.SteamStatsAndAchievements) != None )  {
+				bHasSurvivedAfterVomit = True;
+				KFSteamStatsAndAchievements(PlayerReplicationInfo.SteamStatsAndAchievements).Survived10SecondsAfterVomit();
+			}
+			else
+				bVomittedOn = False;
+		}
+		// Survived 10 Seconds After Scream Achievement
+		if ( !bHasSurvivedAfterScream && bScreamedAt && Health > 0 && Level.TimeSeconds >= SurvivedAfterScreamTime )  {
+			if ( PlayerReplicationInfo != None && KFSteamStatsAndAchievements(PlayerReplicationInfo.SteamStatsAndAchievements) != None )  {
+				bHasSurvivedAfterScream = True;
+				KFSteamStatsAndAchievements(PlayerReplicationInfo.SteamStatsAndAchievements).Survived10SecondsAfterScream();
+			}
+			else
+				bScreamedAt = False;
+		}
 	}
 	// Client
 	else  {
@@ -1769,7 +1795,6 @@ simulated event Tick( float DeltaTime )
 		UpdateCameraBlur();
 }
 
-// copied from KFHumanPawn to fix some bugs
 event Timer()
 {
 	//ToDo: выпилить это! Issue #207

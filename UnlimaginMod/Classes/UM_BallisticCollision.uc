@@ -73,11 +73,11 @@ defaultproperties
 	 bMovable=True
 	 bCanBeDamaged=True
      // Networking flags
-	 bNetTemporary=False
+	 bNetTemporary=True
 	 bReplicateMovement=True
 	 bReplicateInstigator=True
 	 bNetInitialRotation=True
-	 bUpdateSimulatedPosition=True
+	 //bUpdateSimulatedPosition=True
 	 RemoteRole=ROLE_SimulatedProxy
 	 // Display
 	 DrawType=DT_None

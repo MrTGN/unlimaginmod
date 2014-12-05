@@ -144,8 +144,11 @@ simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation,
 {
 	local	int		i;
 
-	if ( Monster(EventInstigator) != None || EventInstigator == Instigator ||
-		 (TeamGame(Level.Game) != None && TeamGame(Level.Game).FriendlyFireScale > 0.0) )  {
+	if ( EventInstigator == None || Damage < 1 )
+		Return;
+	
+	if ( Instigator == None || EventInstigator == Instigator || EventInstigator.GetTeamNum() != Instigator.GetTeamNum()
+		 || (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
 		if ( DisintegrateDamageTypes.Length > 0 )  {
 			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {

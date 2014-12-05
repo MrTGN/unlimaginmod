@@ -84,7 +84,7 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 	local	Pawn					Victim;
 	local	float					DamageScale, Dist;
 	local	vector					Dir;
-	local	int						i, NumKilled;
+	local	int						i;
 	local	KFMonster				Monster;
 	local	UM_HumanPawn			Human;
 	local	array<Pawn>				CheckedPawns;
@@ -161,9 +161,6 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 						(DamageScale * Momentum * Dir),
 						DamageType
 					);
-					// Calculating number of Victim
-					if ( Monster != None && Monster.Health < 1 )
-						NumKilled++;
 				}
 			}
 			else if ( Vehicle(Victim) != None && DamageAmount > 0.0 )  {

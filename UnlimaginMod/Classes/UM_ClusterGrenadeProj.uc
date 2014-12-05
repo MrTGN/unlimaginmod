@@ -44,7 +44,7 @@ defaultproperties
      Damage=300.000000
      DamageRadius=300.000000
 	 ImpactDamage=40.000000
-	 //IgnoreVictims
-	 IgnoreVictims(0)="UM_ClusterHandGrenade"
+	 //IgnoredVictims
+	 IgnoredVictims(0)="UM_ClusterHandGrenade"
 	 ShrapnelClass=None
 }

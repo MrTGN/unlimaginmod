@@ -25,8 +25,8 @@ defaultproperties
 	 //Damage
      Damage=50.000000
      DamageRadius=100.000000
-	 //IgnoreVictims
-	 IgnoreVictims(0)="UM_ClusterGrenadeProj"
+	 //IgnoredVictims
+	 IgnoredVictims(0)="UM_ClusterGrenadeProj"
 	 //Shrapnel
 	 ShrapnelClass=Class'UnlimaginMod.UM_ClusterGrenadeProj'
 	 MaxShrapnelAmount=8

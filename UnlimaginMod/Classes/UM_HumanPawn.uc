@@ -57,11 +57,13 @@ var		float						VeterancyMovementModifier;
 var		bool						bAllowedToChangeHealth;	// Prevents from changing Health by several functions at the same time
 var		float						HealDelay, NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
+var		float						VeterancyHealPotency;	// Veterancy Heal Bonus
 
 // Overheal
-var		int							OverhealedHealthMax;
+var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
 var		float						OverhealReductionPerSecond;
 var		float						OverhealMovementBonus;	// Additional scalable movement modifier. Look into the SetHealth() calculation.
+var		float						VeterancyOverhealBonus;	// Bonus to overheal somebody
 
 // Overweight
 var		float						MaxOverweightScale;
@@ -331,15 +333,19 @@ function NotifyVeterancyChanged()
 	
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )  {
+		OverhealedHealthMax = Round(HealthMax * UM_PlayerReplicationInfo.GetOverhealedHealthMaxModifier());
+		VeterancyOverhealBonus = UM_PlayerReplicationInfo.GetOverhealingModifier();
+		VeterancyHealPotency = UM_PlayerReplicationInfo.GetHealPotency();
 		VeterancyMovementModifier = UM_PlayerReplicationInfo.GetMovementSpeedModifier();
-		OverhealedHealthMax =  HealthMax * UM_PlayerReplicationInfo.GetOverhealedHealthMaxModifier();
 		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
 		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
 	}
 	else  {
+		OverhealedHealthMax = int(HealthMax);
+		VeterancyOverhealBonus = default.VeterancyOverhealBonus;
+		VeterancyHealPotency = default.VeterancyHealPotency;
 		VeterancyMovementModifier = default.VeterancyMovementModifier;
-		OverhealedHealthMax = HealthMax;
 		VeterancyJumpBonus = default.VeterancyJumpBonus;
 		BounceRemaining = default.BounceRemaining;
 		IntuitiveShootingRange = default.IntuitiveShootingRange;
@@ -726,10 +732,11 @@ function bool DoJump( bool bUpdating )
 
 event Landed( vector HitNormal )
 {
-	BounceRemaining = default.BounceRemaining;
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )
 		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+	else
+		BounceRemaining = default.BounceRemaining;
 	
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();
@@ -1013,10 +1020,10 @@ exec function QuickHeal()
 	local	Inventory	I;
 	local	int			Count;
 
-	//ToDo: перписать это условие
-	if ( Health >= HealthMax )
+	// Can't overheal or already overhealed to max
+	if ( Health >= Round(HealthMax * VeterancyOverhealBonus) || Health >= OverhealedHealthMax )
 		Return;
-
+	
 	// Find Syringe in the Inventory list
 	for ( I = Inventory; I != None && Count < 250 ; I = I.Inventory )  {
 		S = Syringe(I);
@@ -1314,10 +1321,10 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		Damage *= 2;
 	
 	if ( UM_PlayerReplicationInfo != None )
-		Damage = float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType);
+		Damage = Round( float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType) );
 	
 	if ( bOnDrugs )
-		Damage = float(Damage) * DrugsDamageScale;
+		Damage = Round( float(Damage) * DrugsDamageScale );
 	
 	if ( Level.Game != None )
 		Damage = Level.Game.ReduceDamage( Damage, self, instigatedBy, HitLocation, Momentum, DamageType );
@@ -1936,7 +1943,9 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     GroundSpeed=200.000000
+     VeterancyHealPotency=1.0
+	 VeterancyOverhealBonus=1.0
+	 GroundSpeed=200.000000
      WaterSpeed=180.000000
      AirSpeed=230.000000
      // Damaging

@@ -122,12 +122,12 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 			Monster = KFMonster(Victim);
 			Human = UM_HumanPawn(Victim);
 			if ( Human != None && HealBoostAmount > 0 )  {
-				PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-				if ( PRI != None )
-					MedicReward = HealBoostAmount * PRI.GetHealPotency();
+				if ( UM_HumanPawn(Instigator) != None )
+					MedicReward = HealBoostAmount * UM_HumanPawn(Instigator).VeterancyHealPotency;
 				else
 					MedicReward = HealBoostAmount;
-
+				// PlayerReplicationInfo
+				PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 				if ( Human.Heal(MedicReward, Human.HealthMax) && PRI != None )  {
 					if ( KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != None )
 						KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward);

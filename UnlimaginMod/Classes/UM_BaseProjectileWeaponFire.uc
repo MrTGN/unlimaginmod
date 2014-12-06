@@ -200,8 +200,8 @@ state Initialization
 function NotifyOwnerVeterancyChanged()
 {
 	if ( HumanOwner != None && HumanOwner.UM_PlayerReplicationInfo != None )  {
-		VeterancySpreadBonus = default.VeterancySpreadBonus * HumanOwner.UM_PlayerReplicationInfo.GetSpreadModifier(Self);
-		VeterancyAimErrorBonus = default.VeterancyAimErrorBonus * HumanOwner.UM_PlayerReplicationInfo.GetAimErrorModifier(Self);
+		VeterancySpreadBonus = HumanOwner.UM_PlayerReplicationInfo.GetSpreadModifier(Self);
+		VeterancyAimErrorBonus = HumanOwner.UM_PlayerReplicationInfo.GetAimErrorModifier(Self);
 	}
 	else  {
 		VeterancySpreadBonus = default.VeterancySpreadBonus;

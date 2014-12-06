@@ -21,7 +21,6 @@ var		float				AltSpread;
 function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
-	local	float	SpreadModif, AimErrorModif;
 	
 	MaxSpread = default.MaxSpread;
 	AimError = default.AimError;
@@ -76,18 +75,12 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
 			}
 		}
-		SpreadModif = SRVT.static.GetSpreadModifier( KFPRI, Self );
-		AimErrorModif = SRVT.static.GetAimErrorModifier( KFPRI, Self );
-	}
-	else  {
-		SpreadModif = 1.0;
-		AimErrorModif = 1.0;
 	}
 	//[end]
 	
 	// Updating Spread and AimError. Needed for the crouched and Aiming bonuses.
-	Spread = UpdateSpread(Spread) * SpreadModif;
-	AimError = GetAimError() * AimErrorModif;
+	Spread = UpdateSpread(Spread);
+	AimError = GetAimError();
 }
 
 defaultproperties

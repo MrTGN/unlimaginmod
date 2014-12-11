@@ -121,7 +121,11 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 			
 			Monster = KFMonster(Victim);
 			Human = UM_HumanPawn(Victim);
-			if ( Human != None && HealBoostAmount > 0 )  {
+			if ( Human != None )  {
+				// Skip this iteration
+				if ( HealBoostAmount < 1 )
+					Continue;
+				
 				if ( UM_HumanPawn(Instigator) != None )
 					MedicReward = HealBoostAmount * UM_HumanPawn(Instigator).VeterancyHealPotency;
 				else
@@ -146,7 +150,11 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 					}
 				}
 			}
-			else if ( Monster != None && DamageAmount > 0.0 )  {
+			else if ( Monster != None )  {
+				// Skip this iteration
+				if ( DamageAmount <= 0.0 )
+					Continue;
+				
 				Dir = Victim.Location - HitLocation;
 				Dist = FMax(VSize(Dir), 1.0);
 				Dir /= Dist;

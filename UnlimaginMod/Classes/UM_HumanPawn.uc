@@ -26,9 +26,12 @@ var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
 var		int							DyingMessageHealth;
 var		float						NextDyingMessageTime;
 
+// Firing
+var		float						FireSpeedModif;
+
 // Bile Damaging
 var		int							BileDamage;
-var		range						BileDamageRandRange;
+var		range						BileDamageMultRandRange;
 var		float						BileLifeSpan;
 var		float						BileTimeLeft;
 var		float						LastBileTime;
@@ -83,7 +86,7 @@ var		float						DrugsBlurIntensity;
 
 // Jumping
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
-var		float						FireSpeedModif;
+var		float						RandJumpModif;
 var		range						JumpRandRange;
 var		float						VeterancyJumpBonus;
 var		float						WeightJumpModifier;
@@ -120,7 +123,7 @@ replication
 		FireSpeedModif, bPRIChangedTrigger;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		bVeterancyChangedTrigger;
+		bVeterancyChangedTrigger, RandJumpModif;
 }
 
 //[end] Replication
@@ -145,6 +148,7 @@ simulated event PreBeginPlay()
 	// Server
 	if ( Role == ROLE_Authority )  {
 		Super.PreBeginPlay();
+		RandJumpModif = GetRandRangeMult( JumpRandRange );
 		// Issue #207
 		SetTimer(1.5, True);
 	}
@@ -174,30 +178,26 @@ simulated function NotifyTeamChanged()
 {
 	bClientPRIChangedTrigger = bPRIChangedTrigger;
 	
-	if ( PlayerReplicationInfo != None )  {
+	if ( PlayerReplicationInfo != None )
 		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
-		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
-	}
 	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )  {
 		Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
-		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(DrivenVehicle.PlayerReplicationInfo);
-	}
-	else
-		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 	
+	UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 	if ( KFPC != KFPlayerController(Controller) )
 		KFPC = KFPlayerController(Controller);
 }
 
+// This event is using here to notify clients about an important changes
 simulated event ClientTrigger()
 {
 	// PlayerReplicationInfo has changed
 	if ( bClientPRIChangedTrigger != bPRIChangedTrigger )
 		NotifyTeamChanged();
 	
-	// Veterancy has changed
+	// Veterancy has changed (only client-owner receive this)
 	if ( bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
-		ClientNotifyVeterancyChanged();
+		NotifyVeterancyChanged();
 }
 
 simulated event PostNetReceive() { }
@@ -223,13 +223,13 @@ simulated final function float GetRandExtraScale(
 		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
 }
 
-// GroundSpeed always replicated from the server to the client
+// GroundSpeed always replicated from the server to the client-owner
 function UpdateGroundSpeed()
 {
 	GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
 }
 
-// GroundSpeed according to the healths
+// Movement speed according to the healths
 function UpdateHealthMovementModifiers()
 {
 	if ( Health > int(HealthMax) )
@@ -249,6 +249,7 @@ protected function SetHealth( int NewHealth )
 	UpdateGroundSpeed();
 }
 
+// Movement speed according to the carry weight
 function UpdateCarryWeightMovementModifiers()
 {
 	local	float	WeightRatio;
@@ -287,7 +288,7 @@ function CheckVeterancyCarryWeightLimit()
 	
 	MaxCarryOverweight = MaxCarryWeight * MaxOverweightScale;
 	
-	// If we carrying too much, drop something.
+	// If we are carrying too much, drop something.
 	while ( CurrentWeight > MaxCarryWeight && t < 6 )  {
 		++t; // Incrementing up to 5 to restrict the number of attempts to drop weapon
 		// Find the weapon to drop
@@ -325,11 +326,16 @@ function CheckVeterancyAmmoLimit()
 	}
 }
 
-// Notify on server side that veterancy has been changed
-function NotifyVeterancyChanged()
+// Notify that veterancy has been changed.
+// Called on the server and replicated by the trigger to the client-owner.
+simulated function NotifyVeterancyChanged()
 {
 	local	Inventory	I;
 	local	int			Count;
+	
+	// client-owner trigger
+	if ( Role < ROLE_Authority )
+		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
 	
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerReplicationInfo != None )  {
@@ -350,21 +356,25 @@ function NotifyVeterancyChanged()
 		BounceRemaining = default.BounceRemaining;
 		IntuitiveShootingRange = default.IntuitiveShootingRange;
 	}
-	CheckVeterancyCarryWeightLimit();
-	CheckVeterancyAmmoLimit();
+	
+	// Server
+	if ( Role == ROLE_Authority )  {
+		CheckVeterancyCarryWeightLimit();
+		CheckVeterancyAmmoLimit();
+	}
+	// Server and client-owner
 	UpdateHealthMovementModifiers();
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
 	
-	/*	If there is no UM_PlayerReplicationInfo, Notifying clients about changes	
-		by ClientTrigger() event. 
-		In other case ClientNotifyVeterancyChanged() will be called from UM_PlayerReplicationInfo. */
-	if ( UM_PlayerReplicationInfo == None )  {
+	/*	If there is no UM_PlayerReplicationInfo, notifying the client-owner 
+		about changes by ClientTrigger() event. 
+		In other case NotifyVeterancyChanged() function will be called
+		on the client-owner from UM_PlayerReplicationInfo.
+		This logic used to be sure that client-owner has received all ReplicationInfo data. */
+	if ( Role == ROLE_Authority && UM_PlayerReplicationInfo == None )  {
 		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
 		bClientTrigger = !bClientTrigger;
-		// If it is a Standalone game or ListenServer
-		if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
-			ClientNotifyVeterancyChanged();
 	}
 	
 	// Notify all weapons in the Inventory list
@@ -372,26 +382,6 @@ function NotifyVeterancyChanged()
 	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 		if ( UM_BaseWeapon(I) != None )
 			UM_BaseWeapon(I).NotifyOwnerVeterancyChanged();
-		// To prevent the infinity loop because of the error in the LinkedList
-		++Count;
-	}
-}
-
-/*	Notify clients that veterancy has been changed.
-	Use this function to update Veterancy bonuses 
-	on the client side */
-simulated function ClientNotifyVeterancyChanged()
-{
-	local	Inventory	I;
-	local	int			Count;
-	
-	bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
-	
-	// Notify all weapons in the Inventory list
-	// Inventory var exists only on the server and on the client-owner
-	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
-		if ( UM_BaseWeapon(I) != None )
-			UM_BaseWeapon(I).ClientNotifyOwnerVeterancyChanged();
 		// To prevent the infinity loop because of the error in the LinkedList
 		++Count;
 	}
@@ -426,6 +416,7 @@ function PossessedBy( Controller C )
 	if ( PlayerController(C) != None )  {
 		if ( bSetPCRotOnPossess )
 			C.SetRotation(Rotation);
+		// Clien-owner
 		if ( Level.NetMode != NM_Standalone )
 			RemoteRole = ROLE_AutonomousProxy;
 		BecomeViewTarget();
@@ -444,10 +435,10 @@ function PossessedBy( Controller C )
 		NotifyTeamChanged();
 	
 	if ( UM_PlayerReplicationInfo != None )  {
-		UM_PlayerReplicationInfo.SetPawnOwner(self);
-		// To be sure that all ReplicationInfo will be received by clients
-		// notifing by UM_PlayerReplicationInfo
+		UM_PlayerReplicationInfo.SetHumanOwner(self);
+		// To be sure that client-owner will receive all ReplicationInfo before the notification.
 		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
+		// To send the bPRIChangedTrigger update.
 		bClientTrigger = !bClientTrigger;
 	}
 	else
@@ -462,7 +453,7 @@ function UnPossessed()
 
 	PlayerReplicationInfo = None;
 	if ( UM_PlayerReplicationInfo != None )  {
-		UM_PlayerReplicationInfo.SetPawnOwner(None);
+		UM_PlayerReplicationInfo.SetHumanOwner(None);
 		UM_PlayerReplicationInfo = None;
 	}
 	SetOwner(None);
@@ -683,16 +674,15 @@ function bool DoJump( bool bUpdating )
         
 		Return True;
     } */
-	if ( !bIsCrouched && !bWantsToCrouch )  {
-		JumpModif = GetRandRangeMult( JumpRandRange ) * VeterancyJumpBonus;
+	// Do not allow to jump if somebody has grabbed this Pawn
+	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
+		// Used in DoBounce
+		JumpModif = RandJumpModif * VeterancyJumpBonus;
 		JumpZ = default.JumpZ * CarryWeightJumpModifier * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
-			// Do not allow to jump if somebody has grabbed this Pawn
-			if ( bMovementDisabled )
-				Return False;
-			
 			NextBounceTime = Level.TimeSeconds + BounceDelay * GetRandMult(0.95, 1.05);
+			
 			// Take you out of ironsights if you jump on a non-lowgrav map
 			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
 				KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
@@ -725,6 +715,9 @@ function bool DoJump( bool bUpdating )
 			DoBounce(bUpdating, JumpModif);
 			Return True;
 		}
+		
+		if ( Role == ROLE_Authority )
+			RandJumpModif = GetRandRangeMult( JumpRandRange );
 	}
     
 	Return False;
@@ -1518,7 +1511,7 @@ function TakeBileDamage()
 	NextBileTime = Level.TimeSeconds + BileFrequency;
 	BileTimeLeft = FMax( (BileTimeLeft - BileFrequency), 0.0 );
 	
-	DeltaBileDamage = Round(float(BileDamage) * GetRandRangeMult(BileDamageRandRange) * (Level.TimeSeconds - LastBileTime));
+	DeltaBileDamage = Round(float(BileDamage) * GetRandRangeMult(BileDamageMultRandRange) * (Level.TimeSeconds - LastBileTime));
 	if ( DeltaBileDamage > 0 )  {
 		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
 		if ( DeltaBileDamage > 0 )  {
@@ -1699,6 +1692,7 @@ simulated event Tick( float DeltaTime )
 {
 	// Server
 	if ( Role == ROLE_Authority )  {
+		// Enable Movement
 		if ( bMovementDisabled && Level.TimeSeconds >= StopDisabledTime )  {
 			bMovementDisabled = False;
 			NetUpdateTime = Level.TimeSeconds - 1.0;
@@ -1740,6 +1734,15 @@ simulated event Tick( float DeltaTime )
 			else
 				bScreamedAt = False;
 		}
+		// AlphaAmount replicated from the server to the client-owner
+		if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.ThreeSecondScore > 0 && AlphaAmount > 0 )  {
+			AlphaAmount -= 2;
+			if ( AlphaAmount <= 0 )  {
+				AlphaAmount = 0;
+				UM_PlayerReplicationInfo.ThreeSecondScore = 0;
+				ScoreCounter = 0;
+			}
+		}
 	}
 	// Client
 	else  {
@@ -1763,6 +1766,7 @@ simulated event Tick( float DeltaTime )
 		}
 	}
 	
+	// Burning effects
 	if ( Level.NetMode != NM_DedicatedServer && bBurnified != bBurnApplied )  {
 		if ( bBurnified )
 			StartBurnFX();
@@ -1770,7 +1774,7 @@ simulated event Tick( float DeltaTime )
 			StopBurnFX();
 	}
 	
-	// Reset replication.
+	// Reset AnimAction replication.
 	if ( bResetingAnimAct && Level.TimeSeconds > AnimActResetTime )  {
 		bResetingAnimAct = False;
 		AnimAction = '';
@@ -1786,16 +1790,6 @@ simulated event Tick( float DeltaTime )
 		Destroy();
 	
 	Super(xPawn).Tick(DeltaTime);
-	
-	if ( KFPC != None )  {
-		if ( KFPlayerReplicationInfo(KFPC.PlayerReplicationInfo).ThreeSecondScore > 0 && AlphaAmount > 0 )
-			AlphaAmount -= 2;
-
-		if ( AlphaAmount <= 0 )  {
-			KFPlayerReplicationInfo(KFPC.PlayerReplicationInfo).ThreeSecondScore = 0;
-			ScoreCounter = 0;
-		}
-	}
 	
 	// Locally controlled client camera Blur Effect
 	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )
@@ -1886,6 +1880,7 @@ function ExtendedCreateInventoryVeterancy(
 	}
 }
 
+//ToDo: вынести гранату в отдельную переменную
 function ThrowGrenade()
 {
 	local	Inventory	Inv;
@@ -1943,7 +1938,8 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     VeterancyHealPotency=1.0
+     RandJumpModif=1.0
+	 VeterancyHealPotency=1.0
 	 VeterancyOverhealBonus=1.0
 	 GroundSpeed=200.000000
      WaterSpeed=180.000000
@@ -1951,7 +1947,7 @@ defaultproperties
      // Damaging
 	 BileFrequency=0.5
 	 BileLifeSpan=4.0
-	 BileDamageRandRange=(Min=0.7,Max=1.3)
+	 BileDamageMultRandRange=(Min=0.7,Max=1.3)
 	 // Drowning
 	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
 	 DrowningDamageFrequency=1.0

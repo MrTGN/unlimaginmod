@@ -196,8 +196,9 @@ state Initialization
 	}
 }
 
-// Notify on server side that human Owner veterancy has been changed
-function NotifyOwnerVeterancyChanged()
+// Notification on the server and on the client-owner that HumanOwner veterancy has been changed.
+// Called from the UM_BaseWeapon.
+simulated function NotifyOwnerVeterancyChanged()
 {
 	if ( HumanOwner != None && HumanOwner.UM_PlayerReplicationInfo != None )  {
 		VeterancySpreadBonus = HumanOwner.UM_PlayerReplicationInfo.GetSpreadModifier(Self);
@@ -207,13 +208,6 @@ function NotifyOwnerVeterancyChanged()
 		VeterancySpreadBonus = default.VeterancySpreadBonus;
 		VeterancyAimErrorBonus = default.VeterancyAimErrorBonus;
 	}
-}
-
-// Notify clients that human Owner veterancy has been changed
-simulated function ClientNotifyOwnerVeterancyChanged()
-{
-	/* Use this function to update Veterancy bonuses 
-		on the client side */
 }
 
 simulated event PreBeginPlay();

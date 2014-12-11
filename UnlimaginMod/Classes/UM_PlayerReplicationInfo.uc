@@ -19,8 +19,8 @@ class UM_PlayerReplicationInfo extends KFPlayerReplicationInfo;
 //========================================================================
 //[block] Variables
 
-var		bool			bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
-var		UM_HumanPawn	PawnOwner;
+var		bool				bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
+var		UM_HumanPawn		HumanOwner;
 
 //[end] Varibles
 //====================================================================
@@ -31,8 +31,9 @@ var		UM_HumanPawn	PawnOwner;
 replication
 {
 	if ( Role == ROLE_Authority && bNetDirty )
-		PawnOwner;
-		
+		HumanOwner;
+	
+	// Replication from the server to the client-owner
 	if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		bVeterancyChangedTrigger;
 }
@@ -43,9 +44,9 @@ replication
 //========================================================================
 //[block] Functions
 
-function SetPawnOwner( UM_HumanPawn NewPawnOwner )
+function SetHumanOwner( UM_HumanPawn NewHumanOwner )
 {
-	PawnOwner = NewPawnOwner;
+	HumanOwner = NewHumanOwner;
 }
 
 simulated function bool NeedNetNotify()
@@ -73,26 +74,23 @@ simulated function NotifyPawnsAboutTeamChanged()
 	}
 }
 
-function NotifyVeterancyChanged()
+// Notification on the server and on the client-owner that veterancy has been changed.
+simulated function NotifyVeterancyChanged()
 {
-	bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
-	NetUpdateTime = Level.TimeSeconds - 1.0;
-	if ( PawnOwner != None )
-		PawnOwner.NotifyVeterancyChanged();
+	// Server trigger
+	if ( Role == ROLE_Authority )  {
+		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+	// client-owner trigger
+	else
+		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
 	
-	// If it is a Standalone game or ListenServer
-	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
-		ClientNotifyVeterancyChanged();
-}
-
-simulated function ClientNotifyVeterancyChanged()
-{
-	bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
-	if ( PawnOwner != None )  {
-		if ( PawnOwner.UM_PlayerReplicationInfo == None )
-			PawnOwner.UM_PlayerReplicationInfo = self;
-		
-		PawnOwner.ClientNotifyVeterancyChanged();
+	if ( HumanOwner != None )  {
+		if ( HumanOwner.UM_PlayerReplicationInfo == None )
+			HumanOwner.UM_PlayerReplicationInfo = self;
+		// Notify that veterancy has been changed.
+		HumanOwner.NotifyVeterancyChanged();
 	}
 }
 
@@ -107,8 +105,9 @@ simulated event PostNetReceive()
 		VoiceInfo.AddVoiceChatter(Self);
 	}
 	
-	if ( Level.NetMode != NM_DedicatedServer && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
-		ClientNotifyVeterancyChanged();
+	// client-owner
+	if ( Role < ROLE_Authority && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
+		NotifyVeterancyChanged();
 }
 
 //[block] --- Perk bonuses ---

@@ -212,27 +212,15 @@ simulated final function LoopAnimData( AnimData AD, optional float RateMult )
 }
 //[end]
 
-// Notify on server side that human Owner veterancy has been changed
-function NotifyOwnerVeterancyChanged()
+// Notification on the server and on the client-owner that HumanOwner veterancy has been changed.
+// Called from the UM_HumanPawn.
+simulated function NotifyOwnerVeterancyChanged()
 {
 	local	int		m;
 	
 	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
 		if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
 			UM_BaseProjectileWeaponFire(FireMode[m]).NotifyOwnerVeterancyChanged();
-	}
-}
-
-// Notify clients that human Owner veterancy has been changed
-simulated function ClientNotifyOwnerVeterancyChanged()
-{
-	/* Use this function to update Veterancy bonuses 
-		on the client side */
-	local	int		m;
-	
-	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
-		if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
-			UM_BaseProjectileWeaponFire(FireMode[m]).ClientNotifyOwnerVeterancyChanged();
 	}
 }
 

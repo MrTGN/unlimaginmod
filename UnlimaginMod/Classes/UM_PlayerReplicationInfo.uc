@@ -54,7 +54,7 @@ simulated function bool NeedNetNotify()
 	Return !bRegisteredChatRoom || (!bNoTeam && Team == None);
 }
 
-simulated function NotifyPawnsAboutTeamChanged()
+simulated function NotifyPawnsTeamChanged()
 {
 	local	Actor	A;
 	local	PlayerController	PC;
@@ -97,7 +97,7 @@ simulated function NotifyVeterancyChanged()
 simulated event PostNetReceive()
 {
 	if ( Team != None && !bTeamNotified )
-		NotifyPawnsAboutTeamChanged();
+		NotifyPawnsTeamChanged();
 
 	if ( !bRegisteredChatRoom && VoiceInfo != None && PlayerID != default.PlayerID 
 		 && VoiceID != default.VoiceID )  {

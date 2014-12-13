@@ -72,26 +72,24 @@ simulated event PostNetBeginPlay()
 {
 	Super.PostNetBeginPlay();
 	
-	if ( !bTimerSet )
-	{
+	if ( Role == ROLE_Authority && !bTimerSet )  {
 		SetTimer(HealInterval, True);
 		bTimerSet = True;
 	}
 }
 
-function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
+function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Pawn					Victim;
 	local	float					DamageScale, Dist;
 	local	vector					Dir;
 	local	int						i;
-	local	KFMonster				Monster;
-	local	UM_HumanPawn			Human;
 	local	array<Pawn>				CheckedPawns;
 	local	bool					bAlreadyChecked;
 	// Healing
-	local	int						MedicReward;
-	local	UM_PlayerReplicationInfo	PRI;
+	local	int						HealAmount;
+	local	UM_HumanPawn			Human;
+	
 
 	if ( bHurtEntry )
 		Return;
@@ -102,7 +100,6 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 	foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
 		if ( Victim != None && !Victim.bDeleteMe && Victim != Hurtwall && Victim.Health > 0 )  {
 			// Resets to the default values
-			Monster = None;
 			Human = None;
 			bAlreadyChecked = False;
 			// Check CheckedPawns array
@@ -119,38 +116,21 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 			
 			CheckedPawns[CheckedPawns.Length] = Victim;
 			
-			Monster = KFMonster(Victim);
 			Human = UM_HumanPawn(Victim);
 			if ( Human != None )  {
 				// Skip this iteration
-				if ( HealBoostAmount < 1 )
+				if ( HealBoostAmount < 1 || (Instigator != None && Instigator.GetTeamNum() != Human.GetTeamNum()) )
 					Continue;
 				
 				if ( UM_HumanPawn(Instigator) != None )
-					MedicReward = HealBoostAmount * UM_HumanPawn(Instigator).VeterancyHealPotency;
+					HealAmount = HealBoostAmount * UM_HumanPawn(Instigator).VeterancyHealPotency;
 				else
-					MedicReward = HealBoostAmount;
-				// PlayerReplicationInfo
-				PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-				if ( Human.Heal(MedicReward, Human.HealthMax) && PRI != None )  {
-					if ( KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != None )
-						KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward);
-					
-					// Give the medic reward money as a percentage of how much of the person's health they healed
-					MedicReward = Round( 100.0 * float(MedicReward) / Human.HealthMax * MoneyPerHealedHealth );
-					PRI.Score += MedicReward;
-					PRI.ThreeSecondScore += MedicReward;
-					PRI.Team.Score += MedicReward;
-					// MedicReward text Alpha
-					if ( KFHumanPawn(Instigator) != None )  {
-						KFHumanPawn(Instigator).AlphaAmount = 255;
-						// SuccessfulHealMessage
-						if ( PlayerController(Instigator.Controller) != None )
-							PlayerController(Instigator.Controller).ClientMessage(SuccessfulHealMessage@KFP.PlayerReplicationInfo.PlayerName, 'CriticalEvent');
-					}
-				}
+					HealAmount = HealBoostAmount;
+				
+				if ( Human.Heal(HealAmount, Human.HealthMax) && UM_HumanPawn(Instigator) != None )
+					UM_HumanPawn(Instigator).RewardForHealing( HealAmount, MoneyPerHealedHealth, Human );
 			}
-			else if ( Monster != None )  {
+			else if ( KFMonster(Victim) != None )  {
 				// Skip this iteration
 				if ( DamageAmount <= 0.0 )
 					Continue;
@@ -159,7 +139,7 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 				Dist = FMax(VSize(Dir), 1.0);
 				Dir /= Dist;
 				// DamageScale
-				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) /DamageRadius), 0.0)) * Monster.GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
+				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) /DamageRadius), 0.0)) * KFMonster(Victim).GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
 				if ( DamageScale > 0.0 )  {
 					Victim.TakeDamage
 					(
@@ -182,23 +162,21 @@ function HealOrHurt( float DamageAmount, float DamageRadius, class<DamageType> D
 	bHurtEntry = false;
 }
 
-simulated event Timer()
+event Timer()
 {
-	DamageRadius = FMin((default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05));
-	Damage = FMax((default.Damage * MinEfficiencyCoefficient), (Damage * 0.9));
-	HealBoostAmount = Max(int(float(default.HealBoostAmount) * MinEfficiencyCoefficient), int(float(HealBoostAmount) * 0.9));
-		
 	//if ( FearMarker != None )
 		//FearMarker.SetCollisionSize(DamageRadius, DamageRadius);
 	
-	if ( Role == ROLE_Authority )  {
-		if ( TotalHeals < MaxHeals )  {
-			TotalHeals++;
-			HealOrHurt(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
-		}
-		else
-			Destroy();
+	DamageRadius = FMin((default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05));
+	Damage = FMax((default.Damage * MinEfficiencyCoefficient), (Damage * 0.9));
+	HealBoostAmount = Max(int(float(default.HealBoostAmount) * MinEfficiencyCoefficient), int(float(HealBoostAmount) * 0.9));
+	
+	if ( TotalHeals < MaxHeals )  {
+		TotalHeals++;
+		HealOrHurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
 	}
+	else
+		Destroy();
 }
 
 simulated event Destroyed()

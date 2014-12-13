@@ -62,6 +62,11 @@ var		float						HealDelay, NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
 var		float						VeterancyHealPotency;	// Veterancy Heal Bonus
 
+// Healing Message and score
+var		string						SuccessfulHealedMessage;	// Message that You have healed somebody
+var		float						AlphaAmountDecreaseFrequency;
+var		float						NextAlphaAmountDecreaseTime;
+
 // Overheal
 var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
 var		float						OverhealReductionPerSecond;
@@ -1442,6 +1447,31 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
+// Reward for healing someone
+function RewardForHealing( int HealthHealed, float MoneyPerHealedHealth, UM_HumanPawn Patient )
+{
+	if ( Role < ROLE_Authority || Patient == None || Patient.bDeleteMe || UM_PlayerReplicationInfo == None )
+		Return;
+	
+	// Add HealthHealed to the StatsAndAchievements
+	if ( KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements) != None )
+		KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements).AddDamageHealed( HealthHealed );
+	
+	// Give the reward money as a percentage of how much of the person's health they healed
+	HealthHealed = Round( 100.0 * float(HealthHealed) / Patient.HealthMax * MoneyPerHealedHealth );
+	UM_PlayerReplicationInfo.Score += HealthHealed;
+	UM_PlayerReplicationInfo.ThreeSecondScore += HealthHealed;
+	UM_PlayerReplicationInfo.Team.Score += HealthHealed;
+	// Score AlphaAmount
+	NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
+	AlphaAmount = 255;
+	
+	// Successful Healed Message
+	if ( KFPC != None && Patient.PlayerReplicationInfo != None )
+		KFPC.ClientMessage( SuccessfulHealedMessage @ Patient.PlayerReplicationInfo.PlayerName, 'CriticalEvent' );
+}
+
+// Heal me!
 function bool Heal( out int HealAmount, int HealMax )
 {
 	// Don't let heal more than the max overhealed health
@@ -1454,7 +1484,7 @@ function bool Heal( out int HealAmount, int HealMax )
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
 		if ( !bOnDrugs && HealIntensity >= DrugEffectHealIntensity )
 			SetOnDrugs();
-		// Calculating out HealAmount for the medic reward
+		// Calculating out HealAmount for the healing reward
 		HealAmount = Min( (HealMax - Health), HealAmount );
 		
 		Return HealAmount > 0;
@@ -1734,13 +1764,15 @@ simulated event Tick( float DeltaTime )
 			else
 				bScreamedAt = False;
 		}
-		// AlphaAmount replicated from the server to the client-owner
-		if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.ThreeSecondScore > 0 && AlphaAmount > 0 )  {
-			AlphaAmount -= 2;
-			if ( AlphaAmount <= 0 )  {
+		// Score AlphaAmount replicated from the server to the client-owner
+		if ( AlphaAmount > 0 && Level.TimeSeconds >= NextAlphaAmountDecreaseTime )  {
+			NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
+			AlphaAmount -= 5;
+			if ( AlphaAmount <= 0 || UM_PlayerReplicationInfo == None || UM_PlayerReplicationInfo.ThreeSecondScore <= 0 )  {
 				AlphaAmount = 0;
-				UM_PlayerReplicationInfo.ThreeSecondScore = 0;
-				ScoreCounter = 0;
+				if ( UM_PlayerReplicationInfo != None )
+					UM_PlayerReplicationInfo.ThreeSecondScore = 0;
+				ScoreCounter = 0;	// WTF is this?
 			}
 		}
 	}
@@ -1938,7 +1970,10 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     RandJumpModif=1.0
+     SuccessfulHealedMessage="You have healed"
+	 // Decrease AlphaAmount every 60 milliseconds
+	 AlphaAmountDecreaseFrequency=0.06
+	 RandJumpModif=1.0
 	 VeterancyHealPotency=1.0
 	 VeterancyOverhealBonus=1.0
 	 GroundSpeed=200.000000

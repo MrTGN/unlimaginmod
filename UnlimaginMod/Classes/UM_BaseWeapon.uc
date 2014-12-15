@@ -343,7 +343,7 @@ simulated function DestroyTacticalModule()
 	}
 }
 
-simulated function bool FireModesAreReadyToFire()
+simulated function bool FireModesReadyToFire()
 {
 	local	int		Mode;
 	
@@ -363,7 +363,7 @@ function bool AllowToggleTacticalModule()
 	if ( bIsReloading || TacticalModule == None || IsInState('TogglingTacticalModule') )
 		Return False;
 	
-	Return FireModesAreReadyToFire();
+	Return FireModesReadyToFire();
 }
 
 exec function ToggleTacticalModule()
@@ -707,7 +707,7 @@ simulated function bool ReadyToFire(int Mode)
 		  || FireMode[Mode].NextFireTime > (Level.TimeSeconds + FireMode[Mode].PreFireTime) )
 		Return False;
 
-	Return FireModesAreReadyToFire();
+	Return FireModesReadyToFire();
 }
 
 simulated function bool StartFire(int Mode)
@@ -959,13 +959,12 @@ function bool AllowReload()
 		 !bIsReloading && MagAmmoRemaining < MagCapacity && AmmoAmount(0) > MagAmmoRemaining)
 		Return True;
 	
-	if ( bIsReloading || MagAmmoRemaining >= MagCapacity ||
-		 ClientState == WS_BringUp || ClientState == WS_PutDown ||
-		 AmmoAmount(0) <= MagAmmoRemaining ||
-		 (FireMode[0].NextFireTime - Level.TimeSeconds) > 0.1 )
+	if ( bIsReloading || MagAmmoRemaining >= MagCapacity || ClientState == WS_BringUp 
+		 || ClientState == WS_PutDown || AmmoAmount(0) <= MagAmmoRemaining 
+		 || (FireMode[0].NextFireTime - Level.TimeSeconds) > 0.1 )
 		Return False;
 	
-	Return FireModesAreReadyToFire();
+	Return FireModesReadyToFire();
 }
 
 exec function ReloadMeNow()
@@ -1131,8 +1130,8 @@ simulated function Timer()
 
 		if ( Instigator.PendingWeapon == None )  {
 			if ( ClientGrenadeState == GN_TempDown )  {
-				if ( KFPawn(Instigator) != None )
-					KFPawn(Instigator).WeaponDown();
+				if ( UM_HumanPawn(Instigator) != None )
+					UM_HumanPawn(Instigator).StartToThrowGrenade();
 			}
 			else
 	 			PlayIdle();
@@ -1288,8 +1287,8 @@ simulated function bool PutDown()
 				if ( FireMode[Mode].bFireOnRelease && FireMode[Mode].bIsFiring )
 					Return False;
 					
-				if ( FireMode[Mode].NextFireTime > (Level.TimeSeconds + FireMode[Mode].FireRate * (1.f - MinReloadPct)))
-					DownDelay = FMax(DownDelay, (FireMode[Mode].NextFireTime - Level.TimeSeconds - FireMode[Mode].FireRate * (1.f - MinReloadPct)));
+				if ( FireMode[Mode].NextFireTime > (Level.TimeSeconds + FireMode[Mode].FireRate * (1.0 - MinReloadPct)))
+					DownDelay = FMax(DownDelay, (FireMode[Mode].NextFireTime - Level.TimeSeconds - FireMode[Mode].FireRate * (1.0 - MinReloadPct)));
 			}
 		}
 
@@ -1403,7 +1402,7 @@ function UpdateMagCapacity(PlayerReplicationInfo PRI)
 }
 
 // Called on the server from ServerChangedWeapon function in Pawn class
-function AttachToPawn(Pawn P)
+function AttachToPawn( Pawn P )
 {
 	local	name	LeftHandBone;
 	
@@ -1415,7 +1414,7 @@ function AttachToPawn(Pawn P)
 				InventoryAttachment(ThirdPersonActor).InitFor(Self);
 		}
 		else
-			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1;
+			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1.0;
 		
 		LeftHandBone = P.GetWeaponBoneFor(Self);
 		if ( LeftHandBone == '' )  {
@@ -1428,6 +1427,44 @@ function AttachToPawn(Pawn P)
 	
 	SpawnTacticalModule();
 }
+
+//ToDo: дописать!
+function SpawnTacticalModuleHidden()
+{
+
+}
+
+// Attach to the pawn, but keep the attachement hidden
+function AttachToPawnHidden( Pawn P )
+{
+	local	name	LeftHandBone;
+	
+	Instigator = P;
+	if ( AttachmentClass != None )  {
+		if ( ThirdPersonActor == None )  {
+			ThirdPersonActor = Spawn(AttachmentClass, Owner);
+			if ( ThirdPersonActor != None )  {
+				ThirdPersonActor.bHidden = True;
+				InventoryAttachment(ThirdPersonActor).InitFor(Self);
+			}
+		}
+		else  {
+			ThirdPersonActor.bHidden = True;
+			ThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1.0;
+		}
+		
+		LeftHandBone = P.GetWeaponBoneFor(Self);
+		if ( LeftHandBone == '' )  {
+			ThirdPersonActor.SetLocation(P.Location);
+			ThirdPersonActor.SetBase(P);
+		}
+		else
+			P.AttachToBone(ThirdPersonActor, LeftHandBone);
+	}
+	
+	SpawnTacticalModuleHidden();
+}
+
 
 // Clear links on this weapon
 simulated function ClearLinksOnThisWeapon()

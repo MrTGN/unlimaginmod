@@ -288,11 +288,6 @@ function AddDefaultInventory()
 		}
 	}
 	
-	// HandGrenade Link
-	HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
-	// Syringe Link
-	Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
-	
 	// HACK FIXME
 	if ( Inventory != None )
 		Inventory.OwnerEvent('LoadOut');
@@ -1156,29 +1151,21 @@ simulated function ClientForceChangeWeapon(Inventory NewWeapon)
 
 // Quickly select syring, alt fire once, select old weapon again
 //ToDo: issue #213.
-// —сылка на Syringe должна хранитс€ в отдельной переменной.
 exec function QuickHeal()
 {
-	local	Syringe		S;
-	local	Inventory	I;
-	local	int			Count;
-
 	// Can't overheal or already overhealed to max
 	if ( Health >= Round(HealthMax * VeterancyOverhealBonus) || Health >= OverhealedHealthMax )
 		Return;
 	
-	// Find Syringe in the Inventory list
-	for ( I = Inventory; I != None && Count < 250 ; I = I.Inventory )  {
-		S = Syringe(I);
-		if ( S != None )
-			Break;
-		++Count;
-	}
+	// Syringe Link
+	if ( Syringe == None )
+		Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
+	
 	// Syringe wasn't found
-	if ( S == None )
+	if ( Syringe == None )
 		Return;
 
-	if ( S.ChargeBar() < 0.95 )  {
+	if ( Syringe.ChargeBar() < 0.95 )  {
 		if ( PlayerController(Controller) != None && HUDKillingFloor(PlayerController(Controller).myHud) != None )
 			HUDKillingFloor(PlayerController(Controller).myHud).ShowQuickSyringe();
 		// Can't heal now
@@ -1187,19 +1174,19 @@ exec function QuickHeal()
 
 	bIsQuickHealing = 1;
 	if ( Weapon == None )  {
-		PendingWeapon = S;
+		PendingWeapon = Syringe;
 		// Client owner
 		if ( Role < ROLE_Authority )
 			ChangedWeapon();
 	}
-	else if ( Weapon != S )  {
-		PendingWeapon = S;
+	else if ( Weapon != Syringe )  {
+		PendingWeapon = Syringe;
 		Weapon.PutDown();
 	}
 	// Syringe already selected, just start healing.
 	else  {
 		bIsQuickHealing = 0;
-		S.HackClientStartFire();
+		Syringe.HackClientStartFire();
 	}
 }
 
@@ -2057,50 +2044,48 @@ function ExtendedCreateInventoryVeterancy(
 	}
 }
 
-//ToDo: вынести гранату в отдельную переменную
-//Issue: #237
+function bool AllowGrenadeTossing()
+{
+	// HandGrenade Link
+	if ( HandGrenade == None )
+		HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
+	
+	if ( HandGrenade == None || !HandGrenade.HasAmmo() || bThrowingNade || KFWeapon(Weapon) == None
+		 || (KFWeapon(Weapon).bIsReloading && !KFWeapon(Weapon).InterruptReload())
+		 || (UM_BaseWeapon(Weapon) != None && !UM_BaseWeapon(Weapon).FireModesReadyToFire())
+		 || (Weapon.GetFireMode(0) != None && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) > 0.1) )
+		Return False;
+	
+	Return True;
+}
+
 function ThrowGrenade()
 {
-	local	Inventory	Inv;
-	local	int			Count;
-
 	if ( AllowGrenadeTossing() )  {
-		for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
-			if ( Frag(Inv) != None && Frag(Inv).HasAmmo() && !bThrowingNade
-				 && KFWeapon(Weapon) != None 
-				 && (!KFWeapon(Weapon).bIsReloading || KFWeapon(Weapon).InterruptReload())
-				 && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) <= 0.1 )  {
-				KFWeapon(Weapon).ClientGrenadeState = GN_TempDown;
-				Weapon.PutDown();
-				Break;
-			}
-			// To prevent the infinity loop because of the error in the LinkedList
-			++Count;
-		}
+		KFWeapon(Weapon).ClientGrenadeState = GN_TempDown;
+		Weapon.PutDown();
 	}
 }
 
-function WeaponDown()
+function StartToThrowGrenade()
 {
-    local	Inventory	Inv;
-	local	int			Count;
-
-    for( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
-        if ( Frag(Inv) != None && Frag(Inv).HasAmmo() )  {
-            SecondaryItem = Frag(Inv);
-            Frag(Inv).StartThrow();
-        }
-		// To prevent the infinity loop because of the error in the LinkedList
-		++Count;
-    }
+	bThrowingNade = True;
+	SecondaryItem = HandGrenade;
+	HandGrenade.StartThrow();
 }
 
-simulated function ThrowGrenadeFinished()
+// Left this for the old code from the KFWeapon
+function WeaponDown()
+{
+    StartToThrowGrenade();
+}
+
+function ThrowGrenadeFinished()
 {
 	SecondaryItem = None;
 	KFWeapon(Weapon).ClientGrenadeState = GN_BringUp;
 	Weapon.BringUp();
-	bThrowingNade = false;
+	bThrowingNade = False;
 }
 
 exec function SwitchToLastWeapon()

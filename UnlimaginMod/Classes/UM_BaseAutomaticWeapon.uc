@@ -58,7 +58,7 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated function bool FireModesAreReadyToFire()
+simulated function bool FireModesReadyToFire()
 {
 	local	int		Mode;
 	
@@ -86,7 +86,7 @@ function bool AllowSwitchFireMode()
 	if ( bIsReloading || IsInState('TogglingTacticalModule') || IsInState('SwitchingFireMode') )
 		Return False;
 	
-	Return FireModesAreReadyToFire() && SelectiveFireModes.Length > 0;
+	Return FireModesReadyToFire() && SelectiveFireModes.Length > 0;
 }
 
 exec function SwitchFireMode()

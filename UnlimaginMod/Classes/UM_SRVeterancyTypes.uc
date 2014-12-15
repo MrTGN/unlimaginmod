@@ -3,9 +3,29 @@
 class UM_SRVeterancyTypes extends KFVeterancyTypes
 	Abstract;
 
-var() localized string CustomLevelInfo;
-var() localized array<string> SRLevelEffects; // Added in ver 5.00, dynamic array for level effects.
-var() byte NumRequirements;
+//========================================================================
+//[block] Variables
+
+var()	localized	string			CustomLevelInfo;
+var()	localized	array<string>	SRLevelEffects; // Added in ver 5.00, dynamic array for level effects.
+var()				byte			NumRequirements;
+
+// Veterancy Equipment
+struct	EquipmentData
+{
+	var		string		ClassName;
+	var		int			MinLevel;	// Equipment will be added starting from this Skill Level. 0 - No restrictions.
+	var		int			MaxLevel;	// Equipment will be removed after this Skill Level. 0 - No restrictions.
+};
+
+var		array< EquipmentData >		StandardEquipment;
+var		array< EquipmentData >		AdditionalEquipment;
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Functions
 
 // Can be used to add in custom stats.
 static function AddCustomStats( UM_SRClientPerkRepLink Other );
@@ -218,6 +238,40 @@ static function byte PreDrawPerk( Canvas C, byte Level, out Material PerkIcon, o
 	Return Min(Level, 15);
 }
 
+// Standard Equipment
+static function AddStandardEquipment( UM_HumanPawn Human, UM_PlayerReplicationInfo PRI )
+{
+	local	int		i;
+	
+	for ( i = 0; i < default.StandardEquipment.Length; ++i )  {
+		if ( default.StandardEquipment[i].ClassName != "" )  {
+			// Skip this Equipment
+			if ( (default.StandardEquipment[i].MinLevel > 0 && PRI.ClientVeteranSkillLevel < default.StandardEquipment[i].MinLevel) 
+				 || (default.StandardEquipment[i].MaxLevel > 0 && PRI.ClientVeteranSkillLevel > default.StandardEquipment[i].MaxLevel) )
+				Continue;
+			// Add Equipment to the Human Inventory
+			Human.CreateInventory( default.StandardEquipment[i].ClassName );
+		}
+	}
+}
+
+// Additional Equipment
+static function AddAdditionalEquipment( UM_HumanPawn Human, UM_PlayerReplicationInfo PRI )
+{
+	local	int		i;
+	
+	for ( i = 0; i < default.AdditionalEquipment.Length; ++i )  {
+		if ( default.AdditionalEquipment[i].ClassName != "" )  {
+			// Skip this Equipment
+			if ( (default.AdditionalEquipment[i].MinLevel > 0 && PRI.ClientVeteranSkillLevel < default.AdditionalEquipment[i].MinLevel) 
+				 || (default.AdditionalEquipment[i].MaxLevel > 0 && PRI.ClientVeteranSkillLevel > default.AdditionalEquipment[i].MaxLevel) )
+				Continue;
+			// Add Equipment to the Human Inventory
+			Human.CreateInventory( default.AdditionalEquipment[i].ClassName );
+		}
+	}
+}
+
 // Perk weapon restriction
 static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 {
@@ -305,7 +359,15 @@ static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Cl
 	Return 1.0;
 }
 
+//[end] Functions
+//====================================================================
+
 defaultproperties
 {
 	NumRequirements=1
+	StandardEquipment(0)=(ClassName="KFMod.Knife")
+	StandardEquipment(1)=(ClassName="KFMod.Single")
+	StandardEquipment(2)=(ClassName="UnlimaginMod.UM_Weapon_HandGrenade")
+	StandardEquipment(3)=(ClassName="KFMod.Syringe")
+	StandardEquipment(4)=(ClassName="KFMod.Welder")
 }

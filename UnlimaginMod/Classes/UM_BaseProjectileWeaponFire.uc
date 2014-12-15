@@ -326,13 +326,18 @@ simulated function CheckAnimArrays()
 	//[end]
 }
 
+simulated function SetInstigator( Pawn NewInstigator )
+{
+	Instigator = NewInstigator;
+	HumanOwner = UM_HumanPawn(Instigator);
+}
+
 // Called after BeginPlay().
 simulated event PostBeginPlay()
 {
 	if ( !default.bAssetsLoaded )
 		PreloadAssets(Level, self);
 	
-	HumanOwner = UM_HumanPawn(Instigator);
 	KFWeap = KFWeapon(Weapon);
 	UMWeapon = UM_BaseWeapon(Weapon);
 	CheckAnimArrays();

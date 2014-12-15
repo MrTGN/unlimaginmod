@@ -18,6 +18,9 @@ var		bool						bDefaultPropertiesCalculated;
 var		UM_SRClientPerkRepLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
 
+var		UM_Weapon_HandGrenade		HandGrenade;
+var		UM_Syringe					Syringe;
+
 // Replication triggers
 var		bool						bPRIChangedTrigger, bClientPRIChangedTrigger;
 var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
@@ -159,9 +162,151 @@ simulated event PreBeginPlay()
 	}
 }
 
+/* FindInventoryType()
+	returns the inventory item of the requested class
+	if it exists in this pawn's inventory. 
+	Saved this function for the third-party code. */
+function Inventory FindInventoryType( class DesiredClass )
+{
+	local	Inventory	Inv;
+	local	int			Count;
+
+	for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
+		if ( Inv.class == DesiredClass )
+			Return Inv;
+		++Count;
+	}
+
+	// Search for subclasses if exact class wasn't found
+	Count = 0;
+	for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
+		if ( ClassIsChildOf(Inv.Class, DesiredClass) )
+			Return Inv;
+		++Count;
+	}
+
+	Return None;
+}
+
+/*	FindInventoryItem()
+	Returns the inventory item of the requested class if it exists in this pawn's inventory. 
+	Optional can search for subclassed items in this pawn's inventory.	*/
+function Inventory FindInventoryItem( class<Inventory> DesiredClass, optional bool bSearchForSubclasses )
+{
+	local	Inventory	Inv;
+	local	int			Count;
+	
+	if ( DesiredClass == None )
+		Return None;
+	
+	for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
+		if ( Inv.Class == DesiredClass )
+			Return Inv;
+		++Count;
+	}
+	
+	// Search for subclasses if exact class wasn't found
+	if ( bSearchForSubclasses )  {
+		Count = 0;
+		for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
+			if ( DesiredClass(Inv.Class) != None )
+				Return Inv;
+			++Count;
+		}
+	}
+	
+	Return None;
+}
+
+function CreateInventory( string InventoryClassName )
+{
+	local	Inventory			Inv;
+	local	class<Inventory>	InventoryClass;
+
+	if ( InventoryClassName == "" )
+		Return;
+	
+	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
+	if ( InventoryClass != None && FindInventoryItem(InventoryClass) == None )  {
+		Inv = Spawn(InventoryClass);
+		if ( Inv != None )  {
+			Inv.GiveTo(self);
+			if ( Inv != None )  {
+				Inv.PickupFunction(self);
+				// SellValue
+				if ( KFWeapon(Inv) != None && Class<KFWeaponPickup>(Inv.PickupClass) != None )  {
+					if ( UM_PlayerReplicationInfo != None )
+						KFWeapon(Inv).SellValue = Round( Class<KFWeaponPickup>(Inv.PickupClass).default.Cost * UM_PlayerReplicationInfo.GetPickupCostScaling(Inv.PickupClass) );
+					else
+						KFWeapon(Inv).SellValue = Class<KFWeaponPickup>(Inv.PickupClass).default.Cost;
+				}
+			}
+		}
+	}
+}
+
+// Clearing unnecessary function
+function CreateInventoryVeterancy( string InventoryClassName, float SellValue ) { }
+
+
+// Server only function
+function AddDefaultInventory()
+{
+	local	int	i;
+	
+	// Default Veterancy Inventory
+	if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.AddDefaultVeterancyInventory(self) )
+		Level.Game.AddGameSpecificInventory(self);	// GameSpecificInventory
+	// Locally Controlled
+	else if ( IsLocallyControlled() )  {
+		// RequiredEquipment
+		for ( i = 0; i < ArrayCount(RequiredEquipment); ++i )  {
+			if ( RequiredEquipment[i] != "" )
+				CreateInventory(RequiredEquipment[i]);
+		}
+		// OptionalEquipment
+		for ( i = 0; i < ArrayCount(OptionalEquipment); ++i )  {
+			if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
+				CreateInventory(OptionalEquipment[i]);
+		}
+		// GameSpecificInventory
+	    Level.Game.AddGameSpecificInventory(self);
+	}
+	// network player
+	else  {
+	    // GameSpecificInventory
+		Level.Game.AddGameSpecificInventory(self);
+		// OptionalEquipment
+		for ( i = ArrayCount(OptionalEquipment); i > 0; --i )  {
+			if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
+				CreateInventory(OptionalEquipment[i]);
+		}
+		// RequiredEquipment
+		for ( i = ArrayCount(RequiredEquipment); i > 0; --i )  {
+			if ( RequiredEquipment[i] != "" )
+				CreateInventory(RequiredEquipment[i]);
+		}
+	}
+	
+	// HandGrenade Link
+	HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
+	// Syringe Link
+	Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
+	
+	// HACK FIXME
+	if ( Inventory != None )
+		Inventory.OwnerEvent('LoadOut');
+
+	Controller.ClientSwitchToBestWeapon();
+}
+
 simulated event PostBeginPlay()
 {
-	Super(UnrealPawn).PostBeginPlay();
+	Super(Pawn).PostBeginPlay();
+	
+	if ( Role == ROLE_Authority && Level.bStartup && !bNoDefaultInventory )
+		AddDefaultInventory();
+	
 	AssignInitialPose();
 	
 	if ( Level.NetMode != NM_DedicatedServer && bActorShadows && bPlayerShadows )  {
@@ -185,7 +330,7 @@ simulated function NotifyTeamChanged()
 	
 	if ( PlayerReplicationInfo != None )
 		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
-	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )  {
+	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
 		Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
 	
 	UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
@@ -1095,23 +1240,24 @@ final function UM_SRClientPerkRepLink FindStats()
 
 function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 {
-	local float Price,Weight;
-	local Inventory I;
+	local	float		Price, Weight;
+	local	Inventory	I;
 
-	if( !CanBuyNow() || Class<KFWeapon>(WClass)==None || Class<KFWeaponPickup>(WClass.Default.PickupClass)==None || HasWeaponClass(WClass) )
+	if ( !CanBuyNow() || Class<KFWeapon>(WClass) == None 
+		 || Class<KFWeaponPickup>(WClass.Default.PickupClass) == None || HasWeaponClass(WClass) )
 		Return;
 
 	// Validate if allowed to buy that weapon.
 	if ( PerkLink == None )
 		PerkLink = FindStats();
 	
-	if ( PerkLink != None && !PerkLink.CanBuyPickup(Class<KFWeaponPickup>(WClass.Default.PickupClass)) )
+	if ( PerkLink != None && !PerkLink.CanBuyPickup( Class<KFWeaponPickup>(WClass.Default.PickupClass) ) )
 		Return;
 
-	Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
-
 	if ( UM_PlayerReplicationInfo != None )
-		Price *= UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.Default.PickupClass );
+		Price = Round( class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost * UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.Default.PickupClass ) );
+	else
+		Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
 
 	Weight = Class<KFWeapon>(WClass).Default.Weight;
 
@@ -1184,22 +1330,19 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 	for ( I = Inventory; I != none; I = I.Inventory )
 	{
-		if ( I.Class==WClass )
+		if ( I.Class == WClass )
 		{
-			if ( KFWeapon(I) != none && KFWeapon(I).SellValue != -1 )
+			if ( KFWeapon(I) != None && KFWeapon(I).SellValue > 0 )
 				Price = KFWeapon(I).SellValue;
+			else if ( UM_PlayerReplicationInfo != None )
+				Price = Round( class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75 * UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.default.PickupClass ) );
 			else
-			{
-				Price = (class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75);
-
-				if ( UM_PlayerReplicationInfo != None )
-					Price *= UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.default.PickupClass );
-			}
+				Price = Round( class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75 );
 
 			if ( I.Class==Class'Dualies' )
 			{
 				NewWep = Spawn(class'Single');
-				Price*=2.f;
+				Price *= 2.0;
 			}
 			else if ( I.Class==Class'DualDeagle' )
 				NewWep = Spawn(class'Deagle');
@@ -1211,7 +1354,7 @@ function ServerSellWeapon( Class<Weapon> WClass )
 				NewWep = Spawn(Weapon(I).DemoReplacement);
 			if( NewWep!=None )
 			{
-				Price *= 0.5f;
+				Price *= 0.5;
 				NewWep.GiveTo(self);
 			}
 
@@ -1447,6 +1590,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
+
 // Reward for healing someone
 function RewardForHealing( int HealthHealed, float MoneyPerHealedHealth, UM_HumanPawn Patient )
 {
@@ -1457,7 +1601,7 @@ function RewardForHealing( int HealthHealed, float MoneyPerHealedHealth, UM_Huma
 	if ( KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements) != None )
 		KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements).AddDamageHealed( HealthHealed );
 	
-	// Give the reward money as a percentage of how much of the person's health they healed
+	// Give the reward money as a percentage of how much of the Patient health was healed
 	HealthHealed = Round( 100.0 * float(HealthHealed) / Patient.HealthMax * MoneyPerHealedHealth );
 	UM_PlayerReplicationInfo.Score += HealthHealed;
 	UM_PlayerReplicationInfo.ThreeSecondScore += HealthHealed;
@@ -1869,6 +2013,7 @@ simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
 		Velocity = Vect(0.0, 0.0, 0.0);
 }
 
+//ToDo: Переписать!
 function ExtendedCreateInventoryVeterancy(
 			string	InventoryClassName, 
 			float	SellValueScale, 
@@ -1880,7 +2025,7 @@ function ExtendedCreateInventoryVeterancy(
 
 	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
 	
-	if ( InventoryClass != None && FindInventoryType(InventoryClass) == None )  {
+	if ( InventoryClass != None && FindInventoryItem(InventoryClass) == None )  {
 		Inv = Spawn(InventoryClass);
 		if ( Inv != none )  {
 			Inv.GiveTo(self);
@@ -1913,6 +2058,7 @@ function ExtendedCreateInventoryVeterancy(
 }
 
 //ToDo: вынести гранату в отдельную переменную
+//Issue: #237
 function ThrowGrenade()
 {
 	local	Inventory	Inv;

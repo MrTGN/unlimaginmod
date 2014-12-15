@@ -256,7 +256,11 @@ simulated event PostBeginPlay()
 			FireMode[m].ThisModeNum = m;
 			FireMode[m].Level = Level;
 			FireMode[m].Owner = self;
-			FireMode[m].Instigator = Instigator;
+			// Sets the FireMode Instigator
+			if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+				UM_BaseProjectileWeaponFire(FireMode[m]).SetInstigator(Instigator);
+			else
+				FireMode[m].Instigator = Instigator;
 			FireMode[m].Weapon = self;
 			// Calling actor spawning-like Events
 			FireMode[m].PreBeginPlay();
@@ -1493,6 +1497,95 @@ function DetachFromPawn(Pawn P)
 	P.AmbientSound = None;
 }
 
+// This function call replicated from the server to the client-owner
+simulated function ClientWeaponSet( bool bPossiblySwitch )
+{
+	local	int		m;
+	
+	Instigator = Pawn(Owner);
+	bPendingSwitch = bPossiblySwitch;
+	if ( Instigator == None )  {
+		// Wait for replication
+		GotoState('PendingClientWeaponSet');
+		Return;
+	}
+	
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireModeClass[m] != None && (FireMode[m] == None || (FireMode[m].AmmoClass != None && !bNoAmmoInstances && FireMode[m].AmmoPerFire > 0 && Ammo[m] == None)) )  {
+			GotoState('PendingClientWeaponSet');
+			Return;
+		}
+		// Sets the FireMode Instigator
+		if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+			UM_BaseProjectileWeaponFire(FireMode[m]).SetInstigator(Instigator);
+		else
+			FireMode[m].Instigator = Instigator;
+		FireMode[m].Level = Level;
+	}
+	
+	ClientState = WS_Hidden;
+    GotoState('Hidden');
+	
+	// Client-side code next
+	if ( Level.NetMode == NM_DedicatedServer || !Instigator.IsHumanControlled() )
+		Return;
+	
+	// this weapon was switched to while waiting for replication, switch to it now
+	if ( Instigator.Weapon == self || Instigator.PendingWeapon == self )  {
+		if ( Instigator.PendingWeapon != None )
+			Instigator.ChangedWeapon();
+		else
+			BringUp();
+		
+		Return;
+	}
+	
+	if ( Instigator.PendingWeapon != None && Instigator.PendingWeapon.bForceSwitch )
+		Return;
+	
+	// Switch Weapon On Pickup
+	if ( Instigator.Weapon == None )  {
+		Instigator.PendingWeapon = self;
+		Instigator.ChangedWeapon();
+	}
+	else if ( bPossiblySwitch && !Instigator.Weapon.IsFiring() )  {
+		if ( PlayerController(Instigator.Controller) != None && PlayerController(Instigator.Controller).bNeverSwitchOnPickup )
+			Return;
+		
+		if ( Instigator.PendingWeapon != None )  {
+			if ( RateSelf() > Instigator.PendingWeapon.RateSelf() )  {
+				Instigator.PendingWeapon = self;
+				Instigator.Weapon.PutDown();
+			}
+		}
+		else if ( RateSelf() > Instigator.Weapon.RateSelf() )  {
+			Instigator.PendingWeapon = self;
+			Instigator.Weapon.PutDown();
+		}
+	}
+}
+
+state PendingClientWeaponSet
+{
+	simulated function BeginState()
+	{
+		SetTimer(0.05, false);
+	}
+
+	simulated function Timer()
+	{
+		if ( Pawn(Owner) != None )
+			ClientWeaponSet(bPendingSwitch);
+		// Not all data was replicated. Waiting.
+		if ( IsInState('PendingClientWeaponSet') )
+			SetTimer(0.05, false);
+	}
+
+	simulated function EndState()
+	{
+	}
+}
+
 function GiveTo( Pawn Other, optional Pickup Pickup )
 {
 	local	Inventory			I;
@@ -1535,12 +1628,22 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	}
 	
 	// From the Weapon class
+	/*	Note:	Instigator variable does not replicated in Weapon (Inventory) classes. 
+				On the client it sets in ClientWeaponSet() function from the Owner variable, 
+				which sets in the Pawn AddInventory() function (calling from here) 
+				and then replicated to the client. */
 	Instigator = Other;
 	W = Weapon(Instigator.FindInventoryType(Class));
 	// added class check because somebody made FindInventoryType() return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
 		bJustSpawned = True;
-		Super.GiveTo(Other);
+		// From Inventory GiveTo()
+		if ( Instigator.AddInventory( Self ) )
+			GotoState('');
+		else  {
+			Destroy();
+			Return;
+		}
 		bPossiblySwitch = True;
 		W = Self;
 	}
@@ -1550,9 +1653,14 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	if ( Pickup == None )
 		bPossiblySwitch = True;
 	
+	// Giving ammo
 	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
 		if ( FireMode[m] != None )  {
-			FireMode[m].Instigator = Instigator;
+			// Sets the FireMode Instigator
+			if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+				UM_BaseProjectileWeaponFire(FireMode[m]).SetInstigator(Instigator);
+			else
+				FireMode[m].Instigator = Instigator;
 			W.GiveAmmo(m, WeaponPickup(Pickup), bJustSpawned);
 		}
 	}

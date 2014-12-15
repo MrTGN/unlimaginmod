@@ -111,6 +111,18 @@ simulated event PostNetReceive()
 }
 
 //[block] --- Perk bonuses ---
+function bool AddDefaultVeterancyInventory( UM_HumanPawn Human )
+{
+	if ( Human != None && Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )  {
+		Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.AddStandardEquipment( Human, self );
+		Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.AddAdditionalEquipment( Human, self );
+		
+		Return True;
+	}
+	
+	Return False;
+}
+
 // Perk weapon restriction
 simulated function bool CanUseThisWeapon( Weapon W )
 {

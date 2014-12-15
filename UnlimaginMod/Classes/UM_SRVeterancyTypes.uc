@@ -368,6 +368,6 @@ defaultproperties
 	StandardEquipment(0)=(ClassName="KFMod.Knife")
 	StandardEquipment(1)=(ClassName="KFMod.Single")
 	StandardEquipment(2)=(ClassName="UnlimaginMod.UM_Weapon_HandGrenade")
-	StandardEquipment(3)=(ClassName="KFMod.Syringe")
+	StandardEquipment(3)=(ClassName="UnlimaginMod.UM_Syringe")
 	StandardEquipment(4)=(ClassName="KFMod.Welder")
 }

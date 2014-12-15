@@ -205,60 +205,6 @@ static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, Weapon
 	Return 1.0;
 }
 
-// Give Extra Items as default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	local	int		ExtraAmmo;
-	
-	if ( KFPRI.ClientVeteranSkillLevel >= 9 )
-		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
-	
-	if ( UM_HumanPawn(P) != None )
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 6:
-				ExtraAmmo = 2 * class'UM_MAC10MP'.default.MagCapacity * (1.00 + 0.06 * 6);
-			case 5:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MAC10MP", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MAC10Pickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 10:
-				ExtraAmmo = 3 * class'FlareRevolver'.default.MagCapacity;
-			case 9:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.FlareRevolver", GetCostScaling(KFPRI, class'FlareRevolverPickup'), ExtraAmmo, 0);
-			case 8:
-				if ( KFPRI.ClientVeteranSkillLevel == 8 )
-					ExtraAmmo = class'UM_FlameThrower'.default.MagCapacity * (1.00 + 0.10 * 8);
-				else if ( KFPRI.ClientVeteranSkillLevel == 9 )
-					ExtraAmmo = class'UM_FlameThrower'.default.MagCapacity * (1.00 + 0.10 * 9);
-				else
-					ExtraAmmo = class'UM_FlameThrower'.default.MagCapacity * (1.00 + 0.10 * 10);
-			case 7:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_FlameThrower", GetCostScaling(KFPRI, class'UnlimaginMod.UM_FlameThrowerPickup'), ExtraAmmo, 0);
-				Break;
-		}
-	}
-	else
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 5:
-			case 6:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_MAC10MP", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MAC10Pickup'));
-				Break;
-			
-			case 9:
-			case 10:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.FlareRevolver", GetCostScaling(KFPRI, class'FlareRevolverPickup'));
-			case 7:
-			case 8:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_FlameThrower", GetCostScaling(KFPRI, class'UnlimaginMod.UM_FlameThrowerPickup'));
-				Break;
-		}
-	}
-}
-
 static function class<DamageType> GetMAC10DamageType(KFPlayerReplicationInfo KFPRI)
 {
 	return class'DamTypeMAC10MPInc';
@@ -296,4 +242,12 @@ defaultproperties
 	SRLevelEffects(9)="60% extra flame weapon damage|60% faster Flamethrower reload|60% more flame weapon ammo|100% resistance to fire|100% extra Flamethrower range|Grenades set enemies on fire|70% discount on flame weapons|Spawn with a Flamethrower and Body Armor"
 	
 	CustomLevelInfo="%s extra flame weapon damage|%m faster Flamethrower reload|%s more flame weapon ammo|100% resistance to fire|100% extra Flamethrower range|Grenades set enemies on fire|%d discount on flame weapons|Spawn with a Flamethrower and Body Armor"
+	
+	// StandardEquipment
+	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=5)
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_MAC10MP",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(1)=(ClassName="KFMod.FlareRevolver",MinLevel=6)
+	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_FlameThrower",MinLevel=8,MaxLevel=9)
+	AdditionalEquipment(3)=(ClassName="UnlimaginMod.UM_GoldenFlameThrower",MinLevel=10)
 }

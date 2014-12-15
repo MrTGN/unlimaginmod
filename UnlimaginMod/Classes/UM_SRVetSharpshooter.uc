@@ -315,58 +315,6 @@ static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, Weapon
 	Return 1.0;
 }
 
-// Give Extra Items as Default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	local	int		ExtraAmmo;
-	
-	if ( KFPRI.ClientVeteranSkillLevel >= 7 )
-		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
-	
-	if ( UM_HumanPawn(P) != None )
-	{
-		switch ( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 8:
-				ExtraAmmo = 2 * class'Winchester'.default.MagCapacity;
-			case 7:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_WinchesterM1894Rifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_WinchesterM1894Pickup'), ExtraAmmo, 0);
-			case 6:
-				ExtraAmmo = 3 * class'UM_MK23Pistol'.default.MagCapacity;
-			case 5:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 10:
-				ExtraAmmo = 6;
-			case 9:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_Crossbow", GetCostScaling(KFPRI, class'UnlimaginMod.UM_CrossbowPickup'), ExtraAmmo, 0);
-				ExtraAmmo = 3 * class'UM_MK23Pistol'.default.MagCapacity;
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'), ExtraAmmo, 0);
-				Break;
-		}
-	}
-	else
-	{
-		switch ( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 7:
-			case 8:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_WinchesterM1894Rifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_WinchesterM1894Pickup'));
-			case 5:
-			case 6:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'));
-				Break;
-			
-			case 10:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_Crossbow", GetCostScaling(KFPRI, class'UnlimaginMod.UM_CrossbowPickup'));
-			case 9:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_MK23Pistol", GetCostScaling(KFPRI, class'UnlimaginMod.UM_MK23Pickup'));
-				Break;
-		}
-	}
-}
-
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;
@@ -399,4 +347,11 @@ defaultproperties
 	SRLevelEffects(9)="60% more damage with Pistols, Rifle, Crossbow, M14, and M99|75% less recoil with Pistols, Rifle, Crossbow, M14, and M99|60% faster reload with Pistols, Rifle, Crossbow, M14, and M99|50% extra headshot damage|70% discount on Handcannon/44 Magnum/M14/M99|Spawn with a Crossbow"
 	
 	CustomLevelInfo="%s more damage with Pistols, Rifle, Crossbow, M14, and M99|75% less recoil with Pistols, Rifle, Crossbow, M14, and M99|%p faster reload with Pistols, Rifle, Crossbow, M14, and M99|50% extra headshot damage|%d discount on Handcannon/44 Magnum/M14/M99|Spawn with a Crossbow"
+	
+	// StandardEquipment
+	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=6)
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_WinchesterM1894Rifle",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(1)=(ClassName="UnlimaginMod.UM_MK23Pistol",MinLevel=7)
+	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_Crossbow",MinLevel=8)
 }

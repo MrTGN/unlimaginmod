@@ -189,66 +189,6 @@ static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 	Return 1.0;
 }
 
-// Give Extra Items as default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	local	int		ExtraAmmo;
-	
-	if ( KFPRI.ClientVeteranSkillLevel >= 9 )
-		KFHumanPawn(P).RequiredEquipment[1] = "";	// Remove KFMod.Single (Beretta92)
-	
-	if ( UM_HumanPawn(P) != None )
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 8:
-				ExtraAmmo = 6;
-			case 7:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
-			case 6:
-				ExtraAmmo = 2;
-			case 5:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.PipeBombExplosive", GetCostScaling(KFPRI, class'PipeBombPickup'), ExtraAmmo, 0);
-				Break;
-		
-			case 10:
-			case 9:
-				ExtraAmmo = 6;
-				if ( KFPRI.ClientVeteranSkillLevel == 9 )
-				{
-					UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'), ExtraAmmo, 0);
-					ExtraAmmo = 0;
-				}
-				else
-					UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.GoldenM79GrenadeLauncher", GetCostScaling(KFPRI, class'GoldenM79Pickup'), ExtraAmmo, 0);
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_M4203AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4203Pickup'), ExtraAmmo, 1);
-				Break;
-		}
-	}
-	else
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 7:
-			case 8:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'));
-			case 5:
-			case 6:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.PipeBombExplosive", GetCostScaling(KFPRI, class'PipeBombPickup'));
-				Break;
-			
-			case 9:
-			case 10:
-				if ( KFPRI.ClientVeteranSkillLevel == 9 )
-					KFHumanPawn(P).CreateInventoryVeterancy("KFMod.M79GrenadeLauncher", GetCostScaling(KFPRI, class'M79Pickup'));
-				else
-					KFHumanPawn(P).CreateInventoryVeterancy("KFMod.GoldenM79GrenadeLauncher", GetCostScaling(KFPRI, class'GoldenM79Pickup'));
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_M4203AssaultRifle", GetCostScaling(KFPRI, class'UnlimaginMod.UM_M4203Pickup'));
-				Break;
-		}
-	}
-}
-
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;
@@ -283,4 +223,12 @@ defaultproperties
 	SRLevelEffects(9)="60% extra Explosives damage|55% resistance to Explosives|120% increase in grenade capacity|Can carry 8 Remote Explosives|70% discount on Explosives|93% off Remote Explosives|Spawn with an M79 and Pipe Bomb"
 	
 	CustomLevelInfo="%s extra Explosives damage|%r resistance to Explosives|120% increase in grenade capacity|Can carry %x Remote Explosives|%y discount on Explosives|%d off Remote Explosives|Spawn with an M79 and Pipe Bomb"
+	
+	// StandardEquipment
+	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=7)
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="KFMod.M79GrenadeLauncher",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(1)=(ClassName="KFMod.PipeBombExplosive",MinLevel=6,MaxLevel=9)
+	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_M4203AssaultRifle",MinLevel=8)
+	AdditionalEquipment(3)=(ClassName="KFMod.GoldenM79GrenadeLauncher",MinLevel=10)
 }

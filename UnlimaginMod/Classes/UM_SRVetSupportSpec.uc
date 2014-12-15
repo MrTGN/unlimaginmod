@@ -266,62 +266,6 @@ static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Cl
 	Return 1.0;
 }
 
-// Give Extra Items as Default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	local	int		ExtraAmmo;
-	
-	if ( UM_HumanPawn(P) != None )
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 6:
-				ExtraAmmo = 12;
-			case 5:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.BoomStick", GetCostScaling(KFPRI, class'BoomStickPickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 8:
-				ExtraAmmo = 12;
-			case 7:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM3Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM3Pickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 9:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_BenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM4Pickup'));
-				Break;
-			
-			case 10:
-				ExtraAmmo = 12;
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("UnlimaginMod.UM_GoldenBenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenBenelliM4Pickup'), ExtraAmmo, 0);
-				Break;
-		}
-	}
-	else
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 5:
-			case 6:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.BoomStick", GetCostScaling(KFPRI, class'BoomStickPickup'));
-				Break;
-			
-			case 7:
-			case 8:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_BenelliM3Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM3Pickup'));
-				Break;
-			
-			case 9:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_BenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_BenelliM4Pickup'));
-				Break;
-			
-			case 10:
-				KFHumanPawn(P).CreateInventoryVeterancy("UnlimaginMod.UM_GoldenBenelliM4Shotgun", GetCostScaling(KFPRI, class'UnlimaginMod.UM_GoldenBenelliM4Pickup'));
-				Break;
-		}
-	}
-}
-
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;
@@ -356,4 +300,11 @@ defaultproperties
 	SRLevelEffects(9)="60% more damage with Shotguns|90% better Shotgun penetration|30% extra shotgun ammo|50% more damage with Grenades|120% increase in grenade capacity|60% increased carry weight|150% faster welding/unwelding|70% discount on Shotguns|Spawn with a Hunting Shotgun"
 
 	CustomLevelInfo="%s more damage with Shotguns|90% better Shotgun penetration|30% extra shotgun ammo|%g more damage with Grenades|120% increase in grenade capacity|%s increased carry weight|150% faster welding/unwelding|%d discount on Shotguns|Spawn with a Hunting Shotgun"
+	
+	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=6)
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="KFMod.BoomStick",MinLevel=5)
+	AdditionalEquipment(1)=(ClassName="UnlimaginMod.UM_BenelliM3Shotgun",MinLevel=7,MaxLevel=8)
+	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_BenelliM4Shotgun",MinLevel=9,MaxLevel=9)
+	AdditionalEquipment(3)=(ClassName="UnlimaginMod.UM_GoldenBenelliM4Shotgun",MinLevel=10)
 }

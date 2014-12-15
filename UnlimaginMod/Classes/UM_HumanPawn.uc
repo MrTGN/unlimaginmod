@@ -1225,6 +1225,7 @@ final function UM_SRClientPerkRepLink FindStats()
 	Return None;
 }
 
+//ToDo: Issue #239
 function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 {
 	local	float		Price, Weight;
@@ -1303,6 +1304,7 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 	SetTraderUpdate();
 }
 
+//ToDo: Issue #239
 function ServerSellWeapon( Class<Weapon> WClass )
 {
 	local Inventory I;
@@ -2000,50 +2002,6 @@ simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
 		Velocity = Vect(0.0, 0.0, 0.0);
 }
 
-//ToDo: Переписать!
-function ExtendedCreateInventoryVeterancy(
-			string	InventoryClassName, 
-			float	SellValueScale, 
- optional	int		AddExtraAmmo,
- optional	int		FireModeNum)
-{
-	local Inventory			Inv;
-	local class<Inventory>	InventoryClass;
-
-	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
-	
-	if ( InventoryClass != None && FindInventoryItem(InventoryClass) == None )  {
-		Inv = Spawn(InventoryClass);
-		if ( Inv != none )  {
-			Inv.GiveTo(self);
-			
-			if ( Inv != None )
-				Inv.PickupFunction(self);
-			
-			if ( KFGameType(Level.Game) != none )
-				KFGameType(Level.Game).WeaponSpawned(Inv);
-			
-			if ( KFWeapon(Inv) != none )  {
-				KFWeapon(Inv).SellValue = float(class<KFWeaponPickup>(InventoryClass.default.PickupClass).default.Cost) * SellValueScale * 0.75;
-				
-				if ( AddExtraAmmo > 0 )  {
-					if ( FireModeNum <= 0 )
-						FireModeNum = 0;
-					else
-						FireModeNum = 1;
-					
-					if ( KFWeapon(Inv).AmmoAmount(FireModeNum) < KFWeapon(Inv).MaxAmmo(FireModeNum) )  {
-						if ( AddExtraAmmo > (KFWeapon(Inv).MaxAmmo(FireModeNum) - KFWeapon(Inv).AmmoAmount(FireModeNum)) )
-							AddExtraAmmo = KFWeapon(Inv).MaxAmmo(FireModeNum) - KFWeapon(Inv).AmmoAmount(FireModeNum);
-						
-						KFWeapon(Inv).AddAmmo(AddExtraAmmo, FireModeNum);
-					}
-				}
-			}
-		}
-	}
-}
-
 function bool AllowGrenadeTossing()
 {
 	// HandGrenade Link
@@ -2164,7 +2122,7 @@ defaultproperties
 	 RequiredEquipment(0)="KFMod.Knife"
      RequiredEquipment(1)="KFMod.Single"
      RequiredEquipment(2)="UnlimaginMod.UM_Weapon_HandGrenade"
-     RequiredEquipment(3)="KFMod.Syringe"
+     RequiredEquipment(3)="UnlimaginMod.UM_Syringe"
      RequiredEquipment(4)="KFMod.Welder"
 	 bNetNotify=False
 	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'

@@ -181,37 +181,6 @@ static function float GetAmmoCostScaling(KFPlayerReplicationInfo KFPRI, class<Pi
 	Return 1.00;
 }
 
-// Give Extra Items as default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	if ( KFPRI.ClientVeteranSkillLevel >= 5 )
-		KFHumanPawn(P).RequiredEquipment[0] = ""; //Knife
-	
-	if ( KFPRI.ClientVeteranSkillLevel >= 6 )
-		P.ShieldStrength = 100;
-	
-	switch( KFPRI.ClientVeteranSkillLevel )
-	{
-		case 5:
-		case 6:
-			KFHumanPawn(P).CreateInventoryVeterancy("KFMod.Machete", GetCostScaling(KFPRI, class'MachetePickup'));
-			Break;
-		
-		case 7:
-		case 8:
-			KFHumanPawn(P).CreateInventoryVeterancy("KFMod.Axe", GetCostScaling(KFPRI, class'AxePickup'));
-			Break;
-		
-		case 9:
-			KFHumanPawn(P).CreateInventoryVeterancy("KFMod.Katana", GetCostScaling(KFPRI, class'KatanaPickup'));
-			Break;
-		
-		case 10:
-			KFHumanPawn(P).CreateInventoryVeterancy("KFMod.GoldenKatana", GetCostScaling(KFPRI, class'GoldenKatanaPickup'));
-			Break;
-	}
-}
-
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;
@@ -245,4 +214,12 @@ defaultproperties
 	SRLevelEffects(9)="100% extra melee damage|25% faster melee attacks|30% faster melee movement|80% less damage from Bloat Bile|40% resistance to all damage|70% discount on Katana/Chainsaw/Sword|Spawn with a Chainsaw and Body Armor|Can't be grabbed by Clots|Up to 4 Zed-Time Extensions"
 	
 	CustomLevelInfo="%r extra melee damage|%s faster melee attacks|20% faster melee movement|80% less damage from Bloat Bile|%l resistance to all damage|%d discount on Katana/Chainsaw/Sword|Spawn with a Chainsaw and Body Armor|Can't be grabbed by Clots|Up to 4 Zed-Time Extensions"
+	
+	// StandardEquipment
+	StandardEquipment(0)=(ClassName="KFMod.Knife",MaxLevel=4)
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="KFMod.Machete",MinLevel=5,MaxLevel=6)
+	AdditionalEquipment(1)=(ClassName="KFMod.Axe",MinLevel=7,MaxLevel=8)
+	AdditionalEquipment(2)=(ClassName="KFMod.Katana",MinLevel=9,MaxLevel=9)
+	AdditionalEquipment(3)=(ClassName="KFMod.GoldenKatana",MinLevel=10)
 }

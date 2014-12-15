@@ -192,59 +192,6 @@ static function float GetBodyArmorDamageModifier(KFPlayerReplicationInfo KFPRI)
 	Return 1.00 - 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 80% Better Body Armor
 }
 
-// Give Extra Items as Default
-static function AddDefaultInventory(KFPlayerReplicationInfo KFPRI, Pawn P)
-{
-	local	int		ExtraAmmo;
-	
-	if ( KFPRI.ClientVeteranSkillLevel >= 5 )
-		P.ShieldStrength = 100;
-	
-	if ( UM_HumanPawn(P) != None )
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 6:
-				ExtraAmmo = 3 * class'MP7MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 6);
-			case 5:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP7MMedicGun", GetCostScaling(KFPRI, class'MP7MPickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 8:
-				ExtraAmmo = 3 * class'MP5MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 8);
-			case 7:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.MP5MMedicGun", GetCostScaling(KFPRI, class'MP5MPickup'), ExtraAmmo, 0);
-				Break;
-			
-			case 10:
-				ExtraAmmo = 3 * class'M7A3MMedicGun'.default.MagCapacity * (1.00 + 0.05 * 10);
-			case 9:
-				UM_HumanPawn(P).ExtendedCreateInventoryVeterancy("KFMod.M7A3MMedicGun", GetCostScaling(KFPRI, class'M7A3MPickup'), ExtraAmmo, 0);
-				Break;
-		}
-	}
-	else
-	{
-		switch( KFPRI.ClientVeteranSkillLevel )
-		{
-			case 5:
-			case 6:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.MP7MMedicGun", GetCostScaling(KFPRI, class'MP7MPickup'));
-				Break;
-			
-			case 7:
-			case 8:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.MP5MMedicGun", GetCostScaling(KFPRI, class'MP5MPickup'));
-				Break;
-			
-			case 9:
-			case 10:
-				KFHumanPawn(P).CreateInventoryVeterancy("KFMod.M7A3MMedicGun", GetCostScaling(KFPRI, class'M7A3MPickup'));
-				Break;
-		}
-	}
-}
-
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;
@@ -278,4 +225,9 @@ defaultproperties
 	SRLevelEffects(9)="200% faster Syringe recharge|75% more potent medical injections|75% less damage from Bloat Bile|25% faster movement speed|100% larger MP7M Medic Gun clip|75% better Body Armor|70% discount on Body Armor||97% discount on MP7M Medic Guns| Spawn with Body Armor and Medic Gun"
 	
 	CustomLevelInfo="%s faster Syringe recharge|75% more potent medical injections|75% less damage from Bloat Bile|%r faster movement speed|100% larger MP7M Medic Gun clip|75% better Body Armor|%d discount on Body Armor||%m discount on MP7M Medic Guns| Spawn with Body Armor and Medic Gun"
+	
+	// AdditionalEquipment
+	AdditionalEquipment(0)=(ClassName="KFMod.MP7MMedicGun",MinLevel=5,MaxLevel=6)
+	AdditionalEquipment(1)=(ClassName="KFMod.MP5MMedicGun",MinLevel=7,MaxLevel=8)
+	AdditionalEquipment(2)=(ClassName="KFMod.M7A3MMedicGun",MinLevel=9)
 }

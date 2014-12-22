@@ -91,9 +91,9 @@ simulated function PlayHitEffects(
 		}
 	}
 	
-	if ( Class'UM_AData'.default.ActorPool != None )  {
+	if ( Class'UM_GlobalData'.default.ActorPool != None )  {
 		//Log("Saving to the ActorPool.",Name);
-		Class'UM_AData'.default.ActorPool.FreeActor(self);
+		Class'UM_GlobalData'.default.ActorPool.FreeActor(self);
 	}
 	else {
 		//Log("Destroying.",Name);

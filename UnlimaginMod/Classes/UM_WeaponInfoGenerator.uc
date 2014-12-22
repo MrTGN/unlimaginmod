@@ -561,9 +561,6 @@ simulated function RebalansDefaultClasses()
 	class'SinglePickup'.default.BuyClipSize = 42;
 	class'SinglePickup'.default.ItemName = "Beretta 93MA";
 	class'SinglePickup'.default.ItemShortName = "Beretta 93MA";
-	//Syringe
-	//------------------
-	class'Syringe'.default.bSpeedMeUp = True;
 	//--------------------
 	//ThompsonSMG
 	//------------------
@@ -744,13 +741,13 @@ simulated function GenerateWeaponsInfo()
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	Class'UM_AData'.default.WeapInfoGen = self;
+	Class'UM_GlobalData'.default.WeapInfoGen = self;
 	RebalansDefaultClasses();
 }
 
 simulated event Destroyed()
 {
-	Class'UM_AData'.default.WeapInfoGen = None;
+	Class'UM_GlobalData'.default.WeapInfoGen = None;
 	Super.Destroyed();
 }
 

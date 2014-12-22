@@ -200,9 +200,9 @@ state Initialization
 // Called from the UM_BaseWeapon.
 simulated function NotifyOwnerVeterancyChanged()
 {
-	if ( HumanOwner != None && HumanOwner.UM_PlayerReplicationInfo != None )  {
-		VeterancySpreadBonus = HumanOwner.UM_PlayerReplicationInfo.GetSpreadModifier(Self);
-		VeterancyAimErrorBonus = HumanOwner.UM_PlayerReplicationInfo.GetAimErrorModifier(Self);
+	if ( HumanOwner != None && HumanOwner.UM_PlayerRepInfo != None )  {
+		VeterancySpreadBonus = HumanOwner.UM_PlayerRepInfo.GetSpreadModifier(Self);
+		VeterancyAimErrorBonus = HumanOwner.UM_PlayerRepInfo.GetAimErrorModifier(Self);
 	}
 	else  {
 		VeterancySpreadBonus = default.VeterancySpreadBonus;
@@ -697,7 +697,7 @@ function DoFireEffect()
 	//StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
 	StartProj = Muzzles[MuzzleNum].Location;
     if ( HumanOwner != None )
-		Aim = HumanOwner.GetFireAimRotation(self, StartProj);
+		Aim = HumanOwner.GetAimRotation(self, StartProj);
 	else
 		Aim = AdjustAim(StartProj, AimError);
 	

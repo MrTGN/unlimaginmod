@@ -23,21 +23,17 @@ class UM_BaseProjectile extends ROBallisticProjectile
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-//Todo: test this const!
 const	Maths = BaseActor.Maths;
 
-// 1 meter = 60.352 Unreal Units in Killing Floor
-// Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
-const	MeterInUU = 60.352;
-const	SquareMeterInUU = 3642.363904;
+const	MeterInUU = Maths.MeterInUU;
+const	SquareMeterInUU = Maths.SquareMeterInUU;
 
-// From UT3
-const	DegToRad = 0.017453292519943296;	// Pi / 180
-const	RadToDeg = 57.295779513082321600;	// 180 / Pi
-const	UnrRotToRad = 0.00009587379924285;	// Pi / 32768
-const 	RadToUnrRot = 10430.3783504704527;	// 32768 / Pi
-const 	DegToUnrRot = 182.0444;
-const 	UnrRotToDeg = 0.00549316540360483;
+const	DegToRad = Maths.DegToRad;
+const	RadToDeg = Maths.RadToDeg;
+const	UnrRotToRad = Maths.UnrRotToRad;
+const 	RadToUnrRot = Maths.RadToUnrRot;
+const 	DegToUnrRot = Maths.DegToUnrRot;
+const 	UnrRotToDeg = Maths.UnrRotToDeg;
 
 const	EnergyToPenetratePawnHead = 400.0;
 const	EnergyToPenetratePawnBody = 520.0;
@@ -504,13 +500,17 @@ simulated event PostBeginPlay()
 		ServerSetInitialVelocity();
 	}
 	// Spawning the Trail
-	SpawnTrail();
+	//SpawnTrail();
 }
 
+/*	PostNetBeginPlay() is called directly after PostBeginPlay() on the server. 
+	On clients it will be called when the initial replication is completed.	*/
 simulated event PostNetBeginPlay()
 {
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
+	else	
+		SpawnTrail(); // Spawning the Trail
 }
 
 simulated static function float GetRange()
@@ -675,8 +675,8 @@ simulated function SpawnHitEffects(
 	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
 		 && Level.DetailMode != DM_Low && HitEffectsClass != None )  {
 		// Spawn
-		if ( Class'UM_AData'.default.ActorPool != None )
-			HitEffects = UM_BaseHitEffects(Class'UM_AData'.default.ActorPool.AllocateActor(HitEffectsClass,HitLocation,rotator(-HitNormal)));
+		if ( Class'UM_GlobalData'.default.ActorPool != None )
+			HitEffects = UM_BaseHitEffects(Class'UM_GlobalData'.default.ActorPool.AllocateActor(HitEffectsClass,HitLocation,rotator(-HitNormal)));
 		else
 			HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
 		// Play Hit Effects

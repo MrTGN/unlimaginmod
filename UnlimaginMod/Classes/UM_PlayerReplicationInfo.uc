@@ -87,8 +87,8 @@ simulated function NotifyVeterancyChanged()
 		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
 	
 	if ( HumanOwner != None )  {
-		if ( HumanOwner.UM_PlayerReplicationInfo == None )
-			HumanOwner.UM_PlayerReplicationInfo = self;
+		if ( HumanOwner.UM_PlayerRepInfo == None )
+			HumanOwner.UM_PlayerRepInfo = self;
 		// Notify that veterancy has been changed.
 		HumanOwner.NotifyVeterancyChanged();
 	}
@@ -158,6 +158,14 @@ simulated function float GetAimErrorModifier( WeaponFire WF )
 	Return 1.0;
 }
 
+simulated function float GetSyringeChargeModifier()
+{
+	if ( ClientVeteranSkill != None )
+		Return ClientVeteranSkill.static.GetSyringeChargeRate(self);
+	
+	Return 1.0;
+}
+
 simulated function float GetHealPotency()
 {
 	if ( ClientVeteranSkill != None )
@@ -167,10 +175,10 @@ simulated function float GetHealPotency()
 }
 
 // On how much this human can overheal somebody
-simulated function float GetOverhealingModifier()
+simulated function float GetOverhealPotency()
 {
 	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealingModifier(Self);
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealPotency(Self);
 	
 	Return 1.0;
 }

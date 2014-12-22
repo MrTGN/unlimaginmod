@@ -1,7 +1,7 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_AData
+//	Class name:		 UM_GlobalData
 //	Parent class:	 Actor
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
@@ -14,9 +14,9 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 It is an abstract data class, used to save references 
 //					 to objects into the default values and accessing them 
-//					 from class'UM_AData', i.e. "Global" object references.
+//					 from class'UM_GlobalData', i.e. "Global" object references.
 //================================================================================
-class UM_AData extends Actor
+class UM_GlobalData extends Actor
 	Abstract
 	hidecategories(Object, Actor)
 	NotPlaceable;

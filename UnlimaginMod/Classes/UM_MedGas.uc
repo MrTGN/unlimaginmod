@@ -25,8 +25,8 @@ var		bool		bTimerSet;
 var		AvoidMarker				FearMarker;
 var		Class<AvoidMarker>		FearMarkerClass;
 
+var		bool		bCanOverheal;
 var		int			HealBoostAmount;	// How much we heal a player by default with the medic nade
-var		int			TotalHeals;			// The total number of times this nade has healed (or hurt enemies)
 var		int			MaxHeals;			// The total number of times this nade will heal (or hurt enemies) until its done healing
 var		float		MoneyPerHealedHealth;
 
@@ -78,6 +78,7 @@ simulated event PostNetBeginPlay()
 	}
 }
 
+// Heal Or Hurt Pawns in Radius
 function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Pawn					Victim;
@@ -122,13 +123,7 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 				if ( HealBoostAmount < 1 || (Instigator != None && Instigator.GetTeamNum() != Human.GetTeamNum()) )
 					Continue;
 				
-				if ( UM_HumanPawn(Instigator) != None )
-					HealAmount = HealBoostAmount * UM_HumanPawn(Instigator).VeterancyHealPotency;
-				else
-					HealAmount = HealBoostAmount;
-				
-				if ( Human.Heal(HealAmount, Human.HealthMax) && UM_HumanPawn(Instigator) != None )
-					UM_HumanPawn(Instigator).RewardForHealing( HealAmount, MoneyPerHealedHealth, Human );
+				Human.Heal( HealBoostAmount, bCanOverheal, UM_HumanPawn(Instigator), MoneyPerHealedHealth );
 			}
 			else if ( KFMonster(Victim) != None )  {
 				// Skip this iteration
@@ -139,7 +134,7 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 				Dist = FMax(VSize(Dir), 1.0);
 				Dir /= Dist;
 				// DamageScale
-				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) /DamageRadius), 0.0)) * KFMonster(Victim).GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
+				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) / DamageRadius), 0.0)) * KFMonster(Victim).GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
 				if ( DamageScale > 0.0 )  {
 					Victim.TakeDamage
 					(
@@ -164,16 +159,14 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 
 event Timer()
 {
-	//if ( FearMarker != None )
-		//FearMarker.SetCollisionSize(DamageRadius, DamageRadius);
-	
-	DamageRadius = FMin((default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05));
-	Damage = FMax((default.Damage * MinEfficiencyCoefficient), (Damage * 0.9));
-	HealBoostAmount = Max(int(float(default.HealBoostAmount) * MinEfficiencyCoefficient), int(float(HealBoostAmount) * 0.9));
-	
-	if ( TotalHeals < MaxHeals )  {
-		TotalHeals++;
+	if ( MaxHeals > 0 )  {
+		--MaxHeals;
 		HealOrHurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
+		DamageRadius = FMin( (default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05) );
+		Damage = FMax( (default.Damage * MinEfficiencyCoefficient), (Damage * 0.9) );
+		HealBoostAmount = Max( Round(float(default.HealBoostAmount) * MinEfficiencyCoefficient), Round(float(HealBoostAmount) * 0.9) );
+		//if ( FearMarker != None )
+			//FearMarker.SetCollisionSize(DamageRadius, DamageRadius);
 	}
 	else
 		Destroy();
@@ -194,6 +187,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 bCanOverheal=False
 	 MoneyPerHealedHealth=0.6
 	 MomentumTransfer=0.0
 	 bInitialAcceleration=False

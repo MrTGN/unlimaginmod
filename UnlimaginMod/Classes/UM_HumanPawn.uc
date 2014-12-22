@@ -8,7 +8,6 @@ class UM_HumanPawn extends KFHumanPawn;
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-//Todo: test this const!
 const	MeterInUU = BaseActor.MeterInUU;
 const	SquareMeterInUU = BaseActor.SquareMeterInUU;
 
@@ -16,10 +15,11 @@ var		bool						bDefaultPropertiesCalculated;
 
 // Player Info
 var		UM_SRClientPerkRepLink		PerkLink;
-var		UM_PlayerReplicationInfo	UM_PlayerReplicationInfo;
+var		UM_PlayerReplicationInfo	UM_PlayerRepInfo;	// Reference to the Player Replication Info object
 
 var		UM_Weapon_HandGrenade		HandGrenade;
 var		UM_Syringe					Syringe;
+var		float						VeterancySyringeChargeModifier;	// ToDo: переместить это в класс лечелки, после её полноценного перевода на мой базовый класс
 
 // Replication triggers
 var		bool						bPRIChangedTrigger, bClientPRIChangedTrigger;
@@ -31,6 +31,13 @@ var		float						NextDyingMessageTime;
 
 // Firing
 var		float						FireSpeedModif;
+
+// Aiming
+var		float						AimRotationDelay;	// Used to decrease the CPU load
+var		transient	float			NextAimRotationTime;
+var		transient	Actor			LastAimTarget;
+var		transient	vector			LastAimTargetLocation;
+var		transient	vector			LastCameraLocation, LastCameraDirection;
 
 // Bile Damaging
 var		int							BileDamage;
@@ -51,7 +58,7 @@ var		float						BurningFrequency, NextBurningTime, LastBurningTime;
 var		class<DamageType>			BurningDamageType;
 
 // Falling
-var		class<DamageType>			FallingDamageType
+var		class<DamageType>			FallingDamageType;
 
 // Movement Modifiers
 var		float						HealthMovementModifier;
@@ -69,14 +76,17 @@ var		float						VeterancyHealPotency;	// Veterancy Heal Bonus
 var		string						SuccessfulHealedMessage;	// Message that You have healed somebody
 var		float						AlphaAmountDecreaseFrequency;
 var		float						NextAlphaAmountDecreaseTime;
+var		float						DefaultMoneyPerHealedHealth;
 
 // Overheal
 var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
 var		float						OverhealReductionPerSecond;
-var		float						OverhealMovementBonus;	// Additional scalable movement modifier. Look into the SetHealth() calculation.
-var		float						VeterancyOverhealBonus;	// Bonus to overheal somebody
+var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
+var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
+var		float						VeterancyOverhealPotency;	// Bonus to overheal somebody
 
 // Overweight
+var		float						WeightMovementModifier
 var		float						MaxOverweightScale;
 var		float						MaxCarryOverweight;
 var		float						OverweightMovementModifier;
@@ -235,8 +245,8 @@ function CreateInventory( string InventoryClassName )
 				Inv.PickupFunction(self);
 				// SellValue
 				if ( KFWeapon(Inv) != None && Class<KFWeaponPickup>(Inv.PickupClass) != None )  {
-					if ( UM_PlayerReplicationInfo != None )
-						KFWeapon(Inv).SellValue = Round( Class<KFWeaponPickup>(Inv.PickupClass).default.Cost * UM_PlayerReplicationInfo.GetPickupCostScaling(Inv.PickupClass) );
+					if ( UM_PlayerRepInfo != None )
+						KFWeapon(Inv).SellValue = Round( Class<KFWeaponPickup>(Inv.PickupClass).default.Cost * UM_PlayerRepInfo.GetPickupCostScaling(Inv.PickupClass) );
 					else
 						KFWeapon(Inv).SellValue = Class<KFWeaponPickup>(Inv.PickupClass).default.Cost;
 				}
@@ -255,7 +265,7 @@ function AddDefaultInventory()
 	local	int	i;
 	
 	// Default Veterancy Inventory
-	if ( UM_PlayerReplicationInfo != None && UM_PlayerReplicationInfo.AddDefaultVeterancyInventory(self) )
+	if ( UM_PlayerRepInfo != None && UM_PlayerRepInfo.AddDefaultVeterancyInventory(self) )
 		Level.Game.AddGameSpecificInventory(self);	// GameSpecificInventory
 	// Locally Controlled
 	else if ( IsLocallyControlled() )  {
@@ -328,7 +338,7 @@ simulated function NotifyTeamChanged()
 	else if ( DrivenVehicle != None && DrivenVehicle.PlayerReplicationInfo != None )
 		Setup(class'xUtil'.static.FindPlayerRecord(DrivenVehicle.PlayerReplicationInfo.CharacterName));
 	
-	UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
+	UM_PlayerRepInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 	if ( KFPC != KFPlayerController(Controller) )
 		KFPC = KFPlayerController(Controller);
 }
@@ -377,10 +387,12 @@ function UpdateGroundSpeed()
 // Movement speed according to the healths
 function UpdateHealthMovementModifiers()
 {
+	// Overheal
 	if ( Health > int(HealthMax) )
-		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementBonus) + (1.0 - OverhealMovementBonus);
+		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementModifier) + (1.0 - OverhealMovementModifier);
+	// Normal Health
 	else
-		HealthMovementModifier = ((float(Health) / HealthMax) * HealthSpeedModifier) + (1.0 - HealthSpeedModifier);
+		HealthMovementModifier = ((float(Health) / HealthMax) * NormalHealthMovementModifier) + (1.0 - NormalHealthMovementModifier);
 }
 
 // Sets the current Health
@@ -407,7 +419,7 @@ function UpdateCarryWeightMovementModifiers()
 	}
 	else  {
 		CarryWeightJumpModifier = 1.0 - WeightRatio * WeightJumpModifier;
-		CarryWeightMovementModifier = 1.0 - WeightRatio * WeightSpeedModifier;
+		CarryWeightMovementModifier = 1.0 - WeightRatio * WeightMovementModifier;
 	}
 }
 
@@ -426,8 +438,8 @@ function CheckVeterancyCarryWeightLimit()
 	local	Inventory	I;
 	local	int			Count;
 	
-	if ( UM_PlayerReplicationInfo != None )
-		MaxCarryWeight = UM_PlayerReplicationInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
+	if ( UM_PlayerRepInfo != None )
+		MaxCarryWeight = UM_PlayerRepInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
 	else
 		MaxCarryWeight = default.MaxCarryWeight;
 	
@@ -458,8 +470,8 @@ function CheckVeterancyAmmoLimit()
 	// Make sure nothing is over the Max Ammo amount when changing Veterancy
 	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 		if ( Ammunition(I) != None )  {
-			if ( UM_PlayerReplicationInfo != None )
-				MaxAmmo = UM_PlayerReplicationInfo.GetMaxAmmoFor( Ammunition(I).Class );
+			if ( UM_PlayerRepInfo != None )
+				MaxAmmo = UM_PlayerRepInfo.GetMaxAmmoFor( Ammunition(I).Class );
 			else
 				MaxAmmo = Ammunition(I).default.MaxAmmo;
 			
@@ -483,23 +495,30 @@ simulated function NotifyVeterancyChanged()
 		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
 	
 	BounceMomentum = default.BounceMomentum;
-	if ( UM_PlayerReplicationInfo != None )  {
-		OverhealedHealthMax = Round(HealthMax * UM_PlayerReplicationInfo.GetOverhealedHealthMaxModifier());
-		VeterancyOverhealBonus = UM_PlayerReplicationInfo.GetOverhealingModifier();
-		VeterancyHealPotency = UM_PlayerReplicationInfo.GetHealPotency();
-		VeterancyMovementModifier = UM_PlayerReplicationInfo.GetMovementSpeedModifier();
-		VeterancyJumpBonus = UM_PlayerReplicationInfo.GetPawnJumpModifier();
-		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
-		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerReplicationInfo.GetIntuitiveShootingModifier();
+	if ( UM_PlayerRepInfo != None )  {
+		// Overhealed Health Maximum
+		OverhealedHealthMax = Round(HealthMax * UM_PlayerRepInfo.GetOverhealedHealthMaxModifier());
+		// HealPotency
+		VeterancyHealPotency = UM_PlayerRepInfo.GetHealPotency();
+		// On how much this human can overheal somebody
+		VeterancyOverhealPotency = UM_PlayerRepInfo.GetOverhealPotency();
+		// MovementModifier
+		VeterancyMovementModifier = UM_PlayerRepInfo.GetMovementSpeedModifier();
+		// JumpBonus
+		VeterancyJumpBonus = UM_PlayerRepInfo.GetPawnJumpModifier();
+		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
+		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerRepInfo.GetIntuitiveShootingModifier();
+		VeterancySyringeChargeModifier = UM_PlayerRepInfo.GetSyringeChargeModifier();
 	}
 	else  {
 		OverhealedHealthMax = int(HealthMax);
-		VeterancyOverhealBonus = default.VeterancyOverhealBonus;
 		VeterancyHealPotency = default.VeterancyHealPotency;
+		VeterancyOverhealPotency = default.VeterancyOverhealPotency;
 		VeterancyMovementModifier = default.VeterancyMovementModifier;
 		VeterancyJumpBonus = default.VeterancyJumpBonus;
 		BounceRemaining = default.BounceRemaining;
 		IntuitiveShootingRange = default.IntuitiveShootingRange;
+		VeterancySyringeChargeModifier = default.VeterancySyringeChargeModifier;
 	}
 	
 	// Server
@@ -512,12 +531,12 @@ simulated function NotifyVeterancyChanged()
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
 	
-	/*	If there is no UM_PlayerReplicationInfo, notifying the client-owner 
+	/*	If there is no UM_PlayerRepInfo, notifying the client-owner 
 		about changes by ClientTrigger() event. 
 		In other case NotifyVeterancyChanged() function will be called
-		on the client-owner from UM_PlayerReplicationInfo.
+		on the client-owner from UM_PlayerRepInfo.
 		This logic used to be sure that client-owner has received all ReplicationInfo data. */
-	if ( Role == ROLE_Authority && UM_PlayerReplicationInfo == None )  {
+	if ( Role == ROLE_Authority && UM_PlayerRepInfo == None )  {
 		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
 		bClientTrigger = !bClientTrigger;
 	}
@@ -552,7 +571,7 @@ function PossessedBy( Controller C )
 	
 	if ( C.PlayerReplicationInfo != None )  {
 		PlayerReplicationInfo = C.PlayerReplicationInfo;
-		UM_PlayerReplicationInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
+		UM_PlayerRepInfo = UM_PlayerReplicationInfo(PlayerReplicationInfo);
 		OwnerName = PlayerReplicationInfo.PlayerName;
 		// OwnerPRI from KFPawn does not used anywhere.
 		//OwnerPRI = PlayerReplicationInfo;
@@ -579,10 +598,10 @@ function PossessedBy( Controller C )
 	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
 		NotifyTeamChanged();
 	
-	if ( UM_PlayerReplicationInfo != None )  {
-		UM_PlayerReplicationInfo.SetHumanOwner(self);
+	if ( UM_PlayerRepInfo != None )  {
+		UM_PlayerRepInfo.SetHumanOwner(self);
 		// To be sure that client-owner will receive all ReplicationInfo before the notification.
-		UM_PlayerReplicationInfo.NotifyVeterancyChanged();
+		UM_PlayerRepInfo.NotifyVeterancyChanged();
 		// To send the bPRIChangedTrigger update.
 		bClientTrigger = !bClientTrigger;
 	}
@@ -597,9 +616,9 @@ function UnPossessed()
 		NetUpdateFrequency = 5.0;
 
 	PlayerReplicationInfo = None;
-	if ( UM_PlayerReplicationInfo != None )  {
-		UM_PlayerReplicationInfo.SetHumanOwner(None);
-		UM_PlayerReplicationInfo = None;
+	if ( UM_PlayerRepInfo != None )  {
+		UM_PlayerRepInfo.SetHumanOwner(None);
+		UM_PlayerRepInfo = None;
 	}
 	SetOwner(None);
 	Controller = None;
@@ -630,58 +649,69 @@ simulated function rotator GetViewRotation()
 	Return Rotation;
 }
 
+simulated function vector GetViewDirection()
+{
+	Return vector( GetViewRotation() );
+}
+
 simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
 {
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
-// Find the target to fire
-final function rotator GetFireAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
+// Find the target to fire at
+final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
-	local	vector		FireDirection, TraceEnd, TraceStart, TargetLocation, HitNormal;
+	local	vector		TraceEnd, HitNormal;
 	local	float		f;
 	local	rotator		AimRotation;
 	
-	if ( WeaponFire.UMWeapon.bAimingRifle )
-		f = WeaponFire.MaxRange();
-	else
-		f = GetIntuitiveShootingRange();
-	
-	if ( Controller != None && UM_PlayerController(Controller) != None )
-		UM_PlayerController(Controller).GetCameraPosition( TraceStart, FireDirection );
-	else  {
-		TraceStart = EyePosition() + Location;
-		FireDirection = vector(GetViewRotation());
-	}
-	TraceEnd = TraceStart + FireDirection * f;
-	
-	// Tracing from the player camera to find the target
-	foreach TraceActors( Class'Actor', Target, TargetLocation, HitNormal, TraceEnd, TraceStart )  {
-		if ( Target != Self && Target.Base != Self && (Target == Level || Target.bWorldGeometry || Target.bProjTarget || Target.bBlockActors) )
-			Break;	// We have found the Target
+	// Decreasing CPU load
+	if ( Level.TimeSeconds >= NextAimRotationTime )  {
+		NextAimRotationTime = Level.TimeSeconds + AimRotationDelay;
+		// Trace Range
+		if ( WeaponFire.UMWeapon.bAimingRifle )
+			f = WeaponFire.MaxRange();
 		else
-			Target = None;	// Target is not satisfy the conditions of the search
+			f = GetIntuitiveShootingRange();
+		// TraceEnd
+		if ( UM_PlayerController(Controller) != None )
+			UM_PlayerController(Controller).GetCameraPosition( LastCameraLocation, LastCameraDirection );
+		else  {
+			LastCameraLocation = EyePosition() + Location;
+			LastCameraDirection = GetViewDirection();
+		}
+		TraceEnd = LastCameraLocation + LastCameraDirection * f;
+		
+		// Tracing from the player camera to find the target
+		foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation )  {
+			if ( LastAimTarget != Self && LastAimTarget.Base != Self && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )
+				Break;	// We have found the Target
+			else
+				LastAimTarget = None;	// Target is not satisfy the conditions of the search
+		}
+		
+		// If we didn't find the Target just get the TraceEnd location
+		if ( LastAimTarget == None )
+			LastAimTargetLocation = TraceEnd;
 	}
 	
-	if ( Target != None )  {
-		InstantWarnTarget( Target, WeaponFire.SavedFireProperties, FireDirection );
-		ShotTarget = Pawn(Target);
+	if ( LastAimTarget != None && Controller != None )  {
+		Controller.InstantWarnTarget( LastAimTarget, WeaponFire.SavedFireProperties, LastCameraDirection );
+		Controller.ShotTarget = Pawn(LastAimTarget);
 	}
-	// If we didn't find the Target just get the TraceEnd location
-	else
-		TargetLocation = TraceEnd;
 	
 	// If target is closer to the screen than the SpawnLocation
-	if ( VSizeSquared(TargetLocation - TraceStart) <= VSizeSquared(SpawnLocation - TraceStart) )  {
+	if ( VSizeSquared(LastAimTargetLocation - LastCameraLocation) <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
 		if ( WeaponFire.ProjClass != None )
 			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 6.0;
 		else
 			f = 6.0;
 		// Change SpawnLocation
-		SpawnLocation = TargetLocation + Normal(TraceStart - TargetLocation) * f;
+		SpawnLocation = LastAimTargetLocation + Normal(LastCameraLocation - LastAimTargetLocation) * f;
 	}
 	
-	AimRotation = rotator(TargetLocation - SpawnLocation);
+	AimRotation = rotator(LastAimTargetLocation - SpawnLocation);
 	if ( bOnDrugs )
 		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
 	else
@@ -871,8 +901,8 @@ function bool DoJump( bool bUpdating )
 event Landed( vector HitNormal )
 {
 	BounceMomentum = default.BounceMomentum;
-	if ( UM_PlayerReplicationInfo != None )
-		BounceRemaining = UM_PlayerReplicationInfo.GetPawnMaxBounce();
+	if ( UM_PlayerRepInfo != None )
+		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
 	else
 		BounceRemaining = default.BounceRemaining;
 	
@@ -1067,8 +1097,8 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 		else
 			InventoryMovementModifier = default.InventoryMovementModifier;
 		
-		if ( UM_PlayerReplicationInfo != None )
-			InventoryMovementModifier *= UM_PlayerReplicationInfo.GetWeaponPawnMovementBonus(Weapon);
+		if ( UM_PlayerRepInfo != None )
+			InventoryMovementModifier *= UM_PlayerRepInfo.GetWeaponPawnMovementBonus(Weapon);
 	}
 	else
 		InventoryMovementModifier = default.InventoryMovementModifier;
@@ -1083,8 +1113,8 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 // Returns true if this pawn is able to hold a weapon of the supplied type
 simulated function bool AllowHoldWeapon( Weapon InWeapon )
 {
-    if ( UM_PlayerReplicationInfo != None )
-		Return UM_PlayerReplicationInfo.CanUseThisWeapon( InWeapon );
+    if ( UM_PlayerRepInfo != None )
+		Return UM_PlayerRepInfo.CanUseThisWeapon( InWeapon );
 	
 	Return True;
 }
@@ -1149,20 +1179,25 @@ simulated function ClientForceChangeWeapon(Inventory NewWeapon)
 	}
 }
 
+/*	Simulated because this function may be called from
+	SimulatedProxy weapons, projectiles etc.	*/
+simulated function bool CanSelfHeal( bool bMedicamentCanOverheal )
+{
+	if ( bMedicamentCanOverheal )
+		Return Health < Round(HealthMax * VeterancyOverhealPotency);
+	else
+		Return Health < int(HealthMax);
+}
+
 // Quickly select syring, alt fire once, select old weapon again
-//ToDo: issue #213.
 exec function QuickHeal()
 {
-	// Can't overheal or already overhealed to max
-	if ( Health >= Round(HealthMax * VeterancyOverhealBonus) || Health >= OverhealedHealthMax )
-		Return;
-	
 	// Syringe Link
-	if ( Syringe == None )
-		Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
+	//if ( Syringe == None )
+		//Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
 	
 	// Syringe wasn't found
-	if ( Syringe == None )
+	if ( Syringe == None || !CanSelfHeal( Syringe.bCanOverheal ) )
 		Return;
 
 	if ( Syringe.ChargeBar() < 0.95 )  {
@@ -1179,14 +1214,14 @@ exec function QuickHeal()
 		if ( Role < ROLE_Authority )
 			ChangedWeapon();
 	}
-	else if ( Weapon != Syringe )  {
-		PendingWeapon = Syringe;
-		Weapon.PutDown();
-	}
 	// Syringe already selected, just start healing.
-	else  {
+	else if ( Weapon == Syringe )  {
 		bIsQuickHealing = 0;
 		Syringe.HackClientStartFire();
+	}
+	else  {
+		PendingWeapon = Syringe;
+		Weapon.PutDown();
 	}
 }
 
@@ -1242,8 +1277,8 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 	if ( PerkLink != None && !PerkLink.CanBuyPickup( Class<KFWeaponPickup>(WClass.Default.PickupClass) ) )
 		Return;
 
-	if ( UM_PlayerReplicationInfo != None )
-		Price = Round( class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost * UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.Default.PickupClass ) );
+	if ( UM_PlayerRepInfo != None )
+		Price = Round( class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost * UM_PlayerRepInfo.GetPickupCostScaling( WClass.Default.PickupClass ) );
 	else
 		Price = class<KFWeaponPickup>(WClass.Default.PickupClass).Default.Cost;
 
@@ -1323,8 +1358,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 		{
 			if ( KFWeapon(I) != None && KFWeapon(I).SellValue > 0 )
 				Price = KFWeapon(I).SellValue;
-			else if ( UM_PlayerReplicationInfo != None )
-				Price = Round( class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75 * UM_PlayerReplicationInfo.GetPickupCostScaling( WClass.default.PickupClass ) );
+			else if ( UM_PlayerRepInfo != None )
+				Price = Round( class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75 * UM_PlayerRepInfo.GetPickupCostScaling( WClass.default.PickupClass ) );
 			else
 				Price = Round( class<KFWeaponPickup>(WClass.default.PickupClass).default.Cost * 0.75 );
 
@@ -1450,8 +1485,8 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
 		Damage *= 2;
 	
-	if ( UM_PlayerReplicationInfo != None )
-		Damage = Round( float(Damage) * UM_PlayerReplicationInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType) );
+	if ( UM_PlayerRepInfo != None )
+		Damage = Round( float(Damage) * UM_PlayerRepInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType) );
 	
 	if ( bOnDrugs )
 		Damage = Round( float(Damage) * DrugsDamageScale );
@@ -1579,48 +1614,102 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
-
-// Reward for healing someone
-function RewardForHealing( int HealthHealed, float MoneyPerHealedHealth, UM_HumanPawn Patient )
+function SetAlphaAmount( int NewAlphaAmount )
 {
-	if ( Role < ROLE_Authority || Patient == None || Patient.bDeleteMe || UM_PlayerReplicationInfo == None )
-		Return;
-	
-	// Add HealthHealed to the StatsAndAchievements
-	if ( KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements) != None )
-		KFSteamStatsAndAchievements(UM_PlayerReplicationInfo.SteamStatsAndAchievements).AddDamageHealed( HealthHealed );
-	
-	// Give the reward money as a percentage of how much of the Patient health was healed
-	HealthHealed = Round( 100.0 * float(HealthHealed) / Patient.HealthMax * MoneyPerHealedHealth );
-	UM_PlayerReplicationInfo.Score += HealthHealed;
-	UM_PlayerReplicationInfo.ThreeSecondScore += HealthHealed;
-	UM_PlayerReplicationInfo.Team.Score += HealthHealed;
-	// Score AlphaAmount
-	NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
-	AlphaAmount = 255;
-	
-	// Successful Healed Message
-	if ( KFPC != None && Patient.PlayerReplicationInfo != None )
-		KFPC.ClientMessage( SuccessfulHealedMessage @ Patient.PlayerReplicationInfo.PlayerName, 'CriticalEvent' );
+	if ( NewAlphaAmount > 0 )  {
+		NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
+		AlphaAmount = Min( NewAlphaAmount, 255 );
+	}
 }
 
-// Heal me!
-function bool Heal( out int HealAmount, int HealMax )
+function AddScoreForHealing( int AddScore )
 {
-	// Don't let heal more than the max overhealed health
-	if ( bCanBeHealed && Health > 0 && Health < HealMax )  {
+	if ( UM_PlayerRepInfo == None || AddScore < 1 )
+		Return;
+	
+	UM_PlayerRepInfo.Score += AddScore;
+	UM_PlayerRepInfo.ThreeSecondScore += AddScore;
+	//UM_PlayerRepInfo.Team.Score += AddScore;
+	// Score AlphaAmount
+	SetAlphaAmount( 255 );
+}
+
+function bool CanBeHealed( bool bMedicamentCanOverheal, UM_HumanPawn Healer, optional out int HealMax )
+{
+	if ( Role < ROLE_Authority || bDeleteMe || !bCanBeHealed || Health < 1 )
+		Return False;
+	
+	// if optional HealMax incoming value is zero
+	if ( HealMax < 1 )  {
+		if ( Healer != None && bMedicamentCanOverheal )
+			HealMax = Round( HealthMax * Healer.VeterancyOverhealPotency );	// Veterancy bonus
+		else
+			HealMax = int(HealthMax);
+	}
+	
+	Return Health < HealMax;
+}
+
+/* Heal this Human.
+	HealAmount - how much healths to heal.
+	bMedicamentCanOverheal - can be healed over the max Health.
+	Healer - reference to the human-healer.
+	MoneyPerHealedHealth - optional cash value per each healed Health for the healing reward.
+	HealMax - optional max healing Health limit (bMedicamentCanOverheal will be ignored and will be used this value).
+*/
+function bool Heal( 
+			int				HealAmount,
+			bool			bMedicamentCanOverheal,
+			UM_HumanPawn	Healer, 
+ optional	float			MoneyPerHealedHealth,
+ optional	int				HealMax )
+{
+	// Apply Veterancy bonus
+	if ( Healer != None )
+		HealAmount = Round( HealAmount * Healer.VeterancyHealPotency );
+	
+	if ( HealAmount > 0 && CanBeHealed(bMedicamentCanOverheal, Healer, HealMax) )  {
 		// Updating timers
 		if ( NextHealTime < Level.TimeSeconds )  {
 			LastHealTime = Level.TimeSeconds;
 			NextHealTime = LastHealTime + HealDelay;
 		}
+		// Adding HealIntensity
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
+		// Drugs Effect
 		if ( !bOnDrugs && HealIntensity >= DrugEffectHealIntensity )
 			SetOnDrugs();
-		// Calculating out HealAmount for the healing reward
-		HealAmount = Min( (HealMax - Health), HealAmount );
 		
-		Return HealAmount > 0;
+		// Rewarding the Healer
+		if ( Healer != None && Healer.UM_PlayerRepInfo != None )  {
+			// Self-Healing
+			if ( Healer == self  )  {
+				// Add SelfHeal to the StatsAndAchievements
+				if ( Level.NetMode != NM_StandAlone && Level.Game.NumPlayers > 1
+					 && KFSteamStatsAndAchievements(UM_PlayerRepInfo.SteamStatsAndAchievements) != None )
+					KFSteamStatsAndAchievements(UM_PlayerRepInfo.SteamStatsAndAchievements).AddSelfHeal();
+			}
+			// Reward for healing someone
+			else  {
+				// How much health was healed
+				HealAmount = Min( (HealMax - Health), HealAmount );
+				// Add Healed Health to the StatsAndAchievements
+				if ( KFSteamStatsAndAchievements(Healer.UM_PlayerRepInfo.SteamStatsAndAchievements) != None )
+					KFSteamStatsAndAchievements(Healer.UM_PlayerRepInfo.SteamStatsAndAchievements).AddDamageHealed( HealAmount );
+				
+				// Checking optional var
+				if ( MoneyPerHealedHealth <= 0.0 )
+					MoneyPerHealedHealth = DefaultMoneyPerHealedHealth;
+				// Calculating money reward as a percentage of how much health was healed
+				Healer.AddScoreForHealing( Round(100.0 * float(HealAmount) / HealthMax * MoneyPerHealedHealth) );
+				
+				// Successful Healed Message. Replicated from the server to the client-owner in the controller object.
+				if ( Healer.KFPC != None && PlayerReplicationInfo != None )
+					Healer.KFPC.ClientMessage( Healer.SuccessfulHealedMessage @ PlayerReplicationInfo.PlayerName, 'CriticalEvent' );
+			}
+		}
+		
+		Return True;
 	}
 	
 	Return False;
@@ -1629,7 +1718,7 @@ function bool Heal( out int HealAmount, int HealMax )
 // Left this function for the old or third-party healing logic
 function bool GiveHealth( int HealAmount, int HealMax )
 {
-	Return Heal( HealAmount, HealMax );
+	Return Heal( HealAmount, False, None,, HealMax );
 }
 
 // Overheal Reduction
@@ -1901,10 +1990,10 @@ simulated event Tick( float DeltaTime )
 		if ( AlphaAmount > 0 && Level.TimeSeconds >= NextAlphaAmountDecreaseTime )  {
 			NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
 			AlphaAmount -= 5;
-			if ( AlphaAmount <= 0 || UM_PlayerReplicationInfo == None || UM_PlayerReplicationInfo.ThreeSecondScore <= 0 )  {
+			if ( AlphaAmount <= 0 || UM_PlayerRepInfo == None || UM_PlayerRepInfo.ThreeSecondScore <= 0 )  {
 				AlphaAmount = 0;
-				if ( UM_PlayerReplicationInfo != None )
-					UM_PlayerReplicationInfo.ThreeSecondScore = 0;
+				if ( UM_PlayerRepInfo != None )
+					UM_PlayerRepInfo.ThreeSecondScore = 0;
 				ScoreCounter = 0;	// WTF is this?
 			}
 		}
@@ -2005,8 +2094,8 @@ simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
 function bool AllowGrenadeTossing()
 {
 	// HandGrenade Link
-	if ( HandGrenade == None )
-		HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
+	//if ( HandGrenade == None )
+		//HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
 	
 	if ( HandGrenade == None || !HandGrenade.HasAmmo() || bThrowingNade || KFWeapon(Weapon) == None
 		 || (KFWeapon(Weapon).bIsReloading && !KFWeapon(Weapon).InterruptReload())
@@ -2059,12 +2148,15 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     SuccessfulHealedMessage="You have healed"
+     // 1 ms AimRotation delay
+	 AimRotationDelay=0.001
+	 SuccessfulHealedMessage="You have healed"
 	 // Decrease AlphaAmount every 60 milliseconds
 	 AlphaAmountDecreaseFrequency=0.06
 	 RandJumpModif=1.0
 	 VeterancyHealPotency=1.0
-	 VeterancyOverhealBonus=1.0
+	 VeterancyOverhealPotency=1.0
+	 VeterancySyringeChargeModifier=1.0
 	 GroundSpeed=200.000000
      WaterSpeed=180.000000
      AirSpeed=230.000000
@@ -2083,15 +2175,17 @@ defaultproperties
 	 // Falling
 	 FallingDamageType=Class'Fell'
 	 // CarryWeight
-	 WeightSpeedModifier=0.14
+	 WeightMovementModifier=0.14
 	 WeightJumpModifier=0.07
 	 MaxOverweightScale=1.2
 	 OverweightMovementModifier=0.3
 	 OverweightJumpModifier=0.2
 	 // Healing
+	 DefaultMoneyPerHealedHealth=0.6
 	 HealDelay=0.1
 	 OverhealReductionPerSecond=2.0
-	 OverhealMovementBonus=0.2
+	 OverhealMovementModifier=0.2
+	 NormalHealthMovementModifier=0.3
 	 // Drugs
 	 DrugsBlurDuration=5.0
 	 DrugsBlurIntensity=0.5

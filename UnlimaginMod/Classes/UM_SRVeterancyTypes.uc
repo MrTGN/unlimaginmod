@@ -279,7 +279,7 @@ static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 }
 
 // On how much this human can overheal somebody
-static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
+static function float GetOverhealPotency( UM_PlayerReplicationInfo PRI )
 {
 	Return 1.0;
 }

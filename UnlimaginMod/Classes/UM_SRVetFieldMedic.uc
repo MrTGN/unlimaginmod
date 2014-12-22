@@ -74,11 +74,6 @@ static function float GetSyringeChargeRate(KFPlayerReplicationInfo KFPRI)
 	Return 1.25 + 0.225 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 250% more faster recharges
 }
 
-static function float GetHealPotency(KFPlayerReplicationInfo KFPRI)
-{
-	Return 1.2 + 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% more heals
-}
-
 // Pawn Movement Bonus while wielding this weapon
 static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, Weapon W )
 {
@@ -102,8 +97,13 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 	Return InDamage;
 }
 
+static function float GetHealPotency(KFPlayerReplicationInfo KFPRI)
+{
+	Return 1.2 + 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% more heals
+}
+
 // On how much this human can overheal somebody
-static function float GetOverhealingModifier( UM_PlayerReplicationInfo PRI )
+static function float GetOverhealPotency( UM_PlayerReplicationInfo PRI )
 {
 	Return 1.1 + 0.1 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 110% bonus
 }

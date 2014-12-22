@@ -62,7 +62,7 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	Class'UM_AData'.default.ActorPool = self;
+	Class'UM_GlobalData'.default.ActorPool = self;
 }
 
 // ActivateActor with out function call replication from the server.
@@ -412,8 +412,8 @@ simulated function Clear()
 
 simulated event Destroyed()
 {
-	if ( Class'UM_AData'.default.ActorPool != None )
-		Class'UM_AData'.default.ActorPool = None;
+	if ( Class'UM_GlobalData'.default.ActorPool != None )
+		Class'UM_GlobalData'.default.ActorPool = None;
 	Super.Destroyed();
 }
 

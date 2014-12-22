@@ -19,14 +19,13 @@ class UnlimaginMaths extends Object
 	hidecategories(Object)
 	NotPlaceable;
 
-
 //========================================================================
 //[block] Variables
 
 // Constants
 // 1 meter = 60.352 Unreal Units in Killing Floor
 // Info from http://forums.tripwireinteractive.com/showthread.php?t=1149 
-const	MeterInUU = 60.352000;
+const	MeterInUU = 60.352;
 const	SquareMeterInUU = 3642.363904;
 
 // From UT3
@@ -40,43 +39,29 @@ const 	UnrRotToDeg = 0.00549316540360483;
 //[end] Varibles
 //====================================================================
 
-
 //========================================================================
 //[block] Functions
 
 // Cosine of the angle between two vectors
-final simulated static function float CosBetweenVectors(Vector VectA, Vector VectB)
+final simulated static function float CosBetweenVectors( vector VectA, vector VectB )
 {
-	local	float	CosBV;
-	
-	CosBV = Normal(VectA) Dot Normal(VectB);
-	
-	Return CosBV;
+	Return Normal(VectA) Dot Normal(VectB);
 }
 
 // The angle in degrees between two vectors
-final simulated static function float DegBetweenVectors(Vector VectA, Vector VectB)
+final simulated static function float DegBetweenVectors( vector VectA, vector VectB )
 {
-	local	float	DegAngle;
-	
-	DegAngle = ACos(Normal(VectA) Dot Normal(VectB)) * RadToDeg;
-	
-	Return DegAngle;
+	Return ACos(Normal(VectA) Dot Normal(VectB)) * RadToDeg;
 }
 
 // The angle in radians between two vectors
-final simulated static function float RadBetweenVectors(Vector VectA, Vector VectB)
+final simulated static function float RadBetweenVectors( vector VectA, vector VectB )
 {
-	local	float	RadAngle;
-	
-	RadAngle = ACos(Normal(VectA) Dot Normal(VectB));
-	
-	Return RadAngle;
+	Return ACos(Normal(VectA) Dot Normal(VectB));
 }
 
 //[end] Functions
 //====================================================================
-
 
 defaultproperties
 {

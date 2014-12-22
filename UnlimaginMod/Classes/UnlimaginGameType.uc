@@ -296,7 +296,7 @@ event InitGame( string Options, out string Error )
 	LoadUpMonsterList();
 	
 	//Spawning ActorPool
-	if ( ActorPoolClass != None && Class'UM_AData'.default.ActorPool == None )
+	if ( ActorPoolClass != None && Class'UM_GlobalData'.default.ActorPool == None )
 	{
 		log("-------- Creating ActorPool --------",Class.Outer.Name);
 		Spawn(ActorPoolClass);
@@ -1754,10 +1754,10 @@ function RestartPlayer( Controller aPlayer )
 
 function EndGame( PlayerReplicationInfo Winner, string Reason )
 {
-	if ( Class'UM_AData'.default.ActorPool != None )  {
+	if ( Class'UM_GlobalData'.default.ActorPool != None )  {
 		log("------ Clearing and destroying ActorPool ------", Class.Outer.Name);
-		Class'UM_AData'.default.ActorPool.Clear();
-		Class'UM_AData'.default.ActorPool.Destroy();
+		Class'UM_GlobalData'.default.ActorPool.Clear();
+		Class'UM_GlobalData'.default.ActorPool.Destroy();
 	}
 	Super.EndGame(Winner, Reason);
 }

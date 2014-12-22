@@ -1165,7 +1165,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	local 	int 				Mode;
 	local	KFPlayerController	Player;
 	local	float				NewSelectAnimRate;
-	local	bool				bBringUpAfterGrenade;
+	local	bool				bQuickBringUp;
 
 	HandleSleeveSwapping();
 
@@ -1239,7 +1239,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 		ClientState = WS_BringUp;
         if ( ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
-			bBringUpAfterGrenade = ClientGrenadeState == GN_BringUp;
+			bQuickBringUp = True;
 			ClientGrenadeState = GN_None;
 			SetTimer(QuickBringUpTime, false);
 		}
@@ -1257,7 +1257,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 	if ( PrevWeapon != None && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch )
 		OldWeapon = PrevWeapon;
-	else if ( !bBringUpAfterGrenade )
+	else if ( !bQuickBringUp )
 		OldWeapon = None;
 }
 
@@ -1266,6 +1266,7 @@ simulated function bool PutDown()
 {
 	local	int		Mode;
 	local	float	NewPutDownAnimRate;
+	local	bool	bQuickPutDown;
 
 	InterruptReload();
 
@@ -1327,12 +1328,12 @@ simulated function bool PutDown()
 		
 		if ( DownDelay > 0 )
 			SetTimer(DownDelay, false);
-		else  {
-			if ( ClientGrenadeState == GN_TempDown )
-				SetTimer(QuickPutDownTime, false);
-			else
-				SetTimer(PutDownTime, false);
+		else if ( ClientGrenadeState == GN_TempDown || KFPawn(Instigator).bIsQuickHealing > 0 )  {
+			bQuickPutDown = True;
+			SetTimer(QuickPutDownTime, false);
 		}
+		else
+			SetTimer(PutDownTime, false);
 	}
 	
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; Mode++ )  {
@@ -1346,7 +1347,7 @@ simulated function bool PutDown()
 	}
 	
 	Instigator.AmbientSound = None;
-	if ( ClientGrenadeState != GN_TempDown )
+	if ( !bQuickPutDown )
 		OldWeapon = None;
 	
 	Return True; // return false if preventing weapon switch
@@ -1467,7 +1468,7 @@ function AttachToPawnHidden( Pawn P )
 
 
 // Clear links on this weapon
-simulated function ClearLinksOnThisWeapon()
+simulated function ClearReferencesToThisWeapon()
 {
 	local	int			m, Count;
 	local	Inventory	I;
@@ -1515,7 +1516,7 @@ simulated event Destroyed()
 		TacShine.Destroy();
 	
 	DestroyTacticalModule();
-	ClearLinksOnThisWeapon();
+	ClearReferencesToThisWeapon();
 	
 	if ( ThirdPersonActor != None )  {
 		ThirdPersonActor.Destroy();
@@ -1724,7 +1725,7 @@ simulated function ClientWeaponThrown()
 	
 	// Client-side only
 	if ( Level.NetMode == NM_Client )
-		ClearLinksOnThisWeapon();
+		ClearReferencesToThisWeapon();
 }
 
 function DropFrom( vector StartLocation )

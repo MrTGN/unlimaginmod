@@ -831,6 +831,18 @@ function DoBounce( bool bUpdating, float JumpModif )
 	BounceMomentum *= 0.50;
 }
 
+//ToDo: issue #214
+function bool DoDirectionalJump( bool bUpdating, vector Direction )
+{
+	/*
+		Эта функция должна вызываться из UM_PlayerController и получать оттуда вектор
+		направления прыжка. Логика такая: производится нажатия пробела, потом ожидание
+		нажатия каких кнопок курсора, т.е. некий аналог логики "комбо". 
+		От кнопок курсора в UM_PlayerController высчитывается вектор направления прыжка
+		и вызывается эта функция.
+	*/
+}
+
 //Player Jumped
 function bool DoJump( bool bUpdating )
 {

@@ -79,6 +79,7 @@ function UM_HumanPawn FindPatient()
 	Return BestPatient;
 }
 
+// Called from UM_Syringe(Weapon).ClientNotifySuccessfulHealing()
 function ClientModeDoFire()
 {
 	Super.ModeDoFire();

@@ -18,6 +18,9 @@ var     float   NextFireProjectileTime; // Track when we will fire again
 var()   float   ProjectileFireInterval; // How often to fire the fire projectile
 var()   float   BurnDamageScale;        // How much to reduce fire damage for the Husk
 
+var		class<Projectile>				HuskProjectileClass;
+var		array< class<Projectile> >		RandProjectileClass;
+
 //-------------------------------------------------------------------------------
 // NOTE: All Code resides in the child class(this class was only created to
 //         eliminate hitching caused by loading default properties during play)
@@ -25,8 +28,8 @@ var()   float   BurnDamageScale;        // How much to reduce fire damage for th
 
 defaultproperties
 {
-     EnergyToPenetrateHead=620.000000
-     EnergyToPenetrateBody=800.000000
+     RandProjectileClass(0)=Class'UnlimaginMod.UM_HuskExplosiveProjectile'
+	 RandProjectileClass(1)=Class'UnlimaginMod.UM_HuskNapalmProjectile'
 	 ProjectileFireInterval=5.500000
      BurnDamageScale=0.250000
      MeleeAnims(0)="Strike"
@@ -45,10 +48,6 @@ defaultproperties
      JumpSound=SoundGroup'KF_EnemiesFinalSnd.Husk.Husk_Jump'
      Intelligence=BRAINS_Mammal
      bCanDistanceAttackDoors=True
-     bUseExtendedCollision=True
-     ColOffset=(Z=36.000000)
-     ColRadius=30.000000
-     ColHeight=33.000000
      SeveredArmAttachScale=0.900000
      SeveredLegAttachScale=0.900000
      SeveredHeadAttachScale=0.900000
@@ -86,11 +85,20 @@ defaultproperties
      IdleWeaponAnim="Idle"
      IdleRestAnim="Idle"
      AmbientSound=Sound'KF_BaseHusk.Husk_IdleLoop'
-     Mesh=SkeletalMesh'KF_Freaks2_Trip.Burns_Freak'
-     DrawScale=1.400000
-     PrePivot=(Z=22.000000)
-     Skins(0)=Texture'KF_Specimens_Trip_T_Two.burns.burns_tatters'
+     
+	 Skins(0)=Texture'KF_Specimens_Trip_T_Two.burns.burns_tatters'
      Skins(1)=Shader'KF_Specimens_Trip_T_Two.burns.burns_shdr'
+	 Mesh=SkeletalMesh'UM_Husk_A.Husk_Mesh'
+	 MeshTestCollisionHeight=45.0
+	 MeshTestCollisionRadius=16.0
+     BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.2,AreaHeight=6.4,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=0.2,Z=0.0),AreaImpactStrength=6.8)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=16.0,AreaHeight=32.2,AreaImpactStrength=9.0)
+	 BaseEyeHeight=40.0
+	 EyeHeight=40.0
+	 // DrawScale
+	 DrawScale=1.400000
+	 
      SoundVolume=200
      Mass=400.000000
      RotationRate=(Yaw=45000,Roll=0)

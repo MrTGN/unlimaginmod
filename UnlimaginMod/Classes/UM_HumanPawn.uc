@@ -27,7 +27,7 @@ var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
 
 // DyingMessage
 var		int							DyingMessageHealth;
-var		float						NextDyingMessageTime;
+var		transient		float		NextDyingMessageTime;
 
 // Firing
 var		float						FireSpeedModif;
@@ -43,8 +43,8 @@ var		transient	vector			LastCameraLocation, LastCameraDirection;
 var		int							BileDamage;
 var		range						BileDamageMultRandRange;
 var		float						BileLifeSpan;
-var		float						BileTimeLeft;
-var		float						LastBileTime;
+var		transient	float			BileTimeLeft;
+var		transient	float			LastBileTime;
 
 // Drowning Damage
 var		range						DrowningDamageRandRange;
@@ -54,7 +54,8 @@ var		class<DamageType>			DrowningDamageType;
 // Burning Damage
 var		range						BurningDamageRandRange;
 var		float						BurningIntensity;
-var		float						BurningFrequency, NextBurningTime, LastBurningTime;
+var		float						BurningFrequency; 
+var		transient	float			NextBurningTime, LastBurningTime;
 var		class<DamageType>			BurningDamageType;
 
 // Falling
@@ -68,14 +69,17 @@ var		float						VeterancyMovementModifier;
 
 // Healing
 var		bool						bAllowedToChangeHealth;	// Prevents from changing Health by several functions at the same time
-var		float						HealDelay, NextHealTime;
+var		float						HealDelay; 
+var		transient	float			NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
 var		float						VeterancyHealPotency;	// Veterancy Heal Bonus
 
 // Healing Message and score
-var		string						SuccessfulHealedMessage;	// Message that You have healed somebody
+var		string						HealedMessage;	// Message that You have healed somebody
+var		float						HealedMessageDelay;	// Minimal delay between messages
+var		transient	float			NextHealedMessageTime;
 var		float						AlphaAmountDecreaseFrequency;
-var		float						NextAlphaAmountDecreaseTime;
+var		transient	float			NextAlphaAmountDecreaseTime;
 var		float						DefaultMoneyPerHealedHealth;
 
 // Overheal
@@ -112,7 +116,8 @@ var		float						CarryWeightJumpModifier;
 
 // Bouncing from the walls and actors
 var		Vector						BounceMomentum;
-var		float						LowGravBounceMomentumScale, NextBounceTime, BounceDelay, BounceCheckDistance;
+var		float						LowGravBounceMomentumScale, BounceDelay, BounceCheckDistance;
+var		transient	float			NextBounceTime;
 var		int							BounceRemaining;
 var		Pawn						BounceVictim;
 
@@ -123,11 +128,11 @@ var		class<MotionBlur>			UnderWaterBlurCameraEffectClass;
 // Achievements (moved here from PlayerController)
 // Survived 10 Seconds After Vomit
 var		bool						bVomittedOn, bHasSurvivedAfterVomit;
-var		float						SurvivedAfterVomitTime;
+var		transient	float			SurvivedAfterVomitTime;
 
 // Survived 10 Seconds After Scream
 var		bool						bScreamedAt, bHasSurvivedAfterScream;
-var		float						SurvivedAfterScreamTime;
+var		transient	float			SurvivedAfterScreamTime;
 
 //[end] Varibles
 //====================================================================
@@ -166,7 +171,7 @@ simulated event PreBeginPlay()
 	// Server
 	if ( Role == ROLE_Authority )  {
 		Super.PreBeginPlay();
-		RandJumpModif = GetRandRangeMult( JumpRandRange );
+		RandJumpModif = BaseActor.static.GetRandRangeFloat( JumpRandRange );
 		// Issue #207
 		SetTimer(1.5, True);
 	}
@@ -356,27 +361,6 @@ simulated event ClientTrigger()
 }
 
 simulated event PostNetReceive() { }
-
-simulated final function float GetRandRangeMult( range RR )
-{
-	Return	RR.Min + (RR.Max - RR.Min) * FRand();
-}
-
-simulated final function float GetRandMult( float MinMult, float MaxMult )
-{
-	Return	MinMult + (MaxMult - MinMult) * FRand();
-}
-
-simulated final function float GetRandExtraScale(
-	range		ScaleRange,
-	float		ExtraScaleChance,
-	range		ExtraScaleRange )
-{
-	if ( FRand() <= ExtraScaleChance )
-		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();
-	else
-		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
-}
 
 // GroundSpeed always replicated from the server to the client-owner
 function UpdateGroundSpeed()
@@ -802,7 +786,7 @@ function DoBounce( bool bUpdating, float JumpModif )
 	local	Vector		NewVel;
 	local	float		MX;
 	
-	NextBounceTime = Level.TimeSeconds + BounceDelay * GetRandMult(0.95, 1.05);
+	NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
 	--BounceRemaining;
 	if ( !bUpdating )
 		PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
@@ -868,7 +852,7 @@ function bool DoJump( bool bUpdating )
 		JumpZ = default.JumpZ * CarryWeightJumpModifier * JumpModif;
 		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
-			NextBounceTime = Level.TimeSeconds + BounceDelay * GetRandMult(0.95, 1.05);
+			NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
 			
 			// Take you out of ironsights if you jump on a non-lowgrav map
 			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
@@ -904,7 +888,7 @@ function bool DoJump( bool bUpdating )
 		}
 		
 		if ( Role == ROLE_Authority )
-			RandJumpModif = GetRandRangeMult( JumpRandRange );
+			RandJumpModif = BaseActor.static.GetRandRangeFloat( JumpRandRange );
 	}
     
 	Return False;
@@ -1626,12 +1610,31 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
+// Can Healer heal this human or not
+simulated function bool CanBeHealed( bool bMedicamentCanOverheal, UM_HumanPawn Healer, optional out int HealMax )
+{
+	if ( Role < ROLE_Authority || bDeleteMe || !bCanBeHealed || Health < 1 )
+		Return False;
+	
+	// if optional HealMax incoming value is zero
+	if ( HealMax < 1 )  {
+		if ( Healer != None && bMedicamentCanOverheal )
+			HealMax = Round( HealthMax * Healer.VeterancyOverhealPotency );	// Veterancy bonus
+		else
+			HealMax = int(HealthMax);
+	}
+	
+	Return Health < HealMax;
+}
+
 function SetAlphaAmount( int NewAlphaAmount )
 {
 	if ( NewAlphaAmount > 0 )  {
 		NextAlphaAmountDecreaseTime = Level.TimeSeconds + AlphaAmountDecreaseFrequency;
 		AlphaAmount = Min( NewAlphaAmount, 255 );
 	}
+	else
+		AlphaAmount = 0;
 }
 
 function AddScoreForHealing( int AddScore )
@@ -1646,20 +1649,13 @@ function AddScoreForHealing( int AddScore )
 	SetAlphaAmount( 255 );
 }
 
-function bool CanBeHealed( bool bMedicamentCanOverheal, UM_HumanPawn Healer, optional out int HealMax )
+function ShowHealedMessage( string PatientName )
 {
-	if ( Role < ROLE_Authority || bDeleteMe || !bCanBeHealed || Health < 1 )
-		Return False;
+	if ( PlayerController == None || PatientName == "" || Level.TimeSeconds < NextHealedMessageTime )
+		Return;
 	
-	// if optional HealMax incoming value is zero
-	if ( HealMax < 1 )  {
-		if ( Healer != None && bMedicamentCanOverheal )
-			HealMax = Round( HealthMax * Healer.VeterancyOverhealPotency );	// Veterancy bonus
-		else
-			HealMax = int(HealthMax);
-	}
-	
-	Return Health < HealMax;
+	NextHealedMessageTime = Level.TimeSeconds + HealedMessageDelay;
+	PlayerController.ClientMessage( HealedMessage @ PatientName, 'CriticalEvent' );
 }
 
 /* Heal this Human.
@@ -1716,8 +1712,8 @@ function bool Heal(
 				Healer.AddScoreForHealing( Round(100.0 * float(HealAmount) / HealthMax * MoneyPerHealedHealth) );
 				
 				// Successful Healed Message. Replicated from the server to the client-owner in the controller object.
-				if ( Healer.KFPC != None && PlayerReplicationInfo != None )
-					Healer.KFPC.ClientMessage( Healer.SuccessfulHealedMessage @ PlayerReplicationInfo.PlayerName, 'CriticalEvent' );
+				if ( PlayerReplicationInfo != None )
+					Healer.ShowHealedMessage( PlayerReplicationInfo.PlayerName );
 			}
 		}
 		
@@ -1775,7 +1771,7 @@ function TakeBileDamage()
 	NextBileTime = Level.TimeSeconds + BileFrequency;
 	BileTimeLeft = FMax( (BileTimeLeft - BileFrequency), 0.0 );
 	
-	DeltaBileDamage = Round(float(BileDamage) * GetRandRangeMult(BileDamageMultRandRange) * (Level.TimeSeconds - LastBileTime));
+	DeltaBileDamage = Round(float(BileDamage) * BaseActor.static.GetRandRangeFloat(BileDamageMultRandRange) * (Level.TimeSeconds - LastBileTime));
 	if ( DeltaBileDamage > 0 )  {
 		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
 		if ( DeltaBileDamage > 0 )  {
@@ -1802,7 +1798,7 @@ function TakeBurningDamage()
 	
 	NextBurningTime = Level.TimeSeconds + BurningFrequency;
 	// Rounding BurningIntensity per delay
-	DeltaBurningDamage = Round(FMin(BurningIntensity, GetRandRangeMult(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime));
+	DeltaBurningDamage = Round(FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime));
 	if ( DeltaBurningDamage > 0 )  {
 		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
 		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
@@ -1850,7 +1846,7 @@ function TakeFallingDamage()
 // Take a Drowning Damage (called from the BreathTimer)
 function TakeDrowningDamage()
 {
-	ProcessTakeDamage( Round(GetRandRangeMult(DrowningDamageRandRange)), None, EyePosition(), vect(0.0, 0.0, 0.0), DrowningDamageType );
+	ProcessTakeDamage( Round(BaseActor.static.GetRandRangeFloat(DrowningDamageRandRange)), None, EyePosition(), vect(0.0, 0.0, 0.0), DrowningDamageType );
 	if ( Health > 0 )
 		BreathTime = DrowningDamageFrequency;
 }
@@ -2162,7 +2158,9 @@ defaultproperties
 {
      // 1 ms AimRotation delay
 	 AimRotationDelay=0.001
-	 SuccessfulHealedMessage="You have healed"
+	 // HealedMessage
+	 HealedMessage="You have healed"
+	 HealedMessageDelay=0.1
 	 // Decrease AlphaAmount every 60 milliseconds
 	 AlphaAmountDecreaseFrequency=0.06
 	 RandJumpModif=1.0

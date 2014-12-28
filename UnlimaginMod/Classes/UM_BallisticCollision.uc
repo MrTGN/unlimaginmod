@@ -26,6 +26,7 @@ var			float			ImpactStrength;			// J / mm2
 var			float			FrictionCoefficient;	// Surface material friction coefficient. 1.0 - no friction. 0.0 - 100% friction.
 var			float			PlasticityCoefficient;	// Plasticity coefficient of the surface material. 1.0 - not plastic material. 0.0 - 100% plastic material.
 var			float			DamageScale;
+var			int				Health, HealthMax;
 
 //[end] Varibles
 //====================================================================
@@ -33,18 +34,47 @@ var			float			DamageScale;
 //========================================================================
 //[block] Replication
 
+replication
+{
+	reliable if ( Role == ROLE_Authority && bNetDirty )
+		ImpactStrength, DamageScale, Health, HealthMax;
+}
+
 //[end] Replication
 //====================================================================
 
 //========================================================================
 //[block] Functions
 
+event PreBeginPlay()
+{
+	Instigator = Pawn(Owner);
+}
+
+simulated function vector GetCollisionExtetnt()
+{
+	Return CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0);
+}
+
+simulated function float GetCollisionVSize()
+{
+	Return VSize(CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0));
+}
+
+event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
+{
+	if ( Instigator != None )
+		Instigator.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
+}
+
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
-	 ImpactStrength=0.025
+	 // if ImpactStrength < 6.0 standard 19x9mm bullet can penetrate this area
+	 // ImpactStrength * ProjectileCrossSectionalArea = Energy to penetrate this area
+	 ImpactStrength=8.0
 	 FrictionCoefficient=0.54
 	 PlasticityCoefficient=0.39
 	 // Lighting
@@ -73,7 +103,7 @@ defaultproperties
 	 bMovable=True
 	 bCanBeDamaged=True
      // Networking flags
-	 bNetTemporary=True
+	 bNetTemporary=False
 	 bReplicateMovement=True
 	 bReplicateInstigator=True
 	 bNetInitialRotation=True
@@ -83,4 +113,5 @@ defaultproperties
 	 DrawType=DT_None
 	 SurfaceType=EST_Flesh
 	 LifeSpan=0.0
+	 Physics=PHYS_None
 }

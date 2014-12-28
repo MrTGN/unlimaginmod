@@ -21,4 +21,7 @@ class UM_PawnBodyCollision extends UM_BallisticCollision;
 
 defaultproperties
 {
+     // if ImpactStrength < 6.2 standard 19x9mm bullet can penetrate this area
+	 // ImpactStrength * ProjectileCrossSectionalArea = Energy to penetrate this area
+	 ImpactStrength=7.5
 }

@@ -89,7 +89,6 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 	local	bool					bAlreadyChecked;
 	// Healing
 	local	int						HealAmount;
-	local	UM_HumanPawn			Human;
 	
 
 	if ( bHurtEntry )
@@ -101,7 +100,6 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 	foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
 		if ( Victim != None && !Victim.bDeleteMe && Victim != Hurtwall && Victim.Health > 0 )  {
 			// Resets to the default values
-			Human = None;
 			bAlreadyChecked = False;
 			// Check CheckedPawns array
 			for ( i = 0; i < CheckedPawns.Length; ++i )  {
@@ -117,13 +115,12 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 			
 			CheckedPawns[CheckedPawns.Length] = Victim;
 			
-			Human = UM_HumanPawn(Victim);
-			if ( Human != None )  {
+			if ( UM_HumanPawn(Victim) != None )  {
 				// Skip this iteration
-				if ( HealBoostAmount < 1 || (Instigator != None && Instigator.GetTeamNum() != Human.GetTeamNum()) )
+				if ( HealBoostAmount < 1 || (Instigator != None && Instigator.GetTeamNum() != UM_HumanPawn(Victim).GetTeamNum()) )
 					Continue;
 				
-				Human.Heal( HealBoostAmount, bCanOverheal, UM_HumanPawn(Instigator), MoneyPerHealedHealth );
+				UM_HumanPawn(Victim).Heal( HealBoostAmount, bCanOverheal, UM_HumanPawn(Instigator), MoneyPerHealedHealth );
 			}
 			else if ( KFMonster(Victim) != None )  {
 				// Skip this iteration

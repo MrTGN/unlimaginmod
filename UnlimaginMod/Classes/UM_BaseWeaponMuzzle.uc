@@ -55,4 +55,5 @@ defaultproperties
      MuzzleVelocityScale=1.000000
 	 SpreadScale=1.000000
 	 bReplicateMovement=True
+	 bReplicateInstigator=True
 }

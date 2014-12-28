@@ -23,7 +23,7 @@ class UM_Monster extends KFMonster
 //========================================================================
 //[block] Variables
 
-var(Ballistic)	float	EnergyToPenetrateHead, EnergyToPenetrateBody;
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 var				bool	bRandomSizeAdjusted, bThisIsMiniBoss;
 
@@ -44,16 +44,25 @@ var				range	MeleeRangeScale;
 // Monster Damage
 var				range	DamageScaleRange;
 
-var		class<UM_ExtendedCollision>		ExtendedCollisionClass;
-var		UM_ExtendedCollision			ExtendedCollision;
-/*
-struct	HitAreaData
+var				float	MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
+var				float	MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
+
+struct BallisticCollisionData
 {
-	var	name	BoneName;
-	var	float	ImpactStrength;
+	var	UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
+	var	class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
+	var	float							AreaRadius;	// Radius of the area mesh collision cyllinder
+	var	float							AreaHeight;	// Half-height area mesh collision cyllinder
+	var	name							AreaBone;	// Name Of the bone area will be attached to
+	var	vector							AreaOffset;	// Area offset from the bone
+	var	rotator							AreaRotation;	// Area relative rotation from the bone
+	var	float							AreaImpactStrength;	// J / mm2
+	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
+	var	bool							bArmoredArea;	// This area can be covered with armor
 };
 
-var		array< HitAreaData >		HeadHitArea;	*/
+var	array<BallisticCollisionData>		BallisticCollision;
+var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference for code in IsHeadShot() function
 
 //[end] Varibles
 //====================================================================
@@ -64,10 +73,7 @@ var		array< HitAreaData >		HeadHitArea;	*/
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		EnergyToPenetrateHead, EnergyToPenetrateBody, bThisIsMiniBoss;
-	
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		ExtendedCollision;
+		bThisIsMiniBoss;
 }
 
 //[end] Replication
@@ -76,50 +82,85 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated final function float GetRandMult( float MinMult, float MaxMult )
-{
-	Return	MinMult + (MaxMult - MinMult) * FRand();
-}
-
-simulated final function float GetRandExtraScale(
-	range		ScaleRange,
-	float		ExtraScaleChance,
-	range		ExtraScaleRange )
-{
-	if ( FRand() <= ExtraScaleChance )
-		Return ExtraScaleRange.Min + (ExtraScaleRange.Max - ExtraScaleRange.Min) * FRand();
-	else
-		Return ScaleRange.Min + (ScaleRange.Max - ScaleRange.Min) * FRand();
-}
-
 function RandomizeMonsterSizes()
 {
 	local	float	RandomSizeMult;
 	
-	RandomSizeMult = GetRandExtraScale( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
-	EnergyToPenetrateHead = default.EnergyToPenetrateHead * RandomSizeMult * GetRandMult(0.9, 1.1);
-	EnergyToPenetrateBody = default.EnergyToPenetrateBody * RandomSizeMult * GetRandMult(0.9, 1.1);
-	MeleeRange = default.MeleeRange * RandomSizeMult * GetRandMult( MeleeRangeScale.Min, MeleeRangeScale.Max );
-	// Sizes
+	RandomSizeMult = BaseActor.static.GetExtraRandRangeFloat( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
+	// DrawScale
 	SetDrawScale(default.DrawScale * RandomSizeMult);
+	
+	MeleeRange = default.MeleeRange * RandomSizeMult * BaseActor.static.GetRandRangeFloat( MeleeRangeScale );
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
-	SetCollisionSize( (default.CollisionRadius * RandomSizeMult), (default.CollisionHeight * RandomSizeMult) );
+		
+	// Sizes
 	Mass = default.Mass * RandomSizeMult;
-	ColRadius = default.ColRadius * RandomSizeMult;
-	ColHeight = default.ColHeight * RandomSizeMult;
-	//ColOffset = default.ColOffset * RandomSizeMult;
+	// CollisionSize scaled by DrawScale
+	SetCollisionSize( (MeshTestCollisionRadius * DrawScale), (MeshTestCollisionHeight * DrawScale) );
+	// EyeHeight scaled by DrawScale
+	BaseEyeHeight = default.BaseEyeHeight * DrawScale;
+	EyeHeight = default.EyeHeight * DrawScale;
+	
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
+	
 	HeadHeight = default.HeadHeight * RandomSizeMult;
-	BaseEyeHeight = default.BaseEyeHeight * RandomSizeMult;
-	EyeHeight = default.EyeHeight * RandomSizeMult;
+	
 	CrouchHeight = default.CrouchHeight * RandomSizeMult;
 	CrouchRadius = default.CrouchRadius * RandomSizeMult;
-	PrePivot.Z = default.PrePivot.Z + (OnlineHeadshotOffset.Z - default.OnlineHeadshotOffset.Z);
 	
 	bRandomSizeAdjusted = True;
+}
+
+function BuildBallisticCollision()
+{
+	local	int		i;
+	
+	for ( i = 0; i < BallisticCollision.Length; ++i )  {
+		if ( BallisticCollision[i].AreaClass != None )  {
+			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
+			// if exist
+			if ( BallisticCollision[i].Area != None )  {
+				// HeadBallisticCollision
+				if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
+					HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+				// CollisionSize
+				BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+				// Attaching
+				if ( BallisticCollision[i].AreaBone != '' )
+					AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
+				else
+					BallisticCollision[i].Area.SetBase( Self );
+				// if attached
+				if ( BallisticCollision[i].Area.Base != None )  {
+					// AreaOffset
+					if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+						BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
+					// AreaRotation
+					if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+						BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation * DrawScale );
+				}
+				// Area.ImpactStrength
+				if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
+					BallisticCollision[i].Area.ImpactStrength = BallisticCollision[i].AreaImpactStrength * DrawScale * BaseActor.static.GetRandFloat(0.9, 1.1);
+			}
+		}
+	}
+}
+
+function DestroyBallisticCollision()
+{
+	local	int		i;
+	
+	HeadBallisticCollision = None;
+	while ( BallisticCollision.Length > 0 )  {
+		i = BallisticCollision.Length - 1;
+		if ( BallisticCollision[i].Area != None )
+			BallisticCollision[i].Area.Destroy();
+		BallisticCollision.Remove(i, 1);
+	}
 }
 
 event PreBeginPlay()
@@ -136,6 +177,7 @@ simulated event PostBeginPlay()
 	local	float	MovementSpeedDifficultyScale;
 	
 	if ( ROLE == ROLE_Authority )  {
+		BuildBallisticCollision();
 		if ( ControllerClass != None && Controller == None )
 			Controller = Spawn(ControllerClass);
 
@@ -149,16 +191,6 @@ simulated event PostBeginPlay()
 		
 		if ( HealthModifer != 0 )
 			Health = HealthModifer;
-		
-		if ( bUseExtendedCollision && ExtendedCollision == None && ExtendedCollisionClass != None )  {
-			ExtendedCollision = Spawn(ExtendedCollisionClass, Self);
-			ExtendedCollision.SetCollisionSize(ColRadius, ColHeight);
-			ExtendedCollision.bHardAttach = True;
-			ExtendedCollision.SetLocation( Location + (ColOffset >> Rotation) );
-			ExtendedCollision.SetPhysics( PHYS_None );
-			ExtendedCollision.SetBase( Self );
-			SavedExtCollision = ExtendedCollision.bCollideActors;
-		}
 	}
 
 	AssignInitialPose();
@@ -218,7 +250,7 @@ simulated event PostBeginPlay()
 		
 		//[block] Speed Randomization
 		AirSpeed *= MovementSpeedDifficultyScale;
-		RandMult = GetRandExtraScale( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
+		RandMult = BaseActor.static.GetExtraRandRangeFloat( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
 		if ( RandMult > SpeedScaleRange.Max )
 			bThisIsMiniBoss = True;
 		GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
@@ -230,31 +262,29 @@ simulated event PostBeginPlay()
 		
 		//[block] Healths Randomization
 		// Health
-		RandMult = GetRandExtraScale( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
-		Health *= DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer();
+		RandMult = BaseActor.static.GetExtraRandRangeFloat( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
+		Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
 		HealthMax = float(Health);
 		
 		// HeadHealth
 		if ( RandMult > HealthScaleRange.Max )  {
 			bThisIsMiniBoss = True;
-			RandMult = GetRandMult( ExtraHeadHealthScaleRange.Min, ExtraHeadHealthScaleRange.Max );
+			RandMult = BaseActor.static.GetRandRangeFloat( ExtraHeadHealthScaleRange );
 		}
 		else
-			RandMult = GetRandMult( HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
+			RandMult = BaseActor.static.GetRandRangeFloat( HeadHealthScaleRange );
 
-		HeadHealth *= DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer();
-		if ( HeadHealth >= HealthMax )
-			HeadHealth = HealthMax - 10.00;
+		HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
 		//[end]
 			
 		//floats
-		RandMult = GetRandMult( DamageScaleRange.Min, DamageScaleRange.Max );
+		RandMult = BaseActor.static.GetRandRangeFloat( DamageScaleRange );
 		SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
 		SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-		JumpZ *= GetRandMult( JumpZScaleRange.Min, JumpZScaleRange.Max );
+		JumpZ = default.JumpZ * BaseActor.static.GetRandRangeFloat( JumpZScaleRange );
 		//int
-		ScreamDamage = Max( (DifficultyDamageModifer() * default.ScreamDamage * GetRandMult(DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
-		MeleeDamage = Max( (DifficultyDamageModifer() * default.MeleeDamage * GetRandMult(DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+		ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
+		MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
 
 		
 		//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
@@ -276,38 +306,28 @@ simulated event PostBeginPlay()
 	}
 }
 
-simulated final function float GetPenetrationEnergyLoss(optional bool bIsHeadShot)
-{
-	if ( bIsHeadShot )
-		Return EnergyToPenetrateHead;
-	else
-		Return EnergyToPenetrateBody;
-}
-
 // Setters for extra collision cylinders
 simulated function ToggleAuxCollision( bool NewbCollision )
 {
+	/*
 	if ( !NewbCollision )  {
 		SavedExtCollision = ExtendedCollision.bCollideActors;
 		ExtendedCollision.SetCollision(False);
 	}
 	else
 		ExtendedCollision.SetCollision(SavedExtCollision);
+	*/
 }
 
+/*
 simulated function PlayDyingAnimation( Class<DamageType> DamageType, Vector HitLoc )
 {
-	if ( ExtendedCollision != None )
-		ExtendedCollision.Destroy();
-	
 	Super.PlayDyingAnimation(DamageType, HitLoc );
-}
+} */
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
-	if ( ExtendedCollision != None )
-		ExtendedCollision.Destroy();
-	
+	DestroyBallisticCollision();
 	Super.Destroyed();
 }
 
@@ -710,7 +730,134 @@ simulated event SetAnimAction(name NewAction)
 	}
 }
 
-event TakeDamage(int Damage, Pawn instigatedBy, Vector hitlocation, Vector momentum, class<DamageType> damageType, optional int HitIndex )
+/*
+// Overridden so that anims don't get interrupted on the server if one is already playing
+function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
+{
+	local coords C;
+	local vector HeadLoc, B, M, diff;
+	local float t, DotMM, Distance;
+	local int look;
+	local bool bUseAltHeadShotLocation;
+	local bool bWasAnimating;
+
+	if ( HeadBone == '' )
+		Return False;
+
+	// If we are a dedicated server estimate what animation is most likely playing on the client
+	if ( Level.NetMode == NM_DedicatedServer )  {
+		if ( Physics == PHYS_Falling )
+			PlayAnim(AirAnims[0], 1.0, 0.0);
+		else if ( Physics == PHYS_Walking )  {
+			// Only play the idle anim if we're not already doing a different anim.
+			// This prevents anims getting interrupted on the server and borking things up - Ramm
+			if ( !IsAnimating(0) && !IsAnimating(1) )  {
+				if ( bIsCrouched )
+					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
+				else
+					bUseAltHeadShotLocation = True;
+			}
+			else
+				bWasAnimating = True;
+
+			if ( bDoTorsoTwist )  {
+				SmoothViewYaw = Rotation.Yaw;
+				SmoothViewPitch = ViewPitch;
+				look = (256 * ViewPitch) & 65535;
+				if ( look > 32768 )
+					look -= 65536;
+				SetTwistLook(0, look);
+			}
+		}
+		else if ( Physics == PHYS_Swimming )
+			PlayAnim(SwimAnims[0], 1.0, 0.0);
+
+		if( !bWasAnimating )
+			SetAnimFrame(0.5);
+	}
+
+	if( bUseAltHeadShotLocation )  {
+		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
+		AdditionalScale *= OnlineHeadshotScale;
+	}
+	else  {
+		C = GetBoneCoords(HeadBone);
+		HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
+	}
+	//ServerHeadLocation = HeadLoc;
+
+	// Express snipe trace line in terms of B + tM
+	B = loc;
+	M = ray * (2.0 * CollisionHeight + 2.0 * CollisionRadius);
+
+	// Find Point-Line Squared Distance
+	diff = HeadLoc - B;
+	t = M Dot diff;
+	if ( t > 0 )  {
+		DotMM = M dot M;
+		if ( t < DotMM )  {
+			t = t / DotMM;
+			diff = diff - (t * M);
+		}
+		else  {
+			t = 1;
+			diff -= M;
+		}
+	}
+	else
+		t = 0;
+
+	Distance = Sqrt(diff Dot diff);
+
+	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
+}	*/
+
+function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
+{
+	local	vector	TraceHitLoc, TraceHitNorm, TraceExtetnt;
+	
+	if ( HeadBallisticCollision == None )
+		Return False;
+	
+	// If we are a dedicated server estimate what animation is most likely playing on the client
+	if ( Level.NetMode == NM_DedicatedServer )  {
+		if ( Physics == PHYS_Falling )
+			PlayAnim(AirAnims[0], 1.0, 0.0);
+		else if ( Physics == PHYS_Walking )  {
+			// Only play the idle anim if we're not already doing a different anim.
+			// This prevents anims getting interrupted on the server and borking things up - Ramm
+			if ( !IsAnimating(0) && !IsAnimating(1) )  {
+				if ( bIsCrouched )
+					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
+			}
+			else
+				bWasAnimating = True;
+
+			if ( bDoTorsoTwist )  {
+				SmoothViewYaw = Rotation.Yaw;
+				SmoothViewPitch = ViewPitch;
+				look = (256 * ViewPitch) & 65535;
+				if ( look > 32768 )
+					look -= 65536;
+				SetTwistLook(0, look);
+			}
+		}
+		else if ( Physics == PHYS_Swimming )
+			PlayAnim(SwimAnims[0], 1.0, 0.0);
+
+		if ( !bWasAnimating )
+			SetAnimFrame(0.5);
+	}
+	
+	Ray *= HeadBallisticCollision.GetCollisionVSize();
+	if ( AdditionalScale > 1.0 )
+		TraceExtetnt = vect(1.0, 1.0, 1.0) * AdditionalScale;
+	
+	// TraceThisActor returns true if did not hit this actor.
+	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
+}
+
+event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector momentum, class<DamageType> damageType, optional int HitIndex )
 {
 	local bool bIsHeadshot;
 	local KFPlayerReplicationInfo KFPRI;
@@ -875,7 +1022,6 @@ function PushAwayZombie(Vector NewVelocity)
 }
 
 /*
-//New function PushAwayZombie by TGN, Unlimagin CG
 function PushAwayZombie(vector PushAwayDirection, float PushAwayPower)
 {
 	if ( PushAwayPower > Mass )  {
@@ -894,87 +1040,6 @@ function PushAwayZombie(vector PushAwayDirection, float PushAwayPower)
 			Controller.SetFall();
 	}
 } */
-
-// Overridden so that anims don't get interrupted on the server if one is already playing
-function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
-{
-	local coords C;
-	local vector HeadLoc, B, M, diff;
-	local float t, DotMM, Distance;
-	local int look;
-	local bool bUseAltHeadShotLocation;
-	local bool bWasAnimating;
-
-	if ( HeadBone == '' )
-		Return False;
-
-	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer )  {
-		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0);
-		else if ( Physics == PHYS_Walking )  {
-			// Only play the idle anim if we're not already doing a different anim.
-			// This prevents anims getting interrupted on the server and borking things up - Ramm
-			if ( !IsAnimating(0) && !IsAnimating(1) )  {
-				if ( bIsCrouched )
-					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
-				else
-					bUseAltHeadShotLocation = True;
-			}
-			else
-				bWasAnimating = True;
-
-			if ( bDoTorsoTwist )  {
-				SmoothViewYaw = Rotation.Yaw;
-				SmoothViewPitch = ViewPitch;
-				look = (256 * ViewPitch) & 65535;
-				if ( look > 32768 )
-					look -= 65536;
-				SetTwistLook(0, look);
-			}
-		}
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
-
-		if( !bWasAnimating )
-			SetAnimFrame(0.5);
-	}
-
-	if( bUseAltHeadShotLocation )  {
-		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
-		AdditionalScale *= OnlineHeadshotScale;
-	}
-	else  {
-		C = GetBoneCoords(HeadBone);
-		HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
-	}
-	//ServerHeadLocation = HeadLoc;
-
-	// Express snipe trace line in terms of B + tM
-	B = loc;
-	M = ray * (2.0 * CollisionHeight + 2.0 * CollisionRadius);
-
-	// Find Point-Line Squared Distance
-	diff = HeadLoc - B;
-	t = M Dot diff;
-	if ( t > 0 )  {
-		DotMM = M dot M;
-		if ( t < DotMM )  {
-			t = t / DotMM;
-			diff = diff - (t * M);
-		}
-		else  {
-			t = 1;
-			diff -= M;
-		}
-	}
-	else
-		t = 0;
-
-	Distance = Sqrt(diff Dot diff);
-
-	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
-}
 
 function Dazzle(float TimeScale)
 {
@@ -1028,8 +1093,24 @@ defaultproperties
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-	 ExtendedCollisionClass=Class'UnlimaginMod.UM_ExtendedCollision'
-	 EnergyToPenetrateHead=380.000000
-     EnergyToPenetrateBody=520.000000
 	 ControllerClass=Class'UnlimaginMod.UM_KFMonsterController'
+	 // Collision flags
+	 bCollideActors=True
+	 bCollideWorld=True
+	 bBlockActors=True
+	 bBlockPlayers=True
+	 bUseCylinderCollision=True
+	 // This collision flags was moved to the BallisticCollision
+	 bBlockProjectiles=False
+	 bProjTarget=False
+	 bBlockZeroExtentTraces=False
+	 bBlockNonZeroExtentTraces=False
+	 
+	 DrawScale=1.000000
+	 MeshTestCollisionHeight=0.0
+	 MeshTestCollisionRadius=0.0
+	 CollisionHeight=0.0
+	 CollisionRadius=0.0
+	 
+	 PrePivot=(X=0.0,Y=0.0,Z=0.0)
 }

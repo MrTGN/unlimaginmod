@@ -71,8 +71,6 @@ replication
 
 defaultproperties
 {
-     EnergyToPenetrateHead=1200.000000
-	 EnergyToPenetrateBody=1600.000000
 	 ChargingAnim="RunF"
      HealingLevels(0)=5600
      HealingLevels(1)=3500
@@ -102,10 +100,6 @@ defaultproperties
      bMeleeStunImmune=True
      CrispUpThreshhold=1
      bCanDistanceAttackDoors=True
-     bUseExtendedCollision=True
-     ColOffset=(Z=65.000000)
-     ColRadius=27.000000
-     ColHeight=25.000000
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.200000
      SeveredHeadAttachScale=1.500000
@@ -157,11 +151,20 @@ defaultproperties
      IdleWeaponAnim="BossIdle"
      IdleRestAnim="BossIdle"
      AmbientSound=Sound'KF_BasePatriarch.Idle.Kev_IdleLoop'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.Patriarch_Freak'
-     DrawScale=1.050000
-     PrePivot=(Z=3.000000)
-     Skins(0)=Combiner'KF_Specimens_Trip_T.gatling_cmb'
+     
+	 Skins(0)=Combiner'KF_Specimens_Trip_T.gatling_cmb'
      Skins(1)=Combiner'KF_Specimens_Trip_T.patriarch_cmb'
+	 Mesh=SkeletalMesh'UM_Patriarch_A.Patriarch_Mesh'
+     MeshTestCollisionHeight=70.0
+	 MeshTestCollisionRadius=25.0
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=3.0,Y=-1.8,Z=0.0),AreaImpactStrength=16.5)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=52.0,AreaImpactStrength=22.5)
+	 BaseEyeHeight=61.0
+	 EyeHeight=61.0
+	 // DrawScale
+	 DrawScale=1.050000
+	 	 
      SoundVolume=75
      bNetNotify=False
      Mass=1000.000000

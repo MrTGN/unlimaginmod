@@ -28,8 +28,6 @@ var(Anims)  name    MeleeAirAnims[3]; // Attack anims for when flying through th
 
 defaultproperties
 {
-     EnergyToPenetrateHead=360.000000
-     EnergyToPenetrateBody=460.000000
 	 MiniBossMaxSpeedScale=2.400000
 	 // JumpZ
 	 MinJumpZScale=0.850000
@@ -116,9 +114,16 @@ defaultproperties
      IdleRestAnim="ZombieLeapIdle"
      bOrientOnSlope=True
      AmbientSound=Sound'KF_BaseCrawler.Crawler_Idle'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.Crawler_Freak'
-     DrawScale=1.100000
-     PrePivot=(Z=0.000000)
-     Skins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
-     CollisionHeight=25.000000
+     
+	 Skins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
+	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
+	 MeshTestCollisionHeight=20.0
+	 MeshTestCollisionRadius=36.0
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.4,AreaHeight=7.5,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=20.0,AreaImpactStrength=6.6)
+	 BaseEyeHeight=8.0
+	 EyeHeight=8.0
+	 // DrawScale
+	 DrawScale=1.100000
 }

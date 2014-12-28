@@ -226,6 +226,14 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			if ( Victim == LastTouched )
 				LastTouched = None;
 			
+			// BallisticCollision check
+			if ( UM_BallisticCollision(Victim) != None )  {
+				if ( Victim.Base != None )
+					Victim = Victim.Base;
+				else
+					Continue;	// Skip this BallisticCollision
+			}
+			
 			Dir = Victim.Location - HitLocation;
 			Dist = FMax(VSize(Dir), 1.0);
 			Dir = Dir / Dist;
@@ -244,11 +252,11 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				// Ignore already Checked Pawns
 				if ( bAlreadyChecked )
 					Continue;
+				
+				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
 				// Do not damage a friendly Pawn
-				if ( !CanHurtPawn( Pawn(Victim) ) )  {
-					CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
+				if ( !CanHurtPawn( Pawn(Victim) ) )
 					Continue;
-				}
 				
 				Monster = KFMonster(Victim);
 				if ( Monster != None && Monster.Health > 0 )
@@ -438,7 +446,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	// Explode effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( ExplodeSound.Snd != None )
-			PlaySound(ExplodeSound.Snd, ExplodeSound.Slot, ExplodeSound.Vol, ExplodeSound.bNoOverride, ExplodeSound.Radius, GetRandPitch(ExplodeSound.PitchRange), ExplodeSound.bUse3D);
+			PlaySound(ExplodeSound.Snd, ExplodeSound.Slot, ExplodeSound.Vol, ExplodeSound.bNoOverride, ExplodeSound.Radius, BaseActor.static.GetRandPitch(ExplodeSound.PitchRange), ExplodeSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
@@ -480,7 +488,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 	// Disintegrate effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( DisintegrateSound.Snd != None )
-			PlaySound(DisintegrateSound.Snd, DisintegrateSound.Slot, DisintegrateSound.Vol, DisintegrateSound.bNoOverride, DisintegrateSound.Radius, GetRandPitch(DisintegrateSound.PitchRange), DisintegrateSound.bUse3D);
+			PlaySound(DisintegrateSound.Snd, DisintegrateSound.Slot, DisintegrateSound.Vol, DisintegrateSound.bNoOverride, DisintegrateSound.Radius, BaseActor.static.GetRandPitch(DisintegrateSound.PitchRange), DisintegrateSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
 			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));

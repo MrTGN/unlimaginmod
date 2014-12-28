@@ -49,7 +49,7 @@ event Timer()
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 				SetTimer(0.2,True);
 			}
 		}
@@ -60,7 +60,7 @@ event Timer()
 				if ( !FriendlyPawnIsInRadius(DamageRadius) )
 					Explode(Location, Vector(Rotation));
 				else if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 			}
 			else  {
 				bAlwaysRelevant = False;

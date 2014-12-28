@@ -22,7 +22,7 @@ simulated event PostBeginPlay()
 {
 	// Randomizing ScreamRadius
 	if ( Level.Game != None && !bDiffAdjusted )
-		ScreamRadius *= GetRandMult(0.9, 1.1);
+		ScreamRadius *= BaseActor.static.GetRandFloat(0.9, 1.1);
 	
 	Super.PostBeginPlay();
 }

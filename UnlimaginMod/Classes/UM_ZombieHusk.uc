@@ -17,10 +17,12 @@ class UM_ZombieHusk extends UM_ZombieHuskBase;
 //----------------------------------------------------------------------------
 // NOTE: All Variables are declared in the base class to eliminate hitching
 //----------------------------------------------------------------------------
-var class<Projectile> HuskFireProjClass;
 
 simulated event PostBeginPlay()
 {
+	if ( Role == ROLE_Authority )
+		HuskProjectileClass = RandProjectileClass[Rand(RandProjectileClass.Length)];
+	
 	// Difficulty Scaling
 	if ( Level.Game != None && !bDiffAdjusted )  {
         if ( Level.Game.GameDifficulty < 2.0 )  {
@@ -41,8 +43,8 @@ simulated event PostBeginPlay()
             BurnDamageScale = default.BurnDamageScale * 0.5;
         }
 		//Randomizing
-		BurnDamageScale *= GetRandMult(0.9, 1.1);
-		ProjectileFireInterval *= GetRandMult(0.9, 1.1);
+		BurnDamageScale *= BaseActor.static.GetRandFloat(0.9, 1.1);
+		ProjectileFireInterval *= BaseActor.static.GetRandFloat(0.9, 1.1);
 	}
 
 	Super.PostBeginPlay();
@@ -143,6 +145,10 @@ function SpawnTwoShots()
 	local rotator FireRotation;
 	local UM_KFMonsterController UM_KFMonstControl;
 
+	if ( HuskProjectileClass == None )  {
+		Log("No HuskProjectileClass!", Name);
+		Return;
+	}
 
 	if ( Controller != None && KFDoorMover(Controller.Target) != None )
 	{
@@ -152,22 +158,20 @@ function SpawnTwoShots()
 
 	GetAxes(Rotation,X,Y,Z);
 	FireStart = GetBoneCoords('Barrel').Origin;
-	huskFireProjClass = Class'HuskFireProjectile';
-	if ( !SavedFireProperties.bInitialized )
-	{
+	if ( !SavedFireProperties.bInitialized )  {
 		SavedFireProperties.AmmoClass = Class'SkaarjAmmo';
-		SavedFireProperties.ProjectileClass = HuskFireProjClass;
+		SavedFireProperties.ProjectileClass = HuskProjectileClass;
 		SavedFireProperties.WarnTargetPct = 1;
 		SavedFireProperties.MaxRange = 65535;
 		SavedFireProperties.bTossed = False;
-		SavedFireProperties.bTrySplash = true;
+		SavedFireProperties.bTrySplash = True;
 		SavedFireProperties.bLeadTarget = True;
 		SavedFireProperties.bInstantHit = False;
 		SavedFireProperties.bInitialized = True;
 	}
 
     // Turn off extra collision before spawning vomit, otherwise spawn fails
-    ToggleAuxCollision(false);
+    //ToggleAuxCollision(false);
 
 	FireRotation = Controller.AdjustAim(SavedFireProperties,FireStart,600);
 
@@ -177,10 +181,10 @@ function SpawnTwoShots()
 			UM_KFMonstControl.GetOutOfTheWayOfShot(vector(FireRotation),FireStart);
 	}
 
-    Spawn(HuskFireProjClass,,,FireStart,FireRotation);
+    Spawn(HuskProjectileClass, self,, FireStart, FireRotation);
 
 	// Turn extra collision back on
-	ToggleAuxCollision(true);
+	//ToggleAuxCollision(true);
 }
 
 // Get the closest point along a line to another point

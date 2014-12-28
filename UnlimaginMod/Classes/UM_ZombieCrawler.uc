@@ -24,7 +24,7 @@ simulated event PostBeginPlay()
 {
 	// Randomizing PounceSpeed
 	if ( Level.Game != None && !bDiffAdjusted )
-		PounceSpeed *= GetRandMult(0.9, 1.1);
+		PounceSpeed *= BaseActor.static.GetRandFloat(0.9, 1.1);
 	
 	Super.PostBeginPlay();
 }

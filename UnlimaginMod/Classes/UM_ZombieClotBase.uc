@@ -54,21 +54,6 @@ defaultproperties
      PuntAnim="ClotPunt"
      AdditionalWalkAnims(0)="ClotWalk2"
      Intelligence=BRAINS_Mammal
-     bUseExtendedCollision=False
-     ColOffset=(Z=48.000000)
-     ColRadius=25.000000
-     ColHeight=5.000000
-     ExtCollAttachBoneName="Collision_Attach"
-	 // Collision
-	 bBlockZeroExtentTraces=False
-	 bBlockNonZeroExtentTraces=False
-	 bUseCylinderCollision=True
-	 //CollisionRadius=16.000000
-	 // CollisionRadius * DrawScale
-	 CollisionRadius=17.600000
-     //CollisionHeight=50.000000
-	 //CollisionHeight * DrawScale
-	 CollisionHeight=55.000000
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.800000
      SeveredHeadAttachScale=0.800000
@@ -95,9 +80,18 @@ defaultproperties
      WalkAnims(2)="ClotWalk"
      WalkAnims(3)="ClotWalk"
      AmbientSound=Sound'KF_BaseClot.Clot_Idle1Loop'
-     Mesh=SkeletalMesh'UM_Monsters_A.Clot_Mesh'
+     
+	 Skins(0)=Combiner'KF_Specimens_Trip_T.clot_cmb'
+	 Mesh=SkeletalMesh'UM_Clot_A.Clot_Mesh'
+	 MeshTestCollisionHeight=50.0
+	 MeshTestCollisionRadius=17.0
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.6,AreaHeight=6.6,AreaBone="CHR_Head",AreaOffset=(X=1.6,Y=-1.6,Z=0.0),AreaImpactStrength=5.4)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=17.0,AreaHeight=36.8,AreaImpactStrength=7.4)
+	 BaseEyeHeight=44.0
+	 EyeHeight=44.0
+	 // DrawScale
      DrawScale=1.100000
-     PrePivot=(Z=0.000000)
-     Skins(0)=Combiner'KF_Specimens_Trip_T.clot_cmb'
+
      RotationRate=(Yaw=45000,Roll=0)
 }

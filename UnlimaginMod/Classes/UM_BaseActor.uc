@@ -69,14 +69,40 @@ struct	SoundData
 //========================================================================
 //[block] Functions
 
+simulated static final function int GetRandInt( int MinI, int MaxI )
+{
+	Return	Min( (MinI + Round(float(MaxI - MinI) * FRand())), MaxI );
+}
+
+simulated static final function float GetRandFloat( float MinF, float MaxF )
+{
+	Return	MinF + (MaxF - MinF) * FRand();
+}
+
+simulated static final function float GetRandRangeFloat( range RR )
+{
+	Return	RR.Min + (RR.Max - RR.Min) * FRand();
+}
+
+simulated static final function float GetExtraRandRangeFloat( 
+	range 	RR, 
+	float	ExtraRangeChance,
+	range	ERR )
+{
+	if ( FRand() > ExtraRangeChance )
+		Return	RR.Min + (RR.Max - RR.Min) * FRand();	// Not Extra Range
+	else
+		Return	ERR.Min + (ERR.Max - ERR.Min) * FRand();	// Extra Range
+}
+
 // RandPitch
-simulated final function float GetRandPitch( range PitchRange )
+simulated static final function float GetRandPitch( range PitchRange )
 {
 	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )  {
 		if ( PitchRange.Min != PitchRange.Max )
 			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
 		else
-			Return PitchRange.Min;	// Just return Min Pitch
+			Return PitchRange.Max;	// Just return Max Pitch
 	}
 	else
 		Return 1.0;

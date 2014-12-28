@@ -24,8 +24,8 @@ simulated event PostBeginPlay()
 {
 	// Randomizing RunAttackTimeout
 	if ( Level.Game != None && !bDiffAdjusted )  {
-		RunAttackTimeout *= GetRandMult(0.9, 1.1);
-		RunGroundSpeedScale *= GetRandMult(0.85, 1.15);
+		RunAttackTimeout *= BaseActor.static.GetRandFloat(0.9, 1.1);
+		RunGroundSpeedScale *= BaseActor.static.GetRandFloat(0.85, 1.15);
 	}
 	
 	Super.PostBeginPlay();

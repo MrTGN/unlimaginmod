@@ -328,8 +328,12 @@ simulated function CheckAnimArrays()
 
 simulated function SetInstigator( Pawn NewInstigator )
 {
+	local	int		i;
+	
 	Instigator = NewInstigator;
 	HumanOwner = UM_HumanPawn(Instigator);
+	for ( i = 0; i < Muzzles.Length; ++i )
+		Muzzles[i].Instigator = Instigator;
 }
 
 // Called after BeginPlay().
@@ -374,7 +378,6 @@ function float MaxRange()
 }
 
 // Initializate weapon muzzle actors
-// Called from Weapon simulated event Timer()
 function InitWeaponMuzzles()
 {
 	local	byte	i;
@@ -404,6 +407,8 @@ function InitWeaponMuzzles()
 simulated function InitEffects()
 {
     local	byte	i;
+	
+	InitWeaponMuzzles();
 	
 	// don't even spawn on server
 	if ( !bDoFiringEffects || Level.NetMode == NM_DedicatedServer 
@@ -443,11 +448,25 @@ simulated function InitEffects()
 	}
 }
 
+function DestroyWeaponMuzzles()
+{
+	local	int		i;
+	
+	while ( Muzzles.Length > 0 )  {
+		i = Muzzles.Length - 1;
+		if ( Muzzles[i] != None )
+			Muzzles[i].Destroy();
+		Muzzles.Remove(i, 1);
+	}
+}
+
 // Called from Weapon simulated event Timer()
 // ToDo: move this to the WeaponMuzzle
 simulated function DestroyEffects()
 {
 	local	byte	i;
+	
+	DestroyWeaponMuzzles();
 	
 	while ( SmokeEmitters.Length > 0 )  {
 		i = SmokeEmitters.Length - 1;

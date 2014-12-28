@@ -57,7 +57,7 @@ state NoEnergy
 					 KFWeapon(Inv).AmmoAmount(0) < KFWeapon(Inv).MaxAmmo(0) )  {
 					KFWeapon(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
-						PlaySound(PickupSound.Snd, PickupSound.Slot, PickupSound.Vol, PickupSound.bNoOverride, PickupSound.Radius, GetRandPitch(PickupSound.PitchRange), PickupSound.bUse3D);
+						PlaySound(PickupSound.Snd, PickupSound.Slot, PickupSound.Vol, PickupSound.bNoOverride, PickupSound.Radius, BaseActor.static.GetRandPitch(PickupSound.PitchRange), PickupSound.bUse3D);
 					Break;
 				}
 			}

@@ -24,6 +24,8 @@ var		float		RunAttackTimeout;
 
 var	class<FleshHitEmitter>	BileExplosion;
 var	class<FleshHitEmitter>	BileExplosionHeadless;
+var	Class<Projectile>		BileProjectileClass;
+
 
 //-------------------------------------------------------------------------------
 // NOTE: All Code resides in the child class(this class was only created to
@@ -32,8 +34,7 @@ var	class<FleshHitEmitter>	BileExplosionHeadless;
 
 defaultproperties
 {
-     EnergyToPenetrateHead=520.000000
-	 EnergyToPenetrateBody=1000.000000
+     BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
 	 MiniBossMaxSpeedScale=2.800000
      MeleeAnims(0)="BloatChop2"
      MeleeAnims(1)="BloatChop2"
@@ -53,10 +54,6 @@ defaultproperties
      PuntAnim="BloatPunt"
      Intelligence=BRAINS_Stupid
      bCanDistanceAttackDoors=True
-     bUseExtendedCollision=True
-     ColOffset=(Z=60.000000)
-     ColRadius=27.000000
-     ColHeight=22.000000
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.300000
      SeveredHeadAttachScale=1.700000
@@ -92,11 +89,20 @@ defaultproperties
      IdleWeaponAnim="BloatIdle"
      IdleRestAnim="BloatIdle"
      AmbientSound=Sound'KF_BaseBloat.Bloat_Idle1Loop'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.Bloat_Freak'
-     DrawScale=1.075000
-     PrePivot=(Z=5.000000)
-     Skins(0)=Combiner'KF_Specimens_Trip_T.bloat_cmb'
-     SoundVolume=200
+     
+	 Skins(0)=Combiner'KF_Specimens_Trip_T.bloat_cmb'
+	 Mesh=SkeletalMesh'UM_Bloat_A.Bloat_Mesh'
+	 MeshTestCollisionHeight=62.0
+	 MeshTestCollisionRadius=25.0
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=44.0,AreaImpactStrength=14.6)
+	 BaseEyeHeight=56.0
+	 EyeHeight=56.0
+	 // DrawScale
+	 DrawScale=1.075000
+	 
+	 SoundVolume=200
      Mass=400.000000
      RotationRate=(Yaw=45000,Roll=0)
 }

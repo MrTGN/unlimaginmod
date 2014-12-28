@@ -39,8 +39,6 @@ var float DeathTimer;
 
 defaultproperties
 {
-     EnergyToPenetrateHead=370.000000
-     EnergyToPenetrateBody=460.000000
 	 MiniBossMaxSpeedScale=2.500000
 	 ScreamRadius=700
      ScreamDamageType=Class'UnlimaginMod.UM_ZombieDamType_SirenScream'
@@ -74,11 +72,6 @@ defaultproperties
      ScreamDamage=8
      CrispUpThreshhold=7
      bCanDistanceAttackDoors=True
-     bUseExtendedCollision=True
-     ColOffset=(Z=48.000000)
-     ColRadius=25.000000
-     ColHeight=5.000000
-     ExtCollAttachBoneName="Collision_Attach"
      SeveredLegAttachScale=0.700000
      PlayerCountHealthScale=0.100000
      OnlineHeadshotOffset=(X=6.000000,Z=41.000000)
@@ -116,11 +109,20 @@ defaultproperties
      IdleWeaponAnim="Siren_Idle"
      IdleRestAnim="Siren_Idle"
      AmbientSound=Sound'KF_BaseSiren.Siren_IdleLoop'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.Siren_Freak'
-     DrawScale=1.050000
-     PrePivot=(Z=3.000000)
-     Skins(0)=FinalBlend'KF_Specimens_Trip_T.siren_hair_fb'
+     
+	 Skins(0)=FinalBlend'KF_Specimens_Trip_T.siren_hair_fb'
      Skins(1)=Combiner'KF_Specimens_Trip_T.siren_cmb'
+	 Mesh=SkeletalMesh'UM_Siren_A.Siren_Mesh'
+	 MeshTestCollisionHeight=50.0
+	 MeshTestCollisionRadius=14.0
+     BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=0.6,Y=-2.0,Z=0.0),AreaImpactStrength=5.6)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=34.8,AreaImpactStrength=6.9)
+	 BaseEyeHeight=44.0
+	 EyeHeight=44.0
+	 // DrawScale
+	 DrawScale=1.050000
+	 
      RotationRate=(Yaw=45000,Roll=0)
 }
 

@@ -192,7 +192,7 @@ function SpawnTwoShots()
 	FireStart = Location + (vect(30,0,64) >> Rotation) * DrawScale;
 	if ( !SavedFireProperties.bInitialized )  {
 		SavedFireProperties.AmmoClass = Class'SkaarjAmmo';
-		SavedFireProperties.ProjectileClass = Class'KFBloatVomit';
+		SavedFireProperties.ProjectileClass = BileProjectileClass;
 		SavedFireProperties.WarnTargetPct = 1;
 		SavedFireProperties.MaxRange = 500;
 		SavedFireProperties.bTossed = False;
@@ -203,23 +203,22 @@ function SpawnTwoShots()
 	}
 
     // Turn off extra collision before spawning vomit, otherwise spawn fails
-    ToggleAuxCollision(false);
-	// Fix By Tsiryuta G. N. for prevent Accessed None 'Controller'
+    //ToggleAuxCollision(false);
 	if ( Controller != None )
 		FireRotation = Controller.AdjustAim(SavedFireProperties,FireStart,600);
 	else
 		FireRotation = Rotation;
-	Spawn(Class'KFBloatVomit',,,FireStart,FireRotation);
+	Spawn(BileProjectileClass, self,, FireStart, FireRotation);
 
-	FireStart-=(0.5*CollisionRadius*Y);
+	FireStart -= 0.5 * CollisionRadius * Y;
 	FireRotation.Yaw -= 1200;
-	spawn(Class'KFBloatVomit',,,FireStart, FireRotation);
+	Spawn(BileProjectileClass, self,, FireStart, FireRotation);
 
-	FireStart+=(CollisionRadius*Y);
+	FireStart += CollisionRadius * Y;
 	FireRotation.Yaw += 2400;
-	spawn(Class'KFBloatVomit',,,FireStart, FireRotation);
+	Spawn(BileProjectileClass, self,, FireStart, FireRotation);
 	// Turn extra collision back on
-	ToggleAuxCollision(true);
+	//ToggleAuxCollision(true);
 }
 
 

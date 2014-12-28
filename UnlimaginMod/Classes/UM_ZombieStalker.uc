@@ -25,7 +25,7 @@ class UM_ZombieStalker extends UM_ZombieStalkerBase;
 simulated event PostBeginPlay()
 {
 	//Randomizing GrabChance
-	GrabChance = default.GrabChance * GetRandMult(MinGrabChance, MaxGrabChance);
+	GrabChance = default.GrabChance * BaseActor.static.GetRandFloat(MinGrabChance, MaxGrabChance);
 	CloakStalker();
 	Super.PostBeginPlay();
 }

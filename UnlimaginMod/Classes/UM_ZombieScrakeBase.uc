@@ -40,8 +40,6 @@ replication
 
 defaultproperties
 {
-     EnergyToPenetrateHead=680.000000
-     EnergyToPenetrateBody=960.000000
 	 SawAttackLoopSound=Sound'KF_BaseScrake.Chainsaw.Scrake_Chainsaw_Impale'
      ChainSawOffSound=SoundGroup'KF_ChainsawSnd.Chainsaw_Deselect'
      AttackChargeRate=2.500000
@@ -65,10 +63,6 @@ defaultproperties
      JumpSound=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Jump'
      bMeleeStunImmune=True
      Intelligence=BRAINS_Mammal
-     bUseExtendedCollision=True
-     ColOffset=(Z=55.000000)
-     ColRadius=29.000000
-     ColHeight=18.000000
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.100000
      PlayerCountHealthScale=0.500000
@@ -106,11 +100,20 @@ defaultproperties
      IdleWeaponAnim="SawZombieIdle"
      IdleRestAnim="SawZombieIdle"
      AmbientSound=Sound'KF_BaseScrake.Chainsaw.Scrake_Chainsaw_Idle'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.Scrake_Freak'
-     DrawScale=1.050000
-     PrePivot=(Z=3.000000)
-     Skins(0)=Shader'KF_Specimens_Trip_T.scrake_FB'
+     
+	 Skins(0)=Shader'KF_Specimens_Trip_T.scrake_FB'
      Skins(1)=TexPanner'KF_Specimens_Trip_T.scrake_saw_panner'
+	 Mesh=SkeletalMesh'UM_Scrake_A.Scrake_Mesh'
+	 MeshTestCollisionHeight=59.6
+	 MeshTestCollisionRadius=20.0
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.0,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.4,Z=0.0),AreaImpactStrength=10.0)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=20.0,AreaHeight=44.4,AreaImpactStrength=14.4)
+	 BaseEyeHeight=52.0
+	 EyeHeight=52.0
+	 // DrawScale
+	 DrawScale=1.050000
+	 
      SoundVolume=175
      SoundRadius=100.000000
      Mass=500.000000

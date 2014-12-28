@@ -83,7 +83,7 @@ var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
 var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
 
-var		UM_BaseWeapon		Weapon;
+var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
@@ -154,13 +154,13 @@ var				float						WeaponRecoilScale;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetInitial )
-		ProjectileEnergy;
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		ProjectileEnergy, PenetrationBonus, BounceBonus;
 	
-	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetInitial )
+	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SpawnTime;
 	
-	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetInitial )
+	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SpawnLocation;
 }
 
@@ -179,19 +179,6 @@ simulated function Reset()
 	PostBeginPlay();
 }
 
-// RandPitch
-simulated final function float GetRandPitch( range PitchRange )
-{
-	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )  {
-		if ( PitchRange.Min != PitchRange.Max )
-			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
-		else
-			Return PitchRange.Min;	// Just return Min Pitch
-	}
-	else
-		Return 1.0;
-}
-
 simulated static final function Vector GetDefaultCollisionExtent()
 {
 	Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
@@ -207,7 +194,7 @@ simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj
 	local	int		i;
 	
 	if ( default.ProjectileDiameter > 0.0 )  {
-		default.ProjectileCrossSectionalArea = Pi * default.ProjectileDiameter * default.ProjectileDiameter / 4.0;
+		default.ProjectileCrossSectionalArea = Pi * Sqrt(default.ProjectileDiameter) / 4.0;
 		if ( Proj != None )
 			Proj.ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
 		// ImpactSurfaces
@@ -305,7 +292,7 @@ simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj
 }
 
 // Veterancy Penetration and Bounce bonuses
-simulated function UpdateBonuses()
+function UpdateBonuses()
 {
 	local	KFPlayerReplicationInfo		KFPRI;
 	local	Class<UM_SRVeterancyTypes>	SRVT;
@@ -331,17 +318,20 @@ simulated event PreBeginPlay()
 	if ( !default.bDefaultPropertiesCalculated )
 		CalcDefaultProperties(Self);
 
-	if ( UM_BaseWeapon(Owner) != None )  {
-		[!]Weapon = UM_BaseWeapon(Owner);
-		//[!] Todo: подумать где и как хранить настройки и данные стволов, оружия и тп.
-		// Думаю, что это может быть функция, возвращающая данные по последнему выстрелу.
-		// Сами настройки хранить в Fire классе, а из оружия получать через функцию нужные
-		// характеристики по последнему выстрелу.
-		[!]Instigator = Weapon.Instigator;
+	/* Set Instigator on the Server.
+		Instigator will be replicated from the server to the clients. */
+	if ( Role == ROLE_Authority )  {
+		WeaponMuzzle = UM_BaseWeaponMuzzle(Owner);
+		if ( WeaponMuzzle != None && WeaponMuzzle.Instigator != None )
+			Instigator = WeaponMuzzle.Instigator;
+		else
+			Instigator = Pawn(Owner);
 		UpdateBonuses();
 	}
-	else if ( Pawn(Owner) != None )
-		Instigator = Pawn(Owner);
+		
+	//ToDo: проверить на глюки подгрузку в этом месте!
+	if ( !default.bAssetsLoaded )
+		PreloadAssets(self);
 	
 	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
 	if ( bInitialAcceleration )
@@ -478,8 +468,9 @@ simulated event PostBeginPlay()
 		}
     }
 	
+	/*ToDo: попробую переместить это в PreBeginPlay(). #Проверить!
 	if ( !default.bAssetsLoaded )
-		PreloadAssets(self);
+		PreloadAssets(self);	*/
 	
 	//[block] Copied from Projectile.uc
     // DynamicLight
@@ -493,6 +484,7 @@ simulated event PostBeginPlay()
 	}
 	bReadyToSplash = True;
 	//[end]
+	
 	if ( Role == ROLE_Authority )  {
 		// InitialUpdate on the server-side
 		ServerInitialUpdate();
@@ -716,21 +708,21 @@ simulated function ProcessHitActor(
 	UpdateProjectilePerformance();
 	VelNormal = Normal(Velocity);
 	
-	P = Pawn(A);
+	if ( UM_BallisticCollision(A) != None )  {
+		if ( UM_PawnHeadCollision(A) != None )
+			DamageAmount *= HeadShotDamageMult;	// HeadShot
+		EnergyLoss = UM_BallisticCollision(A).ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
+	}
 	// If projectile hit a Pawn
-	if ( P != None )  {
+	else if ( Pawn(A) != None )  {
+		P = Pawn(A);
 		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
 			DamageAmount *= HeadShotDamageMult;
 			if ( HeadShotDamageType != None )
 				DmgType = HeadShotDamageType;
 			// HeadShot EnergyLoss
-			if ( UM_Monster(P) != None )
-				EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(True) / PenetrationBonus;
-			else
-				EnergyLoss = EnergyToPenetratePawnHead / PenetrationBonus;
+			EnergyLoss = EnergyToPenetratePawnHead / PenetrationBonus;
 		}
-		else if ( UM_Monster(P) != None )
-			EnergyLoss = UM_Monster(P).GetPenetrationEnergyLoss(False) / PenetrationBonus;
 		else
 			EnergyLoss = EnergyToPenetratePawnBody / PenetrationBonus;
 	}
@@ -749,11 +741,11 @@ simulated function ProcessHitActor(
 		MakeNoise(1.0);
 	}
 	
-	// Updating Projectile
-	if ( P != None )
-		UpdateProjectilePerformance(True, EnergyLoss);
-	else if ( Mover(A) != None )
+	if ( Mover(A) != None )
 		ProcessHitWall(HitNormal);
+	// Updating Projectile
+	else if ( EnergyLoss > 0.0 )
+		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
 simulated function bool CanHitThisActor( Actor A )
@@ -776,21 +768,11 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 		if ( Mover(A.Base) != None )
 			A = A.Base;
 		
-		if ( Velocity == Vect(0.0, 0.0, 0.0) )  {
+		// [!] Todo: replace (Location + Velocity) by (Normal(Velocity) * UM_Monster(A).CollisionVSize)
+		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
+			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
 			TouchLocation = Location;
 			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
-		}
-		// [!] Todo: replace (Location + Velocity) by (Normal(Velocity) * UM_Monster(A).CollisionVSize)
-		else if ( A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
-			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
-			// TraceThisActor did't hit UM_Monster hitbox
-			if ( UM_Monster(A) != None )
-				Return False;
-			// TraceThisActor did't hit the actor
-			else  {
-				TouchLocation = Location;
-				TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
-			}
 		}
 		
 		Return True;

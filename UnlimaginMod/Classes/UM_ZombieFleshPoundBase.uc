@@ -51,8 +51,6 @@ replication
 
 defaultproperties
 {
-     EnergyToPenetrateHead=800.000000
-     EnergyToPenetrateBody=1200.000000
 	 BlockDamageReduction=0.400000
      RotMag=(X=500.000000,Y=500.000000,Z=600.000000)
      RotRate=(X=12500.000000,Y=12500.000000,Z=12500.000000)
@@ -83,10 +81,6 @@ defaultproperties
      SpinDamRand=20.000000
      bMeleeStunImmune=True
      Intelligence=BRAINS_Mammal
-     bUseExtendedCollision=True
-     ColOffset=(Z=52.000000)
-     ColRadius=36.000000
-     ColHeight=35.000000
      SeveredArmAttachScale=1.300000
      SeveredLegAttachScale=1.200000
      SeveredHeadAttachScale=1.500000
@@ -125,10 +119,20 @@ defaultproperties
      IdleWeaponAnim="PoundIdle"
      IdleRestAnim="PoundIdle"
      AmbientSound=Sound'KF_BaseFleshpound.FP_IdleLoop'
-     Mesh=SkeletalMesh'KF_Freaks_Trip.FleshPound_Freak'
-     PrePivot=(Z=0.000000)
-     Skins(0)=Combiner'KF_Specimens_Trip_T.fleshpound_cmb'
+     
+	 Skins(0)=Combiner'KF_Specimens_Trip_T.fleshpound_cmb'
      Skins(1)=Shader'KFCharacters.FPAmberBloomShader'
-     Mass=600.000000
+	 Mesh=SkeletalMesh'UM_FleshPound_A.FleshPound_Mesh'
+	 MeshTestCollisionHeight=70.0
+	 MeshTestCollisionRadius=26.0
+     BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.6,AreaBone="CHR_Head",AreaOffset=(X=2.5,Y=-2.5,Z=0.0),AreaImpactStrength=12.6)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=26.0,AreaHeight=50.8,AreaImpactStrength=18.8)
+	 BaseEyeHeight=62.0
+	 EyeHeight=62.0
+	 // DrawScale
+	 DrawScale=1.000000
+	 
+	 Mass=600.000000
      RotationRate=(Yaw=45000,Roll=0)
 }

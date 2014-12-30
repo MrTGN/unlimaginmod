@@ -203,8 +203,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieClot"
      EventClasses(1)="UnlimaginMod.UM_ZombieClot"
-     EventClasses(2)="UnlimaginMod.UM_ZombieClot_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieClot_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieClot_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieClot"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieClot_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieClot"
      DetachedArmClass=Class'KFChar.SeveredArmClot'
      DetachedLegClass=Class'KFChar.SeveredLegClot'
      DetachedHeadClass=Class'KFChar.SeveredHeadClot'

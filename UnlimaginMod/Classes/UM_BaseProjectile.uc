@@ -15,6 +15,7 @@
 //	Comments:		 Base Projectile class in UnlimaginMod
 //================================================================================
 class UM_BaseProjectile extends ROBallisticProjectile
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 
@@ -23,33 +24,10 @@ class UM_BaseProjectile extends ROBallisticProjectile
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	Maths = BaseActor.Maths;
-
-const	MeterInUU = Maths.MeterInUU;
-const	SquareMeterInUU = Maths.SquareMeterInUU;
-
-const	DegToRad = Maths.DegToRad;
-const	RadToDeg = Maths.RadToDeg;
-const	UnrRotToRad = Maths.UnrRotToRad;
-const 	RadToUnrRot = Maths.RadToUnrRot;
-const 	DegToUnrRot = Maths.DegToUnrRot;
-const 	UnrRotToDeg = Maths.UnrRotToDeg;
+const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
 const	EnergyToPenetratePawnHead = 400.0;
 const	EnergyToPenetratePawnBody = 520.0;
-
-// Read http://udn.epicgames.com/Two/SoundReference.html for more info
-struct	SoundData
-{
-	var	string		Ref;
-	var	sound		Snd;
-	var	ESoundSlot	Slot;
-	var	float		Vol;
-	var	bool		bNoOverride;
-	var	float		Radius;
-	var	Range		PitchRange;	// Random pitching within range
-	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
-};
 
 struct SurfaceImpactData
 {
@@ -96,7 +74,7 @@ var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time
 var(Headshots)	class<DamageType>	HeadShotDamageType;	// Headshot damage type
 var(Headshots)	float				HeadShotDamageMult;	// Headshot damage multiplier
 
-var				SurfaceImpactData	ImpactSurfaces[20];
+var		SurfaceImpactData	ImpactSurfaces[20];
 
 var				Vector		CollisionExtent;
 var				float		CollisionExtentVSize;
@@ -189,55 +167,36 @@ simulated final function float GetBallisticRandMult()
 	Return BallisticRandRange.Min + (BallisticRandRange.Max - BallisticRandRange.Min) * FRand();
 }
 
-simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
+simulated static function CalcDefaultProperties()
 {
 	local	int		i;
 	
 	if ( default.ProjectileDiameter > 0.0 )  {
 		default.ProjectileCrossSectionalArea = Pi * Sqrt(default.ProjectileDiameter) / 4.0;
-		if ( Proj != None )
-			Proj.ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
 		// ImpactSurfaces
-		for ( i = 0; i < ArrayCount(ImpactSurfaces); ++i )  {
+		for ( i = 0; i < ArrayCount(default.ImpactSurfaces); ++i )  {
 			// Surfaces ImpactStrength for this projectile
 			default.ImpactSurfaces[i].ImpactStrength *= default.ProjectileCrossSectionalArea;
 			default.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ImpactStrength * FMax((default.ProjectileDiameter / 2.0), 1.0);
-			if ( Proj != None )  {
-				Proj.ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
-				Proj.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
-			}
 		}
 	}
 	
 	// EffectiveRange
-	if ( default.EffectiveRange > 0.0 )  {
-		default.EffectiveRange = default.EffectiveRange * MeterInUU;
-		if ( Proj != None )
-			Proj.EffectiveRange = default.EffectiveRange;
-	}
+	if ( default.EffectiveRange > 0.0 )
+		default.EffectiveRange = default.EffectiveRange * Maths.static.GetMeterInUU();
 	// MaxEffectiveRange
-	if ( default.MaxEffectiveRange > 0.0 )  {
-		default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
-		if ( Proj != None )
-			Proj.MaxEffectiveRange = default.MaxEffectiveRange;
-	}
+	if ( default.MaxEffectiveRange > 0.0 )
+		default.MaxEffectiveRange = default.MaxEffectiveRange * Maths.static.GetMeterInUU();
 	
 	// Speed
 	if ( default.MuzzleVelocity > 0.0 )  {
-		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
+		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * Maths.static.GetMeterInUU();
 		default.Speed = default.MaxSpeed;
-		if ( Proj != None )  {
-			Proj.MaxSpeed = default.MaxSpeed;
-			Proj.Speed = default.MaxSpeed;
-		}
 	}
 	
 	if ( default.MaxSpeed > 0.0 )  {
-		if ( default.MinSpeed <= 0.0 )  {
-			default.MinSpeed = default.MaxSpeed * FullStopSpeedCoefficient;
-			if ( Proj != None )
-				Proj.MinSpeed = default.MinSpeed;
-		}
+		if ( default.MinSpeed <= 0.0 )
+			default.MinSpeed = default.MaxSpeed * default.FullStopSpeedCoefficient;
 		
 		// Calculating LifeSpan
 		if ( default.bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
@@ -247,32 +206,21 @@ simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj
 				if ( default.bInitialAcceleration )
 					default.LifeSpan += default.InitialAccelerationTime;
 			}
-			if ( Proj != None )
-				Proj.LifeSpan = default.LifeSpan;
 		}
 		
 		// Calculating SpeedSquaredToEnergy and EnergyToSpeedSquared
 		// (2 * SquareMeterInUU) because we need to convert 
 		// speed square from uu/sec to meter/sec
 		if ( default.ProjectileMass > 0.0 )  {
-			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * SquareMeterInUU);
-			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
-			if ( Proj != None )  {
-				Proj.SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
-				Proj.EnergyToSpeedSquared = default.EnergyToSpeedSquared;
-			}
+			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * Maths.static.GetSquareMeterInUU());
+			default.EnergyToSpeedSquared = (2.0 * Maths.static.GetSquareMeterInUU()) / default.ProjectileMass;
 		}
 	}
 	
 	// CollisionExtent
-	default.CollisionExtent = static.GetDefaultCollisionExtent();
+	default.CollisionExtent = GetDefaultCollisionExtent();
 	default.CollisionExtentVSize = VSize(default.CollisionExtent);
 	default.SurfaceTraceRange = default.CollisionExtentVSize + 16.0;
-	if ( Proj != None )  {
-		Proj.CollisionExtent = default.CollisionExtent;
-		Proj.CollisionExtentVSize = default.CollisionExtentVSize;
-		Proj.SurfaceTraceRange = default.SurfaceTraceRange;
-	}
 	
 	// Logging
 	/* if ( bEnableLogging )
@@ -282,49 +230,83 @@ simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj
 	} */
 	
 	// Assign BCInverse of this Projectile
-	if ( default.BCInverse <= 0.0 )  {
-		default.BCInverse = 1 / default.BallisticCoefficient;
-		if ( Proj != None )
-			Proj.BCInverse = default.BCInverse;
-	}
+	if ( default.BCInverse <= 0.0 )
+		default.BCInverse = 1.0 / default.BallisticCoefficient;
 	
 	default.bDefaultPropertiesCalculated = True;
+}
+
+simulated function ResetToDefaultProperties()
+{
+	local	int		i;
+	
+	ProjectileDiameter = default.ProjectileDiameter;
+	ProjectileCrossSectionalArea = default.ProjectileCrossSectionalArea;
+	// ImpactSurfaces
+	for ( i = 0; i < ArrayCount(default.ImpactSurfaces); ++i )  {
+		// Surfaces ImpactStrength for this projectile
+		ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
+		ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
+	}
+	// EffectiveRange
+	EffectiveRange = default.EffectiveRange;
+	// MaxEffectiveRange
+	MaxEffectiveRange = default.MaxEffectiveRange;
+	// Speed
+	MaxSpeed = default.MaxSpeed;
+	Speed = default.MaxSpeed;
+	MinSpeed = default.MinSpeed;
+	// LifeSpan
+	if ( default.bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )
+		LifeSpan = default.LifeSpan;
+	// SpeedSquaredToEnergy and EnergyToSpeedSquared
+	SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
+	EnergyToSpeedSquared = default.EnergyToSpeedSquared;
+	// CollisionExtent
+	CollisionExtent = default.CollisionExtent;
+	CollisionExtentVSize = default.CollisionExtentVSize;
+	SurfaceTraceRange = default.SurfaceTraceRange;
+	// Assign BCInverse of this Projectile
+	BCInverse = default.BCInverse;
 }
 
 // Veterancy Penetration and Bounce bonuses
 function UpdateBonuses()
 {
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
+	local	UM_PlayerReplicationInfo	PRI;
 	
-	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-	if ( KFPRI != None )  {
-		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
-		if ( SRVT != None )  {
-			PenetrationBonus *= SRVT.static.GetProjectilePenetrationBonus(KFPRI, Class) / ExpansionCoefficient;
-			BounceBonus *= SRVT.static.GetProjectileBounceBonus(KFPRI, Class) / ExpansionCoefficient;
-			Return;
-		}
+	if ( Instigator != None )
+		PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+	else
+		Log("Can't find Instigator in UpdateBonuses() function!", Name);
+	// Bonuses
+	if ( PRI != None )  {
+		PenetrationBonus *= PRI.GetProjectilePenetrationBonus(Class) / ExpansionCoefficient;
+		BounceBonus *= PRI.GetProjectileBounceBonus(Class) / ExpansionCoefficient;
 	}
-	
-	PenetrationBonus /= ExpansionCoefficient;
-	BounceBonus /= ExpansionCoefficient;
+	else  {	
+		PenetrationBonus /= ExpansionCoefficient;
+		BounceBonus /= ExpansionCoefficient;
+	}
 }
 
 simulated event PreBeginPlay()
 {
 	Super(Actor).PreBeginPlay();
 	
-	if ( !default.bDefaultPropertiesCalculated )
-		CalcDefaultProperties(Self);
+	if ( !default.bDefaultPropertiesCalculated )  {
+		CalcDefaultProperties();
+		ResetToDefaultProperties();
+	}
 
 	/* Set Instigator on the Server.
 		Instigator will be replicated from the server to the clients. */
 	if ( Role == ROLE_Authority )  {
-		WeaponMuzzle = UM_BaseWeaponMuzzle(Owner);
-		if ( WeaponMuzzle != None && WeaponMuzzle.Instigator != None )
-			Instigator = WeaponMuzzle.Instigator;
-		else
+		//WeaponMuzzle = UM_BaseWeaponMuzzle(Owner);
+		//if ( WeaponMuzzle != None && WeaponMuzzle.Instigator != None )
+			//Instigator = WeaponMuzzle.Instigator;
+		//else
+		if ( Pawn(Owner) != None )
 			Instigator = Pawn(Owner);
 		UpdateBonuses();
 	}
@@ -492,7 +474,7 @@ simulated event PostBeginPlay()
 		ServerSetInitialVelocity();
 	}
 	// Spawning the Trail
-	//SpawnTrail();
+	SpawnTrail();
 }
 
 /*	PostNetBeginPlay() is called directly after PostBeginPlay() on the server. 
@@ -501,8 +483,8 @@ simulated event PostNetBeginPlay()
 {
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
-	else	
-		SpawnTrail(); // Spawning the Trail
+	//else	
+		//SpawnTrail(); // Spawning the Trail
 }
 
 simulated static function float GetRange()
@@ -574,7 +556,7 @@ simulated function bool CanHurtPawn( Pawn P )
 				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 			Return False;
 	}
-	else ( InstigatorController != None && P.Controller != None )  {
+	else if ( InstigatorController != None && P.Controller != None )  {
 		if ( (!bCanHurtOwner && InstigatorController == P.Controller) 
 			 || (InstigatorController != P.Controller && UM_GameReplicationInfo(Level.GRI) != None
 				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatorController.GetTeamNum() == P.Controller.GetTeamNum()) )
@@ -663,6 +645,7 @@ simulated function SpawnHitEffects(
  optional	Actor			A )
 {
 	local	UM_BaseHitEffects	HitEffects;
+	local	Pawn				P;
 	
 	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
 		 && Level.DetailMode != DM_Low && HitEffectsClass != None )  {
@@ -673,11 +656,18 @@ simulated function SpawnHitEffects(
 			HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
 		// Play Hit Effects
 		if ( HitEffects != None )  {
-			if ( Pawn(A) != None && HitSurfaceType == EST_Default )  {
-				if ( Pawn(A).ShieldStrength > 0 )
-					HitSurfaceType = EST_MetalArmor;
+			if ( HitSurfaceType == EST_Default && A != None )  {
+				if ( UM_BallisticCollision(A) != None )
+					P = Pawn(A.Base);
 				else
-					HitSurfaceType = EST_Flesh;
+					P = Pawn(A);
+				// New HitSurfaceType for Pawn
+				if ( P != None )  {
+					if ( P.ShieldStrength > 0 )
+						HitSurfaceType = EST_MetalArmor;
+					else
+						HitSurfaceType = EST_Flesh;
+				}
 			}
 			HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
 		}
@@ -687,6 +677,18 @@ simulated function SpawnHitEffects(
 simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
+
+// Can damage this Actor
+simulated function bool CanHitThisActor( Actor A )
+{
+	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
+		Return False;
+	
+	if ( Pawn(A) != None )
+		Return CanHurtPawn( Pawn(A) );
+	
+	Return True;
+}
 
 simulated function ProcessHitActor( 
 	Actor				A, 
@@ -709,6 +711,7 @@ simulated function ProcessHitActor(
 	VelNormal = Normal(Velocity);
 	
 	if ( UM_BallisticCollision(A) != None )  {
+		P = Pawn(A.Base);
 		if ( UM_PawnHeadCollision(A) != None )
 			DamageAmount *= HeadShotDamageMult;	// HeadShot
 		EnergyLoss = UM_BallisticCollision(A).ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
@@ -726,7 +729,7 @@ simulated function ProcessHitActor(
 		else
 			EnergyLoss = EnergyToPenetratePawnBody / PenetrationBonus;
 	}
-
+	
 	// Hit effects
 	// Mover Hit effect will be spawned in the ProcessHitWall function
 	if ( Mover(A) == None )
@@ -748,20 +751,11 @@ simulated function ProcessHitActor(
 		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
-simulated function bool CanHitThisActor( Actor A )
-{
-	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
-		Return False;
-	
-	if ( Pawn(A) != None )
-		Return CanHurtPawn( Pawn(A) );
-	
-	Return True;
-}
-
 simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) )  {
+	/*	Todo: UM_Monster пока что вписана как затычка, дабы не снаряды реагировали на UM_BallisticCollision
+		и не реагировали на класс мностров. */
+	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || (UM_Monster(A) == None && A.bBlockActors)) )  {
 		if ( LastTouched != None && (A == LastTouched || A.Base == LastTouched) )
 			Return False;
 		

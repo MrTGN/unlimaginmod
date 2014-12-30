@@ -24,16 +24,6 @@ class UM_BaseActor extends Actor
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
-const	MeterInUU = Maths.MeterInUU;
-const	SquareMeterInUU = Maths.SquareMeterInUU;
-
-const	DegToRad = Maths.DegToRad;
-const	RadToDeg = Maths.RadToDeg;
-const	UnrRotToRad = Maths.UnrRotToRad;
-const 	RadToUnrRot = Maths.RadToUnrRot;
-const 	DegToUnrRot = Maths.DegToUnrRot;
-const 	UnrRotToDeg = Maths.UnrRotToDeg;
-
 // Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData
 {

@@ -48,7 +48,8 @@ replication
 
 event PreBeginPlay()
 {
-	Instigator = Pawn(Owner);
+	if ( Pawn(Owner) != None )
+		Instigator = Pawn(Owner);
 }
 
 simulated function vector GetCollisionExtetnt()
@@ -63,8 +64,10 @@ simulated function float GetCollisionVSize()
 
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
-	if ( Instigator != None )
-		Instigator.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
+	if ( Base != None )
+		Base.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
+	else
+		Log("No base Pawn!",Name);
 }
 
 //[end] Functions
@@ -81,11 +84,10 @@ defaultproperties
 	 bLightingVisibility=False
 	 bAcceptsProjectors=False
 	 // Collision flags
-	 bCollideActors=False
+	 bCollideActors=True
 	 bCollideWorld=False
 	 bBlockActors=False
 	 bBlockPlayers=False
-	 bBlockProjectiles=True
 	 bProjTarget=True
 	 bBlockZeroExtentTraces=True
 	 bBlockNonZeroExtentTraces=True
@@ -96,8 +98,8 @@ defaultproperties
 	 bIgnoreEncroachers=True
 	 bIgnoreOutOfWorld=True
 	 // Just default values
-	 CollisionRadius=1.0
-	 CollisionHeight=1.0
+	 CollisionRadius=0.0
+	 CollisionHeight=0.0
 	 // Advanced
 	 bGameRelevant=True
 	 bMovable=True

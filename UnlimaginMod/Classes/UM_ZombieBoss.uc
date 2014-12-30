@@ -1786,8 +1786,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieBoss"
      EventClasses(1)="UnlimaginMod.UM_ZombieBoss"
-     EventClasses(2)="UnlimaginMod.UM_ZombieBoss_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieBoss_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieBoss_HALLOWEEN"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieBoss_XMas"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieBoss"
+     EventClasses(3)="UnlimaginMod.UM_ZombieBoss"
      DetachedArmClass=Class'KFChar.SeveredArmPatriarch'
      DetachedLegClass=Class'KFChar.SeveredLegPatriarch'
      DetachedHeadClass=Class'KFChar.SeveredHeadPatriarch'

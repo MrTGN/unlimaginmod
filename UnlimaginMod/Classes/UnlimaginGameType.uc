@@ -68,6 +68,8 @@ var()	int		UM_FinalWave;
 var()	int		UM_MaxZombiesOnce; // Max zombies that can be in play at once
 var()	int		UM_TimeBetweenWaves;
 
+var		float	DefaultGameSpeed;
+
 var		Class<UM_ActorPool>		ActorPoolClass;
 
 var		class<KFMonstersCollection>		UM_MonsterCollection;
@@ -323,14 +325,6 @@ function NotifyGameEvent(int EventNumIn)
 		}
 		return;
 	}
-    else
-    {
-        //if we've already decided on doing an event, return
-        if(EventNum != EventNumIn && EventNum != 0)
-        {
-            return;
-        }
-    }
 
     if(EventNumIn == 2 )
     {
@@ -392,13 +386,15 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 	local	int			InjuredTeamNum, InstigatorTeamNum;
 	
 	// GodMode check
-	if ( Injured.InGodMode() || Injured.PhysicsVolume.bNeutralZone )  {
+	if ( Injured == None || Injured.InGodMode() || Injured.PhysicsVolume.bNeutralZone )  {
 		Momentum = vect(0.0, 0.0, 0.0);
 		Return 0;
 	}
 	
 	InjuredController = Injured.Controller;
-	InstigatorController = InstigatedBy.Controller;
+	if ( InstigatedBy != None )
+		InstigatorController = InstigatedBy.Controller;
+	
 	if ( InstigatorController == None )  {
 		InstigatorController = Injured.DelayedDamageInstigatorController;
 		if ( InstigatorController == None )
@@ -1338,17 +1334,12 @@ State MatchInProgress
 
 		if( KFGameLength != GL_Custom )
 		{
-
   		    NextSpawnSquad[0] = Class<KFMonster>(DynamicLoadObject(MonsterCollection.default.EndGameBossClass,Class'Class'));
   		    NextspawnSquad[0].static.PreCacheAssets(Level);
         }
         else
         {
             NextSpawnSquad[0] = Class<KFMonster>(DynamicLoadObject(EndGameBossClass,Class'Class'));
-            if(NextSpawnSquad[0].default.EventClasses.Length > eventNum)
-            {
-                NextSpawnSquad[0] = Class<KFMonster>(DynamicLoadObject(NextSpawnSquad[0].default.EventClasses[eventNum],Class'Class'));
-            }
   		    NextspawnSquad[0].static.PreCacheAssets(Level);
         }
 
@@ -1907,11 +1898,12 @@ defaultproperties
      UM_Waves(15)=(WaveMask=1073737728,WaveMaxMonsters=50,WaveDuration=255,WaveDifficulty=2.000000)
 
      //MonsterCollection
-	 //UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersCollection'
+	 MonsterCollection=Class'UnlimaginMod.UM_KFMonstersCollection'
+	 UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersCollection'
 	 //UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersSummerCollection'
 	 //UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersHalloweenCollection'
-	 MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
-	 UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
+	 //MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
+	 //UM_MonsterCollection=Class'UnlimaginMod.UM_KFMonstersXMasCollection'
  
 	 ZEDTimeDuration=3.000000
 	 ExitZedTime=0.500000

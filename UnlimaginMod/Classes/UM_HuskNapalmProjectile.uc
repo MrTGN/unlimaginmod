@@ -28,7 +28,7 @@ defaultproperties
 	 ExplosionDecal=Class'KFMod.FlameThrowerBurnMark'
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 StaticMeshRef="EffectsSM.Weapons.Ger_Tracer"
-	 AmbientSoundRed="KF_BaseHusk.Fire.husk_fireball_loop"
+	 AmbientSoundRef="KF_BaseHusk.Fire.husk_fireball_loop"
 	 LightType=LT_Steady
      LightHue=45
      LightSaturation=169

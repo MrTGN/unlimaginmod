@@ -18,7 +18,7 @@ var		class<Projectile>	SecondProjectileClass;
 var		int					AltProjPerFire;
 var		float				AltSpread;
 
-function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
+function UpdateFireProperties( Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
 	
@@ -36,44 +36,42 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 	}
 	
 	//[block] Switching ProjectileClass, ProjPerFire and Spread by Perk Index
-	if ( KFPRI != None && SRVT != None )  {
-		if ( bChangeProjByPerk  )  {
-			// Assign default.PerkIndex
-			DefPerkIndex = KFPRI.ClientVeteranSkill.default.PerkIndex;
-			if ( UM_KSGShotgun(Weapon) != None && UM_KSGShotgun(Weapon).bWideSpread )  {
-				// Checking and assigning ProjectileClass
-				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjClass != None )
-					ProjectileClass = PerkProjsInfo[DefPerkIndex].SecondPerkProjClass;
-				
-				// Checking and assigning ProjPerFire
-				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire > 0 )
-					ProjPerFire = PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire;
-				
-				// Checking and assigning Spread
-				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread > 0.0 )
-					Spread = PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread;
-				
-				// Checking and assigning MaxSpread
-				if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread > 0.0 )
-					MaxSpread = PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread;
-			}
-			else  {
-				// Checking and assigning ProjectileClass
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
-					ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
-				
-				// Checking and assigning ProjPerFire
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
-					ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
-				
-				// Checking and assigning Spread
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
-					Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
-				
-				// Checking and assigning MaxSpread
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
-					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
-			}
+	if ( SRVT != None && bChangeProjByPerk )  {
+		// Assign default.PerkIndex
+		DefPerkIndex = SRVT.default.PerkIndex;
+		if ( UM_KSGShotgun(Weapon) != None && UM_KSGShotgun(Weapon).bWideSpread )  {
+			// Checking and assigning ProjectileClass
+			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjClass != None )
+				ProjectileClass = PerkProjsInfo[DefPerkIndex].SecondPerkProjClass;
+			
+			// Checking and assigning ProjPerFire
+			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire > 0 )
+				ProjPerFire = PerkProjsInfo[DefPerkIndex].SecondPerkProjPerFire;
+			
+			// Checking and assigning Spread
+			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread > 0.0 )
+				Spread = PerkProjsInfo[DefPerkIndex].SecondPerkProjSpread;
+			
+			// Checking and assigning MaxSpread
+			if ( PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread > 0.0 )
+				MaxSpread = PerkProjsInfo[DefPerkIndex].SecondPerkProjMaxSpread;
+		}
+		else  {
+			// Checking and assigning ProjectileClass
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
+				ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
+			
+			// Checking and assigning ProjPerFire
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
+				ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
+			
+			// Checking and assigning Spread
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
+				Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
+			
+			// Checking and assigning MaxSpread
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
+				MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
 		}
 	}
 	//[end]

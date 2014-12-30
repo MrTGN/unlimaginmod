@@ -14,21 +14,21 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 Base weapon class in UnlimaginMod
 //================================================================================
-class UM_BaseWeapon extends KFWeapon
+class UM_BaseWeapon extends KFWeapon 
+	DependsOn(UM_BaseActor)
 	Abstract;
-
 
 //========================================================================
 //[block] Variables
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-var		BaseActor.SoundData		ModeSwitchSound;
+var		UM_BaseActor.SoundData	ModeSwitchSound;
 
 var		bool					bHasTacticalReload, bAllowInterruptReload;	// bHasTacticalReload allows to turn on/off TacticalReload
 var		int						TacticalReloadCapacityBonus;	// 0 - no capacity bonus on TacticalReload; 1 - MagCapacity + 1 ...
 
-var		BaseActor.AnimData		TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
+var		UM_BaseActor.AnimData	TacticalReloadAnim;		// Short tactical reload animation. If TacticalReloadAnim has another AnimRate use TacticalReloadAnim.Rate to set it.
 var		float					TacticalReloadTime;		// Time needed to play TacticalReloadAnim
 
 //Todo: ïåðåíåñòè ýòè ïåðåìåííûå íà AnimData
@@ -42,9 +42,9 @@ var		byte					AutoReloadRequestsNum;
 var		Class< UM_BaseTacticalModule >			TacticalModuleClass;
 var		UM_BaseTacticalModule					TacticalModule;
 var		name									TacticalModuleBone;
-var		BaseActor.AnimData						TacticalModuleToggleAnim;
+var		UM_BaseActor.AnimData					TacticalModuleToggleAnim;
 var		float									TacticalModuleToggleTime;
-var		BaseActor.SoundData						TacticalModuleToggleSound;
+var		UM_BaseActor.SoundData					TacticalModuleToggleSound;
 var		bool									bTacticalModuleIsActive;
 
 var		float					OwnerMovementModifier;	// Owner movement speed modifier
@@ -135,7 +135,7 @@ simulated static function bool UnloadAssets()
 
 //[block] Sound functions
 // Play a sound effect from the SoundData struct with replication from the server to the clients.
-final function ServerPlaySoundData( SoundData SD, optional float VolMult )
+final function ServerPlaySoundData( UM_BaseActor.SoundData SD, optional float VolMult )
 {
 	// VolMult
 	if ( VolMult > 0.0 )
@@ -150,7 +150,7 @@ final function ServerPlaySoundData( SoundData SD, optional float VolMult )
 }
 
 // Play a sound effect from the SoundData struct without server replication.
-simulated final function ClientPlaySoundData( SoundData SD, optional float VolMult )
+simulated final function ClientPlaySoundData( UM_BaseActor.SoundData SD, optional float VolMult )
 {
 	// VolMult
 	if ( VolMult > 0.0 )
@@ -166,7 +166,7 @@ simulated final function ClientPlaySoundData( SoundData SD, optional float VolMu
 
 // play a sound effect, but don't propagate to a remote owner
 // (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMult )
+simulated final function PlayOwnedSoundData( UM_BaseActor.SoundData SD, optional float VolMult )
 {
 	// VolMult
 	if ( VolMult > 0.0 )
@@ -183,7 +183,7 @@ simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMul
 
 //[block] Animation functions
 // Play the animation once
-simulated final function PlayAnimData( AnimData AD, optional float RateMult )
+simulated final function PlayAnimData( UM_BaseActor.AnimData AD, optional float RateMult )
 {
 	// Rate
 	if ( AD.Rate <= 0.0 )
@@ -199,7 +199,7 @@ simulated final function PlayAnimData( AnimData AD, optional float RateMult )
 }
 
 // Loop the animation playback
-simulated final function LoopAnimData( AnimData AD, optional float RateMult )
+simulated final function LoopAnimData( UM_BaseActor.AnimData AD, optional float RateMult )
 {
 	// Rate
 	if ( AD.Rate <= 0.0 )
@@ -211,6 +211,15 @@ simulated final function LoopAnimData( AnimData AD, optional float RateMult )
 	LoopAnim(AD.Anim, AD.Rate, AD.TweenTime, AD.Channel);
 }
 //[end]
+
+simulated final function Vector GetBoneLocation( name BoneName )
+{
+	if ( BoneName != '' )
+		Return GetBoneCoords(BoneName).Origin;
+	else
+		Return vect(0.0, 0.0, 0.0);
+}
+
 
 // Notification on the server and on the client-owner that HumanOwner veterancy has been changed.
 // Called from the UM_HumanPawn.
@@ -239,8 +248,8 @@ simulated event PostBeginPlay()
 			FireMode[m] = new(self) FireModeClass[m];
 			if ( FireMode[m] != None )  {
 				// Go to State 'Initialization'
-				if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
-					UM_BaseProjectileWeaponFire(FireMode[m]).GotoState('Initialization');
+				//if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+					//UM_BaseProjectileWeaponFire(FireMode[m]).GotoState('Initialization');
 				//ToDo: ïåðåðàáîòàòü è âûíåñòè ïîèñê ïàòðîíîâ â îòäåëüíóþ ôóíêöèþ.
 				AmmoClass[m] = FireMode[m].AmmoClass;
 			}
@@ -299,14 +308,15 @@ simulated event PostBeginPlay()
 }
 
 // Called after PostBeginPlay.
+/*
 simulated event SetInitialState()
 {
 	bScriptInitialized = True;
 	GotoState(InitialState);
-}
+}	*/
 
 
-simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
+simulated function GetViewAxes( out vector XAxis, out vector YAxis, out vector ZAxis )
 {
 	GetAxes( Instigator.GetViewRotation(), XAxis, YAxis, ZAxis );
 }
@@ -587,7 +597,7 @@ simulated function IncrementFlashCount(int Mode)
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
         ++UMWA.FlashCount;
-		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
+		UMWA.NetUpdateTime = Level.TimeSeconds - 1.0;
         UMWA.ThirdPersonEffects();
     }
 }
@@ -600,7 +610,7 @@ simulated function ZeroFlashCount(int Mode)
 	if ( UMWA != None )  {
         UMWA.FiringMode = Mode;
         UMWA.FlashCount = 0;
-		UMWA.NetUpdateTime = Level.TimeSeconds - 1;
+		UMWA.NetUpdateTime = Level.TimeSeconds - 1.0;
         UMWA.ThirdPersonEffects();
     }
 }
@@ -950,8 +960,6 @@ function AddReloadedAmmo()
 
 function bool AllowReload()
 {
-	local	int		Mode;
-	
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
 	//Bots Reloading
@@ -1144,7 +1152,7 @@ simulated function Timer()
 			
 			ClientState = WS_Hidden;
 			// Client side call
-			if ( Role < ROLE_Authority )
+			//if ( Role < ROLE_Authority )
 				Instigator.ChangedWeapon();
 			
 			if ( Instigator.Weapon == self )  {
@@ -1220,8 +1228,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	IdleAnim = default.IdleAnim;
 
 	// From Weapon.uc
-    if ( ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || 
-		 KFPawn(Instigator).bIsQuickHealing > 0 )  {
+    if ( ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
 		PlayOwnedSound(SelectSound, SLOT_Interact,,,,, false);
 		ClientPlayForceFeedback(SelectForce);  // jdf
 
@@ -1479,10 +1486,10 @@ simulated function ClearReferencesToThisWeapon()
 	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
 		// Resets bool
 		bSaveThisAmmo = False;
-		if ( Ammo(m) != None )  {
+		if ( Ammo[m] != None )  {
 			// Check Ammo to save it for other weapon
 			for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
-				if ( I = Ammo(m) )  {
+				if ( I == Ammo[m] )  {
 					bSaveThisAmmo = True;
 					Break;
 				}
@@ -1491,9 +1498,9 @@ simulated function ClearReferencesToThisWeapon()
 			}
 			
 			if ( !bSaveThisAmmo )  {
-				Instigator.DeleteInventory( Ammo(m) );
-				Ammo(m).Destroy();
-				Ammo(m) = None;
+				Instigator.DeleteInventory( Ammo[m] );
+				Ammo[m].Destroy();
+				Ammo[m] = None;
 			}
 		}
 	}
@@ -1549,7 +1556,7 @@ simulated function ClientWeaponSet( bool bPossiblySwitch )
 	}
 	
 	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
-		if ( FireModeClass[m] != None && (FireMode[m] == None || (FireMode[m].AmmoClass != None && !bNoAmmoInstances && FireMode[m].AmmoPerFire > 0 && Ammo[m] == None)) )  {
+		if ( FireModeClass[m] != None && (FireMode[m] == None || (FireMode[m].AmmoClass != None && !bNoAmmoInstances && Ammo[m] == None && FireMode[m].AmmoPerFire > 0)) )  {
 			GotoState('PendingClientWeaponSet');
 			Return;
 		}
@@ -1675,13 +1682,7 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	// added class check because somebody made FindInventoryType() return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
 		bJustSpawned = True;
-		// From Inventory GiveTo()
-		if ( Instigator.AddInventory( Self ) )
-			GotoState('');
-		else  {
-			Destroy();
-			Return;
-		}
+		Super(Inventory).GiveTo(Other);
 		bPossiblySwitch = True;
 		W = Self;
 	}
@@ -1708,7 +1709,7 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	
 	if ( !bJustSpawned )  {
 		for ( m = 0; m < NUM_FIRE_MODES; ++m )
-			Ammo(m) = None;
+			Ammo[m] = None;
 		
 		Destroy();
 		Return;
@@ -1716,6 +1717,39 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	
 	if ( SWAmmo > 0 )
 		AddAmmo(Clamp(SWAmmo, 0, MaxAmmo(0)), 0);
+}
+
+function SilentGiveTo(Pawn Other, optional Pickup Pickup)
+{
+	local	int					m;
+    local	Weapon				W;
+    local	bool				bJustSpawned;
+	
+	Instigator = Other;
+	W = Weapon(Instigator.FindInventoryType(Class));
+	if ( W == None || W.Class != Class )  {
+		bJustSpawned = True;
+		GiveTo(Other);
+		W = Self;
+	}
+	// Giving ammo
+	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
+		if ( FireMode[m] != None )  {
+			// Sets the FireMode Instigator
+			if ( UM_BaseProjectileWeaponFire(FireMode[m]) != None )
+				UM_BaseProjectileWeaponFire(FireMode[m]).SetInstigator(Instigator);
+			else
+				FireMode[m].Instigator = Instigator;
+			W.GiveAmmo(m, WeaponPickup(Pickup), bJustSpawned);
+		}
+	}
+	
+	if ( !bJustSpawned )  {
+		for ( m = 0; m < NUM_FIRE_MODES; ++m )
+			Ammo[m] = None;
+		
+		Destroy();
+	}
 }
 
 simulated function ClientWeaponThrown()

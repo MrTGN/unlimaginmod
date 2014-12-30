@@ -598,8 +598,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieFleshPound"
      EventClasses(1)="UnlimaginMod.UM_ZombieFleshPound"
-     EventClasses(2)="UnlimaginMod.UM_ZombieFleshPound_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieFleshPound_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieFleshPound_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieFleshPound"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieFleshPound_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieFleshPound"
      DetachedArmClass=Class'KFChar.SeveredArmPound'
      DetachedLegClass=Class'KFChar.SeveredLegPound'
      DetachedHeadClass=Class'KFChar.SeveredHeadPound'

@@ -587,8 +587,10 @@ defaultproperties
      BileExplosionHeadless=Class'KFMod.BileExplosionHeadless'
      EventClasses(0)="UnlimaginMod.UM_ZombieBloat"
      EventClasses(1)="UnlimaginMod.UM_ZombieBloat"
-     EventClasses(2)="UnlimaginMod.UM_ZombieBloat_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieBloat_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieBloat_HALLOWEEN"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieBloat_XMas"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieBloat"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieBloat"
      DetachedArmClass=Class'KFChar.SeveredArmBloat'
      DetachedLegClass=Class'KFChar.SeveredLegBloat'
      DetachedHeadClass=Class'KFChar.SeveredHeadBloat'

@@ -23,7 +23,6 @@ class UM_SyringeFire extends UM_SyringeAltFire;
 
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
-var				float			HealBoostAmount;
 var				float			HealingRange;
 var				float			MaxPatientSearchAngle; // Maximum deviation angle (in degrees) from the view axis to find Patient
 var	transient	UM_HumanPawn	Patient;
@@ -60,7 +59,7 @@ function UM_HumanPawn FindPatient()
 	TraceStart = Instigator.Location + Instigator.EyePosition();
 	ViewDir = UM_HumanPawn(Instigator).GetViewDirection();
 	
-	NewPatient = UM_HumanPawn( Instigator.Trace(HitLoc, HitNorm, (StartTrace + ViewDir * HealingRange), TraceStart, True) );
+	NewPatient = UM_HumanPawn( Instigator.Trace(HitLoc, HitNorm, (TraceStart + ViewDir * HealingRange), TraceStart, True) );
 	if ( NewPatient != None && !NewPatient.bDeleteMe && NewPatient != Instigator && NewPatient.CanBeHealed(UM_Syringe(Weapon).bCanOverheal, UM_HumanPawn(Instigator)) )
 		Return NewPatient;
 	
@@ -107,7 +106,7 @@ function ServerAttemptHeal()
 		// No Patient Speech
 		if ( Level.TimeSeconds >= NextNoPatientSpeechTime )  {
 			foreach Instigator.VisibleCollidingActors( Class'UM_HumanPawn', PotentialPatient, PotentialPatientSearchRange, Instigator.Location, True )  {
-				if ( PotentialPatient != None && !PotentialPatient.bDeleteMe && PotentialPatient != Instigator &&
+				if ( PotentialPatient != None && !PotentialPatient.bDeleteMe && PotentialPatient != Instigator
 					 && PotentialPatient.CanBeHealed(UM_Syringe(Weapon).bCanOverheal, UM_HumanPawn(Instigator)) )  {
 					NextNoPatientSpeechTime = Level.TimeSeconds + NoPatientSpeechDelay;
 					UM_PlayerController(Instigator.Controller).Speech('AUTO', 5, "");

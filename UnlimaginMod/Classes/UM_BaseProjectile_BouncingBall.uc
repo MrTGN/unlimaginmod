@@ -15,13 +15,14 @@
 //	Comments:		 Metal ball for the Berserker =)
 //================================================================================
 class UM_BaseProjectile_BouncingBall extends UM_BaseProjectile_Bullet
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 
 //========================================================================
 //[block] Variables
 
-var		SoundData	PickupSound;
+var		UM_BaseActor.SoundData	PickupSound;
 
 //[end] Varibles
 //====================================================================

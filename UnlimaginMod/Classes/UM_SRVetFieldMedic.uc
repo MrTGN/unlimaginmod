@@ -78,7 +78,7 @@ static function float GetSyringeChargeRate(KFPlayerReplicationInfo KFPRI)
 static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, Weapon W )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && Syringe(W) != None )
-		Return 1.00 + 0.01 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));	// Up to 10% bonus
+		Return 1.00 + 0.01 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 10% bonus
 	
 	Return 1.0;
 }

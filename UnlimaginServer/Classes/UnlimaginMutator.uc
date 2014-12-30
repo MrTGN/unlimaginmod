@@ -148,7 +148,7 @@ event PostBeginPlay()
 		}
 	}
 	
-	if ( Class'UM_AData'.default.WeapInfoGen == None )
+	if ( Class'UM_GlobalData'.default.WeapInfoGen == None )
 		Spawn(Class'UM_WeaponInfoGenerator');
 	
 	// Load custom chars.
@@ -244,7 +244,7 @@ event Timer()
 		i = PendingPlayers.Length - 1;
 		if ( PendingPlayers[i] != None && PendingPlayers[i].Player != None )  {
 			// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
-			UM_PlayerController(PendingPlayers[i]).bUseAdvBehindview = bEnhancedShoulderView;
+			PendingPlayers[i].bUseAdvBehindview = bEnhancedShoulderView;
 			if ( UM_ServerStStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
 				// Has stats but not what we need
 				if ( PendingPlayers[i].SteamStatsAndAchievements != None )
@@ -454,8 +454,8 @@ Begin:
 	}
 	CheckWinOrLose();
 	SaveStats();
-	if ( Class'UM_AData'.default.WeapInfoGen != None )
-		Class'UM_AData'.default.WeapInfoGen.Destroy();
+	if ( Class'UM_GlobalData'.default.WeapInfoGen != None )
+		Class'UM_GlobalData'.default.WeapInfoGen.Destroy();
 }
 
 final function ReceivedPlayerID( string S )
@@ -514,7 +514,7 @@ final function GetRemoteStatsForPlayer( UM_ServerStStats Other )
 
 	if ( Link==None || !Link.bConnectionReady )
 		Return;
-	Link.SendText(Link.A,Chr(Link.ENetID.ID_NewPlayer)$Other.MyStatsObject.Name$"*"$GetSafeName(Other.PlayerOwner.PlayerReplicationInfo.PlayerName));
+	Link.SendText(Link.A,Chr(Link.ENetID.ID_NewPlayer)$Other.MyStatsObject.Name$"*"$GetSafeName(Other.OwnerController.PlayerReplicationInfo.PlayerName));
 	
 	for ( i = 0; i < PendingData.Length; ++i )
 		if ( PendingData[i] == Other )
@@ -709,7 +709,6 @@ defaultproperties
 	ModServerPackages(0)="UnlimaginMod.u"
 	ModServerPackages(1)="UnlimaginMod_Snd.uax"
 	ModServerPackages(2)="UnlimaginMod_T.utx"
-	ModServerPackages(3)="UM_Monsters_A.utx"
 	//Whisky_ColtM1911
 	ModServerPackages(4)="IJCWeaponPackSoundsW2.uax"
 	ModServerPackages(5)="UM_WM1911Pistol_A.ukx"
@@ -830,7 +829,18 @@ defaultproperties
 	ModServerPackages(91)="whisky_hammer_A.ukx"
 	ModServerPackages(92)="WHammer_SM.usx"
 	ModServerPackages(93)="whisky_hammer_T.utx"
-	//
+	// UM_Monsters
+	ModServerPackages(94)="UM_Bloat_A.ukx"
+	ModServerPackages(95)="UM_Clot_A.ukx"
+	ModServerPackages(96)="UM_Crawler_A.ukx"
+	ModServerPackages(97)="UM_FleshPound_A.ukx"
+	ModServerPackages(98)="UM_GoreFast_A.ukx"
+	ModServerPackages(99)="UM_Husk_A.ukx"
+	ModServerPackages(100)="UM_Patriarch_A.ukx"
+	ModServerPackages(101)="UM_Scrake_A.ukx"
+	ModServerPackages(102)="UM_Siren_A.ukx"
+	ModServerPackages(103)="UM_Stalker_A.ukx"
 	//ModServerPackages()=""
+	
 	//[end]
 }

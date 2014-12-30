@@ -1,15 +1,15 @@
 //=============================================================================
 // UM_HumanPawn
 //=============================================================================
-class UM_HumanPawn extends KFHumanPawn;
+class UM_HumanPawn extends KFHumanPawn
+	DependsOn(UnlimaginMaths);
 
 //========================================================================
 //[block] Variables
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	MeterInUU = BaseActor.MeterInUU;
-const	SquareMeterInUU = BaseActor.SquareMeterInUU;
+const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
 var		bool						bDefaultPropertiesCalculated;
 
@@ -22,8 +22,8 @@ var		UM_Syringe					Syringe;
 var		float						VeterancySyringeChargeModifier;	// ToDo: переместить это в класс лечелки, после её полноценного перевода на мой базовый класс
 
 // Replication triggers
-var		bool						bPRIChangedTrigger, bClientPRIChangedTrigger;
-var		bool						bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
+var		byte						PRIChangedTrigger, ClientPRIChangedTrigger;
+var		byte						VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
 
 // DyingMessage
 var		int							DyingMessageHealth;
@@ -85,12 +85,13 @@ var		float						DefaultMoneyPerHealedHealth;
 // Overheal
 var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
 var		float						OverhealReductionPerSecond;
+var		transient	float			NextOverhealReductionTime;
 var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
 var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
 var		float						VeterancyOverhealPotency;	// Bonus to overheal somebody
 
 // Overweight
-var		float						WeightMovementModifier
+var		float						WeightMovementModifier;
 var		float						MaxOverweightScale;
 var		float						MaxCarryOverweight;
 var		float						OverweightMovementModifier;
@@ -108,7 +109,6 @@ var		float						DrugsBlurIntensity;
 
 // Jumping
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
-var		float						RandJumpModif;
 var		range						JumpRandRange;
 var		float						VeterancyJumpBonus;
 var		float						WeightJumpModifier;
@@ -143,10 +143,10 @@ var		transient	float			SurvivedAfterScreamTime;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FireSpeedModif, bPRIChangedTrigger;
+		FireSpeedModif, PRIChangedTrigger;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		bVeterancyChangedTrigger, RandJumpModif;
+		VeterancyChangedTrigger;
 }
 
 //[end] Replication
@@ -157,7 +157,7 @@ replication
 
 simulated function CalcDefaultProperties()
 {
-	default.IntuitiveShootingRange *= MeterInUU;
+	default.IntuitiveShootingRange *= Maths.static.GetMeterInUU();
 	IntuitiveShootingRange = default.IntuitiveShootingRange;
 	
 	default.bDefaultPropertiesCalculated = True;
@@ -171,7 +171,6 @@ simulated event PreBeginPlay()
 	// Server
 	if ( Role == ROLE_Authority )  {
 		Super.PreBeginPlay();
-		RandJumpModif = BaseActor.static.GetRandRangeFloat( JumpRandRange );
 		// Issue #207
 		SetTimer(1.5, True);
 	}
@@ -224,7 +223,7 @@ function Inventory FindInventoryItem( class<Inventory> DesiredClass, optional bo
 	if ( bSearchForSubclasses )  {
 		Count = 0;
 		for ( Inv = Inventory; Inv != None && Count < 1000; Inv = Inv.Inventory )  {
-			if ( DesiredClass(Inv.Class) != None )
+			if ( ClassIsChildOf(Inv.Class, DesiredClass) )
 				Return Inv;
 			++Count;
 		}
@@ -243,7 +242,7 @@ function CreateInventory( string InventoryClassName )
 	
 	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
 	if ( InventoryClass != None && FindInventoryItem(InventoryClass) == None )  {
-		Inv = Spawn(InventoryClass);
+		Inv = Spawn(InventoryClass, Self);
 		if ( Inv != None )  {
 			Inv.GiveTo(self);
 			if ( Inv != None )  {
@@ -269,20 +268,18 @@ function AddDefaultInventory()
 {
 	local	int	i;
 	
-	// Default Veterancy Inventory
-	if ( UM_PlayerRepInfo != None && UM_PlayerRepInfo.AddDefaultVeterancyInventory(self) )
-		Level.Game.AddGameSpecificInventory(self);	// GameSpecificInventory
-	// Locally Controlled
-	else if ( IsLocallyControlled() )  {
-		// RequiredEquipment
-		for ( i = 0; i < ArrayCount(RequiredEquipment); ++i )  {
-			if ( RequiredEquipment[i] != "" )
-				CreateInventory(RequiredEquipment[i]);
-		}
-		// OptionalEquipment
-		for ( i = 0; i < ArrayCount(OptionalEquipment); ++i )  {
-			if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
-				CreateInventory(OptionalEquipment[i]);
+	if ( IsLocallyControlled() )  {
+		if ( UM_PlayerRepInfo == None || !UM_PlayerRepInfo.AddDefaultVeterancyInventory(self) )  {
+			// RequiredEquipment
+			for ( i = 0; i < ArrayCount(RequiredEquipment); ++i )  {
+				if ( RequiredEquipment[i] != "" )
+					CreateInventory(RequiredEquipment[i]);
+			}
+			// OptionalEquipment
+			for ( i = 0; i < ArrayCount(OptionalEquipment); ++i )  {
+				if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
+					CreateInventory(OptionalEquipment[i]);
+			}
 		}
 		// GameSpecificInventory
 	    Level.Game.AddGameSpecificInventory(self);
@@ -291,15 +288,17 @@ function AddDefaultInventory()
 	else  {
 	    // GameSpecificInventory
 		Level.Game.AddGameSpecificInventory(self);
-		// OptionalEquipment
-		for ( i = ArrayCount(OptionalEquipment); i > 0; --i )  {
-			if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
-				CreateInventory(OptionalEquipment[i]);
-		}
-		// RequiredEquipment
-		for ( i = ArrayCount(RequiredEquipment); i > 0; --i )  {
-			if ( RequiredEquipment[i] != "" )
-				CreateInventory(RequiredEquipment[i]);
+		if ( UM_PlayerRepInfo == None || !UM_PlayerRepInfo.AddDefaultVeterancyInventory(self) )  {
+			// OptionalEquipment
+			for ( i = ArrayCount(OptionalEquipment); i > 0; --i )  {
+				if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
+					CreateInventory(OptionalEquipment[i]);
+			}
+			// RequiredEquipment
+			for ( i = ArrayCount(RequiredEquipment); i > 0; --i )  {
+				if ( RequiredEquipment[i] != "" )
+					CreateInventory(RequiredEquipment[i]);
+			}
 		}
 	}
 	
@@ -314,7 +313,7 @@ simulated event PostBeginPlay()
 {
 	Super(Pawn).PostBeginPlay();
 	
-	if ( Role == ROLE_Authority && Level.bStartup && !bNoDefaultInventory )
+	if ( Level.bStartup && !bNoDefaultInventory )
 		AddDefaultInventory();
 	
 	AssignInitialPose();
@@ -336,7 +335,7 @@ simulated event PostBeginPlay()
 // my PRI now has a new team
 simulated function NotifyTeamChanged()
 {
-	bClientPRIChangedTrigger = bPRIChangedTrigger;
+	ClientPRIChangedTrigger = PRIChangedTrigger;
 	
 	if ( PlayerReplicationInfo != None )
 		Setup(class'xUtil'.static.FindPlayerRecord(PlayerReplicationInfo.CharacterName));
@@ -352,20 +351,32 @@ simulated function NotifyTeamChanged()
 simulated event ClientTrigger()
 {
 	// PlayerReplicationInfo has changed
-	if ( bClientPRIChangedTrigger != bPRIChangedTrigger )
+	if ( ClientPRIChangedTrigger != PRIChangedTrigger )
 		NotifyTeamChanged();
 	
 	// Veterancy has changed (only client-owner receive this)
-	if ( bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
+	if ( ClientVeterancyChangedTrigger != VeterancyChangedTrigger )
 		NotifyVeterancyChanged();
 }
 
 simulated event PostNetReceive() { }
 
-// GroundSpeed always replicated from the server to the client-owner
 function UpdateGroundSpeed()
 {
-	GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+	// GroundSpeed always replicated from the server to the client-owner
+	if ( Role == ROLE_Authority )  {
+		GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+}
+
+function UpdateJumpZ()
+{
+	// JumpZ always replicated from the server to the client-owner
+	if ( Role == ROLE_Authority )  {
+		JumpZ = default.JumpZ * CarryWeightJumpModifier * VeterancyJumpBonus * BaseActor.static.GetRandRangeFloat( JumpRandRange );
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
 }
 
 // Movement speed according to the healths
@@ -414,6 +425,7 @@ function SetCarryWeight( float NewCarryWeight )
 	
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
+	UpdateJumpZ();
 }
 
 function CheckVeterancyCarryWeightLimit()
@@ -475,8 +487,7 @@ simulated function NotifyVeterancyChanged()
 	local	int			Count;
 	
 	// client-owner trigger
-	if ( Role < ROLE_Authority )
-		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
+	ClientVeterancyChangedTrigger = VeterancyChangedTrigger;
 	
 	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerRepInfo != None )  {
@@ -510,10 +521,10 @@ simulated function NotifyVeterancyChanged()
 		CheckVeterancyCarryWeightLimit();
 		CheckVeterancyAmmoLimit();
 	}
-	// Server and client-owner
 	UpdateHealthMovementModifiers();
 	UpdateCarryWeightMovementModifiers();
 	UpdateGroundSpeed();
+	UpdateJumpZ();
 	
 	/*	If there is no UM_PlayerRepInfo, notifying the client-owner 
 		about changes by ClientTrigger() event. 
@@ -521,13 +532,18 @@ simulated function NotifyVeterancyChanged()
 		on the client-owner from UM_PlayerRepInfo.
 		This logic used to be sure that client-owner has received all ReplicationInfo data. */
 	if ( Role == ROLE_Authority && UM_PlayerRepInfo == None )  {
-		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
+		if ( VeterancyChangedTrigger < 255 )
+			++VeterancyChangedTrigger;
+		else
+			VeterancyChangedTrigger = 0;
 		bClientTrigger = !bClientTrigger;
 	}
 	
 	// Notify all weapons in the Inventory list
 	// Inventory var exists only on the server and on the client-owner
 	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+		//if ( I.Instigator != Self )
+			//I.Instigator = Self;
 		if ( UM_BaseWeapon(I) != None )
 			UM_BaseWeapon(I).NotifyOwnerVeterancyChanged();
 		// To prevent the infinity loop because of the error in the LinkedList
@@ -577,7 +593,10 @@ function PossessedBy( Controller C )
 	ChangeAnimation();
 	
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
-	bPRIChangedTrigger = !bPRIChangedTrigger;
+	if ( PRIChangedTrigger < 255 )
+		++PRIChangedTrigger;
+	else
+		PRIChangedTrigger = 0;
 	// If it is a Standalone game or ListenServer
 	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
 		NotifyTeamChanged();
@@ -586,7 +605,7 @@ function PossessedBy( Controller C )
 		UM_PlayerRepInfo.SetHumanOwner(self);
 		// To be sure that client-owner will receive all ReplicationInfo before the notification.
 		UM_PlayerRepInfo.NotifyVeterancyChanged();
-		// To send the bPRIChangedTrigger update.
+		// To send the PRIChangedTrigger update.
 		bClientTrigger = !bClientTrigger;
 	}
 	else
@@ -608,7 +627,10 @@ function UnPossessed()
 	Controller = None;
 	
 	// Notifying clients about PlayerReplicationInfo changes by ClientTrigger() event
-	bPRIChangedTrigger = !bPRIChangedTrigger;
+	if ( PRIChangedTrigger < 255 )
+		++PRIChangedTrigger;
+	else
+		PRIChangedTrigger = 0;
 	// If it is a Standalone game or ListenServer
 	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
 		NotifyTeamChanged();
@@ -753,7 +775,7 @@ function DoDoubleJump( bool bUpdating )
 
 function bool CanDoubleJump()
 {
-	//Return ( MultiJumpRemaining > 0 && Physics == PHYS_Falling );
+	Return ( MultiJumpRemaining > 0 && Physics == PHYS_Falling );
 }
 
 function bool CanMultiJump()
@@ -781,10 +803,10 @@ function bool CanBounce()
 	Return False;
 }
 
-function DoBounce( bool bUpdating, float JumpModif )
+function DoBounce( bool bUpdating )
 {
 	local	Vector		NewVel;
-	local	float		MX;
+	local	float		MX, JumpModif;
 	
 	NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
 	--BounceRemaining;
@@ -793,7 +815,9 @@ function DoBounce( bool bUpdating, float JumpModif )
 	
 	//Low Gravity
 	if ( PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )
-		JumpModif *= LowGravBounceMomentumScale;
+		JumpModif = JumpZ / default.JumpZ * LowGravBounceMomentumScale;
+	else
+		JumpModif = JumpZ / default.JumpZ;
 	
 	MX = default.BounceMomentum.X * JumpModif;
 	NewVel = (BounceMomentum * JumpModif) >> GetViewRotation();
@@ -825,13 +849,12 @@ function bool DoDirectionalJump( bool bUpdating, vector Direction )
 		От кнопок курсора в UM_PlayerController высчитывается вектор направления прыжка
 		и вызывается эта функция.
 	*/
+	Return False;
 }
 
 //Player Jumped
 function bool DoJump( bool bUpdating )
 {
-	local	float	JumpModif;
-	
 	// This extra jump allows a jumping or dodging pawn to jump again mid-air
     // (via thrusters). The pawn must be within +/- 100 velocity units of the
     // apex of the jump to do this special move.
@@ -848,9 +871,6 @@ function bool DoJump( bool bUpdating )
 	// Do not allow to jump if somebody has grabbed this Pawn
 	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
 		// Used in DoBounce
-		JumpModif = RandJumpModif * VeterancyJumpBonus;
-		JumpZ = default.JumpZ * CarryWeightJumpModifier * JumpModif;
-		
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
 			NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
 			
@@ -883,12 +903,10 @@ function bool DoJump( bool bUpdating )
 			Return True;
 		}
 		else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
-			DoBounce(bUpdating, JumpModif);
+			DoBounce(bUpdating);
 			Return True;
 		}
-		
-		if ( Role == ROLE_Authority )
-			RandJumpModif = BaseActor.static.GetRandRangeFloat( JumpRandRange );
+		UpdateJumpZ();
 	}
     
 	Return False;
@@ -919,12 +937,12 @@ event Landed( vector HitNormal )
 }
 
 
-function name GetOffhandBoneFor(Inventory I)
+function name GetOffhandBoneFor( Inventory I )
 {
 	Return LeftHandWeaponBone;
 }
 
-function name GetWeaponBoneFor(Inventory I)
+function name GetWeaponBoneFor( Inventory I )
 {
 	Return RightHandWeaponBone;
 }
@@ -986,7 +1004,7 @@ function bool CanCarry( float Weight )
 // Returns true if successfully added, false if not.
 function bool AddInventory( Inventory NewItem )
 {
-	if ( KFWeapon(NewItem) != None ) )  {
+	if ( KFWeapon(NewItem) != None )  {
 		if ( CanCarry( KFWeapon(NewItem).Weight ) && Super(Pawn).AddInventory(NewItem) )  {
 			SetCarryWeight( CurrentWeight + KFWeapon(NewItem).Weight );
 			Return True;
@@ -1054,6 +1072,11 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 	else if ( HasUDamage() )
 		SetWeaponOverlay(None, 0.0, True);
 	
+	Weapon = NewWeapon;
+	if ( Controller != None )
+		Controller.ChangedWeapon();
+	
+	PendingWeapon = None;
 	// From the Pawn class
 	if ( OldWeapon != None )  {
 		OldWeapon.SetDefaultDisplayProperties();
@@ -1061,11 +1084,6 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 		OldWeapon.GotoState('Hidden');
 		OldWeapon.NetUpdateFrequency = 2;
 	}
-
-	Weapon = NewWeapon;
-	PendingWeapon = None;
-	if ( Controller != None )
-		Controller.ChangedWeapon();
 	
 	if ( Weapon != None )  {
 		Weapon.NetUpdateFrequency = 100;
@@ -1115,6 +1133,44 @@ simulated function bool AllowHoldWeapon( Weapon InWeapon )
 	Return True;
 }
 
+// The player wants to switch to weapon group number F.
+simulated function SwitchWeapon(byte F)
+{
+	local	Weapon	NewWeapon;
+
+	if ( Level.Pauser != None || Inventory == None )
+		Return;
+
+	if ( Weapon != None && Weapon.Inventory != None )
+		NewWeapon = Weapon.Inventory.WeaponChange(F, False);
+	else
+		NewWeapon = None;
+
+	if ( NewWeapon == None )
+		NewWeapon = Inventory.WeaponChange(F, True);
+
+	if ( NewWeapon == None )  {
+		if ( F == 10 )
+			ServerNoTranslocator();
+
+		Return;
+	}
+
+	if ( (PendingWeapon != None && PendingWeapon.bForceSwitch) || !AllowHoldWeapon(NewWeapon) )
+		Return;
+
+	if ( Weapon == None )  {
+		PendingWeapon = NewWeapon;
+		ChangedWeapon();
+	}
+	else if ( Weapon != NewWeapon || PendingWeapon != None )  {
+		PendingWeapon = NewWeapon;
+		Weapon.PutDown();
+	}
+	else if ( Weapon == NewWeapon )
+		Weapon.Reselect(); // sjs
+}
+
 // Called to change current weapon to the PendingWeapon
 simulated function ChangedWeapon()
 {
@@ -1153,7 +1209,7 @@ simulated function ClientCurrentWeaponSold()
 	local	int			Count;
 	
 	// Client
-	if ( Role < ROLE_Authority )  {
+	//if ( Role < ROLE_Authority )  {
 		for ( I = Inventory; I != None && Count < 100; I = I.Inventory )  {
 			if ( Weapon(I) != None && I != Weapon && I != PendingWeapon )  {
 				PendingWeapon = Weapon(I);
@@ -1163,16 +1219,13 @@ simulated function ClientCurrentWeaponSold()
 			++Count;
 		}
 		ChangedWeapon();
-	}
+	//}
 }
 
-simulated function ClientForceChangeWeapon(Inventory NewWeapon)
+simulated function ClientForceChangeWeapon( Inventory NewWeapon )
 {
-	// Client
-	if ( Role < ROLE_Authority )  {
-		PendingWeapon = Weapon(NewWeapon);
-		ChangedWeapon();
-	}
+	PendingWeapon = Weapon(NewWeapon);
+	ChangedWeapon();
 }
 
 /*	Simulated because this function may be called from
@@ -1189,8 +1242,8 @@ simulated function bool CanSelfHeal( bool bMedicamentCanOverheal )
 exec function QuickHeal()
 {
 	// Syringe Link
-	//if ( Syringe == None )
-		//Syringe = FindInventoryItem( Class'UnlimaginMod.UM_Syringe', True );
+	if ( Syringe == None )
+		Syringe = UM_Syringe( FindInventoryItem(Class'UnlimaginMod.UM_Syringe', True) );
 	
 	// Syringe wasn't found
 	if ( Syringe == None || !CanSelfHeal( Syringe.bCanOverheal ) )
@@ -1206,9 +1259,7 @@ exec function QuickHeal()
 	bIsQuickHealing = 1;
 	if ( Weapon == None )  {
 		PendingWeapon = Syringe;
-		// Client owner
-		if ( Role < ROLE_Authority )
-			ChangedWeapon();
+		ChangedWeapon();
 	}
 	// Syringe already selected, just start healing.
 	else if ( Weapon == Syringe )  {
@@ -1427,7 +1478,7 @@ simulated function StopHitCamEffects()
 	if ( KFPC != None && Viewport(KFPC.Player) != None )  {
 		CurrentBlurIntensity = 0.0;
 		if ( CameraEffectFound != None )
-			RemoveCameraEffect(RemoveCameraEffect);
+			RemoveCameraEffect(CameraEffectFound);
 		
 		KFPC.StopViewShaking();
 		KFPC.SetBlur(0);
@@ -1651,11 +1702,11 @@ function AddScoreForHealing( int AddScore )
 
 function ShowHealedMessage( string PatientName )
 {
-	if ( PlayerController == None || PatientName == "" || Level.TimeSeconds < NextHealedMessageTime )
+	if ( KFPC == None || PatientName == "" || Level.TimeSeconds < NextHealedMessageTime )
 		Return;
 	
 	NextHealedMessageTime = Level.TimeSeconds + HealedMessageDelay;
-	PlayerController.ClientMessage( HealedMessage @ PatientName, 'CriticalEvent' );
+	KFPC.ClientMessage( HealedMessage @ PatientName, 'CriticalEvent' );
 }
 
 /* Heal this Human.
@@ -1682,6 +1733,8 @@ function bool Heal(
 			LastHealTime = Level.TimeSeconds;
 			NextHealTime = LastHealTime + HealDelay;
 		}
+		// How much health was healed
+		HealAmount = Min( (HealMax - Health), HealAmount );
 		// Adding HealIntensity
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
 		// Drugs Effect
@@ -1699,8 +1752,6 @@ function bool Heal(
 			}
 			// Reward for healing someone
 			else  {
-				// How much health was healed
-				HealAmount = Min( (HealMax - Health), HealAmount );
 				// Add Healed Health to the StatsAndAchievements
 				if ( KFSteamStatsAndAchievements(Healer.UM_PlayerRepInfo.SteamStatsAndAchievements) != None )
 					KFSteamStatsAndAchievements(Healer.UM_PlayerRepInfo.SteamStatsAndAchievements).AddDamageHealed( HealAmount );
@@ -1736,8 +1787,10 @@ protected function ReduceOverheal()
 	SetHealth( Max( (Health - 1), int(HealthMax) ) );
 }
 
+simulated function AddHealth() { }
+
 // Healing with HealIntensity decreasing
-protected function AddHealth()
+protected function AppendHealth()
 {
 	local	int		DeltaHealIntensity;
 	
@@ -1778,7 +1831,9 @@ function TakeBileDamage()
 			LastBileTime = Level.TimeSeconds;
 			// CamEffects
 			if ( Controller != None && PlayerController(Controller) != None )  {
-				BileCamVect = vect( FRand(), FRand(), FRand() );
+				BileCamVect.X = FRand();
+				BileCamVect.Y = FRand();
+				BileCamVect.Z = FRand();
 				if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
 					DoHitCamEffects( BileCamVect, 0.25, 0.75, 0.5 );
 				else
@@ -1929,7 +1984,7 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
-simulated function UpdateCameraBlur()
+simulated function UpdateCameraBlur( float DeltaTime )
 {
 	local	float	BlurAmount;
 	
@@ -1965,7 +2020,7 @@ simulated event Tick( float DeltaTime )
 			
 			// Healing
 			if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
-				AddHealth();
+				AppendHealth();
 			
 			// Bile Damage
 			if ( BileTimeLeft > 0.0 && Level.TimeSeconds >= NextBileTime )
@@ -2055,7 +2110,7 @@ simulated event Tick( float DeltaTime )
 	
 	// Locally controlled client camera Blur Effect
 	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )
-		UpdateCameraBlur();
+		UpdateCameraBlur(DeltaTime);
 }
 
 event Timer()
@@ -2079,7 +2134,7 @@ event Timer()
 	}
 
 	// Instantly set the animation to arms at sides Idle if we've got no weapon (rather than Pointing an invisible gun!)
-	if ( Weapon == None || (WeaponAttachment(Weapon.ThirdPersonActor) == None && VSizeSquared(Velocity) <= 0.0) )
+	if ( Weapon == None || (WeaponAttachment(Weapon.ThirdPersonActor) == None && Velocity == vect(0.0, 0.0, 0.0)) )
 		IdleWeaponAnim = IdleRestAnim;
 }
 
@@ -2102,8 +2157,8 @@ simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
 function bool AllowGrenadeTossing()
 {
 	// HandGrenade Link
-	//if ( HandGrenade == None )
-		//HandGrenade = FindInventoryItem( Class'UnlimaginMod.UM_Weapon_HandGrenade', True );
+	if ( HandGrenade == None )
+		HandGrenade = UM_Weapon_HandGrenade( FindInventoryItem(Class'UnlimaginMod.UM_Weapon_HandGrenade', True) );
 	
 	if ( HandGrenade == None || !HandGrenade.HasAmmo() || bThrowingNade || KFWeapon(Weapon) == None
 		 || (KFWeapon(Weapon).bIsReloading && !KFWeapon(Weapon).InterruptReload())
@@ -2163,7 +2218,6 @@ defaultproperties
 	 HealedMessageDelay=0.1
 	 // Decrease AlphaAmount every 60 milliseconds
 	 AlphaAmountDecreaseFrequency=0.06
-	 RandJumpModif=1.0
 	 VeterancyHealPotency=1.0
 	 VeterancyOverhealPotency=1.0
 	 VeterancySyringeChargeModifier=1.0
@@ -2230,4 +2284,5 @@ defaultproperties
      RequiredEquipment(4)="KFMod.Welder"
 	 bNetNotify=False
 	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'
+	 JumpZ=330.000000
 }

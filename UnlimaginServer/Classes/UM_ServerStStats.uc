@@ -278,6 +278,7 @@ function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 
 final function CheckPerks( bool bInit )
 {
+	local	UM_PlayerReplicationInfo	UMPRI;
 	local	byte	i, NewLevel;
 
 	if ( !bStatsReadyNow )

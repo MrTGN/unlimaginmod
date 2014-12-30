@@ -94,7 +94,7 @@ function RandomizeMonsterSizes()
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
-		
+	
 	// Sizes
 	Mass = default.Mass * RandomSizeMult;
 	// CollisionSize scaled by DrawScale
@@ -102,6 +102,8 @@ function RandomizeMonsterSizes()
 	// EyeHeight scaled by DrawScale
 	BaseEyeHeight = default.BaseEyeHeight * DrawScale;
 	EyeHeight = default.EyeHeight * DrawScale;
+	//PrePivot.Z = CollisionHeight - default.CollisionHeight;
+	PrePivot.Z = ((MeshTestCollisionRadius * DrawScale) - MeshTestCollisionRadius) * DrawScale;
 	
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
@@ -730,7 +732,6 @@ simulated event SetAnimAction(name NewAction)
 	}
 }
 
-/*
 // Overridden so that anims don't get interrupted on the server if one is already playing
 function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 {
@@ -810,12 +811,15 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 	Distance = Sqrt(diff Dot diff);
 
 	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
-}	*/
+}
 
+/* ToDo: требует доработки! Пока закоментил.
 function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 {
 	local	vector	TraceHitLoc, TraceHitNorm, TraceExtetnt;
-	
+	local	int		look;
+	local	bool	bWasAnimating;
+		
 	if ( HeadBallisticCollision == None )
 		Return False;
 	
@@ -855,7 +859,7 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	
 	// TraceThisActor returns true if did not hit this actor.
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
-}
+}	*/
 
 event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector momentum, class<DamageType> damageType, optional int HitIndex )
 {
@@ -1064,7 +1068,7 @@ defaultproperties
      // Monster Size
 	 SizeScaleRange=(Min=0.8,Max=1.2)
 	 // Monster Speed
-	 SpeedScaleRange=(Min=0.88,1.12)
+	 SpeedScaleRange=(Min=0.85,Max=1.1)
 	 // Monster Health
 	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 // Monster HeadHealth
@@ -1103,14 +1107,14 @@ defaultproperties
 	 // This collision flags was moved to the BallisticCollision
 	 bBlockProjectiles=False
 	 bProjTarget=False
-	 bBlockZeroExtentTraces=False
-	 bBlockNonZeroExtentTraces=False
+	 bBlockZeroExtentTraces=True
+	 bBlockNonZeroExtentTraces=True
 	 
 	 DrawScale=1.000000
 	 MeshTestCollisionHeight=0.0
 	 MeshTestCollisionRadius=0.0
-	 CollisionHeight=0.0
-	 CollisionRadius=0.0
+	 CollisionHeight=50.0
+	 CollisionRadius=25.0
 	 
 	 PrePivot=(X=0.0,Y=0.0,Z=0.0)
 }

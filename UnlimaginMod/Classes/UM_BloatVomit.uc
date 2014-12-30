@@ -112,7 +112,7 @@ auto state Flying
 
 	simulated function ProcessTouch(Actor Other, Vector HitLocation)
 	{
-		if ( Instigator != None && Other.Base = Instigator )
+		if ( Instigator != None && Other.Base == Instigator )
 			Return;
 		
 		if ( Other != Instigator && (Pawn(Other) != None || DestroyableObjective(Other) != None || Other.bProjTarget) )

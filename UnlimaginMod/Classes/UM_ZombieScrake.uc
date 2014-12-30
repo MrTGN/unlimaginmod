@@ -583,8 +583,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieScrake"
      EventClasses(1)="UnlimaginMod.UM_ZombieScrake"
-     EventClasses(2)="UnlimaginMod.UM_ZombieScrake_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieScrake_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieScrake_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieScrake"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieScrake_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieScrake"
      DetachedArmClass=Class'KFChar.SeveredArmScrake'
      DetachedLegClass=Class'KFChar.SeveredLegScrake'
      DetachedHeadClass=Class'KFChar.SeveredHeadScrake'

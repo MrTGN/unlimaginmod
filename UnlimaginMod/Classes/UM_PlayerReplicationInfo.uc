@@ -19,7 +19,7 @@ class UM_PlayerReplicationInfo extends KFPlayerReplicationInfo;
 //========================================================================
 //[block] Variables
 
-var		bool				bVeterancyChangedTrigger, bClientVeterancyChangedTrigger;
+var		byte				VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
 var		UM_HumanPawn		HumanOwner;
 
 //[end] Varibles
@@ -30,12 +30,12 @@ var		UM_HumanPawn		HumanOwner;
 
 replication
 {
-	if ( Role == ROLE_Authority && bNetDirty )
+	reliable if ( Role == ROLE_Authority && bNetDirty )
 		HumanOwner;
 	
 	// Replication from the server to the client-owner
-	if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		bVeterancyChangedTrigger;
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
+		VeterancyChangedTrigger;
 }
 
 //[end] Replication
@@ -79,12 +79,15 @@ simulated function NotifyVeterancyChanged()
 {
 	// Server trigger
 	if ( Role == ROLE_Authority )  {
-		bVeterancyChangedTrigger = !bVeterancyChangedTrigger;
+		if ( VeterancyChangedTrigger < 255 )
+			++VeterancyChangedTrigger;
+		else
+			VeterancyChangedTrigger = 0;
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
 	// client-owner trigger
 	else
-		bClientVeterancyChangedTrigger = bVeterancyChangedTrigger;
+		ClientVeterancyChangedTrigger = VeterancyChangedTrigger;
 	
 	if ( HumanOwner != None )  {
 		if ( HumanOwner.UM_PlayerRepInfo == None )
@@ -106,7 +109,7 @@ simulated event PostNetReceive()
 	}
 	
 	// client-owner
-	if ( Role < ROLE_Authority && bClientVeterancyChangedTrigger != bVeterancyChangedTrigger )
+	if ( Role < ROLE_Authority && ClientVeterancyChangedTrigger != VeterancyChangedTrigger )
 		NotifyVeterancyChanged();
 }
 
@@ -158,6 +161,22 @@ simulated function float GetAimErrorModifier( WeaponFire WF )
 	Return 1.0;
 }
 
+simulated function float GetRecoilModifier( WeaponFire WF )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetRecoilModifier(self, WF);
+	
+	Return 1.0;
+}
+
+simulated function float GetShakeViewModifier( WeaponFire WF )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetShakeViewModifier(self, WF);
+	
+	Return 1.0;
+}
+
 simulated function float GetSyringeChargeModifier()
 {
 	if ( ClientVeteranSkill != None )
@@ -196,7 +215,7 @@ simulated function float GetOverhealedHealthMaxModifier()
 simulated function float GetHumanTakenDamageModifier( UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
 	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetTakenDamageModifier(Self, Victim, Aggressor, DamageType);
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetHumanTakenDamageModifier(Self, Victim, Aggressor, DamageType);
 	
 	Return 1.0;
 }
@@ -254,6 +273,22 @@ simulated function float GetIntuitiveShootingModifier()
 {
 	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
 		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetIntuitiveShootingModifier(self);
+	
+	Return 1.0;
+}
+
+simulated function float GetProjectilePenetrationBonus( Class<UM_BaseProjectile> ProjClass )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetProjectilePenetrationBonus(self, ProjClass);
+	
+	Return 1.0;
+}
+
+simulated function float GetProjectileBounceBonus( Class<UM_BaseProjectile> ProjClass )
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetProjectileBounceBonus(self, ProjClass);
 	
 	Return 1.0;
 }

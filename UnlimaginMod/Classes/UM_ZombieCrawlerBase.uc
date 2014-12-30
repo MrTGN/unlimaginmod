@@ -28,12 +28,12 @@ var(Anims)  name    MeleeAirAnims[3]; // Attack anims for when flying through th
 
 defaultproperties
 {
-	 MiniBossMaxSpeedScale=2.400000
+	 ExtraSpeedChance=0.200000
+	 ExtraSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // JumpZ
-	 MinJumpZScale=0.850000
-	 MaxJumpZScale=1.200000
+	 JumpZScaleRange=(Min=0.85,Max=1.2)
 	 // Extra Sizes
-	 MaxExtraSizeScale=1.300000
+	 ExtraSizeScaleRange=(Min=0.52,Max=1.3)
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'

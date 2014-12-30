@@ -35,7 +35,7 @@ var	Class<Projectile>		BileProjectileClass;
 defaultproperties
 {
      BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
-	 MiniBossMaxSpeedScale=2.800000
+	 ExtraSpeedScaleRange=(Max=2.8)
      MeleeAnims(0)="BloatChop2"
      MeleeAnims(1)="BloatChop2"
      MeleeAnims(2)="BloatChop2"

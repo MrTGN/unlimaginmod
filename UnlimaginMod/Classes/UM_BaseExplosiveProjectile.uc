@@ -15,6 +15,7 @@
 //	Comments:		 
 //================================================================================
 class UM_BaseExplosiveProjectile extends UM_BaseProjectile
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 //========================================================================
@@ -52,7 +53,7 @@ var		float				DisintegrateChance;	// Chance of this projectile to Disintegrate
 var		float				DisintegrateDamageScale; // Scale damage by this multiplier when projectile disintegrating
 
 // Sounds
-var		SoundData			DisintegrateSound, ExplodeSound;
+var		UM_BaseActor.SoundData		DisintegrateSound, ExplodeSound;
 
 // Visual Effect
 var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
@@ -90,20 +91,24 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
+simulated static function CalcDefaultProperties()
 {
-	Super.CalcDefaultProperties(Proj);
+	Super.CalcDefaultProperties();
 	
 	// ArmingRange
 	if ( default.ArmingRange > 0.0 )  {
-		default.ArmingRange = default.ArmingRange * MeterInUU;
+		default.ArmingRange = default.ArmingRange * Maths.static.GetMeterInUU();
 		// Squared ArmingRange
 		default.SquaredArmingRange = Square(default.ArmingRange);
-		if ( Proj != None )  {
-			Proj.ArmingRange = default.ArmingRange;
-			Proj.SquaredArmingRange = default.SquaredArmingRange;
-		}
 	}
+}
+
+simulated function ResetToDefaultProperties()
+{
+	Super.ResetToDefaultProperties();
+	// ArmingRange
+	ArmingRange = default.ArmingRange;
+	SquaredArmingRange = default.SquaredArmingRange;
 }
 
 //[block] Dynamic Loading

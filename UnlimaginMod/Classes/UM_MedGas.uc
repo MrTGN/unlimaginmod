@@ -87,9 +87,6 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 	local	int						i;
 	local	array<Pawn>				CheckedPawns;
 	local	bool					bAlreadyChecked;
-	// Healing
-	local	int						HealAmount;
-	
 
 	if ( bHurtEntry )
 		Return;

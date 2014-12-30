@@ -382,8 +382,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieGoreFast"
      EventClasses(1)="UnlimaginMod.UM_ZombieGoreFast"
-     EventClasses(2)="UnlimaginMod.UM_ZombieGoreFast_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieGoreFast_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieGoreFast_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieGoreFast"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieGoreFast_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieGoreFast"
      DetachedArmClass=Class'KFChar.SeveredArmGorefast'
      DetachedLegClass=Class'KFChar.SeveredLegGorefast'
      DetachedHeadClass=Class'KFChar.SeveredHeadGorefast'

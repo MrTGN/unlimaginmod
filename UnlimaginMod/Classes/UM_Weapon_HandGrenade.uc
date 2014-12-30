@@ -16,16 +16,6 @@
 //================================================================================
 class UM_Weapon_HandGrenade extends Frag;
 
-/*	PostNetBeginPlay() is called directly after PostBeginPlay() on the server. 
-	On clients it will be called when the initial replication is completed.	*/
-simulated event PostNetBeginPlay()
-{
-	Super.PostNetBeginPlay();
-	
-	if ( UM_HumanPawn(Instigator) != None )
-		UM_HumanPawn(Instigator).HandGrenade = self;
-}
-
 /*
 var		bool		bPawnCurrentWeightReduced;
 

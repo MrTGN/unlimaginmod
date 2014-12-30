@@ -47,13 +47,40 @@ var		float				RelativeShakeOffsetTime;	// how much time to offset view
 //========================================================================
 //[block] Functions
 
+function SetFireMode( UM_BaseProjectileWeaponFire NewFireMode )
+{
+	FireMode = NewFireMode;
+}
+
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
-     MuzzleVelocityScale=1.000000
+     bGameRelevant=True
+	 MuzzleVelocityScale=1.000000
 	 SpreadScale=1.000000
 	 bReplicateMovement=True
 	 bReplicateInstigator=True
+	 bOnlyOwnerSee=True
+     bOnlyRelevantToOwner=True
+	 //bOnlyRelevantToOwner=False
+     bOnlyDirtyReplication=True
+	 bOnlyDrawIfAttached=True
+	 //bOnlyDrawIfAttached=False
+     //RemoteRole=ROLE_SimulatedProxy
+	 RemoteRole=ROLE_None
+	 //RemoteRole=ROLE_None
+     NetUpdateFrequency=2.000000
+     NetPriority=3.000000
+     bTravel=True
+     bClientAnim=True
+     bNetNotify=True
+	 bCollideWorld=False
+	 bBlockActors=False
+	 bBlockPlayers=False
+	 bIgnoreEncroachers=True
+	 bIgnoreOutOfWorld=True
+	 CollisionRadius=0.0
+	 CollisionHeight=0.0
 }

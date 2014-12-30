@@ -14,7 +14,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 Sticky hand grenade with Sensor
 //================================================================================
-class UM_StickySensorHandGrenade extends UM_BaseProjectile_HandGrenade;
+class UM_StickySensorHandGrenade extends UM_BaseProjectile_HandGrenade
+	DependsOn(UM_BaseActor);
 
 #exec OBJ LOAD FILE=ProjectileSounds.uax
 #exec OBJ LOAD FILE=KF_FoundrySnd.uax
@@ -27,7 +28,7 @@ var		bool			bStuck;		// Grenade has stuck on something.
 
 var		float			DetectionRadius;	// How far away to detect enemies
 
-var		SoundData		BeepSound, PickupSound;
+var		UM_BaseActor.SoundData		BeepSound, PickupSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;
@@ -188,10 +189,18 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 		GoToState('Stuck');
 }
 
+simulated function bool CanStickTo( Actor A )
+{
+	if ( bStuck || (A != None && (A == Instigator || A.Base == Instigator)) )
+		Return False;
+	
+	Return True;
+}
+
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( !bStuck )
+	if ( CanStickTo(A) )
 		Stick(A, TouchLocation, TouchNormal);
 	
 	LastTouched = None;
@@ -199,7 +208,7 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 
 simulated event HitWall( vector HitNormal, Actor Wall )
 {
-	if ( !bStuck )
+	if ( CanStickTo(Wall) )
 		Stick(Wall, (Location + HitNormal), HitNormal);
 }
 

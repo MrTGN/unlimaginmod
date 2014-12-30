@@ -309,39 +309,7 @@ event PlayerTick( float DeltaTime )
 			Advertising_ExitZone();
 	}
 
-	// From the PlayerController class
-	if ( bForcePrecache )  {
-		if ( Level.TimeSeconds > ForcePrecacheTime )  {
-			bForcePrecache = False;
-			Level.FillPrecacheMaterialsArray( false );
-			Level.FillPrecacheStaticMeshesArray( false );
-		}
-	}
-	else if ( !bShortConnectTimeOut )  {
-		bShortConnectTimeOut = True;
-		ServerShortTimeout();
-	}
-
-	if ( Pawn != AcknowledgedPawn )  {
-		if ( Role < ROLE_Authority )  {
-			// make sure old pawn controller is right
-			if ( AcknowledgedPawn != None && AcknowledgedPawn.Controller == self )
-				AcknowledgedPawn.Controller = None;
-		}
-		AcknowledgePossession(Pawn);
-	}
-	
-	PlayerInput.PlayerInput(DeltaTime);
-	if ( bUpdatePosition )
-		ClientUpdatePosition();
-	
-	if ( !IsSpectating() && Pawn != None )
-		Pawn.RawInput(DeltaTime, aBaseX, aBaseY, aBaseZ, aMouseX, aMouseY, aForward, aTurn, aStrafe, aUp, aLookUp);
-
-	PlayerMove(DeltaTime);
-
-	if ( Level.NetMode != NM_DedicatedServer && (BlurTime > 0 || ColorFadeTime > 0) )
-		UpdateBlurEffect(DeltaTime);
+	Super(PlayerController).PlayerTick( DeltaTime );
 }
 
 // Set up the widescreen FOV values for this player
@@ -462,12 +430,12 @@ simulated event InitInputSystem()
 {
 	// Loading InputClass
 	// Need to do this because InputClass is a config variable
-	if ( InputClassName != None )
+	if ( InputClassName != "" )
 		InputClass = Class<PlayerInput>( DynamicLoadObject(InputClassName, Class'Class') );
 	
 	if ( InputClass == None )
 		log("Warning! No InputClass to initialise!", Name);
-	else if ( Role == ROLE_Authority )
+	else
 		Super(PlayerController).InitInputSystem();
 
 	// InitFOV() has been replaced by my own SetUpWidescreenFOV() function because it was a final function.
@@ -581,7 +549,7 @@ function GetCameraPosition(
  optional	out	rotator	CameraRot )
 {
 	if ( Vehicle(Pawn) != None ) {
-		CameraLoc = Vehicle(Pawn).GetCameraLocationStart;
+		CameraLoc = Vehicle(Pawn).GetCameraLocationStart();
 		CameraRot = GetViewRotation();
 		CameraRotVect = vector(CameraRot);
 	}
@@ -846,7 +814,7 @@ exec function SwitchToBestWeapon()
 	if ( Pawn == None || Pawn.Inventory == None )
 		Return;
 
-    if ( Pawn.PendingWeapon == None || AIController(self) != None )  {
+    if ( Pawn.PendingWeapon == None )  {
 	    Pawn.PendingWeapon = Pawn.Inventory.RecommendWeapon(rating);
 	    if ( Pawn.PendingWeapon == Pawn.Weapon )
 		    Pawn.PendingWeapon = None;
@@ -856,10 +824,8 @@ exec function SwitchToBestWeapon()
 
 	StopFiring();
 
-	if ( Pawn.Weapon == None )  {
-		if ( Role < ROLE_Authority )
-			Pawn.ChangedWeapon();
-	}
+	if ( Pawn.Weapon == None )
+		Pawn.ChangedWeapon();
 	else if ( Pawn.Weapon != Pawn.PendingWeapon )
 		Pawn.Weapon.PutDown();
 }
@@ -879,8 +845,7 @@ function ClientSetWeapon( class<Weapon> WeaponClass )
 		if ( ClassIsChildOf( Inv.Class, WeaponClass ) )  {
 			if ( Pawn.Weapon == None )  {
 				Pawn.PendingWeapon = Weapon(Inv);
-				if ( Role < ROLE_Authority )
-					Pawn.ChangedWeapon();
+				Pawn.ChangedWeapon();
 			}
 			else if ( Pawn.Weapon != Weapon(Inv) )  {
 				Pawn.PendingWeapon = Weapon(Inv);
@@ -896,15 +861,16 @@ function ClientSetWeapon( class<Weapon> WeaponClass )
 // Hide weapon highlight when using this shortcut key.
 exec function SwitchWeapon(byte F)
 {
-	local Weapon W;
+	//local Weapon W;
 
 	if ( Pawn != None )  {
-		W = Pawn.PendingWeapon;
+		//W = Pawn.PendingWeapon;
 		Pawn.SwitchWeapon(F);
+		/*
 		if ( W != Pawn.PendingWeapon && HudKillingFloor(MyHUD) != None )  {
 			HudKillingFloor(MyHUD).SelectedInventory = Pawn.PendingWeapon;
 			HudKillingFloor(MyHUD).HideInventory();
-		}
+		}	*/
 	}
 }
 

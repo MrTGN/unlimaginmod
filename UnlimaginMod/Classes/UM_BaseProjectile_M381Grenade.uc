@@ -41,19 +41,23 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated static function CalcDefaultProperties( optional UM_BaseProjectile Proj )
+simulated static function CalcDefaultProperties()
 {
-	Super.CalcDefaultProperties(Proj);
-	
+	Super.CalcDefaultProperties();
+	// ArmingDelay
 	if ( default.MaxSpeed > 0.0 && default.ArmingRange > 0.0 )  {
-		// ArmingDelay
 		default.ArmingDelay = default.ArmingRange / default.MaxSpeed;
 		// InitialAccelerationTime
 		if ( default.bTrueBallistics && default.bInitialAcceleration )
 			default.ArmingDelay += default.InitialAccelerationTime;
-		if ( Proj != None )
-			Proj.ArmingDelay = default.ArmingDelay;
 	}
+}
+
+simulated function ResetToDefaultProperties()
+{
+	Super.ResetToDefaultProperties();
+	// ArmingDelay
+	ArmingDelay = default.ArmingDelay;
 }
 
 function ServerInitialUpdate()

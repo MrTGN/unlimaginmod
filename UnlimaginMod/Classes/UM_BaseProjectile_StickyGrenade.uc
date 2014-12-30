@@ -15,6 +15,7 @@
 //	Comments:		 
 //================================================================================
 class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_LowVelocityGrenade
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 #exec OBJ LOAD FILE=ProjectileSounds.uax
@@ -27,7 +28,7 @@ var		bool			bStuck;	// Grenade has stuck on something
 var		bool			bTimerSet;
 var		float			ExplodeTimer;
 
-var		SoundData		BeepSound;
+var		UM_BaseActor.SoundData		BeepSound;
 
 var		Class<Emitter>	GrenadeLightClass;
 var		Emitter			GrenadeLight;

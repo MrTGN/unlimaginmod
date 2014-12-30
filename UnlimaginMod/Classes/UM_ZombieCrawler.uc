@@ -161,8 +161,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieCrawler"
      EventClasses(1)="UnlimaginMod.UM_ZombieCrawler"
-     EventClasses(2)="UnlimaginMod.UM_ZombieCrawler_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieCrawler_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieCrawler_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieCrawler"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieCrawler_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieCrawler"
      DetachedArmClass=Class'KFChar.SeveredArmCrawler'
      DetachedLegClass=Class'KFChar.SeveredLegCrawler'
      DetachedHeadClass=Class'KFChar.SeveredHeadCrawler'

@@ -454,8 +454,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieStalker"
      EventClasses(1)="UnlimaginMod.UM_ZombieStalker"
-     EventClasses(2)="UnlimaginMod.UM_ZombieStalker_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieStalker_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieStalker_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieStalker"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieStalker_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieStalker"
      DetachedArmClass=Class'KFChar.SeveredArmStalker'
      DetachedLegClass=Class'KFChar.SeveredLegStalker'
      DetachedHeadClass=Class'KFChar.SeveredHeadStalker'

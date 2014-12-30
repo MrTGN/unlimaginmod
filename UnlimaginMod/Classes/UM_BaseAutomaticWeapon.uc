@@ -15,6 +15,7 @@
 //	Comments:		 
 //================================================================================
 class UM_BaseAutomaticWeapon extends UM_BaseWeapon
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 
@@ -34,7 +35,7 @@ enum	EFireMode
 var		Class< CriticalEventPlus >	FireModeSwitchMessageClass;
 var		array< EFireMode >			SelectiveFireModes;		// Array with weapon fire modes. Used for switching between Auto and Semi-Auto modes etc.
 var		byte						SelectiveFireModeNum;
-var		AnimData					FireModeSwitchAnim;
+var		UM_BaseActor.AnimData		FireModeSwitchAnim;
 var		float						FireModeSwitchTime;
 
 //[end] Varibles

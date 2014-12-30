@@ -17,7 +17,6 @@
 class UM_BaseWeaponAttachment extends KFWeaponAttachment
 	Abstract;
 
-
 //========================================================================
 //[block] Variables
 
@@ -31,7 +30,7 @@ var		Class<UM_MeshActor>			SecondMeshActorClass;
 var		UM_MeshActor				SecondMeshActor;	
 
 var		bool						bAssetsLoaded;
-var		byte						MuzzleNums[Class'Weapon'.NUM_FIRE_MODES];		// Muzzles Numbers for the FireModes
+var		byte						MuzzleNums[2];		// Muzzles Numbers for the FireModes
 
 enum EMeshNum
 {
@@ -52,7 +51,7 @@ struct FireModeData
 	var	array< Class<xEmitter> >	ShellEjectClasses;
 	var	array< xEmitter >			ShellEjects;
 };
-var		FireModeData				FireModeEffects[Class'Weapon'.NUM_FIRE_MODES];
+var		FireModeData				FireModeEffects[2];
 
 var		bool						bAttachFlashEmitter, bAttachSmokeEmitter;
 

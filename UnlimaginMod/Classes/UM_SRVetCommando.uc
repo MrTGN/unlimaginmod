@@ -147,7 +147,7 @@ static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, 
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 &&
 		 (UM_BaseAssaultRifle(W) != None || UM_BasePDW(W) != None || UM_BaseSMG(W) != None) )
-		Return 1.00 + 0.01 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));	// Up to 10% bonus
+		Return 1.00 + 0.01 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 10% bonus
 	
 	Return 1.0;
 }

@@ -366,7 +366,7 @@ final function bool CanBuyPickup( class<KFWeaponPickup> WC )
 	for( i=(ShopInventory.Length-1); i>=0; --i )
 		if( ShopInventory[i].PC==WC )
 		{
-			K = KFPlayerReplicationInfo(StatObject.PlayerOwner.PlayerReplicationInfo);
+			K = KFPlayerReplicationInfo(StatObject.OwnerController.PlayerReplicationInfo);
 			for( i=(CachePerks.Length-1); i>=0; --i )
 				if( !CachePerks[i].PerkClass.Static.AllowWeaponInTrader(WC,K,CachePerks[i].CurrentLevel) )
 					return false;
@@ -383,7 +383,7 @@ Begin:
 	Sleep(1.f);
 	NetUpdateFrequency = 0.5f;
 
-	if( NetConnection(StatObject.PlayerOwner.Player)!=None ) // Network client.
+	if ( NetConnection(StatObject.OwnerController.Player)!=None ) // Network client.
 	{
 		// Now MAKE SURE client receives the full inventory list.
 		while( ClientAccknowledged[0]<ShopInventory.Length || ClientAccknowledged[1]<ShopCategories.Length )

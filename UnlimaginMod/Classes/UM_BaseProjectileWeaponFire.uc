@@ -15,6 +15,7 @@
 //	Comments:		 Base ProjectileWeapon fire class
 //================================================================================
 class UM_BaseProjectileWeaponFire extends KFShotgunFire
+	DependsOn(UM_BaseActor)
 	Abstract;
 
 //========================================================================
@@ -115,11 +116,11 @@ var		array< ProjSpawnData >	ProjSpawnOffsets;
 
 // Fire Animation arrays
 // Switches between elements by MuzzleNum.
-var		array< BaseActor.AnimData >	PreFireAnims,	PreFireAimedAnims, 
-									FireAnims,		FireAimedAnims, 
-									FireLoopAnims,	FireLoopAimedAnims,
-									EmptyFireAnims,	EmptyFireAimedAnims,
-									FireEndAnims,	FireEndAimedAnims;
+var		array< UM_BaseActor.AnimData >	PreFireAnims,	PreFireAimedAnims;
+var		array< UM_BaseActor.AnimData >	FireAnims,		FireAimedAnims;
+var		array< UM_BaseActor.AnimData >	FireLoopAnims,	FireLoopAimedAnims;
+var		array< UM_BaseActor.AnimData >	EmptyFireAnims,	EmptyFireAimedAnims;
+var		array< UM_BaseActor.AnimData >	FireEndAnims,	FireEndAimedAnims;
 
 // Arrays with Muzzles and ShellEjectes bones names.
 // Switches between elements by MuzzleNum.
@@ -127,7 +128,7 @@ var		array< BaseActor.AnimData >	PreFireAnims,	PreFireAimedAnims,
 var		array< name >			MuzzleBones;
 var		array< name >			ShellEjectBones;
 
-var		array< class'UM_BaseWeaponMuzzle' >	MuzzleClasses;
+var		array< class<UM_BaseWeaponMuzzle> >	MuzzleClasses;
 var		array< UM_BaseWeaponMuzzle >		Muzzles;
 
 var		bool					bDoFiringEffects;
@@ -138,6 +139,9 @@ var		array< Emitter >		FlashEmitters, SmokeEmitters, ShellEjectEmitters;
 
 var		bool					bAssetsLoaded;
 var		float					FireSpeedModif;
+
+var		float					VeterancyShakeViewModifier;
+var		float					VeterancyRecoilModifier;
 
 //[end] Varibles
 //====================================================================
@@ -194,6 +198,8 @@ state Initialization
 	{
 		Return False;
 	}
+	
+	event EndState() { }
 }
 
 // Notification on the server and on the client-owner that HumanOwner veterancy has been changed.
@@ -203,10 +209,14 @@ simulated function NotifyOwnerVeterancyChanged()
 	if ( HumanOwner != None && HumanOwner.UM_PlayerRepInfo != None )  {
 		VeterancySpreadBonus = HumanOwner.UM_PlayerRepInfo.GetSpreadModifier(Self);
 		VeterancyAimErrorBonus = HumanOwner.UM_PlayerRepInfo.GetAimErrorModifier(Self);
+		VeterancyRecoilModifier = HumanOwner.UM_PlayerRepInfo.GetRecoilModifier(Self);
+		VeterancyShakeViewModifier = HumanOwner.UM_PlayerRepInfo.GetShakeViewModifier(Self);
 	}
 	else  {
 		VeterancySpreadBonus = default.VeterancySpreadBonus;
 		VeterancyAimErrorBonus = default.VeterancyAimErrorBonus;
+		VeterancyRecoilModifier = default.VeterancyRecoilModifier;
+		VeterancyShakeViewModifier = default.VeterancyShakeViewModifier;
 	}
 }
 
@@ -378,27 +388,46 @@ function float MaxRange()
 }
 
 // Initializate weapon muzzle actors
+//ToDo: issue #183
 function InitWeaponMuzzles()
 {
 	local	byte	i;
 	
-	if ( UMWeapon != None )  {
+	if ( UM_BaseWeapon(Weapon) != None )  {
 		if ( !IsInState('Initialization') )
 			GotoState('Initialization');
 		
 		for ( i = 0; i < MuzzleClasses.Length; ++i )  {
 			if ( MuzzleClasses[i] != None )  {
-				Muzzles[i] = UMWeapon.Spawn( MuzzleClasses[i] );
+				Muzzles[i] = Weapon.Spawn( MuzzleClasses[i], Instigator );
 				if ( Muzzles[i] != None )  {
-					UMWeapon.AttachToBone( Muzzles[i], MuzzleBones[i] );
+					Log("AttachToBone", Name);
+					Weapon.AttachToBone( Muzzles[i], MuzzleBones[i] );
 					Muzzles[i].Instigator = Instigator;
-					Muzzles[i].Weapon = UMWeapon;
-					Muzzles[i].FireMode = Self;
+					Muzzles[i].Weapon = UM_BaseWeapon(Weapon);
+					Muzzles[i].SetFireMode(self);
+					if ( Muzzles[i] == None )
+						Log("Lost Muzzle!", Name);
 				}
+				else
+					Log("Can't find Muzzle!",Name);
 			}
 		}
 		
 		SetInitialState();
+	}
+}
+
+//ToDo: issue #183
+function DestroyWeaponMuzzles()
+{
+	local	int		i;
+	
+	while ( Muzzles.Length > 0 )  {
+		i = Muzzles.Length - 1;
+		if ( Muzzles[i] != None )
+			Muzzles[i].Destroy();
+		Muzzles.Remove(i, 1);
 	}
 }
 
@@ -408,7 +437,8 @@ simulated function InitEffects()
 {
     local	byte	i;
 	
-	InitWeaponMuzzles();
+	//if ( Weapon.Role == ROLE_Authority )
+		//InitWeaponMuzzles();
 	
 	// don't even spawn on server
 	if ( !bDoFiringEffects || Level.NetMode == NM_DedicatedServer 
@@ -448,25 +478,14 @@ simulated function InitEffects()
 	}
 }
 
-function DestroyWeaponMuzzles()
-{
-	local	int		i;
-	
-	while ( Muzzles.Length > 0 )  {
-		i = Muzzles.Length - 1;
-		if ( Muzzles[i] != None )
-			Muzzles[i].Destroy();
-		Muzzles.Remove(i, 1);
-	}
-}
-
 // Called from Weapon simulated event Timer()
 // ToDo: move this to the WeaponMuzzle
 simulated function DestroyEffects()
 {
 	local	byte	i;
 	
-	DestroyWeaponMuzzles();
+	if ( Weapon.Role == ROLE_Authority )
+			DestroyWeaponMuzzles();
 	
 	while ( SmokeEmitters.Length > 0 )  {
 		i = SmokeEmitters.Length - 1;
@@ -552,7 +571,6 @@ function EjectShell()
 
 // Delivered this code into a separate function because
 // dual weapons changes muzzle at each shot
-/*
 function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 {
 	local	Vector		SpawnOffset, TraceStart, HitLocation, HitNormal;
@@ -606,7 +624,7 @@ function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 	}
 
 	Return SpawnOffset;
-} */
+}
 
 function UpdateSavedFireProperties()
 {
@@ -622,7 +640,7 @@ function UpdateSavedFireProperties()
 	
 	/* ToDo: в дальнейшем эта функция должна вызываться еще 
 		при сменене типа снаряда в оружии. Issue #199. */
-	ProjClass = ProjectileClass;
+	ProjClass = Class<UM_BaseProjectile>(ProjectileClass);
 	if ( ProjClass != None && !ProjClass.default.bDefaultPropertiesCalculated )
 		ProjClass.static.CalcDefaultProperties();
 }
@@ -665,8 +683,8 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 	if ( CP != None )  {
 		if ( Other != None )
 			Start = (2.0 + FMax(CP.default.CollisionRadius, CP.default.CollisionHeight)) * -Normal(HitLocation - Start) + HitLocation;
-		//P = Weapon.Spawn(CP, Weapon,, Start, Dir);
-		P = Muzzles[MuzzleNum].Spawn(CP, Muzzles[MuzzleNum],, Start, Dir);
+		P = Weapon.Spawn(CP, Weapon.Owner,, Start, Dir);
+		//P = Muzzles[MuzzleNum].Spawn(CP, Muzzles[MuzzleNum],, Start, Dir);
 	}
 	else
 		Return None;
@@ -685,8 +703,8 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 {
     local	Projectile	P;
 
-	//P = Weapon.Spawn(ProjectileClass, Weapon,, Start, Dir);
-	P = Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, Start, Dir);
+	P = Weapon.Spawn(ProjectileClass, Weapon.Owner,, Start, Dir);
+	//P = Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, Start, Dir);
 	/*
 	if ( P == None )
 		P = ForceSpawnProjectile(Start, Dir);
@@ -707,14 +725,11 @@ function DoFireEffect()
     local	int			p;
     local	float		theta;
 
-	if ( ProjectileClass == None || Muzzles[MuzzleNum] == None )
-		Return;
-	
 	Instigator.MakeNoise(1.0);
     Weapon.GetViewAxes(VX, VY, VZ);
 
-	//StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
-	StartProj = Muzzles[MuzzleNum].Location;
+	StartProj = GetProjectileSpawnOffset(VX, VY, VZ);
+	//StartProj = Muzzles[MuzzleNum].Location;
     if ( HumanOwner != None )
 		Aim = HumanOwner.GetAimRotation(self, StartProj);
 	else
@@ -729,8 +744,7 @@ function DoFireEffect()
 				R.Yaw = Spread * (FRand() - 0.5);
 				R.Pitch = Spread * (FRand() - 0.5);
 				R.Roll = Spread * (FRand() - 0.5);
-				//SpawnProjectile(StartProj, Rotator(VX >> R));
-				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Rotator(VX >> R));
+				SpawnProjectile(StartProj, Rotator(VX >> R));
 			}
 			Break;
 		
@@ -740,15 +754,13 @@ function DoFireEffect()
 				VX.X = Cos(theta);
 				VX.Y = Sin(theta);
 				VX.Z = 0.0;
-				//SpawnProjectile(StartProj, Rotator(VX >> Aim));
-				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Rotator(VX >> Aim));
+				SpawnProjectile(StartProj, Rotator(VX >> Aim));
 			}
 			Break;
 		
 		default:
 			for ( p = 0; p < ProjPerFire; ++p )  {
-				//SpawnProjectile(StartProj, Aim);
-				Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, StartProj, Aim);
+				SpawnProjectile(StartProj, Aim);
 			}
 			Break;
 	}
@@ -777,6 +789,7 @@ function UpdateFireRate()
 	
 	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )  {
+		//ToDo: эта функция должна принимать FireMode, а не класс оружия
 		FireSpeedModif = KFPRI.ClientVeteranSkill.Static.GetFireSpeedMod(KFPRI, Weapon);
 		// FireSpeedModif in UM_HumanPawn replicates from the server to the clients
 		if ( UM_HumanPawn(Instigator) != None && Weapon.Role == ROLE_Authority )
@@ -791,7 +804,7 @@ function UpdateFireRate()
 /* ToDo: после реализации переключения боеприспасов эту функцию 
 	нужно переписать аналогично GetAimError(). Issue #201 */
 // Calculate modifications to spread bonus
-function float UpdateSpread(float NewSpread)
+function float UpdateSpread( float NewSpread )
 {
 	if ( (Level.TimeSeconds - LastFireTime) > SpreadCooldownTime )
 		NumShotsInBurst = 0;
@@ -813,9 +826,7 @@ function float UpdateSpread(float NewSpread)
 	if ( Instigator != None && Instigator.bIsCrouched )
 		NewSpread *= CrouchedSpreadBonus;
 	
-	NewSpread *= VeterancySpreadBonus;
-		
-	Return NewSpread;
+	Return NewSpread * VeterancySpreadBonus;
 }
 
 // This function returns the current AimError with all bonuses and 
@@ -841,7 +852,7 @@ function float GetAimError()
 	Return CurrentAimError;
 }
 
-function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
+function UpdateFireProperties( Class<UM_SRVeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
 	
@@ -851,27 +862,25 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 	MaxSpread = default.MaxSpread;
 		
 	//[block] Switching ProjectileClass, ProjPerFire and Spread by Perk Index if Perk exist
-	if ( KFPRI != None && SRVT != None )  {
-		if ( bChangeProjByPerk  )  {
-			// Assign default.PerkIndex
-			DefPerkIndex = SRVT.default.PerkIndex;
-			if ( PerkProjsInfo.Length > DefPerkIndex )  {
-				// Checking and assigning ProjectileClass
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
-					ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
-				
-				// Checking and assigning ProjPerFire
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
-					ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
-				
-				// Checking and assigning Spread
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
-					Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
-				
-				// Checking and assigning MaxSpread
-				if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
-					MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
-			}
+	if ( SRVT != None && bChangeProjByPerk )  {
+		// Assign default.PerkIndex
+		DefPerkIndex = SRVT.default.PerkIndex;
+		if ( PerkProjsInfo.Length > DefPerkIndex )  {
+			// Checking and assigning ProjectileClass
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjClass != None )
+				ProjectileClass = PerkProjsInfo[DefPerkIndex].PerkProjClass;
+			
+			// Checking and assigning ProjPerFire
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjPerFire > 0 )
+				ProjPerFire = PerkProjsInfo[DefPerkIndex].PerkProjPerFire;
+			
+			// Checking and assigning Spread
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjSpread > 0.0 )
+				Spread = PerkProjsInfo[DefPerkIndex].PerkProjSpread;
+			
+			// Checking and assigning MaxSpread
+			if ( PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread > 0.0 )
+				MaxSpread = PerkProjsInfo[DefPerkIndex].PerkProjMaxSpread;
 		}
 	}
 	//[end]
@@ -883,7 +892,7 @@ function UpdateFireProperties( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeteran
 // Cleaning up the old function
 function ShakeView() { }
 
-function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
+function ShakePlayerView()
 {
     local	PlayerController	P;
 	local	float				ShakeScaler;
@@ -892,12 +901,9 @@ function ShakePlayerView( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTyp
 	if ( P != None )  {
 		// Add up to MaxMoveShakeScale shake depending on how fast the player is moving
 		if ( !KFWeapon(Weapon).bSteadyAim && MaxMoveShakeScale > 1.0 )
-			ShakeScaler = FMax((MaxMoveShakeScale * InstigatorMovingSpeed / Instigator.default.GroundSpeed), 1.0);
+			ShakeScaler = FMax((MaxMoveShakeScale * InstigatorMovingSpeed / Instigator.default.GroundSpeed), 1.0) * VeterancyShakeViewModifier;
 		else
-			ShakeScaler = 1.0;
-		
-		if ( KFPRI != None && SRVT != None )
-			ShakeScaler *= SRVT.static.GetShakeViewModifier( KFPRI, Self );
+			ShakeScaler = 1.0 * VeterancyShakeViewModifier;
 		
 		// Aiming bonuses
 		if ( KFWeap.bAimingRifle )
@@ -951,6 +957,62 @@ simulated function bool AllowFire()
 	Return True;
 }
 
+// Cleaning up the old function
+simulated function HandleRecoil(float Rec) { }
+
+function AddRecoil()
+{
+	local	Rotator				NewRecoilRotation;
+	local	KFPlayerController	KFPC;
+	local	Vector				AdjustedVelocity;
+	local	float				AdjustedSpeed;
+
+	KFPC = KFPlayerController(Instigator.Controller);
+	if ( KFPC != None && !KFPC.bFreeCamera )  {
+		// Aiming bonuses
+		if ( KFWeap.bAimingRifle )  {
+			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle * AimingVerticalRecoilBonus;
+			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle * AimingHorizontalRecoilBonus;
+		}
+		else  {
+			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
+			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
+		}
+		NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
+		NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
+
+		if ( !bRecoilRightOnly && Rand(2) == 1 )
+			NewRecoilRotation.Yaw *= -1.0;
+
+		if ( RecoilVelocityScale > 0.0 )  {
+			AdjustedVelocity = Instigator.Velocity;
+			if ( Instigator.Physics == PHYS_Falling &&
+				Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
+				// Ignore Z velocity in low grav so we don't get massive recoil
+				AdjustedVelocity.Z = 0.0;
+				AdjustedSpeed = VSize(AdjustedVelocity);
+				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
+				// Reduce the falling recoil in low grav
+				NewRecoilRotation.Pitch += Round(AdjustedSpeed * RecoilVelocityScale * 0.5);
+				NewRecoilRotation.Yaw += Round(AdjustedSpeed * RecoilVelocityScale * 0.5);
+			}
+			else  {
+				if ( bRecoilIgnoreZVelocity )
+					AdjustedVelocity.Z = 0.0;
+				AdjustedSpeed = VSize(AdjustedVelocity);
+				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
+				NewRecoilRotation.Pitch += Round(AdjustedSpeed * RecoilVelocityScale);
+				NewRecoilRotation.Yaw += Round(AdjustedSpeed * RecoilVelocityScale);
+			}
+		}
+		// Recoil based on how much Health the player have
+		NewRecoilRotation.Pitch += Round(Instigator.HealthMax / float(Instigator.Health) * 5.0);
+		NewRecoilRotation.Yaw += Round(Instigator.HealthMax / float(Instigator.Health) * 5.0);
+		// Perk bouns
+		KFPC.SetRecoil( (NewRecoilRotation * VeterancyRecoilModifier), (RecoilRate * FireSpeedModif) );
+ 	}
+}
+
 // Prevents the de-synchronization between the client and the server
 function CheckClientMuzzleNum()
 {
@@ -971,13 +1033,18 @@ function ChangeMuzzleNum()
 // Copeid from the WeaponFire class with some changes. Added new functions.
 event ModeDoFire()
 {
-	local	float						FireRateRatio;
-	local	KFPlayerReplicationInfo		KFPRI;
-	local	Class<UM_SRVeterancyTypes>	SRVT;
+	local	float	FireRateRatio;
 
 	if ( Instigator == None || Instigator.Controller == None || 
 		 !AllowFire() )
 		Return;
+	
+	/*
+	if ( Muzzles[MuzzleNum] == None )  {
+		Log("Can't find Muzzle Object #"$MuzzleNum, Name);
+		InitWeaponMuzzles();
+		Return;
+	}	*/
 	
 	bTheLastShot = KFWeap.MagAmmoRemaining <= AmmoPerFire;
 	// Storing InstigatorMovingSpeed
@@ -985,10 +1052,6 @@ event ModeDoFire()
 		InstigatorMovingSpeed = VSize(Instigator.Velocity);
 	else
 		InstigatorMovingSpeed = 0.0;
-	
-	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
-	if ( KFPRI != None )
-		SRVT = Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill);
 	
 	UpdateFireRate();
 	
@@ -998,7 +1061,7 @@ event ModeDoFire()
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
 		// Updating spread and projectile info. 
-		UpdateFireProperties( KFPRI, SRVT );
+		UpdateFireProperties( Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill) );
 		Weapon.ConsumeAmmo(ThisModeNum, Load);
 		DoFireEffect();
 		AddKickMomentum();
@@ -1014,14 +1077,14 @@ event ModeDoFire()
 	if ( Instigator.IsLocallyControlled() )  {
 		CheckClientMuzzleNum();
 		PlayFiring();
-		ShakePlayerView( KFPRI, SRVT );
+		ShakePlayerView();
 		if ( bDoFiringEffects && !Level.bDropDetail )  {
 			FlashMuzzleFlash();
 			StartMuzzleSmoke();
 			EjectShell();
 		}
 		// client Updating Recoil
-		AddRecoil( KFPRI, SRVT );
+		AddRecoil();
 	}
 	else // server
 		ServerPlayFiring();
@@ -1075,65 +1138,6 @@ event ModeDoFire()
 		Weapon.PutDown();
 		Return;
 	}
-}
-
-// Cleaning up the old function
-simulated function HandleRecoil(float Rec) { }
-
-function AddRecoil( KFPlayerReplicationInfo KFPRI, Class<UM_SRVeterancyTypes> SRVT )
-{
-	local	Rotator				NewRecoilRotation;
-	local	KFPlayerController	KFPC;
-	local	Vector				AdjustedVelocity;
-	local	float				AdjustedSpeed;
-
-	KFPC = KFPlayerController(Instigator.Controller);
-	if ( KFPC != None && !KFPC.bFreeCamera )  {
-		// Aiming bonuses
-		if ( KFWeap.bAimingRifle )  {
-			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle * AimingVerticalRecoilBonus;
-			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle * AimingHorizontalRecoilBonus;
-		}
-		else  {
-			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
-			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
-		}
-		NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
-		NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
-
-		if ( !bRecoilRightOnly && Rand(2) == 1 )
-			NewRecoilRotation.Yaw *= -1.0;
-
-		if ( RecoilVelocityScale > 0.0 )  {
-			AdjustedVelocity = Instigator.Velocity;
-			if ( Instigator.Physics == PHYS_Falling &&
-				Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
-				// Ignore Z velocity in low grav so we don't get massive recoil
-				AdjustedVelocity.Z = 0.0;
-				AdjustedSpeed = VSize(AdjustedVelocity);
-				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
-				// Reduce the falling recoil in low grav
-				NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale * 0.5);
-				NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale * 0.5);
-			}
-			else  {
-				if ( bRecoilIgnoreZVelocity )
-					AdjustedVelocity.Z = 0.0;
-				AdjustedSpeed = VSize(AdjustedVelocity);
-				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
-				NewRecoilRotation.Pitch += (AdjustedSpeed * RecoilVelocityScale);
-				NewRecoilRotation.Yaw += (AdjustedSpeed * RecoilVelocityScale);
-			}
-		}
-		// Recoil based on how much Health the player have
-		NewRecoilRotation.Pitch += (Instigator.HealthMax / Instigator.Health * 5);
-		NewRecoilRotation.Yaw += (Instigator.HealthMax / Instigator.Health * 5);
-		// Perk bouns
-		if ( KFPRI != None && SRVT != None )
-			NewRecoilRotation *= SRVT.static.GetRecoilModifier( KFPRI, Self );
-
-		KFPC.SetRecoil(NewRecoilRotation, (RecoilRate * FireSpeedModif));
- 	}
 }
 
 // Overriden because I'm using my own functions to update Spread and AimError.
@@ -1268,6 +1272,8 @@ function PlayFireEnd()
 
 defaultproperties
 {
+	 VeterancyRecoilModifier=1.0
+	 VeterancyShakeViewModifier=1.0
 	 InitialStateName=""
 	 bCanDryFire=True
 	 MuzzleNum=0
@@ -1280,6 +1286,7 @@ defaultproperties
 	 FlashEmitterClasses(0)=Class'ROEffects.MuzzleFlash1stSTG'
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
+	 MuzzleClasses(0)=Class'UnlimaginMod.UM_TestWeaponMuzzle'
 	 //[end]
 	 // Animation
 	 //ReloadAnim
@@ -1329,7 +1336,6 @@ defaultproperties
 	 //ShakeView
 	 AimingShakeBonus=0.950000
 	 //Movement
-	 CrouchedMovingBonus=0.650000
 	 MaxMoveShakeScale=1.100000
 	 MovingAimErrorScale=4.000000
 	 // Max InstigatorMovingSpeed (GroundSpeed) = 200
@@ -1361,3 +1367,4 @@ defaultproperties
 	 MaxSpread=500.000000
      SpreadStyle=SS_Random
 }
+

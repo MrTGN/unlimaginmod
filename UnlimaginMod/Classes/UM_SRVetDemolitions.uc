@@ -119,7 +119,7 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 }
 
 // New function to reduce taken damage
-static function float GetTakenDamageModifier( UM_PlayerReplicationInfo PRI, Pawn Victim, Pawn Aggressor, class<DamageType> DamageType )
+static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
 	if ( class<UM_BaseDamType_ExplosiveBullets>(DamageType) != None )
 		Return 0.3 - (0.05 * float(Min(PRI.ClientVeteranSkillLevel, 6)));	// After the 6 lvl no damage at all

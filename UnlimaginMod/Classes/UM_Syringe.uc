@@ -56,14 +56,6 @@ simulated event PostBeginPlay()
 	}
 }
 
-simulated event PostNetBeginPlay()
-{
-	Super.PostNetBeginPlay();
-	
-	if ( UM_HumanPawn(Instigator) != None )
-		UM_HumanPawn(Instigator).Syringe = self;
-}
-
 simulated event Tick( float DeltaTime )
 {
 	if ( Level.NetMode != NM_Client && AmmoCharge[0] < MaxAmmoCount && Level.TimeSeconds >= RegenTimer )  {

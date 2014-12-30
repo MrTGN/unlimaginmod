@@ -42,6 +42,16 @@ const 	UnrRotToDeg = 0.00549316540360483;
 //========================================================================
 //[block] Functions
 
+final simulated static function float GetMeterInUU()
+{
+	Return MeterInUU;
+}
+
+final simulated static function float GetSquareMeterInUU()
+{
+	Return SquareMeterInUU;
+}
+
 // Cosine of the angle between two vectors
 final simulated static function float CosBetweenVectors( vector VectA, vector VectB )
 {

@@ -188,7 +188,7 @@ simulated function UpdateHud()
 
 	if ( bDisplayQuickSyringe  )
 	{
-		S = Syringe(PawnOwner.FindInventoryType(class'Syringe'));
+		S = Syringe(PawnOwner.FindInventoryType(Class'UnlimaginMod.UM_Syringe'));
 		if ( S != none )
 		{
 			QuickSyringeDigits.Value = S.ChargeBar() * 100;
@@ -1262,6 +1262,7 @@ function DrawInventory(Canvas C)
 		}
 	}
 }
+
 function PrevWeapon()
 {
 	local Inventory CurInv;
@@ -1325,6 +1326,7 @@ function PrevWeapon()
 //			break;
 //	}
 }
+
 function NextWeapon()
 {
 	local Inventory CurInv;
@@ -1388,6 +1390,7 @@ function NextWeapon()
 //			break;
 //	}
 }
+
 function HideInventory()
 {
 	if( bDisplayInventory )
@@ -1459,6 +1462,7 @@ function DisplayMessages(Canvas C)
 		YPos += (YL+YYL);
 	}
 }
+
 function AddTextMessage(string M, class<LocalMessage> MessageClass, PlayerReplicationInfo PRI)
 {
 	local int i;
@@ -1483,6 +1487,7 @@ function AddTextMessage(string M, class<LocalMessage> MessageClass, PlayerReplic
 		TextMessages[i].PRI = PRI;
 	else TextMessages[i].PRI = None;
 }
+
 simulated function Message(PlayerReplicationInfo PRI, coerce string Msg, name MsgType)
 {
 	local Class<LocalMessage> LocalMessageClass;

@@ -475,11 +475,12 @@ static simulated function PreCacheMaterials(LevelInfo myLevel)
 
 defaultproperties
 {
-     HuskFireProjClass=Class'KFChar.HuskFireProjectile'
      EventClasses(0)="UnlimaginMod.UM_ZombieHusk"
      EventClasses(1)="UnlimaginMod.UM_ZombieHusk"
-     EventClasses(2)="UnlimaginMod.UM_ZombieHusk_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieHusk_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieHusk_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieHusk"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieHusk_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieHusk"
      DetachedArmClass=Class'KFChar.SeveredArmHusk'
      DetachedLegClass=Class'KFChar.SeveredLegHusk'
      DetachedHeadClass=Class'KFChar.SeveredHeadHusk'

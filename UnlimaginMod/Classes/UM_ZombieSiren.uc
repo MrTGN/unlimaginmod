@@ -368,8 +368,10 @@ defaultproperties
 {
      EventClasses(0)="UnlimaginMod.UM_ZombieSiren"
      EventClasses(1)="UnlimaginMod.UM_ZombieSiren"
-     EventClasses(2)="UnlimaginMod.UM_ZombieSiren_HALLOWEEN"
-     EventClasses(3)="UnlimaginMod.UM_ZombieSiren_XMas"
+     //EventClasses(2)="UnlimaginMod.UM_ZombieSiren_HALLOWEEN"
+	 EventClasses(2)="UnlimaginMod.UM_ZombieSiren"
+     //EventClasses(3)="UnlimaginMod.UM_ZombieSiren_XMas"
+	 EventClasses(3)="UnlimaginMod.UM_ZombieSiren"
      DetachedLegClass=Class'KFChar.SeveredLegSiren'
      DetachedHeadClass=Class'KFChar.SeveredHeadSiren'
      ControllerClass=Class'UnlimaginMod.UM_ZombieSirenController'

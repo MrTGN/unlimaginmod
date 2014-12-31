@@ -1612,12 +1612,12 @@ simulated function ClientWeaponSet( bool bPossiblySwitch )
 
 state PendingClientWeaponSet
 {
-	simulated function BeginState()
+	simulated event BeginState()
 	{
 		SetTimer(0.05, false);
 	}
 
-	simulated function Timer()
+	simulated event Timer()
 	{
 		if ( Pawn(Owner) != None )
 			ClientWeaponSet(bPendingSwitch);
@@ -1626,7 +1626,7 @@ state PendingClientWeaponSet
 			SetTimer(0.05, false);
 	}
 
-	simulated function EndState()
+	simulated event EndState()
 	{
 	}
 }
@@ -1677,12 +1677,14 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 				On the client it sets in ClientWeaponSet() function from the Owner variable, 
 				which sets in the Pawn AddInventory() function (calling from here) 
 				and then replicated to the client. */
+	if ( Owner != Other )
+		SetOwner(Other);
 	Instigator = Other;
-	W = Weapon(Instigator.FindInventoryType(Class));
+	W = Weapon( Instigator.FindInventoryType(Class) );
 	// added class check because somebody made FindInventoryType() return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
-		bJustSpawned = True;
-		Super(Inventory).GiveTo(Other);
+		bJustSpawned = Instigator.AddInventory( Self );
+		//Super(Inventory).GiveTo(Other);
 		bPossiblySwitch = True;
 		W = Self;
 	}
@@ -1717,21 +1719,35 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	
 	if ( SWAmmo > 0 )
 		AddAmmo(Clamp(SWAmmo, 0, MaxAmmo(0)), 0);
+	
+	// Go to InitialState
+	if ( Instigator.Weapon == W )
+		SetInitialState();
 }
 
 function SilentGiveTo(Pawn Other, optional Pickup Pickup)
 {
 	local	int					m;
     local	Weapon				W;
-    local	bool				bJustSpawned;
+    local	bool				bPossiblySwitch, bJustSpawned;
 	
+	if ( Owner != Other )
+		SetOwner(Other);
 	Instigator = Other;
-	W = Weapon(Instigator.FindInventoryType(Class));
+	W = Weapon( Instigator.FindInventoryType(Class) );
+	// added class check because somebody made FindInventoryType() return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
-		bJustSpawned = True;
-		GiveTo(Other);
+		bJustSpawned = Instigator.AddInventory( Self );
+		//Super(Inventory).GiveTo(Other);
+		bPossiblySwitch = True;
 		W = Self;
 	}
+	else if ( !W.HasAmmo() )
+		bPossiblySwitch = True;
+	
+	if ( Pickup == None )
+		bPossiblySwitch = True;
+	
 	// Giving ammo
 	for ( m = 0; m < NUM_FIRE_MODES; ++m )  {
 		if ( FireMode[m] != None )  {

@@ -106,6 +106,8 @@ defaultproperties
 	 Mesh=SkeletalMesh'UM_Scrake_A.Scrake_Mesh'
 	 MeshTestCollisionHeight=59.6
 	 MeshTestCollisionRadius=20.0
+	 CollisionHeight=59.6
+	 CollisionRadius=20.0
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.0,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.4,Z=0.0),AreaImpactStrength=10.0)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=20.0,AreaHeight=44.4,AreaImpactStrength=14.4)

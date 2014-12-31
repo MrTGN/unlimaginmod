@@ -675,7 +675,7 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 
 	// perform the second trace ..
 	StartTrace = Instigator.Location + Instigator.EyePosition();
-    Other = Weapon.Trace(HitLocation, HitNormal, Start, StartTrace, false, vect(0,0,1));
+    Other = Weapon.Trace(HitLocation, HitNormal, Start, StartTrace, True, vect(0,0,1));
 
     CP = GetDesiredProjectileClass();
 	
@@ -705,10 +705,10 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 
 	P = Weapon.Spawn(ProjectileClass, Weapon.Owner,, Start, Dir);
 	//P = Muzzles[MuzzleNum].Spawn(ProjectileClass, Muzzles[MuzzleNum],, Start, Dir);
-	/*
-	if ( P == None )
-		P = ForceSpawnProjectile(Start, Dir);
 
+	if ( P == None || P.bDeleteMe )
+		P = ForceSpawnProjectile(Start, Dir);
+	/*
 	if ( P != None )
 		PostSpawnProjectile(P);
 	else

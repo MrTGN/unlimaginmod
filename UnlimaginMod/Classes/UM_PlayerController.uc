@@ -309,7 +309,7 @@ event PlayerTick( float DeltaTime )
 			Advertising_ExitZone();
 	}
 
-	Super(PlayerController).PlayerTick( DeltaTime );
+	Super(xPlayer).PlayerTick( DeltaTime );
 }
 
 // Set up the widescreen FOV values for this player
@@ -721,11 +721,6 @@ exec function BehindView( Bool B )
 	}
 }
 
-exec function ToggleBehindView()
-{
-	ServerToggleBehindview();
-}
-
 function ServerToggleBehindview()
 {
 	local bool B;
@@ -735,6 +730,33 @@ function ServerToggleBehindview()
 		ClientSetBehindView(B);
 		bBehindView = B;
 	}
+}
+
+exec function ToggleBehindView()
+{
+	ServerToggleBehindview();
+}
+
+exec function ThrowGrenade()
+{
+	if ( UM_HumanPawn(Pawn) != None )
+		UM_HumanPawn(Pawn).ThrowGrenade();
+}
+
+exec function NextWeapon()
+{
+	if ( HUDKillingFloor(myHUD) != None )
+		HUDKillingFloor(myHUD).NextWeapon();
+	else
+		super.NextWeapon();
+}
+
+exec function PrevWeapon()
+{
+	if ( HUDKillingFloor(myHUD) != None )
+		HUDKillingFloor(myHUD).PrevWeapon();
+	else
+		super.PrevWeapon();
 }
 
 // Fix for vehicle mod crashes.
@@ -857,20 +879,18 @@ function ClientSetWeapon( class<Weapon> WeaponClass )
 	}
 }
 
-
 // Hide weapon highlight when using this shortcut key.
-exec function SwitchWeapon(byte F)
+exec function SwitchWeapon( byte F )
 {
-	//local Weapon W;
+	local	Weapon	W;
 
 	if ( Pawn != None )  {
-		//W = Pawn.PendingWeapon;
+		W = Pawn.PendingWeapon;
 		Pawn.SwitchWeapon(F);
-		/*
-		if ( W != Pawn.PendingWeapon && HudKillingFloor(MyHUD) != None )  {
-			HudKillingFloor(MyHUD).SelectedInventory = Pawn.PendingWeapon;
-			HudKillingFloor(MyHUD).HideInventory();
-		}	*/
+		if ( W != Pawn.PendingWeapon && HUDKillingFloor(MyHUD) != None )  {
+			HUDKillingFloor(MyHUD).SelectedInventory = Pawn.PendingWeapon;
+			HUDKillingFloor(MyHUD).HideInventory();
+		}
 	}
 }
 

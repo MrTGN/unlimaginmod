@@ -54,10 +54,51 @@ simulated event PostBeginPlay()
 
 	// Difficulty Scaling
 	if ( Level.Game != None )  {
-		BaseDamage = Max((DifficultyDamageModifer() * BaseDamage),1);
-		Damage = Max((DifficultyDamageModifer() * Damage),1);
+		BaseDamage = Max((DifficultyDamageModifer() * BaseDamage), 1);
+		Damage = Max((DifficultyDamageModifer() * Damage), 1);
 	}
 }
+
+function BlowUp(Vector HitLocation)
+{
+    if ( Role == ROLE_Authority )  {
+        //Damage = BaseDamage + Damage * GoopLevel;
+		Damage = BaseDamage - Round(Damage * GoopLevel);
+        DamageRadius = DamageRadius * GoopVolume;
+        MomentumTransfer = MomentumTransfer * GoopVolume;
+        if ( Physics == PHYS_Flying )
+			MomentumTransfer *= 0.5;
+		DelayedHurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
+    }
+
+    PlaySound(ExplodeSound, SLOT_Misc);
+
+    Destroy();
+    //GotoState('shriveling');
+}
+
+
+singular function SplashGlobs(int NumGloblings)
+{
+    local	int				g;
+    local	KFBloatVomit	NewGlob;
+    local	Vector			VNorm;
+
+	for ( g = 0; g < NumGloblings; ++g )  {
+		NewGlob = Spawn( Class, Instigator,, (Location + GoopVolume * (CollisionHeight + 4.0) * SurfaceNormal) );
+		if ( NewGlob != None )  {
+			NewGlob.InstigatorController = InstigatorController;
+			NewGlob.Velocity = (GloblingSpeed + FRand()*150.0) * (SurfaceNormal + VRand()*0.8);
+			if ( Physics == PHYS_Falling )  {
+				VNorm = (Velocity dot SurfaceNormal) * SurfaceNormal;
+				NewGlob.Velocity += (-VNorm + (Velocity - VNorm)) * 0.1;
+			}
+			
+		}
+		//else log("unable to spawn globling");
+	}
+}
+
 
 
 auto state Flying
@@ -83,10 +124,10 @@ auto state Flying
                 SplashGlobs(GoopLevel - CoreGoopLevel);
             SetGoopLevel(CoreGoopLevel);
         }
-        spawn(class'KFMod.VomitDecal',,,, rotator(-HitNormal));
+        Spawn(class'KFMod.VomitDecal',,,, rotator(-HitNormal));
 
         bCollideWorld = false;
-        SetCollisionSize(GoopVolume*10.0, GoopVolume*10.0);
+        SetCollisionSize( (GoopVolume * 10.0), (GoopVolume * 10.0) );
         bProjTarget = true;
 
         NewRot = Rotator(HitNormal);
@@ -129,7 +170,8 @@ auto state Flying
 defaultproperties
 {
      Speed=400.000000
-     Damage=4.000000
+     BaseDamage=10
+	 Damage=4.000000
 	 MyDamageType=Class'KFMod.DamTypeVomit'
      ImpactSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_AcidSplash'
      DrawType=DT_StaticMesh

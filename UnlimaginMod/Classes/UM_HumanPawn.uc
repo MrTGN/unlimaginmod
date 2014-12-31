@@ -40,10 +40,8 @@ var		transient	vector			LastAimTargetLocation;
 var		transient	vector			LastCameraLocation, LastCameraDirection;
 
 // Bile Damaging
-var		int							BileDamage;
-var		range						BileDamageMultRandRange;
-var		float						BileLifeSpan;
-var		transient	float			BileTimeLeft;
+var		range						BileDamageRandRange;
+var		transient	float			BileIntensity;
 var		transient	float			LastBileTime;
 
 // Drowning Damage
@@ -53,7 +51,7 @@ var		class<DamageType>			DrowningDamageType;
 
 // Burning Damage
 var		range						BurningDamageRandRange;
-var		float						BurningIntensity;
+var		transient	float			BurningIntensity;
 var		float						BurningFrequency; 
 var		transient	float			NextBurningTime, LastBurningTime;
 var		class<DamageType>			BurningDamageType;
@@ -242,10 +240,10 @@ function CreateInventory( string InventoryClassName )
 	
 	InventoryClass = Level.Game.BaseMutator.GetInventoryClass(InventoryClassName);
 	if ( InventoryClass != None && FindInventoryItem(InventoryClass) == None )  {
-		Inv = Spawn(InventoryClass, Self);
+		Inv = Spawn(InventoryClass, self);
 		if ( Inv != None )  {
 			Inv.GiveTo(self);
-			if ( Inv != None )  {
+			if ( Inv != None && !Inv.bDeleteMe )  {
 				Inv.PickupFunction(self);
 				// SellValue
 				if ( KFWeapon(Inv) != None && Class<KFWeaponPickup>(Inv.PickupClass) != None )  {
@@ -428,6 +426,19 @@ function SetCarryWeight( float NewCarryWeight )
 	UpdateJumpZ();
 }
 
+function UpdateInventoryMovementModifiers()
+{
+	if ( UM_BaseWeapon(Weapon) != None )
+		InventoryMovementModifier = UM_BaseWeapon(Weapon).OwnerMovementModifier;
+	else if ( KFWeapon(Weapon) != None && KFWeapon(Weapon).bSpeedMeUp )
+		InventoryMovementModifier = default.BaseMeleeIncrease;
+	else
+		InventoryMovementModifier = default.InventoryMovementModifier;
+	
+	if ( UM_PlayerRepInfo != None && Weapon != None )
+		InventoryMovementModifier *= UM_PlayerRepInfo.GetWeaponPawnMovementBonus(Weapon);
+}
+
 function CheckVeterancyCarryWeightLimit()
 {
 	local	byte		t;
@@ -523,6 +534,7 @@ simulated function NotifyVeterancyChanged()
 	}
 	UpdateHealthMovementModifiers();
 	UpdateCarryWeightMovementModifiers();
+	UpdateInventoryMovementModifiers();
 	UpdateGroundSpeed();
 	UpdateJumpZ();
 	
@@ -703,16 +715,22 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 	}
 	
 	if ( LastAimTarget != None && Controller != None )  {
-		Controller.InstantWarnTarget( LastAimTarget, WeaponFire.SavedFireProperties, LastCameraDirection );
-		Controller.ShotTarget = Pawn(LastAimTarget);
+		if ( UM_BallisticCollision(LastAimTarget) == None )  {
+			Controller.InstantWarnTarget( LastAimTarget, WeaponFire.SavedFireProperties, LastCameraDirection );
+			Controller.ShotTarget = Pawn(LastAimTarget);
+		}
+		else if ( LastAimTarget.Base != None )  {
+			Controller.InstantWarnTarget( LastAimTarget.Base, WeaponFire.SavedFireProperties, LastCameraDirection );
+			Controller.ShotTarget = Pawn(LastAimTarget.Base);
+		}
 	}
 	
 	// If target is closer to the screen than the SpawnLocation
 	if ( VSizeSquared(LastAimTargetLocation - LastCameraLocation) <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
 		if ( WeaponFire.ProjClass != None )
-			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 6.0;
+			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 12.0;
 		else
-			f = 6.0;
+			f = 12.0;
 		// Change SpawnLocation
 		SpawnLocation = LastAimTargetLocation + Normal(LastCameraLocation - LastAimTargetLocation) * f;
 	}
@@ -1056,6 +1074,8 @@ function SetWeaponOverlay( Material Mat, float Time, bool Override )
 	}
 }
 
+
+
 // Replicated to the server if was called on the client-side
 function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 {
@@ -1103,24 +1123,13 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 			else
 				Weapon.StopBerserk();
 		}
-		
-		if ( UM_BaseWeapon(Weapon) != None )
-			InventoryMovementModifier = UM_BaseWeapon(Weapon).OwnerMovementModifier;
-		else if ( KFWeapon(Weapon) != None && KFWeapon(Weapon).bSpeedMeUp )
-			InventoryMovementModifier = default.BaseMeleeIncrease;
-		else
-			InventoryMovementModifier = default.InventoryMovementModifier;
-		
-		if ( UM_PlayerRepInfo != None )
-			InventoryMovementModifier *= UM_PlayerRepInfo.GetWeaponPawnMovementBonus(Weapon);
 	}
-	else
-		InventoryMovementModifier = default.InventoryMovementModifier;
 	
 	// tell inventory that weapon changed (in case any effect was being applied)
 	if ( Inventory != None )
 		Inventory.OwnerEvent('ChangedWeapon');
 	
+	UpdateInventoryMovementModifiers();
 	UpdateGroundSpeed();
 }
 
@@ -1134,7 +1143,7 @@ simulated function bool AllowHoldWeapon( Weapon InWeapon )
 }
 
 // The player wants to switch to weapon group number F.
-simulated function SwitchWeapon(byte F)
+simulated function SwitchWeapon( byte F )
 {
 	local	Weapon	NewWeapon;
 
@@ -1196,7 +1205,7 @@ simulated function ChangedWeapon()
 					else
 						Weapon.StopBerserk();
 				}
-			}			
+			}
 		}
 	}
 	else
@@ -1609,38 +1618,33 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	
 	// Burnified if the burn damage was significant enough
 	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None) && Damage > 2 )  {
-		// Update timers only if we are not already burning
-		if ( NextBurningTime < Level.TimeSeconds )  {
-			LastBurningTime = Level.TimeSeconds;
-			NextBurningTime = LastBurningTime + BurningFrequency;
-		}
+		bAllowedToChangeHealth = False;
+		LastBurningTime = Level.TimeSeconds;
+		NextBurningTime = LastBurningTime + BurningFrequency;
 		
-		BurningIntensity += float(Damage);
 		BurnInstigator = InstigatedBy;
+		BurningIntensity += float(Damage);
 		bBurnified = BurningIntensity > 0.0;
+		bAllowedToChangeHealth = True;
 		
 		Return; // Burning does not cause an instant damage
 	}
 	
 	// Start to taking a BileDamage if damage was significant enough
 	if ( Class<DamTypeVomit>(DamageType) != None && Damage > 2 )  {
-		// Update timers only if we are not already taking a bile damage
-		if ( NextBileTime < Level.TimeSeconds )  {
-			LastBileTime = Level.TimeSeconds;
-			NextBileTime = LastBileTime + BileFrequency;
-			BileDamage = Damage;
-		}
-		else
-			BileDamage = Max(Damage, BileDamage);
+		bAllowedToChangeHealth = False;
+		LastBileTime = Level.TimeSeconds;
+		NextBileTime = LastBileTime + BileFrequency;
 		
 		BileInstigator = InstigatedBy;
-		BileTimeLeft += BileLifeSpan;
+		BileIntensity += float(Damage);
 		
 		// Survived 10 Seconds After Vomit Achievement
 		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bVomittedOn )  {
 			SurvivedAfterVomitTime = Level.TimeSeconds + 10.0;
 			bVomittedOn = True;
 		}
+		bAllowedToChangeHealth = True;
 		
 		Return;	// Bile does not cause an instant damage
 	}
@@ -1822,10 +1826,12 @@ function TakeBileDamage()
 	local	int		DeltaBileDamage;
 	
 	NextBileTime = Level.TimeSeconds + BileFrequency;
-	BileTimeLeft = FMax( (BileTimeLeft - BileFrequency), 0.0 );
-	
-	DeltaBileDamage = Round(float(BileDamage) * BaseActor.static.GetRandRangeFloat(BileDamageMultRandRange) * (Level.TimeSeconds - LastBileTime));
+	// Rounding BileIntensity per delay
+	DeltaBileDamage = Round( FMin(BileIntensity, BaseActor.static.GetRandRangeFloat(BileDamageRandRange)) * (Level.TimeSeconds - LastBileTime) );
 	if ( DeltaBileDamage > 0 )  {
+		// Decreasing BileIntensity
+		BileIntensity = FMax( (BileIntensity - float(DeltaBileDamage)), 0.0 );
+		// Damaging
 		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
 		if ( DeltaBileDamage > 0 )  {
 			LastBileTime = Level.TimeSeconds;
@@ -1841,6 +1847,9 @@ function TakeBileDamage()
 			}
 		}
 	}
+	// Checking BileIntensity
+	if ( Round(BileIntensity) < 1 )
+		BileIntensity = 0.0;
 }
 
 // Clearing old function
@@ -1853,9 +1862,11 @@ function TakeBurningDamage()
 	
 	NextBurningTime = Level.TimeSeconds + BurningFrequency;
 	// Rounding BurningIntensity per delay
-	DeltaBurningDamage = Round(FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime));
+	DeltaBurningDamage = Round( FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime) );
 	if ( DeltaBurningDamage > 0 )  {
+		// Decreasing BurningIntensity
 		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
+		// Damaging
 		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
 		if ( DeltaBurningDamage > 0 )  {
 			LastBurningTime = Level.TimeSeconds;
@@ -2023,7 +2034,7 @@ simulated event Tick( float DeltaTime )
 				AppendHealth();
 			
 			// Bile Damage
-			if ( BileTimeLeft > 0.0 && Level.TimeSeconds >= NextBileTime )
+			if ( BileIntensity > 0.0 && Level.TimeSeconds >= NextBileTime )
 				TakeBileDamage();
 			
 			// Burning Damage
@@ -2226,8 +2237,7 @@ defaultproperties
      AirSpeed=230.000000
      // Damaging
 	 BileFrequency=0.5
-	 BileLifeSpan=4.0
-	 BileDamageMultRandRange=(Min=0.7,Max=1.3)
+	 BileDamageRandRange=(Min=3.0,Max=5.0)
 	 // Drowning
 	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
 	 DrowningDamageFrequency=1.0
@@ -2240,7 +2250,7 @@ defaultproperties
 	 FallingDamageType=Class'Fell'
 	 // CarryWeight
 	 WeightMovementModifier=0.14
-	 WeightJumpModifier=0.07
+	 WeightJumpModifier=0.06
 	 MaxOverweightScale=1.2
 	 OverweightMovementModifier=0.3
 	 OverweightJumpModifier=0.2

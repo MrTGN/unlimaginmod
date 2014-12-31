@@ -1111,8 +1111,8 @@ defaultproperties
 	 bBlockNonZeroExtentTraces=True
 	 
 	 DrawScale=1.000000
-	 MeshTestCollisionHeight=0.0
-	 MeshTestCollisionRadius=0.0
+	 MeshTestCollisionHeight=50.0
+	 MeshTestCollisionRadius=25.0
 	 CollisionHeight=50.0
 	 CollisionRadius=25.0
 	 

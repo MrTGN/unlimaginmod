@@ -376,6 +376,7 @@ simulated function DrawHud(Canvas C)
 	if ( bShowNotification )
 		DrawPopupNotification(C);
 }
+
 function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 {
 	local float XL, YL, TempX, TempY, TempSize;
@@ -1155,6 +1156,7 @@ final function DrawSelectionIcon( Canvas C, bool bSelected, KFWeapon I, float Wi
 		C.DrawColor.B = 255;
 	}
 }
+
 function DrawInventory(Canvas C)
 {
 	local Inventory CurInv;
@@ -1263,6 +1265,101 @@ function DrawInventory(Canvas C)
 	}
 }
 
+function PrevWeapon()
+{
+	local	Inventory			Inv;
+	local	InventoryCategory	Categorized[5];
+	local	int					i, c;
+
+	if ( PawnOwner == None || PawnOwner.Inventory == None || !ShowInventory() )
+		Return;
+	
+	for ( Inv = PawnOwner.Inventory; Inv != None && c < 1000; Inv = Inv.Inventory )  {
+		// Don't allow non-categorized or Grenades
+		if ( Inv.InventoryGroup > 0 )  {
+			if ( Inv == SelectedInventory )  {
+				SelectedInventoryCategory = Inv.InventoryGroup - 1;
+				SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount;
+			}
+			Categorized[ Inv.InventoryGroup - 1 ].Items[ Categorized[Inv.InventoryGroup - 1].ItemCount++ ] = Inv;
+		}
+		++c; // Prevent runaway loop
+	}
+	
+	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryIndex].ItemCount )
+		SelectedInventoryIndex = Categorized[SelectedInventoryIndex].ItemCount - 1;
+	
+	if ( SelectedInventoryIndex > 0 )  {
+		--SelectedInventoryIndex;
+		SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+	}
+	else  {
+		c = 0;
+		for ( i = SelectedInventoryCategory - 1; i != SelectedInventoryCategory && c < 10; --i )  {
+			if ( i < 0 )
+				i = 4;	// 5 Category (0 - 4)
+			if ( Categorized[i].ItemCount > 0 )  {
+				SelectedInventoryCategory = i;
+				SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+				SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+				Return;
+			}
+			++c;
+		}
+		
+		// if we only have one category with items in it, this will move to the last(or lowest) item in this category
+		SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+	}
+}
+
+function NextWeapon()
+{
+	local	Inventory			Inv;
+	local	InventoryCategory	Categorized[5];
+	local	int					i, c;
+	
+	if ( PawnOwner == None || PawnOwner.Inventory == None || !ShowInventory() )
+		Return;
+	
+	for ( Inv = PawnOwner.Inventory; Inv != None && c < 1000; Inv = Inv.Inventory )  {
+		// Don't allow non-categorized or Grenades
+		if ( Inv.InventoryGroup > 0 )  {
+			if ( Inv == SelectedInventory )  {
+				SelectedInventoryCategory = Inv.InventoryGroup - 1;
+				SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount;
+			}
+			Categorized[ Inv.InventoryGroup - 1 ].Items[ Categorized[Inv.InventoryGroup - 1].ItemCount++ ] = Inv;
+		}
+		++c; // Prevent runaway loop
+	}
+	
+	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryIndex].ItemCount )
+		SelectedInventoryIndex = Categorized[SelectedInventoryIndex].ItemCount - 1;
+	
+	if ( SelectedInventoryIndex < (Categorized[SelectedInventoryIndex].ItemCount - 1) )  {
+		++SelectedInventoryIndex;
+		SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+	}
+	else  {
+		c = 0;
+		for ( i = SelectedInventoryCategory + 1; i != SelectedInventoryCategory && c < 10; ++i )  {
+			if ( i > 4 )
+				i = 0;	// 0 Category (0 - 4)
+			if ( Categorized[i].ItemCount > 0 )  {
+				SelectedInventoryCategory = i;
+				SelectedInventoryIndex = 0;
+				SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+				Return;
+			}
+			++c;
+		}
+		
+		// if we only have one category with items in it, this will move to the first(or highest) item in this category
+		SelectedInventoryIndex = 0;
+	}
+}
+
+/*
 function PrevWeapon()
 {
 	local Inventory CurInv;
@@ -1389,11 +1486,11 @@ function NextWeapon()
 //		if( PawnOwner.Weapon!=SelectedInventory ) // Make sure not reselecting current weapon.
 //			break;
 //	}
-}
+}	*/
 
 function HideInventory()
 {
-	if( bDisplayInventory )
+	if ( bDisplayInventory )
 		Super.HideInventory();
 }
 
@@ -1607,6 +1704,7 @@ simulated final function DrawSmileyText( string S, canvas C, optional out float 
 	XXL = CurX;
 	C.SetPos(PX,PY);
 }
+
 simulated final function int FindNextSmile( string S, out int SmileNr )
 {
 	local int i,p,bp;
@@ -1627,6 +1725,7 @@ simulated final function int FindNextSmile( string S, out int SmileNr )
 	}
 	Return bp;
 }
+
 static final function string StripColorForTTS(string s) // Strip color codes.
 {
 	local int p;

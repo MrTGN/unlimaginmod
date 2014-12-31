@@ -1157,12 +1157,85 @@ final function DrawSelectionIcon( Canvas C, bool bSelected, KFWeapon I, float Wi
 	}
 }
 
+function DrawInventory( Canvas C )
+{
+	local	Inventory			Inv;
+	local	InventoryCategory	Categorized[5];
+	local	int					i, j;
+	local	float				TempX, TempY, TempWidth, TempHeight, TempBorder;
+
+	if ( PawnOwner == None )
+		Return;
+
+	if ( bInventoryFadingIn )  {
+		if ( Level.TimeSeconds < (InventoryFadeStartTime + InventoryFadeTime) )
+			C.SetDrawColor(255, 255, 255, byte(((Level.TimeSeconds - InventoryFadeStartTime) / InventoryFadeTime) * 255.0));
+		else
+			bInventoryFadingIn = False;
+			C.SetDrawColor(255, 255, 255, 255);
+	}
+	else if ( bInventoryFadingOut )  {
+		if ( Level.TimeSeconds < (InventoryFadeStartTime + InventoryFadeTime) )
+			C.SetDrawColor(255, 255, 255, byte((1.0 - ((Level.TimeSeconds - InventoryFadeStartTime) / InventoryFadeTime)) * 255.0));
+		else  {
+			bInventoryFadingOut = false;
+			return;
+		}
+	}
+	else
+		C.SetDrawColor(255, 255, 255, 255);
+	
+	for ( Inv = PawnOwner.Inventory; Inv != None; Inv = Inv.Inventory )  {
+		// Don't allow non-categorized or Grenades
+		if ( Inv.InventoryGroup > 0 )
+			Categorized[ Inv.InventoryGroup - 1 ].Items[ Categorized[Inv.InventoryGroup - 1].ItemCount++ ] = Inv;
+	}
+
+	TempX = InventoryX * C.ClipX;
+	TempWidth = InventoryBoxWidth * C.ClipX;
+	TempHeight = InventoryBoxHeight * C.ClipX;
+	TempBorder = BorderSize * C.ClipX;
+	
+	for ( i = 0; i < 5; ++i )  {
+		if ( Categorized[i].ItemCount == 0 )  {
+			TempY = InventoryY * C.ClipY;
+			C.SetPos(TempX, TempY);
+			C.DrawTileStretched( InventoryBackgroundTexture, TempWidth, (TempHeight * 0.25) );
+		}
+		else  {
+			TempY = InventoryY * C.ClipY;
+			for ( j = 0; j < Categorized[i].ItemCount; ++j )  {
+				// If this is the currently Selected Item
+				if ( i == SelectedInventoryCategory && j == SelectedInventoryIndex )  {
+					// Draw this item's Background
+					C.SetPos(TempX, TempY);
+					C.DrawTileStretched(SelectedInventoryBackgroundTexture, TempWidth, TempHeight);
+					// Draw the Weapon's Icon over the Background
+					C.SetPos(TempX + TempBorder, TempY + TempBorder);
+					C.DrawTile(KFWeapon(Categorized[i].Items[j]).SelectedHudImage, TempWidth - (2.0 * TempBorder), TempHeight - (2.0 * TempBorder), 0, 0, 256, 192);
+				}
+				else {
+					// Draw this item's Background
+					C.SetPos(TempX, TempY);
+					C.DrawTileStretched(InventoryBackgroundTexture, TempWidth, TempHeight);
+					// Draw the Weapon's Icon over the Background
+					C.SetPos(TempX + TempBorder, TempY + TempBorder);
+					C.DrawTile(KFWeapon(Categorized[i].Items[j]).HudImage, TempWidth - (2.0 * TempBorder), TempHeight - (2.0 * TempBorder), 0, 0, 256, 192);
+				}
+				TempY += TempHeight;
+			}
+		}
+		TempX += TempWidth;
+	}
+}
+
+/*
 function DrawInventory(Canvas C)
 {
 	local Inventory CurInv;
 	local int i, Categorized[5], Num[5], X, Y, TempX, TempY, TempWidth, TempHeight, TempBorder, StartY;
 
-	if( PawnOwner == none )
+	if ( PawnOwner == none )
 	{
 		return;
 	}
@@ -1263,6 +1336,48 @@ function DrawInventory(Canvas C)
 			C.DrawTileStretched(InventoryBackgroundTexture, TempWidth, TempHeight * 0.25);
 		}
 	}
+} */
+
+function SelectWeapon()
+{
+	local	Weapon	W;
+
+	HideInventory();
+
+	if ( PawnOwner == None )
+		Return;
+
+	W = Weapon( PawnOwner.FindInventoryType(SelectedInventory.Class) );
+	if ( W == None || W != SelectedInventory || W.Class != SelectedInventory.Class )
+		Return;	// Didn't find Selected weapon in Inventory list
+	
+	if ( UM_HumanPawn(PawnOwner) != None && !UM_HumanPawn(PawnOwner).AllowHoldWeapon(W) )
+		Return;
+	
+	PawnOwner.PendingWeapon = W;
+	if ( PawnOwner.Weapon == None )
+		PawnOwner.ChangedWeapon();
+	else if ( PawnOwner.Weapon != PawnOwner.PendingWeapon )
+		PawnOwner.Weapon.PutDown();
+}
+
+function bool ShowInventory()
+{
+	if ( !bDisplayInventory )  {
+		bDisplayInventory = True;
+		bInventoryFadingIn = True;
+		bInventoryFadingOut = False;
+		InventoryFadeStartTime = Level.TimeSeconds - 0.01;
+
+		if ( PawnOwner != None && PawnOwner.Weapon != None )
+			SelectedInventory = PawnOwner.Weapon;
+		else if ( PawnOwner != None && PawnOwner.Inventory != None )
+			SelectedInventory = PawnOwner.Inventory;
+		else
+			Return False;
+	}
+
+	Return True;
 }
 
 function PrevWeapon()

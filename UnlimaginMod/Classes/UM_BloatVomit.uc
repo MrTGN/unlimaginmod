@@ -170,7 +170,7 @@ auto state Flying
 defaultproperties
 {
      Speed=400.000000
-     BaseDamage=10
+     BaseDamage=8
 	 Damage=4.000000
 	 MyDamageType=Class'KFMod.DamTypeVomit'
      ImpactSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_AcidSplash'

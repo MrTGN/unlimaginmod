@@ -125,45 +125,6 @@ simulated function ClientNotifySuccessfulHealing()
 		UM_SyringeFire(FireMode[0]).ClientModeDoFire();
 }
 
-simulated function Weapon PrevWeapon( Weapon CurrentChoice, Weapon CurrentWeapon )
-{
-	// Do not select this directly if Instigator is Quick Healing
-	if ( UM_HumanPawn(Instigator) != None && UM_HumanPawn(Instigator).bIsQuickHealing > 0 )  {
-		if ( Inventory == None )
-			Return CurrentChoice;
-		else
-			Return Inventory.PrevWeapon(CurrentChoice, CurrentWeapon);
-	}
-	else
-		Super.PrevWeapon(CurrentChoice, CurrentWeapon);
-}
-
-simulated function Weapon NextWeapon( Weapon CurrentChoice, Weapon CurrentWeapon )
-{
-	// Do not select this directly if Instigator is Quick Healing
-	if ( UM_HumanPawn(Instigator) != None && UM_HumanPawn(Instigator).bIsQuickHealing > 0 )  {
-		if ( Inventory == None )
-			Return CurrentChoice;
-		else
-			Return Inventory.NextWeapon(CurrentChoice, CurrentWeapon);
-	}
-	else
-		Super.NextWeapon(CurrentChoice, CurrentWeapon);
-}
-
-simulated function Weapon WeaponChange( byte F, bool bSilent )
-{
-	// Do not select this directly if Instigator is Quick Healing
-	if ( UM_HumanPawn(Instigator) != None && UM_HumanPawn(Instigator).bIsQuickHealing > 0 )  {
-		if ( Inventory == None )
-			Return None;
-		else 
-			Return Inventory.WeaponChange(F, bSilent);
-	}
-	else
-		Super.WeaponChange(F, bSilent);
-}
-
 //[end] Functions
 //====================================================================
 
@@ -175,4 +136,7 @@ defaultproperties
 	 bCanOverheal=True
 	 MoneyPerHealedHealth=0.7
 	 HealBoostAmount=20
+	 Priority=7
+     InventoryGroup=5
+     GroupOffset=2
 }

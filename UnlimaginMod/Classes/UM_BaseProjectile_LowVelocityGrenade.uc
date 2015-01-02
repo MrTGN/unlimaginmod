@@ -131,7 +131,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 simulated event Landed( Vector HitNormal )
 {
 	Disarm();
-	Super.Landed(HitNormal);
+	Super(UM_BaseProjectile).Landed(HitNormal);
 }
 
 //[end] Functions

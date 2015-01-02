@@ -16,6 +16,8 @@ var transient float OldDilation,CurrentBW,DesiredBW,NextLevelTimer,LevelProgress
 var bool bUseBloom,bUseMotionBlur,bDisplayingProgress;
 var transient bool bFadeBW;
 
+var		UM_Syringe		Syringe;
+
 simulated function PostBeginPlay()
 {
 	local Font MyFont;
@@ -35,196 +37,200 @@ simulated function PostBeginPlay()
 	bUseMotionBlur = Class'KFHumanPawn'.Default.bUseBlurEffect;
 }
 
-simulated function UpdateHud()
+simulated function FindPlayerGrenade()
 {
-	local float MaxGren, CurGren;
-	local KFHumanPawn KFHPawn;
-	local Syringe S;
+	if ( UM_HumanPawn(PawnOwner) == None )
+		Return;
+	
+	PlayerGrenade = Frag( UM_HumanPawn(PawnOwner).FindInventoryItem(Class'UnlimaginMod.UM_Weapon_HandGrenade', True) );
+}
 
-	if( PawnOwner == none )
-	{
-		super.UpdateHud();
-		return;
-	}
+simulated function FindSyringe()
+{
+	if ( UM_HumanPawn(PawnOwner) == None )
+		Return;
+	
+	Syringe = UM_Syringe( UM_HumanPawn(PawnOwner).FindInventoryItem(Class'UnlimaginMod.UM_Syringe', True) );
+}
 
-	KFHPawn = KFHumanPawn(PawnOwner);
-
-	CalculateAmmo();
-
-	if ( KFHPawn != none )
-	{
-		FlashlightDigits.Value = 100 * (float(KFHPawn.TorchBatteryLife) / float(KFHPawn.default.TorchBatteryLife));
-	}
-
-	if ( KFWeapon(PawnOwner.Weapon) != none )
-	{
-		BulletsInClipDigits.Value = KFWeapon(PawnOwner.Weapon).MagAmmoRemaining;
-
-		if ( BulletsInClipDigits.Value < 0 )
-		{
-			BulletsInClipDigits.Value = 0;
+simulated function ShowQuickSyringe()
+{
+	if ( bDisplayQuickSyringe )  {
+		if ( (Level.TimeSeconds - QuickSyringeStartTime) > QuickSyringeFadeInTime )  {
+			if ( (Level.TimeSeconds - QuickSyringeStartTime) > (QuickSyringeDisplayTime - QuickSyringeFadeOutTime) )
+				QuickSyringeStartTime = Level.TimeSeconds - QuickSyringeFadeInTime + ((QuickSyringeDisplayTime - (Level.TimeSeconds - QuickSyringeStartTime)) * QuickSyringeFadeInTime);
+			else
+				QuickSyringeStartTime = Level.TimeSeconds - QuickSyringeFadeInTime;
 		}
 	}
+	else  {
+		bDisplayQuickSyringe = True;
+		QuickSyringeStartTime = Level.TimeSeconds;
+	}
+}
 
-	ClipsDigits.Value = CurClipsPrimary;
-	SecondaryClipsDigits.Value = CurClipsSecondary;
+simulated function UpdateHud()
+{
+	local	float			MaxGren, CurGren;
+	local	UM_HumanPawn	HumanPawn;
 
-	if ( LAW(PawnOwner.Weapon) != none || Crossbow(PawnOwner.Weapon) != none
-        || M79GrenadeLauncher(PawnOwner.Weapon) != none || PipeBombExplosive(PawnOwner.Weapon) != none
-        || HuskGun(PawnOwner.Weapon) != none || CrossBuzzSaw(PawnOwner.Weapon) != none )
-	{
-		ClipsDigits.Value += KFWeapon(PawnOwner.Weapon).MagAmmoRemaining;
+	if ( PawnOwner == None )  {
+		Super(HudBase).UpdateHud();
+		Return;
 	}
 
-	if ( PlayerGrenade == none )
-	{
+	HumanPawn = UM_HumanPawn(PawnOwner);
+	CalculateAmmo();
+	
+	if ( HumanPawn != None )
+		FlashlightDigits.Value = int( 100.0 * (float(HumanPawn.TorchBatteryLife) / float(HumanPawn.default.TorchBatteryLife)) );
+	
+	if ( KFWeapon(PawnOwner.Weapon) != None )  {
+		BulletsInClipDigits.Value = Max( KFWeapon(PawnOwner.Weapon).MagAmmoRemaining, 0 );
+		ClipsDigits.Value = KFWeapon(PawnOwner.Weapon).AmmoAmount(0);
+		SecondaryClipsDigits.Value = KFWeapon(PawnOwner.Weapon).AmmoAmount(1);
+	}
+	else  {
+		ClipsDigits.Value = CurClipsPrimary;
+		SecondaryClipsDigits.Value = CurClipsSecondary;
+	}
+	
+	if ( PlayerGrenade == None )
 		FindPlayerGrenade();
-	}
-
-	if ( PlayerGrenade != none )
-	{
+	
+	if ( PlayerGrenade != None )  {
 		PlayerGrenade.GetAmmoCount(MaxGren, CurGren);
 		GrenadeDigits.Value = CurGren;
 	}
 	else
-	{
 		GrenadeDigits.Value = 0;
-	}
-
-	if( Vehicle(PawnOwner)!=None )
-	{
-		if( Vehicle(PawnOwner).Driver!=None )
+	
+	if ( Vehicle(PawnOwner) != None )  {
+		if ( Vehicle(PawnOwner).Driver != None )
 			HealthDigits.Value = Vehicle(PawnOwner).Driver.Health;
 		ArmorDigits.Value = PawnOwner.Health;
 	}
-	else
-	{
+	else  {
 		HealthDigits.Value = PawnOwner.Health;
-		if( KFHPawn!=None )
-			ArmorDigits.Value = KFHPawn.ShieldStrength;
+		if ( HumanPawn != None )
+			ArmorDigits.Value = HumanPawn.ShieldStrength;
 	}
-
+	
 	// "Poison" the health meter
-	if ( VomitHudTimer > Level.TimeSeconds )
-	{
+	if ( VomitHudTimer > Level.TimeSeconds )  {
+		// Tints[0]
 		HealthDigits.Tints[0].R = 196;
 		HealthDigits.Tints[0].G = 206;
 		HealthDigits.Tints[0].B = 0;
-
+		// Tints[1]
 		HealthDigits.Tints[1].R = 196;
 		HealthDigits.Tints[1].G = 206;
 		HealthDigits.Tints[1].B = 0;
 	}
-	else if ( PawnOwner.Health < 50 )
-	{
-		if ( Level.TimeSeconds < SwitchDigitColorTime )
-		{
+	else if ( HealthDigits.Value < 50 )  {
+		if ( Level.TimeSeconds < SwitchDigitColorTime )  {
+			// Tints[0]
 			HealthDigits.Tints[0].R = 255;
 			HealthDigits.Tints[0].G = 200;
 			HealthDigits.Tints[0].B = 0;
-
+			// Tints[1]
 			HealthDigits.Tints[1].R = 255;
 			HealthDigits.Tints[1].G = 200;
 			HealthDigits.Tints[1].B = 0;
 		}
-		else
-		{
+		else  {
+			// Tints[0]
 			HealthDigits.Tints[0].R = 255;
 			HealthDigits.Tints[0].G = 0;
 			HealthDigits.Tints[0].B = 0;
-
+			// Tints[1]
 			HealthDigits.Tints[1].R = 255;
 			HealthDigits.Tints[1].G = 0;
 			HealthDigits.Tints[1].B = 0;
-
-			if ( Level.TimeSeconds > SwitchDigitColorTime + 0.2 )
-			{
+			// SwitchDigitColorTime
+			if ( Level.TimeSeconds > (SwitchDigitColorTime + 0.2) )
 				SwitchDigitColorTime = Level.TimeSeconds + 0.2;
-			}
 		}
 	}
-	else
-	{
+	else  {
+		// Tints[0]
 		HealthDigits.Tints[0].R = 255;
 		HealthDigits.Tints[0].G = 50;
 		HealthDigits.Tints[0].B = 50;
-
+		// Tints[1]
 		HealthDigits.Tints[1].R = 255;
 		HealthDigits.Tints[1].G = 50;
 		HealthDigits.Tints[1].B = 50;
 	}
-
-
-
-	CashDigits.Value = PawnOwnerPRI.Score;
-
+	
+	if ( PawnOwnerPRI != None )
+		CashDigits.Value = PawnOwnerPRI.Score;
+	else
+		CashDigits.Value = 0;
+	
 	WelderDigits.Value = 100 * (CurAmmoPrimary / MaxAmmoPrimary);
 	SyringeDigits.Value = WelderDigits.Value;
-
-	if ( SyringeDigits.Value < 50 )
-	{
+	if ( SyringeDigits.Value < 50 )  {
+		// Tints[0]
 		SyringeDigits.Tints[0].R = 128;
 		SyringeDigits.Tints[0].G = 128;
 		SyringeDigits.Tints[0].B = 128;
-
+		// Tints[1]
 		SyringeDigits.Tints[1] = SyringeDigits.Tints[0];
 	}
-	else if ( SyringeDigits.Value < 100 )
-	{
+	else if ( SyringeDigits.Value < 100 )  {
+		// Tints[0]
 		SyringeDigits.Tints[0].R = 192;
 		SyringeDigits.Tints[0].G = 96;
 		SyringeDigits.Tints[0].B = 96;
-
+		// Tints[1]
 		SyringeDigits.Tints[1] = SyringeDigits.Tints[0];
 	}
-	else
-	{
+	else  {
+		// Tints[0]
 		SyringeDigits.Tints[0].R = 255;
 		SyringeDigits.Tints[0].G = 64;
 		SyringeDigits.Tints[0].B = 64;
-
+		// Tints[1]
 		SyringeDigits.Tints[1] = SyringeDigits.Tints[0];
 	}
-
-	if ( bDisplayQuickSyringe  )
-	{
-		S = Syringe(PawnOwner.FindInventoryType(Class'UnlimaginMod.UM_Syringe'));
-		if ( S != none )
-		{
-			QuickSyringeDigits.Value = S.ChargeBar() * 100;
-
-			if ( QuickSyringeDigits.Value < 50 )
-			{
+	
+	// QuickSyringe
+	if ( bDisplayQuickSyringe )  {
+		if ( Syringe == None )
+			FindSyringe();
+		// Syringe found
+		if ( Syringe != None )  {
+			QuickSyringeDigits.Value = Syringe.ChargeBar() * 100;
+			if ( QuickSyringeDigits.Value < 50 )  {
+				// Tints[0]
 				QuickSyringeDigits.Tints[0].R = 128;
 				QuickSyringeDigits.Tints[0].G = 128;
 				QuickSyringeDigits.Tints[0].B = 128;
-
+				// Tints[1]
 				QuickSyringeDigits.Tints[1] = QuickSyringeDigits.Tints[0];
 			}
-			else if ( QuickSyringeDigits.Value < 100 )
-			{
+			else if ( QuickSyringeDigits.Value < 100 )  {
+				// Tints[0]
 				QuickSyringeDigits.Tints[0].R = 192;
 				QuickSyringeDigits.Tints[0].G = 96;
 				QuickSyringeDigits.Tints[0].B = 96;
-
+				// Tints[1]
 				QuickSyringeDigits.Tints[1] = QuickSyringeDigits.Tints[0];
 			}
-			else
-			{
+			else  {
+				// Tints[0]
 				QuickSyringeDigits.Tints[0].R = 255;
 				QuickSyringeDigits.Tints[0].G = 64;
 				QuickSyringeDigits.Tints[0].B = 64;
-
+				// Tints[1]
 				QuickSyringeDigits.Tints[1] = QuickSyringeDigits.Tints[0];
 			}
 		}
 	}
-
-	// Hints
-	if ( PawnOwner.Health <= 50 )
-	{
+	
+	if ( PawnOwner.Health <= 50 && KFPlayerController(PlayerOwner) != None )
 		KFPlayerController(PlayerOwner).CheckForHint(51);
-	}
 
 	Super(HudBase).UpdateHud();
 }
@@ -1229,115 +1235,6 @@ function DrawInventory( Canvas C )
 	}
 }
 
-/*
-function DrawInventory(Canvas C)
-{
-	local Inventory CurInv;
-	local int i, Categorized[5], Num[5], X, Y, TempX, TempY, TempWidth, TempHeight, TempBorder, StartY;
-
-	if ( PawnOwner == none )
-	{
-		return;
-	}
-
-	if ( bInventoryFadingIn )
-	{
-		if ( Level.TimeSeconds < InventoryFadeStartTime + InventoryFadeTime )
-		{
-			C.SetDrawColor(255, 255, 255, byte(((Level.TimeSeconds - InventoryFadeStartTime) / InventoryFadeTime) * 255.0));
-		}
-		else
-		{
-			bInventoryFadingIn = false;
-			C.SetDrawColor(255, 255, 255, 255);
-		}
-	}
-	else if ( bInventoryFadingOut )
-	{
-		if ( Level.TimeSeconds < InventoryFadeStartTime + InventoryFadeTime )
-		{
-			C.SetDrawColor(255, 255, 255, byte((1.0 - ((Level.TimeSeconds - InventoryFadeStartTime) / InventoryFadeTime)) * 255.0));
-		}
-		else
-		{
-			bInventoryFadingOut = false;
-			return;
-		}
-	}
-	else
-	{
-		C.SetDrawColor(255, 255, 255, 255);
-	}
-
-	TempX = InventoryX * C.ClipX;
-	TempY = InventoryY * C.ClipY;
-	TempWidth = InventoryBoxWidth * C.ClipX;
-	TempHeight = InventoryBoxHeight * C.ClipX;
-	TempBorder = BorderSize * C.ClipX;
-	C.Font = GetFontSizeIndex(C, -3);
-	SelectedInventoryCategory = -1;
-
-	// First count the weapons
-	for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-	{
-		// Don't allow non-categorized or Grenades
-		if ( CurInv.InventoryGroup>0 && CurInv.InventoryGroup<=ArrayCount(Categorized) && KFWeapon(CurInv)!=None )
-		{
-			if( CurInv==SelectedInventory ) // Make sure index is in sync (could have desynced)
-			{
-				SelectedInventoryCategory = CurInv.InventoryGroup-1;
-				SelectedInventoryIndex = Categorized[SelectedInventoryCategory];
-			}
-			++Categorized[CurInv.InventoryGroup-1];
-		}
-	}
-	
-	// Check if current selected weapon goes off screen.
-	if( SelectedInventoryCategory!=-1 && (TempY+Categorized[SelectedInventoryCategory]*TempHeight)>=C.ClipY )
-	{
-		// Adjust offset based on current selected weapon.
-		Y = SelectedInventoryIndex*TempHeight;
-		X = (C.ClipY-TempY)/2;
-		if( Y>X )
-			StartY = X-Y;
-	}
-	
-	// Now draw weapons.
-	for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-	{
-		// Don't allow non-categorized or Grenades
-		if ( CurInv.InventoryGroup>0 && CurInv.InventoryGroup<=ArrayCount(Categorized) && KFWeapon(CurInv)!=None )
-		{
-			i = CurInv.InventoryGroup - 1;
-			X = TempX+(TempWidth*i);
-			Y = TempY+(Num[i]*TempHeight);
-			if( i==SelectedInventoryCategory )
-				Y+=StartY;
-
-			// Draw this item's Background
-			C.SetPos(X, Y);
-			if ( CurInv==SelectedInventory )
-				C.DrawTileStretched(SelectedInventoryBackgroundTexture, TempWidth, TempHeight);
-			else C.DrawTileStretched(InventoryBackgroundTexture, TempWidth, TempHeight);
-
-			// Draw the Weapon's Icon over the Background
-			C.SetPos(X + TempBorder, Y + TempBorder);
-			DrawSelectionIcon(C,CurInv==SelectedInventory,KFWeapon(CurInv),TempWidth - (2.0 * TempBorder),TempHeight - (2.0 * TempBorder));
-			++Num[i];
-		}
-	}
-
-	// Draw empty categories boxes.
-	for ( i=0; i<ArrayCount(Categorized); i++ )
-	{
-		if ( Categorized[i]==0 )
-		{
-			C.SetPos(TempX+(TempWidth*i), TempY);
-			C.DrawTileStretched(InventoryBackgroundTexture, TempWidth, TempHeight * 0.25);
-		}
-	}
-} */
-
 function SelectWeapon()
 {
 	local	Weapon	W;
@@ -1401,8 +1298,8 @@ function PrevWeapon()
 		++c; // Prevent runaway loop
 	}
 	
-	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryIndex].ItemCount )
-		SelectedInventoryIndex = Categorized[SelectedInventoryIndex].ItemCount - 1;
+	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryCategory].ItemCount )
+		SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
 	
 	if ( SelectedInventoryIndex > 0 )  {
 		--SelectedInventoryIndex;
@@ -1448,10 +1345,10 @@ function NextWeapon()
 		++c; // Prevent runaway loop
 	}
 	
-	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryIndex].ItemCount )
-		SelectedInventoryIndex = Categorized[SelectedInventoryIndex].ItemCount - 1;
+	if ( SelectedInventoryIndex >= Categorized[SelectedInventoryCategory].ItemCount )
+		SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
 	
-	if ( SelectedInventoryIndex < (Categorized[SelectedInventoryIndex].ItemCount - 1) )  {
+	if ( SelectedInventoryIndex < (Categorized[SelectedInventoryCategory].ItemCount - 1) )  {
 		++SelectedInventoryIndex;
 		SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
 	}
@@ -1473,135 +1370,6 @@ function NextWeapon()
 		SelectedInventoryIndex = 0;
 	}
 }
-
-/*
-function PrevWeapon()
-{
-	local Inventory CurInv;
-	local int Categorized[5], Num;
-//	local byte Tries;
-
-	if ( PawnOwner==none || PawnOwner.Inventory==None || !ShowInventory() )
-		return;
-
-//	while( ++Tries<3 )
-//	{
-		SelectedInventoryCategory = -1;
-		SelectedInventoryIndex = 0;
-
-		// First pass, gather weapon counts.
-		for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-		{
-			// Don't allow non-categorized or Grenades
-			if ( CurInv.InventoryGroup>0 && CurInv.InventoryGroup<=ArrayCount(Categorized) && KFWeapon(CurInv)!=None )
-			{
-				if ( CurInv==SelectedInventory )
-				{
-					SelectedInventoryCategory = CurInv.InventoryGroup - 1;
-					SelectedInventoryIndex = Categorized[SelectedInventoryCategory];
-				}
-				++Num;
-				++Categorized[CurInv.InventoryGroup - 1];
-			}
-		}
-
-		if( Num<=1 )
-			return; // Prevent runaway loop.
-
-		// Now check for suitable prev index.
-		// Find next available category.
-		if( SelectedInventoryIndex==0 )
-		{
-			while( true )
-			{
-				if( --SelectedInventoryCategory<0 )
-					SelectedInventoryCategory = ArrayCount(Categorized)-1;
-
-				if( Categorized[SelectedInventoryCategory]>0 )
-					break;
-			}
-			SelectedInventoryIndex = Categorized[SelectedInventoryCategory]-1;
-		}
-		else --SelectedInventoryIndex; // Simply go to previous index.
-
-		// Second pass, find our desired item.
-		Num = 0;
-		for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-		{
-			if ( CurInv.InventoryGroup==(SelectedInventoryCategory+1) && KFWeapon(CurInv)!=None && (Num++)==SelectedInventoryIndex )
-			{
-				SelectedInventory = CurInv;
-				break;
-			}
-		}
-//		if( PawnOwner.Weapon!=SelectedInventory ) // Make sure not reselecting current weapon.
-//			break;
-//	}
-}
-
-function NextWeapon()
-{
-	local Inventory CurInv;
-	local int Categorized[5], Num;
-//	local byte Tries;
-
-	if ( PawnOwner==none || PawnOwner.Inventory==None || !ShowInventory() )
-		return;
-
-//	while( ++Tries<3 )
-//	{
-		SelectedInventoryCategory = -1;
-		SelectedInventoryIndex = 0;
-
-		// First pass, gather weapon counts.
-		for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-		{
-			// Don't allow non-categorized or Grenades
-			if ( CurInv.InventoryGroup>0 && CurInv.InventoryGroup<=ArrayCount(Categorized) && KFWeapon(CurInv)!=None )
-			{
-				if ( CurInv==SelectedInventory )
-				{
-					SelectedInventoryCategory = CurInv.InventoryGroup - 1;
-					SelectedInventoryIndex = Categorized[SelectedInventoryCategory];
-				}
-				++Num;
-				++Categorized[CurInv.InventoryGroup - 1];
-			}
-		}
-
-		if( Num<=1 )
-			return; // Prevent runaway loop.
-
-		// Now check for suitable next index.
-		// Find next available category.
-		if( SelectedInventoryCategory==-1 || SelectedInventoryIndex==(Categorized[SelectedInventoryCategory]-1) )
-		{
-			while( true )
-			{
-				if( ++SelectedInventoryCategory>=ArrayCount(Categorized) )
-					SelectedInventoryCategory = 0;
-
-				if( Categorized[SelectedInventoryCategory]>0 )
-					break;
-			}
-			SelectedInventoryIndex = 0;
-		}
-		else ++SelectedInventoryIndex; // Simply go to next index.
-
-		// Second pass, find our desired item.
-		Num = 0;
-		for ( CurInv = PawnOwner.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-		{
-			if ( CurInv.InventoryGroup==(SelectedInventoryCategory+1) && KFWeapon(CurInv)!=None && (Num++)==SelectedInventoryIndex )
-			{
-				SelectedInventory = CurInv;
-				break;
-			}
-		}
-//		if( PawnOwner.Weapon!=SelectedInventory ) // Make sure not reselecting current weapon.
-//			break;
-//	}
-}	*/
 
 function HideInventory()
 {

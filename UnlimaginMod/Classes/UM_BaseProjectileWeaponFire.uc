@@ -682,7 +682,7 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 	//ToDo: переписать!!!
 	if ( CP != None )  {
 		if ( Other != None )
-			Start = (2.0 + FMax(CP.default.CollisionRadius, CP.default.CollisionHeight)) * -Normal(HitLocation - Start) + HitLocation;
+			Start = HitLocation - Normal(Start - HitLocation) * FMax(Other.CollisionRadius, CP.default.CollisionRadius) * 1.1;
 		P = Weapon.Spawn(CP, Weapon.Owner,, Start, Dir);
 		//P = Muzzles[MuzzleNum].Spawn(CP, Muzzles[MuzzleNum],, Start, Dir);
 	}
@@ -708,11 +708,9 @@ function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 
 	if ( P == None || P.bDeleteMe )
 		P = ForceSpawnProjectile(Start, Dir);
-	/*
+	
 	if ( P != None )
 		PostSpawnProjectile(P);
-	else
-		Return None; */
 	
 	Return P;
 }

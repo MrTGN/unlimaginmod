@@ -57,12 +57,13 @@ event Landed(vector HitNormal)
 
 event Bump(actor Other)
 {
+	
 	// TODO: is there a better way
 	if ( bPouncing && KFHumanPawn(Other) != None )  {
 		if ( CurrentDamtype != None )
-			KFHumanPawn(Other).TakeDamage(((MeleeDamage - (MeleeDamage * 0.05)) + (MeleeDamage * (FRand() * 0.1))), self, Location, Velocity, CurrentDamtype);
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
 		else
-			KFHumanPawn(Other).TakeDamage(((MeleeDamage - (MeleeDamage * 0.05)) + (MeleeDamage * (FRand() * 0.1))), self, Location, Velocity, ZombieDamType[Rand(3)]);
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(3)] );
 		//TODO - move this to humanpawn.takedamage? Also see KFMonster.MeleeDamageTarget
 		if ( KFHumanPawn(Other).Health <= 0 )
 			KFHumanPawn(Other).SpawnGibs(Rotation, 1);

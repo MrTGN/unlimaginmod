@@ -56,9 +56,17 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 	LastTouched = A;
 	if ( CanHitThisActor(A) )  {
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		Explode(TouchLocation, TouchNormal);
+		if ( IsArmed() )
+			Explode(TouchLocation, TouchNormal);
 	}
 	LastTouched = None;
+}
+
+simulated event Landed( vector HitNormal )
+{
+	Super(UM_BaseProjectile).Landed(HitNormal);
+	if ( IsArmed() )
+		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 }
 
 simulated singular event HitWall(vector HitNormal, actor Wall)
@@ -70,15 +78,8 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
-	
-	Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	Landed(HitNormal);
 	HurtWall = None;
-}
-
-simulated singular event Landed( vector HitNormal )
-{
-	SetPhysics(PHYS_None);
-	Explode((Location + ExploWallOut * HitNormal), HitNormal);
 }
 
 //[end] Functions
@@ -86,7 +87,10 @@ simulated singular event Landed( vector HitNormal )
 
 defaultproperties
 {
-     CullDistance=5000.000000
+     bAutoLifeSpan=True
+	 UpdateTimeDelay=0.100000
+	 ShrapnelClass=None
+	 CullDistance=5000.000000
 	 ImpactDamage=0.0
 	 ImpactDamageType=None
 	 bIgnoreSameClassProj=True
@@ -98,4 +102,12 @@ defaultproperties
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 BallisticRandRange=(Min=0.85,Max=1.15)
+	 bBounce=True
+	 bCanRebound=False
+	 bOrientToVelocity=True
+	 //Physics
+	 Physics=PHYS_Projectile
+	 //RemoteRole
+     RemoteRole=ROLE_SimulatedProxy
+	 bNetNotify=True
 }

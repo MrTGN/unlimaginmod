@@ -1911,7 +1911,7 @@ defaultproperties
      UM_FinalWave=7
 	  
      //MaxZombiesOnce
-     UM_MaxZombiesOnce=50
+     UM_MaxZombiesOnce=48
 	  
      UM_TimeBetweenWaves=100
 	  

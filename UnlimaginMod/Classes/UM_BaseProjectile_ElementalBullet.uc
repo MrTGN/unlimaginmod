@@ -45,7 +45,7 @@ replication
 simulated event PostBeginPlay()
 {
 	if ( Role == ROLE_Authority )
-		bCanDisintegrate = (FRand() <= DisintegrateChance);
+		bCanDisintegrate = FRand() <= DisintegrateChance;
 	
 	Super.PostBeginPlay();
 }
@@ -117,6 +117,12 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 	LastTouched = None;
 }
 
+simulated event Landed( vector HitNormal )
+{
+	Super(UM_BaseProjectile).Landed(HitNormal);
+	Explode((Location + ExploWallOut * HitNormal), HitNormal);
+}
+
 // Called when the actor can collide with world geometry and just hit a wall.
 simulated singular event HitWall( Vector HitNormal, Actor Wall )
 {
@@ -127,16 +133,9 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
-	
 	//ProcessHitWall(HitNormal);
-	Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	Landed(HitNormal);
 	HurtWall = None;
-}
-
-simulated singular event Landed( vector HitNormal )
-{
-	SetPhysics(PHYS_None);
-	Explode(Location, HitNormal);
 }
 
 // TakeDamage must be simulated because it is a bNetTemporary actor

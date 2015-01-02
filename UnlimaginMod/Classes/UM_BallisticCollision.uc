@@ -62,6 +62,12 @@ simulated function float GetCollisionVSize()
 	Return VSize(CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0));
 }
 
+simulated event BaseChange()
+{
+	if ( Base == None || Base.bDeleteMe )
+		Destroy();
+}
+
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
 	if ( Base != None )

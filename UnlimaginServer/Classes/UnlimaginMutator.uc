@@ -27,7 +27,7 @@ const		UnlimaginModVersion = "0.001a";
 
 struct ReplacedPickupData
 {
-	var		string		DefaultClass;
+	var		name		DefaultClass;
 	var		string		ReplaceByClass;
 };
 
@@ -264,9 +264,9 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 	// Check for the ReplacedPickups
 	if ( Other != None && Class<Pickup>(Other.Class) != None )  {
 		for ( i = 0; i < ReplacedPickups.Length; ++i )  {
-			if ( ReplacedPickups[i].DefaultClass != "" && string(Other.Class) ~= ReplacedPickups[i].DefaultClass )  {
+			if ( ReplacedPickups[i].DefaultClass != '' && Other.IsA(ReplacedPickups[i].DefaultClass) )  {
 				ReplaceWith( Other, ReplacedPickups[i].ReplaceByClass );
-				Return False;
+				Return False;	// Was replaced
 			}
 		}
 	}
@@ -280,7 +280,7 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 	else if ( UM_SRClientPerkRepLink(Other) != None )
 		SetupRepLink( UM_SRClientPerkRepLink(Other) );
 
-	Return True;
+	Return True;	// Wasn't replaced
 }
 
 final function SetServerPerks( UM_ServerStStats Stat )

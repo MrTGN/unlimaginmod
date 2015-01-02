@@ -57,6 +57,15 @@ simulated event PostNetBeginPlay()
 	RandSpin(25000);
 }
 
+simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+{
+	LastTouched = A;
+	if ( CanHitThisActor(A) )
+		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		
+	LastTouched = None;
+}
+
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
 	local	Vector	HitLocation;
@@ -84,7 +93,7 @@ simulated event Landed( Vector HitNormal )
 		DesiredRotation = Rotation;
 		SetRotation(DesiredRotation);
 	}
-	Super.Landed(HitNormal);
+	Super(UM_BaseProjectile).Landed(HitNormal);
 }
 
 simulated event Destroyed()

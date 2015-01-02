@@ -34,13 +34,13 @@ defaultproperties
      LightBrightness=250.000000
      LightRadius=10.000000
      DrawType=DT_StaticMesh
-     DrawScale=0.600000
+     DrawScale=0.500000
      bUnlit=False
-	 Damage=40.000000
-     DamageRadius=130.000000
+	 Damage=34.000000
+     DamageRadius=150.000000
 	 MyDamageType=Class'KFMod.DamTypeFrag'
 	 //MuzzleVelocity
-	 MuzzleVelocity=60.000000	// m/sec
+	 MuzzleVelocity=50.000000	// m/sec
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 TransientSoundVolume=1.500000

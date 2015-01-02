@@ -551,7 +551,7 @@ simulated function bool CanHurtPawn( Pawn P )
 	
 	// Do not damage a friendly Pawn
 	if ( Instigator != None )  {
-		if ( (!bCanHurtOwner && P == Instigator ) 
+		if ( (!bCanHurtOwner && P == Instigator )
 			 || (P != Instigator && UM_GameReplicationInfo(Level.GRI) != None
 				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
 			Return False;
@@ -589,7 +589,7 @@ simulated function Explode(vector HitLocation, vector HitNormal) {}
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
-	bBounce = False;
+	//bBounce = False;
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
 	Velocity = Vect(0.0, 0.0, 0.0);
@@ -753,16 +753,13 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	/*	Todo: UM_Monster пока что вписана как затычка, дабы не снаряды реагировали на UM_BallisticCollision
+	/*	Todo: UM_Monster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
 		и не реагировали на класс мностров. */
-	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || (UM_Monster(A) == None && A.bBlockActors)) )  {
-		if ( LastTouched != None && (A == LastTouched || A.Base == LastTouched) )
-			Return False;
-		
+	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) 
+		 && (LastTouched == None || (A != LastTouched && A.Base != LastTouched)) && UM_Monster(A) == None )  {
 		if ( Mover(A.Base) != None )
 			A = A.Base;
 		
-		// [!] Todo: replace (Location + Velocity) by (Normal(Velocity) * UM_Monster(A).CollisionVSize)
 		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
 			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
 			TouchLocation = Location;
@@ -986,7 +983,8 @@ defaultproperties
 	 bCanRebound=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
-	 bBounce=False
+	 //bBounce=False
+	 bBounce=True
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
 	 bOrientToVelocity=False	// Orient in the direction of current velocity.
 	 bOrientOnSlope=False	// when landing, orient base on slope of floor

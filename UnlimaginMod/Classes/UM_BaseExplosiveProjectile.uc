@@ -146,7 +146,7 @@ simulated event PostNetReceive()
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( bHidden || bShouldExplode )
+	if ( bDisintegrated || bHasExploded )
 		Return False;
 	
 	Return True;
@@ -305,6 +305,13 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				bIgnoreThisVictim = True;
 				Break;
 			}
+		}
+		// BallisticCollision check
+		if ( UM_BallisticCollision(Victim) != None )  {
+			if ( Victim.Base != None )
+				Victim = Victim.Base;
+			else
+				bIgnoreThisVictim = True;	// Skip this BallisticCollision
 		}
 		// Skip this Victim if IgnoredVictims array contain this Victim.class
 		if ( !bIgnoreThisVictim )  {
@@ -533,10 +540,29 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( CanHitThisActor(A) )
+	if ( CanHitThisActor(A) )  {
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		
+		if ( IsArmed() )
+			Explode(TouchLocation, TouchNormal);
+	}
+	
 	LastTouched = None;
+}
+
+simulated singular event HitWall(vector HitNormal, actor Wall)
+{
+	local	Vector	HitLocation;
+	
+	if ( CanTouchThisActor(Wall, HitLocation) )  {
+		HurtWall = Wall;
+		ProcessTouchActor(Wall, HitLocation, HitNormal);
+		Return;
+	}
+	SetPhysics(PHYS_None);
+	if ( IsArmed() )
+		Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	
+	HurtWall = None;
 }
 
 simulated event Destroyed()

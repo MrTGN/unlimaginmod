@@ -132,6 +132,7 @@ defaultproperties
 {
      FireModeClass(0)=Class'UnlimaginMod.UM_SyringeFire'
      FireModeClass(1)=Class'UnlimaginMod.UM_SyringeAltFire'
+	 PickupClass=Class'UnlimaginMod.UM_SyringePickup'
 	 bSpeedMeUp=True
 	 bCanOverheal=True
 	 MoneyPerHealedHealth=0.7

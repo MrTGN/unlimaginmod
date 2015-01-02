@@ -38,6 +38,7 @@ var		transient	float			NextAimRotationTime;
 var		transient	Actor			LastAimTarget;
 var		transient	vector			LastAimTargetLocation;
 var		transient	vector			LastCameraLocation, LastCameraDirection;
+var		transient	rotator			LastCameraRotation;
 
 // Bile Damaging
 var		range						BileDamageRandRange;
@@ -681,7 +682,7 @@ simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out ve
 final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
 	local	vector		TraceEnd, HitNormal;
-	local	float		f;
+	local	float		f, SquaredDistToTarget;
 	local	rotator		AimRotation;
 	
 	// Decreasing CPU load
@@ -694,19 +695,22 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 			f = GetIntuitiveShootingRange();
 		// TraceEnd
 		if ( UM_PlayerController(Controller) != None )
-			UM_PlayerController(Controller).GetCameraPosition( LastCameraLocation, LastCameraDirection );
+			UM_PlayerController(Controller).GetCameraPosition( LastCameraLocation, LastCameraDirection, LastCameraRotation );
 		else  {
 			LastCameraLocation = EyePosition() + Location;
-			LastCameraDirection = GetViewDirection();
+			LastCameraRotation = GetViewRotation();
+			LastCameraDirection = vector(LastCameraRotation);
 		}
 		TraceEnd = LastCameraLocation + LastCameraDirection * f;
 		
 		// Tracing from the player camera to find the target
 		foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation )  {
-			if ( LastAimTarget != Self && LastAimTarget.Base != Self && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )
+			if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self && !LastAimTarget.bHidden 
+				 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )  {
 				Break;	// We have found the Target
+			}
 			else
-				LastAimTarget = None;	// Target is not satisfy the conditions of the search
+				LastAimTarget = None;	// Target is not satisfy the conditions of search
 		}
 		
 		// If we didn't find the Target just get the TraceEnd location
@@ -725,17 +729,24 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		}
 	}
 	
+	SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastCameraLocation);
 	// If target is closer to the screen than the SpawnLocation
-	if ( VSizeSquared(LastAimTargetLocation - LastCameraLocation) <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
+	// or if it closer than 900.0 uu (~= 0.5 m)
+	if ( SquaredDistToTarget <= 900.0 || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
+		/*
 		if ( WeaponFire.ProjClass != None )
 			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 12.0;
 		else
 			f = 12.0;
 		// Change SpawnLocation
-		SpawnLocation = LastAimTargetLocation + Normal(LastCameraLocation - LastAimTargetLocation) * f;
+		SpawnLocation = LastCameraLocation - Normal(LastCameraLocation - LastAimTargetLocation) * f;
+		*/
+		SpawnLocation = LastCameraLocation;
+		AimRotation = LastCameraRotation;
 	}
+	else	
+		AimRotation = rotator(Normal(LastAimTargetLocation - SpawnLocation));
 	
-	AimRotation = rotator(LastAimTargetLocation - SpawnLocation);
 	if ( bOnDrugs )
 		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
 	else
@@ -744,6 +755,7 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 	if ( f > 0.0 )  {
 		AimRotation.Yaw += f * (FRand() - 0.5);
 		AimRotation.Pitch += f * (FRand() - 0.5);
+		AimRotation.Roll += f * (FRand() - 0.5);
 	}
 	
 	Return AimRotation;
@@ -1621,10 +1633,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		bAllowedToChangeHealth = False;
 		LastBurningTime = Level.TimeSeconds;
 		NextBurningTime = LastBurningTime + BurningFrequency;
-		
 		BurnInstigator = InstigatedBy;
-		BurningIntensity += float(Damage);
-		bBurnified = BurningIntensity > 0.0;
+		BurningIntensity = FMin( (BurningIntensity + float(Damage)), HealthMax );
+		// Allow operations with Health
 		bAllowedToChangeHealth = True;
 		
 		Return; // Burning does not cause an instant damage
@@ -1635,15 +1646,9 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		bAllowedToChangeHealth = False;
 		LastBileTime = Level.TimeSeconds;
 		NextBileTime = LastBileTime + BileFrequency;
-		
 		BileInstigator = InstigatedBy;
-		BileIntensity += float(Damage);
-		
-		// Survived 10 Seconds After Vomit Achievement
-		if ( Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bVomittedOn )  {
-			SurvivedAfterVomitTime = Level.TimeSeconds + 10.0;
-			bVomittedOn = True;
-		}
+		BileIntensity = FMin( (BileIntensity + float(Damage)), HealthMax );
+		// Allow operations with Health
 		bAllowedToChangeHealth = True;
 		
 		Return;	// Bile does not cause an instant damage
@@ -1651,7 +1656,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	
 	// Survived 10 Seconds After Scream Achievement
 	if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
+		 && !bHasSurvivedAfterScream && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
 		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
 		bScreamedAt = True;
 	}
@@ -1733,10 +1738,8 @@ function bool Heal(
 	
 	if ( HealAmount > 0 && CanBeHealed(bMedicamentCanOverheal, Healer, HealMax) )  {
 		// Updating timers
-		if ( NextHealTime < Level.TimeSeconds )  {
-			LastHealTime = Level.TimeSeconds;
-			NextHealTime = LastHealTime + HealDelay;
-		}
+		LastHealTime = Level.TimeSeconds;
+		NextHealTime = LastHealTime + HealDelay;
 		// How much health was healed
 		HealAmount = Min( (HealMax - Health), HealAmount );
 		// Adding HealIntensity
@@ -1763,6 +1766,9 @@ function bool Heal(
 				// Checking optional var
 				if ( MoneyPerHealedHealth <= 0.0 )
 					MoneyPerHealedHealth = DefaultMoneyPerHealedHealth;
+				// Less money for overheal
+				if ( Health >= int(HealthMax) )
+					MoneyPerHealedHealth *= 0.5;
 				// Calculating money reward as a percentage of how much health was healed
 				Healer.AddScoreForHealing( Round(100.0 * float(HealAmount) / HealthMax * MoneyPerHealedHealth) );
 				
@@ -1833,8 +1839,14 @@ function TakeBileDamage()
 		BileIntensity = FMax( (BileIntensity - float(DeltaBileDamage)), 0.0 );
 		// Damaging
 		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
+		// if has taken damage
 		if ( DeltaBileDamage > 0 )  {
 			LastBileTime = Level.TimeSeconds;
+			// Survived 10 Seconds After Vomit Achievement
+			if ( !bHasSurvivedAfterVomit && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bVomittedOn )  {
+				SurvivedAfterVomitTime = Level.TimeSeconds + 10.0;
+				bVomittedOn = True;
+			}
 			// CamEffects
 			if ( Controller != None && PlayerController(Controller) != None )  {
 				BileCamVect.X = FRand();
@@ -1868,8 +1880,12 @@ function TakeBurningDamage()
 		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
 		// Damaging
 		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
+		// if has taken damage
 		if ( DeltaBurningDamage > 0 )  {
 			LastBurningTime = Level.TimeSeconds;
+			// Burning Effects
+			if ( !bBurnified )
+				bBurnified = True;
 			// Shake controller
 			if ( Controller != None )
 				Controller.DamageShake( DeltaBurningDamage );
@@ -1878,6 +1894,7 @@ function TakeBurningDamage()
 	// Checking BurningIntensity
 	if ( Round(BurningIntensity) < 1 )  {
 		BurningIntensity = 0.0;
+		// Burning Effects
 		bBurnified = False;
 	}
 }
@@ -1894,19 +1911,19 @@ function TakeFallingDamage()
 	else
 		FallingSpeedRatio = Abs(Velocity.Z) / (MaxFallSpeed * Abs(Class'PhysicsVolume'.default.Gravity.Z) / Abs(PhysicsVolume.Gravity.Z));
 	
-	if ( FallingSpeedRatio > 0.5 )  {
-		FallingDamage = Round(HealthMax * FallingSpeedRatio - HealthMax);
+	//if ( FallingSpeedRatio > 0.5 )  {
 		// Server
-		if ( Role == ROLE_Authority )  {
+		if ( FallingSpeedRatio > 0.5 && Role == ROLE_Authority )  {
 			MakeNoise( FMin(FallingSpeedRatio, 1.0) );
 			// Hurt pawn if FallingSpeed is over the MaxFallSpeed
-			if ( FallingSpeedRatio > 1.0 )
-				ProcessTakeDamage( FallingDamage, None, Location, vect(0.0, 0.0, 0.0), FallingDamageType );
+			if ( FallingSpeedRatio > 1.0 )  {
+				FallingDamage = ProcessTakeDamage( Round(HealthMax * FallingSpeedRatio - HealthMax), None, Location, vect(0.0, 0.0, 0.0), FallingDamageType );
+				// Shake controller
+				if ( Controller != None )
+					Controller.DamageShake( FallingDamage );
+			}
 		}
-		// Shake controller
-		if ( Controller != None )
-			Controller.DamageShake( FallingDamage );
-	}
+	//}
 }
 
 // Take a Drowning Damage (called from the BreathTimer)
@@ -2237,7 +2254,7 @@ defaultproperties
      AirSpeed=230.000000
      // Damaging
 	 BileFrequency=0.5
-	 BileDamageRandRange=(Min=3.0,Max=5.0)
+	 BileDamageRandRange=(Min=3.0,Max=6.0)
 	 // Drowning
 	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
 	 DrowningDamageFrequency=1.0

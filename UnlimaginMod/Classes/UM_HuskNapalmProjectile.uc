@@ -39,7 +39,7 @@ defaultproperties
      DrawScale=2.000000
      AmbientGlow=254
      bUnlit=True
-	 Damage=25.000000
+	 Damage=26.000000
      DamageRadius=150.000000
 	 MyDamageType=Class'KFMod.DamTypeBurned'
 	 //MuzzleVelocity

@@ -103,7 +103,8 @@ function RandomizeMonsterSizes()
 	BaseEyeHeight = default.BaseEyeHeight * DrawScale;
 	EyeHeight = default.EyeHeight * DrawScale;
 	//PrePivot.Z = CollisionHeight - default.CollisionHeight;
-	PrePivot.Z = ((MeshTestCollisionRadius * DrawScale) - MeshTestCollisionRadius) * DrawScale;
+	PrePivot.Z = (MeshTestCollisionRadius * DrawScale - MeshTestCollisionRadius) * DrawScale;
+	//PrePivot.Z = MeshTestCollisionRadius * DrawScale - MeshTestCollisionRadius;
 	
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
@@ -281,8 +282,8 @@ simulated event PostBeginPlay()
 			
 		//floats
 		RandMult = BaseActor.static.GetRandRangeFloat( DamageScaleRange );
-		SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
-		SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
+		//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
+		//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
 		JumpZ = default.JumpZ * BaseActor.static.GetRandRangeFloat( JumpZScaleRange );
 		//int
 		ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
@@ -1068,7 +1069,7 @@ defaultproperties
      // Monster Size
 	 SizeScaleRange=(Min=0.8,Max=1.2)
 	 // Monster Speed
-	 SpeedScaleRange=(Min=0.85,Max=1.1)
+	 SpeedScaleRange=(Min=0.8,Max=1.1)
 	 // Monster Health
 	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 // Monster HeadHealth

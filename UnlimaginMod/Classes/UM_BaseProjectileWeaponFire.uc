@@ -573,9 +573,10 @@ function EjectShell()
 // dual weapons changes muzzle at each shot
 function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 {
+	/*
 	local	Vector		SpawnOffset, TraceStart, HitLocation, HitNormal;
 	local	float		ProjectileSize;
-    local	Actor		Other;
+    local	Actor		Other;	*/
 	
 	if ( ProjSpawnOffsets.Length > MuzzleNum  )  {
 		if ( !Weapon.WeaponCentered() && !KFWeap.bAimingRifle )  {
@@ -605,25 +606,26 @@ function Vector GetProjectileSpawnOffset(Vector VX, Vector VY, Vector VZ)
 		}
 	}
 	
+	/*
 	//TraceStart and SpawnOffset
 	TraceStart = Instigator.Location + Instigator.EyePosition() + VY * ProjSpawnOffset.Y * Weapon.Hand + VZ * ProjSpawnOffset.Z;
 	SpawnOffset = TraceStart + VX * ProjSpawnOffset.X;
 
 	// check if projectile would spawn through a wall and adjust start location accordingly
-    Other = Weapon.Trace(HitLocation, HitNormal, SpawnOffset, TraceStart, false);
+    //Other = Instigator.Trace(HitLocation, HitNormal, SpawnOffset, TraceStart, True, vect(0.0, 0.0, 1.0));
 	// Collision attachment debugging
 	//if( Other.IsA('ROCollisionAttachment'))
 		//log(self$"'s trace hit "$Other.Base$" Collision attachment");
- 	
+
 	if ( Other != None )  {
 		if ( ProjectileClass != None )
 			ProjectileSize = 2.0 + FMax(ProjectileClass.default.CollisionRadius, ProjectileClass.default.CollisionHeight);
 		else
 			ProjectileSize = 2.0;
-		SpawnOffset = ProjectileSize * -Normal(HitLocation - TraceStart) + HitLocation;
-	}
+		SpawnOffset = HitLocation - Normal(TraceStart - HitLocation) * ProjectileSize;
+	}	*/
 
-	Return SpawnOffset;
+	Return Instigator.Location + Instigator.EyePosition() + VX * ProjSpawnOffset.X + VY * ProjSpawnOffset.Y * Weapon.Hand + VZ * ProjSpawnOffset.Z;
 }
 
 function UpdateSavedFireProperties()
@@ -675,14 +677,16 @@ function Projectile ForceSpawnProjectile(Vector Start, Rotator Dir)
 
 	// perform the second trace ..
 	StartTrace = Instigator.Location + Instigator.EyePosition();
-    Other = Weapon.Trace(HitLocation, HitNormal, Start, StartTrace, True, vect(0,0,1));
+	//StartTrace = Start - Vector(Dir) * (VSize(Start - (Instigator.Location + Instigator.EyePosition())) + Instigator.CollisionRadius + 12.0);
+    Other = Weapon.Trace(HitLocation, HitNormal, Start, StartTrace, True, vect(0.0, 0.0, 1.0));
 
     CP = GetDesiredProjectileClass();
 	
 	//ToDo: переписать!!!
 	if ( CP != None )  {
 		if ( Other != None )
-			Start = HitLocation - Normal(Start - HitLocation) * FMax(Other.CollisionRadius, CP.default.CollisionRadius) * 1.1;
+			Start = HitLocation - Vector(Dir) * (Instigator.CollisionRadius + Other.CollisionRadius + CP.default.CollisionRadius + 12.0);
+
 		P = Weapon.Spawn(CP, Weapon.Owner,, Start, Dir);
 		//P = Muzzles[MuzzleNum].Spawn(CP, Muzzles[MuzzleNum],, Start, Dir);
 	}
@@ -698,7 +702,6 @@ function PostSpawnProjectile(Projectile P)
     //P.Damage *= DamageAtten;
 }
 
-//ToDo: нужна ли эта функция вообще?
 function Projectile SpawnProjectile(Vector Start, Rotator Dir)
 {
     local	Projectile	P;

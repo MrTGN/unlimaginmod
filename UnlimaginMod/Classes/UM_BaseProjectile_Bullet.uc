@@ -30,15 +30,14 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 simulated function ZeroProjectileEnergy()
 {
 	DestroyTrail();
+	StopProjectile();
 	SetPhysics(PHYS_None);
 	Destroy();
 }
 
 simulated event Landed( Vector HitNormal )
 {
-	DestroyTrail();
-	SetPhysics(PHYS_None);
-	Destroy();
+	ZeroProjectileEnergy();
 }
 
 // Called when the projectile loses some of it's energy

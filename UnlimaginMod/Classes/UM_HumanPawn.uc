@@ -40,15 +40,29 @@ var		transient	vector			LastAimTargetLocation;
 var		transient	vector			LastCameraLocation, LastCameraDirection;
 var		transient	rotator			LastCameraRotation;
 
-// Bile Damaging
-var		range						BileDamageRandRange;
-var		transient	float			BileIntensity;
-var		transient	float			LastBileTime;
+var		float						ViewPositionUpdateDelay;
+var		transient	float			NextViewPositionUpdateTime;
+var		transient	vector			LastEyePosition, LastViewDirection;
+var		transient	rotator			LastViewRotation;
 
 // Drowning Damage
 var		range						DrowningDamageRandRange;
 var		float						DrowningDamageFrequency;
 var		class<DamageType>			DrowningDamageType;
+
+// Bile Damaging
+var		range						BileDamageRandRange;
+var		transient	float			BileIntensity;
+var		transient	float			LastBileTime;
+var		transient	bool			bIsTakingBileDamage;
+
+// Poison Damage
+var		range						PoisonDamageRandRange;
+var		transient	float			PoisonIntensity;
+var		transient	float			NextPoisoningTime, LastPoisoningTime;
+var		transient	class<DamageType>	LastPoisonDamageType;
+var		transient	Pawn			PoisoningInstigator;
+var		transient	bool			bIsTakingPoisonDamage;
 
 // Burning Damage
 var		range						BurningDamageRandRange;
@@ -56,6 +70,7 @@ var		transient	float			BurningIntensity;
 var		float						BurningFrequency; 
 var		transient	float			NextBurningTime, LastBurningTime;
 var		class<DamageType>			BurningDamageType;
+var		transient	bool			bIsTakingBurnDamage;
 
 // Falling
 var		class<DamageType>			FallingDamageType;
@@ -72,6 +87,7 @@ var		float						HealDelay;
 var		transient	float			NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
 var		float						VeterancyHealPotency;	// Veterancy Heal Bonus
+var		transient	bool			bIsHealing;
 
 // Healing Message and score
 var		string						HealedMessage;	// Message that You have healed somebody
@@ -88,6 +104,7 @@ var		transient	float			NextOverhealReductionTime;
 var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
 var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
 var		float						VeterancyOverhealPotency;	// Bonus to overheal somebody
+var		transient	bool			bIsOverhealed;
 
 // Overweight
 var		float						WeightMovementModifier;
@@ -678,15 +695,34 @@ simulated final function GetViewAxes( out vector XAxis, out vector YAxis, out ve
 	GetAxes( GetViewRotation(), XAxis, YAxis, ZAxis );
 }
 
+simulated function UpdateViewPosition()
+{
+	if ( Level.TimeSeconds < NextViewPositionUpdateTime )
+		Return;
+	
+	NextViewPositionUpdateTime = Level.TimeSeconds + ViewPositionUpdateDelay;
+	LastEyePosition = Location + EyePosition();
+	LastViewRotation = GetViewRotation();
+	LastViewDirection = vector(LastViewRotation);
+}
+
 // Find the target to fire at
 final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
-	local	vector		TraceEnd, HitNormal;
+	local	vector		TraceEnd, HitLocation, HitNormal;
 	local	float		f, SquaredDistToTarget;
 	local	rotator		AimRotation;
+	local	Actor		SpawnBlocker;
 	
+	UpdateViewPosition();
+	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(4.0, 4.0, 4.0));
+	if ( SpawnBlocker != None )  {
+		//Log("SpawnBlocker found!", Name);
+		LastAimTarget = SpawnBlocker;
+		//SpawnLocation = LastEyePosition;
+	}
 	// Decreasing CPU load
-	if ( Level.TimeSeconds >= NextAimRotationTime )  {
+	else if ( Level.TimeSeconds >= NextAimRotationTime )  {
 		NextAimRotationTime = Level.TimeSeconds + AimRotationDelay;
 		// Trace Range
 		if ( WeaponFire.UMWeapon.bAimingRifle )
@@ -697,15 +733,15 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		if ( UM_PlayerController(Controller) != None )
 			UM_PlayerController(Controller).GetCameraPosition( LastCameraLocation, LastCameraDirection, LastCameraRotation );
 		else  {
-			LastCameraLocation = EyePosition() + Location;
-			LastCameraRotation = GetViewRotation();
-			LastCameraDirection = vector(LastCameraRotation);
+			LastCameraLocation = LastEyePosition;
+			LastCameraRotation = LastViewRotation;
+			LastCameraDirection = LastViewDirection;
 		}
-		TraceEnd = LastCameraLocation + LastCameraDirection * f;
 		
+		TraceEnd = LastCameraLocation + LastCameraDirection * f;
 		// Tracing from the player camera to find the target
-		foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation )  {
-			if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self && !LastAimTarget.bHidden 
+		foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(4.0, 4.0, 4.0) )  {
+			if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self /*&& !LastAimTarget.bHidden */
 				 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )  {
 				Break;	// We have found the Target
 			}
@@ -728,11 +764,13 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 			Controller.ShotTarget = Pawn(LastAimTarget.Base);
 		}
 	}
-	
-	SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastCameraLocation);
+
+	//SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastCameraLocation);
+	SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastEyePosition);
 	// If target is closer to the screen than the SpawnLocation
-	// or if it closer than 900.0 uu (~= 0.5 m)
-	if ( SquaredDistToTarget <= 900.0 || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
+	// or if it closer than 1600.0 uu (~= 0.67 m)
+	//if ( SquaredDistToTarget <= 900.0 || SpawnBlocker != None || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
+	if ( SpawnBlocker != None || SquaredDistToTarget <= 1600.0 || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastEyePosition) )  {
 		/*
 		if ( WeaponFire.ProjClass != None )
 			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 12.0;
@@ -741,10 +779,14 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		// Change SpawnLocation
 		SpawnLocation = LastCameraLocation - Normal(LastCameraLocation - LastAimTargetLocation) * f;
 		*/
-		SpawnLocation = LastCameraLocation;
+		/*
+		SpawnLocation = LastCameraLocation - LastCameraDirection * (CollisionRadius + 12.0);
 		AimRotation = LastCameraRotation;
+		*/
+		SpawnLocation = LastEyePosition - LastViewDirection * (CollisionRadius + 12.0);
+		AimRotation = LastViewRotation;
 	}
-	else	
+	else
 		AimRotation = rotator(Normal(LastAimTargetLocation - SpawnLocation));
 	
 	if ( bOnDrugs )
@@ -1635,6 +1677,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		NextBurningTime = LastBurningTime + BurningFrequency;
 		BurnInstigator = InstigatedBy;
 		BurningIntensity = FMin( (BurningIntensity + float(Damage)), HealthMax );
+		bIsTakingBurnDamage = True;
 		// Allow operations with Health
 		bAllowedToChangeHealth = True;
 		
@@ -1646,8 +1689,10 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		bAllowedToChangeHealth = False;
 		LastBileTime = Level.TimeSeconds;
 		NextBileTime = LastBileTime + BileFrequency;
+		LastBileDamagedByType = DamageType;
 		BileInstigator = InstigatedBy;
 		BileIntensity = FMin( (BileIntensity + float(Damage)), HealthMax );
+		bIsTakingBileDamage = True;
 		// Allow operations with Health
 		bAllowedToChangeHealth = True;
 		
@@ -1744,6 +1789,7 @@ function bool Heal(
 		HealAmount = Min( (HealMax - Health), HealAmount );
 		// Adding HealIntensity
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
+		bIsHealing = True;
 		// Drugs Effect
 		if ( !bOnDrugs && HealIntensity >= DrugEffectHealIntensity )
 			SetOnDrugs();
@@ -1795,6 +1841,7 @@ protected function ReduceOverheal()
 {
 	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
 	SetHealth( Max( (Health - 1), int(HealthMax) ) );
+	bIsOverhealed = Health > int(HealthMax);
 }
 
 simulated function AddHealth() { }
@@ -1814,15 +1861,20 @@ protected function AppendHealth()
 				SetHealth( Min((Health + DeltaHealIntensity), OverhealedHealthMax) );
 			HealIntensity = FMax( (HealIntensity - float(DeltaHealIntensity) * 0.5), 0.0 );
 		}
+		bIsOverhealed = Health > int(HealthMax);
 		// turn off drug effects
 		if ( bOnDrugs && HealIntensity <= LoseDrugEffectHealIntensity )
 			SetNotOnDrugs();
 		// Checking HealIntensity
-		if ( Round(HealIntensity) < 1 )
+		if ( Round(HealIntensity) < 1 )  {
+			bIsHealing = False;
 			HealIntensity = 0.0;
+		}
 	}
-	else
+	else  {
+		bIsHealing = False;
 		HealIntensity = 0.0;
+	}
 }
 
 // Take a Bile Damage (called from the Tick)
@@ -1860,8 +1912,15 @@ function TakeBileDamage()
 		}
 	}
 	// Checking BileIntensity
-	if ( Round(BileIntensity) < 1 )
+	if ( Round(BileIntensity) < 1 )  {
+		bIsTakingBileDamage = False;
 		BileIntensity = 0.0;
+	}
+}
+
+function TakePoisonDamage()
+{
+	
 }
 
 // Clearing old function
@@ -1893,6 +1952,7 @@ function TakeBurningDamage()
 	}
 	// Checking BurningIntensity
 	if ( Round(BurningIntensity) < 1 )  {
+		bIsTakingBurnDamage = False;
 		BurningIntensity = 0.0;
 		// Burning Effects
 		bBurnified = False;
@@ -2043,19 +2103,19 @@ simulated event Tick( float DeltaTime )
 		// Operations with Pawn Health
 		if ( bAllowedToChangeHealth )  {
 			// Overheal Reduction
-			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
+			if ( bIsOverhealed && Level.TimeSeconds >= NextOverhealReductionTime )
 				ReduceOverheal();
 			
 			// Healing
-			if ( HealIntensity > 0.0 && Level.TimeSeconds >= NextHealTime )
+			if ( bIsHealing && Level.TimeSeconds >= NextHealTime )
 				AppendHealth();
 			
 			// Bile Damage
-			if ( BileIntensity > 0.0 && Level.TimeSeconds >= NextBileTime )
+			if ( bIsTakingBileDamage && Level.TimeSeconds >= NextBileTime )
 				TakeBileDamage();
 			
 			// Burning Damage
-			if ( BurningIntensity > 0.0 && Level.TimeSeconds >= NextBurningTime )
+			if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurningTime )
 				TakeBurningDamage();
 		}
 		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
@@ -2239,7 +2299,8 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     // 1 ms AimRotation delay
+     ViewPositionUpdateDelay=0.001
+	 // 1 ms AimRotation delay
 	 AimRotationDelay=0.001
 	 // HealedMessage
 	 HealedMessage="You have healed"

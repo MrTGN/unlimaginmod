@@ -94,7 +94,8 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 	bHurtEntry = True;
 
 	// Check Only Pawns
-	foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
+	//foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
+	foreach VisibleCollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation, True )  {
 		if ( Victim != None && !Victim.bDeleteMe && Victim != Hurtwall && Victim.Health > 0 )  {
 			// Resets to the default values
 			bAlreadyChecked = False;
@@ -125,7 +126,7 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 					Continue;
 				
 				Dir = Victim.Location - HitLocation;
-				Dist = FMax(VSize(Dir), 1.0);
+				Dist = FMax( VSize(Dir), 1.0 );
 				Dir /= Dist;
 				// DamageScale
 				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) / DamageRadius), 0.0)) * KFMonster(Victim).GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));

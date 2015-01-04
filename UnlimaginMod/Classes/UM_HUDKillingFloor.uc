@@ -1,4 +1,4 @@
-class UM_SRHUDKillingFloor extends HUDKillingFloor;
+class UM_HUDKillingFloor extends HUDKillingFloor;
 
 #exec obj load file="KFMapEndTextures.utx"
 #exec obj load file="2K4Menus.utx"
@@ -303,29 +303,26 @@ simulated function DrawHud(Canvas C)
 	local vector CamPos, ViewDir, ScreenPos;
 	local KFPawn KFBuddy;
 
-	CurrentGame = KFGameReplicationInfo(Level.GRI);
+	CurrentGame = KFGameReplicationInfo(PlayerOwner.Level.GRI);
 
 	if ( FontsPrecached < 2 )
 		PrecacheFonts(C);
 
 	UpdateHud();
-
 	PassStyle = STY_Modulated;
 	DrawModOverlay(C);
 
 	if ( bUseBloom )
 		PlayerOwner.PostFX_SetActive(0, true);
 
-	if ( bHideHud )
-	{
+	if ( bHideHud )  {
 		// Draw fade effects even if the hud is hidden so poeple can't just turn off thier hud
 		C.Style = ERenderStyle.STY_Alpha;
 		DrawFadeEffect(C);
-		return;
+		Return;
 	}
 
-	if ( !KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).bViewingMatineeCinematic )
-	{
+	if ( !KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).bViewingMatineeCinematic )  {
 		if ( bShowTargeting )
 			DrawTargeting(C);
 

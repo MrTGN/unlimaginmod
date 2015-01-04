@@ -1922,7 +1922,7 @@ defaultproperties
 	 UM_LoginMenuClass="UnlimaginMod.UM_SRInvasionLoginMenu"
 	 DefaultPlayerClassName="UnlimaginMod.UM_HumanPawn"
      ScoreBoardType="UnlimaginMod.UM_SRScoreBoard"
-     HUDType="UnlimaginMod.UM_SRHUDKillingFloor"
+     HUDType="UnlimaginMod.UM_HUDKillingFloor"
      MapListType="KFMod.KFMapList"
 	 
 	 PlayerControllerClass=Class'UnlimaginMod.UM_PlayerController'

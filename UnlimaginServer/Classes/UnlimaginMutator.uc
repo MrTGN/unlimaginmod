@@ -53,7 +53,7 @@ var		transient		UM_DatabaseUdpLink				Link;
 var		array<UM_ServerStStats>							PendingData;
 var						KFGameType						KFGT;
 var						int								LastSavedWave, WaveCounter;
-var		array<UM_SRHUDKillingFloor.SmileyMessageType>	SmileyMsgs;
+var		array<UM_HUDKillingFloor.SmileyMessageType>	SmileyMsgs;
 
 var()	globalconfig	bool	bForceGivePerk, bNoSavingProgress, bUseRemoteDatabase, 
 								bUsePlayerNameAsID, bMessageAnyPlayerLevelUp, bUseLowestRequirements,

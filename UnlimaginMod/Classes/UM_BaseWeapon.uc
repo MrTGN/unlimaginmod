@@ -1853,4 +1853,6 @@ defaultproperties
 	 IdleAimAnim="Idle_Iron"
 	 TransientSoundVolume=1.000000
      TransientSoundRadius=300.000000
+	 bBlockZeroExtentTraces=False
+	 bBlockNonZeroExtentTraces=False
 }

@@ -210,10 +210,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 
 	bHurtEntry = True;
 	
-	foreach VisibleCollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation )  {
+	foreach VisibleCollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation, True )  {
 		if ( Victim != None && Victim != Self && !Victim.bDeleteMe && Victim != Hurtwall
-			 && FluidSurfaceInfo(Victim) == None && ExtendedZCollision(Victim) == None
-			 && (!bIgnoreSameClassProj || Victim.Class != Class) )  {
+			 && FluidSurfaceInfo(Victim) == None && (!bIgnoreSameClassProj || Victim.Class != Class) )  {
 			// Resets to the default values
 			Monster = None;
 			// Check IgnoredVictims array
@@ -240,7 +239,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			}
 			
 			Dir = Victim.Location - HitLocation;
-			Dist = FMax(VSize(Dir), 1.0);
+			Dist = FMax( VSize(Dir), 1.0 );
 			Dir = Dir / Dist;
 			DamageScale = 1.0 - FMax( 0.0, ((Dist - Victim.CollisionRadius) / DamageRadius) );
 			// if Pawn
@@ -292,8 +291,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 	}
 	
 	if ( LastTouched != None && LastTouched != Self && !LastTouched.bDeleteMe && LastTouched != Hurtwall
-		 && FluidSurfaceInfo(LastTouched) == None && ExtendedZCollision(LastTouched) == None
-		 && (!bIgnoreSameClassProj || LastTouched.Class != Class) )  {
+		 && FluidSurfaceInfo(LastTouched) == None && (!bIgnoreSameClassProj || LastTouched.Class != Class) )  {
 		Victim = LastTouched;
 		LastTouched = None;
 		// Resets to the default values
@@ -316,7 +314,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		// Skip this Victim if IgnoredVictims array contain this Victim.class
 		if ( !bIgnoreThisVictim )  {
 			Dir = Victim.Location - HitLocation;
-			Dist = FMax(VSize(Dir), 1.0);
+			Dist = FMax( VSize(Dir), 1.0 );
 			Dir = Dir / Dist;
 			DamageScale = FMax((Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)),(1.0 - FMax(0, ((Dist - Victim.CollisionRadius) / DamageRadius))));
 			if ( Pawn(Victim) != None )  {
@@ -558,6 +556,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;
 	}
+	StopProjectile();
 	SetPhysics(PHYS_None);
 	if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);

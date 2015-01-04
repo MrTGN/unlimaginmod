@@ -122,6 +122,7 @@ var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in 
 //[end]
 
 var				float						WeaponRecoilScale;
+var				int							Counter;
 
 //[end] Varibles
 //====================================================================
@@ -132,8 +133,8 @@ var				float						WeaponRecoilScale;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		ProjectileEnergy, PenetrationBonus, BounceBonus;
+	//reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		//ProjectileEnergy, PenetrationBonus, BounceBonus;
 	
 	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SpawnTime;
@@ -271,7 +272,7 @@ simulated function ResetToDefaultProperties()
 }
 
 // Veterancy Penetration and Bounce bonuses
-function UpdateBonuses()
+simulated function UpdateBonuses()
 {
 	local	UM_PlayerReplicationInfo	PRI;
 	
@@ -367,7 +368,7 @@ simulated function SpawnTrail()
 	// Level.bDropDetail is true when frame rate is below DesiredFrameRate
 	// DM_Low - is a low-detail Mode
 	if ( Level.NetMode != NM_DedicatedServer && !bTrailSpawned && !Level.bDropDetail
-		 && Level.DetailMode != DM_Low && !PhysicsVolume.bWaterVolume )  {
+		/* && Level.DetailMode != DM_Low */ && !PhysicsVolume.bWaterVolume )  {
 		if ( bTrailDestroyed )
 			bTrailDestroyed = False;
 		bTrailSpawned = True;
@@ -427,6 +428,7 @@ function ServerSetInitialVelocity()
 			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
 		// Initial velocity
 		Velocity = Vector(Rotation) * Speed;
+		//Log("Projectile#"$default.Counter++ @"ServerSetInitialVelocity()" @ "Speed="$Speed @ " ProjectileEnergy="$ProjectileEnergy @ "Velocity="$Velocity, Name );
 	}
 }
 
@@ -477,10 +479,38 @@ simulated event PostBeginPlay()
 	SpawnTrail();
 }
 
+// Called on clients when the initial replication is completed.
+simulated function ClientPostInitialReplication()
+{
+	local	float	SquareSpeed;
+	
+	// Updating Bonuses on clients
+	UpdateBonuses();
+	
+	if ( default.Speed > 0.0 )  {
+		if ( Velocity != vect(0.0, 0.0, 0.0) )  {
+			SquareSpeed = VSizeSquared(Velocity);
+			if ( default.ProjectileMass > 0.0 )
+				ProjectileEnergy = SquareSpeed * SpeedSquaredToEnergy;
+			// Received Speed
+			Speed = Sqrt(SquareSpeed);
+		}
+		else
+			ZeroProjectileEnergy();
+		
+		//Log("Projectile#"$default.Counter++ @"ClientPostInitialReplication()" @"Speed="$Speed @"ProjectileEnergy="$ProjectileEnergy @"Velocity="$Velocity @"PenetrationBonus="$PenetrationBonus @"BounceBonus="$BounceBonus, Name );
+	}
+}
+
 /*	PostNetBeginPlay() is called directly after PostBeginPlay() on the server. 
 	On clients it will be called when the initial replication is completed.	*/
 simulated event PostNetBeginPlay()
 {
+	if ( Role < ROLE_Authority )
+		ClientPostInitialReplication();
+	//else
+		//Log("Projectile#"$default.Counter++ @"Server PostNetBeginPlay()" @"Speed="$Speed @"ProjectileEnergy="$ProjectileEnergy @"Velocity="$Velocity @"PenetrationBonus="$PenetrationBonus @"BounceBonus="$BounceBonus, Name );
+	
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
 	//else	
@@ -586,13 +616,20 @@ function BlowUp(vector HitLocation) {}
 
 simulated function Explode(vector HitLocation, vector HitNormal) {}
 
+simulated function StopProjectile()
+{
+	Speed = 0.0;
+	ProjectileEnergy = 0.0;
+	Velocity = Vect(0.0, 0.0, 0.0);
+	Acceleration = Vect(0.0, 0.0, 0.0);
+}
+
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
 	//bBounce = False;
-	Speed = 0.0;
-	ProjectileEnergy = 0.0;
-	Velocity = Vect(0.0, 0.0, 0.0);
+	DestroyTrail();
+	StopProjectile();
 	SetPhysics(PHYS_Falling);
 }
 
@@ -629,8 +666,9 @@ simulated function UpdateProjectilePerformance(
 		}
 		// Just update current projectile performance
 		else  {
-			Speed = VSize(Velocity);
-			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
+			EnergyLoss = VSizeSquared(Velocity); // Using EnergyLoss for the Squared Speed
+			ProjectileEnergy = EnergyLoss * SpeedSquaredToEnergy;
+			Speed = Sqrt(EnergyLoss);
 		}
 		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
 	}
@@ -858,10 +896,9 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 // finished falling set bBounce to True.
 simulated event Landed( Vector HitNormal )
 {
-	DestroyTrail();
 	bOrientToVelocity = False;
-	Velocity = Vect(0.0, 0.0, 0.0);
-	Acceleration = Vect(0.0, 0.0, 0.0);
+	DestroyTrail();
+	StopProjectile();
 	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetPhysics(PHYS_None);
 }
@@ -930,6 +967,7 @@ defaultproperties
 	 bReplicateSpawnTime=False
 	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
+	 bSwitchToZeroCollision=True
 	 // Do not use TrueBallistics by default
 	 // Change it in the subclasses if you need TrueBallistics calculations
 	 // TrueBallistics

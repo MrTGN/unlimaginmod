@@ -65,12 +65,12 @@ static function ClientReceive(
 	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',true,2.f,SLOT_Talk);
 	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',true,2.f,SLOT_Interface);
 
-	if ( UM_SRHUDKillingFloor(P.myHUD) != None 
+	if ( UM_HUDKillingFloor(P.myHUD) != None 
 		 && KFPlayerReplicationInfo(P.PlayerReplicationInfo) != None && OptionalObject != None 
 		 && KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill == OptionalObject )  {
 		// Temporarly fill the bar.
-		UM_SRHUDKillingFloor(P.myHUD).LevelProgressBar = 1.f;
-		UM_SRHUDKillingFloor(P.myHUD).NextLevelTimer = P.Level.TimeSeconds+1.f;
+		UM_HUDKillingFloor(P.myHUD).LevelProgressBar = 1.f;
+		UM_HUDKillingFloor(P.myHUD).NextLevelTimer = P.Level.TimeSeconds+1.f;
 	}
 	
 	Super.ClientReceive(P,Switch,RelatedPRI_1,RelatedPRI_2,OptionalObject);

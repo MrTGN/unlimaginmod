@@ -57,17 +57,17 @@ var		transient	float			LastBileTime;
 var		transient	bool			bIsTakingBileDamage;
 
 // Poison Damage
-var		range						PoisonDamageRandRange;
+var		float						PoisonFrequency;
 var		transient	float			PoisonIntensity;
-var		transient	float			NextPoisoningTime, LastPoisoningTime;
+var		transient	float			NextPoisonTime, LastPoisonTime;
 var		transient	class<DamageType>	LastPoisonDamageType;
-var		transient	Pawn			PoisoningInstigator;
+var		transient	Pawn			PoisonInstigator;
 var		transient	bool			bIsTakingPoisonDamage;
 
 // Burning Damage
 var		range						BurningDamageRandRange;
+var		float						BurningFrequency;
 var		transient	float			BurningIntensity;
-var		float						BurningFrequency; 
 var		transient	float			NextBurningTime, LastBurningTime;
 var		class<DamageType>			BurningDamageType;
 var		transient	bool			bIsTakingBurnDamage;
@@ -104,7 +104,6 @@ var		transient	float			NextOverhealReductionTime;
 var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
 var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
 var		float						VeterancyOverhealPotency;	// Bonus to overheal somebody
-var		transient	bool			bIsOverhealed;
 
 // Overweight
 var		float						WeightMovementModifier;
@@ -1577,7 +1576,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		SetMovementPhysics();
 	
 	// Momentum
-	if ( Physics == PHYS_Walking && damageType.default.bExtraMomentumZ )
+	if ( Physics == PHYS_Walking && DamageType.default.bExtraMomentumZ )
 		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
 	if ( InstigatedBy == self )
 		Momentum *= 0.75;
@@ -1670,49 +1669,70 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
 		Return;
 	
-	// Burnified if the burn damage was significant enough
-	if ( (class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None) && Damage > 2 )  {
-		bAllowedToChangeHealth = False;
-		LastBurningTime = Level.TimeSeconds;
-		NextBurningTime = LastBurningTime + BurningFrequency;
-		BurnInstigator = InstigatedBy;
-		BurningIntensity = FMin( (BurningIntensity + float(Damage)), HealthMax );
-		bIsTakingBurnDamage = True;
-		// Allow operations with Health
-		bAllowedToChangeHealth = True;
-		
-		Return; // Burning does not cause an instant damage
+	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {
+		// Burnified if the burn damage was significant enough
+		if ( Damage > 2 )  {
+			bAllowedToChangeHealth = False;
+			// Updating timers
+			LastBurningTime = Level.TimeSeconds;
+			NextBurningTime = LastBurningTime + BurningFrequency;
+			// Damage Info
+			BurnInstigator = InstigatedBy;
+			BurningIntensity = FMin( (BurningIntensity + float(Damage)), float(OverhealedHealthMax) );
+			// Start to taking BurnDamage
+			bIsTakingBurnDamage = True;
+			// Allow operations with Health
+			bAllowedToChangeHealth = True;
+			// Burning does not cause an instant damage
+			Return;
+		}
 	}
-	
-	// Start to taking a BileDamage if damage was significant enough
-	if ( Class<DamTypeVomit>(DamageType) != None && Damage > 2 )  {
-		bAllowedToChangeHealth = False;
-		LastBileTime = Level.TimeSeconds;
-		NextBileTime = LastBileTime + BileFrequency;
-		LastBileDamagedByType = DamageType;
-		BileInstigator = InstigatedBy;
-		BileIntensity = FMin( (BileIntensity + float(Damage)), HealthMax );
-		bIsTakingBileDamage = True;
-		// Allow operations with Health
-		bAllowedToChangeHealth = True;
-		
-		Return;	// Bile does not cause an instant damage
+	else if ( Class<UM_ZombieDamType_Poison>(DamageType) != None )  {
+		// Start to taking a PoisonDamage if damage was significant enough
+		if ( Damage > 2 )  {
+			bAllowedToChangeHealth = False;
+			// Updating timers
+			LastPoisonTime = Level.TimeSeconds;
+			NextPoisonTime = LastPoisonTime + PoisonFrequency;
+			// Damage Info
+			LastPoisonDamageType = DamageType;
+			PoisonInstigator = InstigatedBy;
+			PoisonIntensity = FMin( (PoisonIntensity + float(Damage) * 0.5), float(OverhealedHealthMax) );
+			// Start to taking PoisonDamage
+			bIsTakingPoisonDamage = True;
+			// Allow operations with Health
+			bAllowedToChangeHealth = True;
+			// Poison does not cause an instant damage
+			Return;
+		}
 	}
-	
+	else if ( Class<DamTypeVomit>(DamageType) != None )  {
+		// Start to taking a BileDamage if damage was significant enough
+		if ( Damage > 2 )  {
+			bAllowedToChangeHealth = False;
+			// Updating timers
+			LastBileTime = Level.TimeSeconds;
+			NextBileTime = LastBileTime + BileFrequency;
+			// Damage Info
+			LastBileDamagedByType = DamageType;
+			BileInstigator = InstigatedBy;
+			BileIntensity = FMin( (BileIntensity + float(Damage)), float(OverhealedHealthMax) );
+			// Start to taking BileDamage
+			bIsTakingBileDamage = True;
+			// Allow operations with Health
+			bAllowedToChangeHealth = True;
+			// Bile does not cause an instant damage
+			Return;
+		}
+	}	
 	// Survived 10 Seconds After Scream Achievement
-	if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
 		 && !bHasSurvivedAfterScream && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
 		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
 		bScreamedAt = True;
 	}
 	
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-	
-	//Todo: Issue #189
-	/*
-	//Simulated Bloody Overlays
-	if ( (Health - Damage) <= (HealthMax * 0.4) )
-		SetOverlayMaterial(InjuredOverlay, 0, true); */
 }
 
 // Can Healer heal this human or not
@@ -1786,7 +1806,7 @@ function bool Heal(
 		LastHealTime = Level.TimeSeconds;
 		NextHealTime = LastHealTime + HealDelay;
 		// How much health was healed
-		HealAmount = Min( (HealMax - Health), HealAmount );
+		HealAmount = Min( (HealMax - (Health + int(HealIntensity * 0.5))), HealAmount );
 		// Adding HealIntensity
 		HealIntensity += FMax( (float(HealAmount) * 0.5), 0.505 ); // to guarantee rounding to 1
 		bIsHealing = True;
@@ -1841,7 +1861,6 @@ protected function ReduceOverheal()
 {
 	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
 	SetHealth( Max( (Health - 1), int(HealthMax) ) );
-	bIsOverhealed = Health > int(HealthMax);
 }
 
 simulated function AddHealth() { }
@@ -1861,7 +1880,6 @@ protected function AppendHealth()
 				SetHealth( Min((Health + DeltaHealIntensity), OverhealedHealthMax) );
 			HealIntensity = FMax( (HealIntensity - float(DeltaHealIntensity) * 0.5), 0.0 );
 		}
-		bIsOverhealed = Health > int(HealthMax);
 		// turn off drug effects
 		if ( bOnDrugs && HealIntensity <= LoseDrugEffectHealIntensity )
 			SetNotOnDrugs();
@@ -1874,6 +1892,34 @@ protected function AppendHealth()
 	else  {
 		bIsHealing = False;
 		HealIntensity = 0.0;
+	}
+}
+
+// Take a Poison Damage (called from the Tick)
+function TakePoisonDamage()
+{
+	local	int		DeltaPoisonDamage;
+	
+	NextPoisonTime = Level.TimeSeconds + PoisonFrequency;
+	// Rounding PoisonIntensity per delay
+	DeltaPoisonDamage = Round( PoisonIntensity * (Level.TimeSeconds - LastPoisonTime) );
+	if ( DeltaPoisonDamage > 0 )  {
+		// Decreasing PoisonIntensity
+		PoisonIntensity = FMax( (PoisonIntensity - float(DeltaPoisonDamage) * 0.5), 0.0 );
+		// Damaging
+		DeltaPoisonDamage = ProcessTakeDamage( DeltaPoisonDamage, PoisonInstigator, Location, vect(0.0, 0.0, 0.0), LastPoisonDamageType );
+		// if has taken damage
+		if ( DeltaPoisonDamage > 0 )  {
+			LastPoisonTime = Level.TimeSeconds;
+			// Shake controller
+			if ( Controller != None )
+				Controller.DamageShake( DeltaPoisonDamage * 2 );
+		}
+	}
+	// Checking PoisonIntensity
+	if ( Round(PoisonIntensity) < 1 )  {
+		bIsTakingPoisonDamage = False;
+		PoisonIntensity = 0.0;
 	}
 }
 
@@ -1918,11 +1964,6 @@ function TakeBileDamage()
 	}
 }
 
-function TakePoisonDamage()
-{
-	
-}
-
 // Clearing old function
 function TakeFireDamage( int Damage, pawn BInstigator ) { }
 
@@ -1947,7 +1988,7 @@ function TakeBurningDamage()
 				bBurnified = True;
 			// Shake controller
 			if ( Controller != None )
-				Controller.DamageShake( DeltaBurningDamage );
+				Controller.DamageShake( DeltaBurningDamage * 2 );
 		}
 	}
 	// Checking BurningIntensity
@@ -2103,12 +2144,16 @@ simulated event Tick( float DeltaTime )
 		// Operations with Pawn Health
 		if ( bAllowedToChangeHealth )  {
 			// Overheal Reduction
-			if ( bIsOverhealed && Level.TimeSeconds >= NextOverhealReductionTime )
+			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
 				ReduceOverheal();
 			
 			// Healing
 			if ( bIsHealing && Level.TimeSeconds >= NextHealTime )
 				AppendHealth();
+			
+			// Poison Damage
+			if ( bIsTakingPoisonDamage && Level.TimeSeconds >= NextPoisonTime )
+				TakePoisonDamage();
 			
 			// Bile Damage
 			if ( bIsTakingBileDamage && Level.TimeSeconds >= NextBileTime )
@@ -2313,7 +2358,9 @@ defaultproperties
 	 GroundSpeed=200.000000
      WaterSpeed=180.000000
      AirSpeed=230.000000
-     // Damaging
+     // PoisonDamage
+	 PoisonFrequency=0.25
+	 // BileDamage
 	 BileFrequency=0.5
 	 BileDamageRandRange=(Min=3.0,Max=6.0)
 	 // Drowning

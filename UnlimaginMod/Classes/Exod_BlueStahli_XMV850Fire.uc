@@ -48,8 +48,8 @@ defaultproperties
 	 //FireEndStereoSoundRef="UnlimaginMod_Snd.XMV850_MG.XMV850_FireEnd_S"
 	 AmbientFireSoundRef="UnlimaginMod_Snd.XMV850_MG.XMV850_FireLoop_M"
 	 //AmbientFireSoundRef="KF_BasePatriarch.Attack.Kev_MG_GunfireLoop"
-	 FireSoundRef="XMV850_Snd.XMV-Fire-1"
-     StereoFireSoundRef="XMV850_Snd.XMV-Fire-1"
+	 FireSoundRef="XMV850_A.XMV-Fire-1"
+     StereoFireSoundRef="XMV850_A.XMV-Fire-1"
      NoAmmoSoundRef="KF_SCARSnd.SCAR_DryFire"
 	 //[end]
 	 //[block] Fire Effects

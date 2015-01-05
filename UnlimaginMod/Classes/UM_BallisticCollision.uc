@@ -68,6 +68,11 @@ simulated event BaseChange()
 		Destroy();
 }
 
+simulated function bool CanBeDamaged()
+{
+	Return bCanBeDamaged && Base != None && !Base.bDeleteMe;
+}
+
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
 	if ( Base != None )

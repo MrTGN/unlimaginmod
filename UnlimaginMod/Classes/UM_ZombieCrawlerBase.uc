@@ -19,7 +19,8 @@ class UM_ZombieCrawlerBase extends UM_Monster;
 var() float PounceSpeed;
 var bool bPouncing;
 
-var(Anims)  name    MeleeAirAnims[3]; // Attack anims for when flying through the air
+var(Anims)	name				MeleeAirAnims[3]; // Attack anims for when flying through the air
+var			class<DamageType>	PoisonDamageType;
 
 //-------------------------------------------------------------------------------
 // NOTE: All Code resides in the child class(this class was only created to
@@ -28,6 +29,7 @@ var(Anims)  name    MeleeAirAnims[3]; // Attack anims for when flying through th
 
 defaultproperties
 {
+	 PoisonDamageType=Class'UnlimaginMod.UM_ZombieDamType_CrawlerPoison'
 	 ExtraSpeedChance=0.200000
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // JumpZ

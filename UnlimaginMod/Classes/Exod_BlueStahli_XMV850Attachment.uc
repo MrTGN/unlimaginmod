@@ -75,7 +75,7 @@ defaultproperties
      HitAnims(3)="HitR_SCAR"
      PostFireBlendStandAnim="Blend_SCAR"
      PostFireBlendCrouchAnim="CHBlend_SCAR"
-     MeshRef="XMV850_A.XMV850-3rd"
+     MeshRef="XMV850_A.XMV850_3rd"
      bHeavy=True
      bRapidFire=True
      bAltRapidFire=True

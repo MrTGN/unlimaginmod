@@ -22,9 +22,9 @@ defaultproperties
      EquipmentCategoryID=3
      InventoryType=Class'UnlimaginMod.Exod_BlueStahli_XMV850Minigun'
      PickupMessage="Shut up and kill'em."
-     PickupSound=Sound'XMV850_Snd.XMV-Pullout'
+     PickupSound=Sound'XMV850_A.XMV-Pullout'
      PickupForce="AssaultRiflePickup"
-     StaticMesh=StaticMesh'XMV850_SM.XMV850.XMV850PickupHD'
+     StaticMesh=StaticMesh'XMV850_A.XMV850.XMV850Pickup'
      CollisionRadius=25.000000
      CollisionHeight=5.000000
 }

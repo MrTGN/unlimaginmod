@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieDamType_SirenScream
-//	Parent class:	 DamTypeZombieAttack
+//	Parent class:	 UM_BaseMonsterDamageType
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_ZombieDamType_SirenScream extends DamTypeZombieAttack
+class UM_ZombieDamType_SirenScream extends UM_BaseMonsterDamageType
 	Abstract;
 
 

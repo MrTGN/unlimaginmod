@@ -102,7 +102,7 @@ var				float		UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile energy in Joules. Used for penetrations and bounces calculation.
 // ProjectileEnergy Calculates automatically before initial replication.
-var				float		ProjectileEnergy;
+var	transient	float		ProjectileEnergy;
 var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
 var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.ProjectileMass
 
@@ -112,8 +112,8 @@ var				float		BounceBonus;
 
 //[block] Effects
 var(Effects)	TrailData					Trail;
-var				bool						bTrailSpawned;
-var				bool						bTrailDestroyed;	// Trail have been destroyed.
+var	transient	bool						bTrailSpawned;
+var	transient	bool						bTrailDestroyed;	// Trail have been destroyed.
 
 // HitEffects
 var(Effects)	class<UM_BaseHitEffects>	HitEffectsClass;
@@ -122,7 +122,7 @@ var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in 
 //[end]
 
 var				float						WeaponRecoilScale;
-var				int							Counter;
+//var				int							Counter;
 
 //[end] Varibles
 //====================================================================
@@ -133,9 +133,6 @@ var				int							Counter;
 
 replication
 {
-	//reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		//ProjectileEnergy, PenetrationBonus, BounceBonus;
-	
 	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetDirty && bNetInitial )
 		SpawnTime;
 	
@@ -488,6 +485,7 @@ simulated function ClientPostInitialReplication()
 	UpdateBonuses();
 	
 	if ( default.Speed > 0.0 )  {
+		// Velocity replicated from the server
 		if ( Velocity != vect(0.0, 0.0, 0.0) )  {
 			SquareSpeed = VSizeSquared(Velocity);
 			if ( default.ProjectileMass > 0.0 )
@@ -497,7 +495,6 @@ simulated function ClientPostInitialReplication()
 		}
 		else
 			ZeroProjectileEnergy();
-		
 		//Log("Projectile#"$default.Counter++ @"ClientPostInitialReplication()" @"Speed="$Speed @"ProjectileEnergy="$ProjectileEnergy @"Velocity="$Velocity @"PenetrationBonus="$PenetrationBonus @"BounceBonus="$BounceBonus, Name );
 	}
 }
@@ -749,6 +746,9 @@ simulated function ProcessHitActor(
 	VelNormal = Normal(Velocity);
 	
 	if ( UM_BallisticCollision(A) != None )  {
+		if ( !UM_BallisticCollision(A).CanBeDamaged() )
+			Return;
+		
 		P = Pawn(A.Base);
 		if ( UM_PawnHeadCollision(A) != None )
 			DamageAmount *= HeadShotDamageMult;	// HeadShot

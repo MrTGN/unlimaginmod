@@ -201,13 +201,13 @@ defaultproperties
 	 BarrelStartSoundRef="UnlimaginMod_Snd.XMV850_MG.XMV850_BarrelStart_M"
 	 //BarrelStartSoundRef="KF_BasePatriarch.Attack.Kev_MG_TurbineWindUp"
 	 
-	 MeshRef="XMV850_A.XMV-850Minigun"
-     SkinRefs(0)="XMV850_T.Special.XMV850_Main"
-     SkinRefs(1)="XMV850_T.Special.Hands-Shiny"
-     SkinRefs(2)="XMV850_T.Special.XMV850_Barrels_SD"
-     SelectSoundRef="XMV850_Snd.XMV-PullOut"
-     HudImageRef="XMV850_T.Special.XMV_unselected"
-     SelectedHudImageRef="XMV850_T.Special.XMV"
+	 MeshRef="XMV850_A.XMV850Mesh"
+     SkinRefs(0)="XMV850_A.XMV850_Main"
+     SkinRefs(1)="XMV850_A.Hands_Shdr"
+     SkinRefs(2)="XMV850_A.XMV850_Barrels_Shdr"
+     SelectSoundRef="XMV850_A.XMV-Pullout"
+     HudImageRef="XMV850_A.XMV850_Unselected"
+     SelectedHudImageRef="XMV850_A.XMV850_Selected"
 	 //[end]
 	 //DesiredSpeed=0.500000
 	 SoundRadius=200.000000
@@ -222,7 +222,7 @@ defaultproperties
      StandardDisplayFOV=55.000000
      bModeZeroCanDryFire=True
      SleeveNum=7
-     TraderInfoTexture=Texture'XMV850_T.Special.Trader_XMV850'
+     TraderInfoTexture=Texture'XMV850_A.Trader_XMV850'
      PlayerIronSightFOV=65.000000
      ZoomedDisplayFOV=20.000000
      FireModeClass(0)=Class'UnlimaginMod.Exod_BlueStahli_XMV850Fire'

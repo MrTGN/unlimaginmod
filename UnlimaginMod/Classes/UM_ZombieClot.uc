@@ -155,27 +155,22 @@ function RemoveHead()
 	}
 }
 
-function Died(Controller Killer, class<DamageType> damageType, vector HitLocation)
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	if( DisabledPawn != none )
-	{
-	     DisabledPawn.bMovementDisabled = false;
-	     DisabledPawn = none;
+	if ( DisabledPawn != None )  {
+		DisabledPawn.bMovementDisabled = False;
+		DisabledPawn = None;
 	}
-
-    super.Died(Killer, damageType, HitLocation);
-
+	Super.Died(Killer, DamageType, HitLocation);
 }
 
 simulated function Destroyed()
 {
-    super.Destroyed();
-
-	if( DisabledPawn != none )
-	{
-	     DisabledPawn.bMovementDisabled = false;
-	     DisabledPawn = none;
+    if ( DisabledPawn != None )  {
+		DisabledPawn.bMovementDisabled = False;
+		DisabledPawn = None;
 	}
+	Super.Destroyed();
 }
 
 static simulated function PreCacheStaticMeshes(LevelInfo myLevel)

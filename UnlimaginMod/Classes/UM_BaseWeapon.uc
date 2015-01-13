@@ -1683,8 +1683,9 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	W = Weapon( Instigator.FindInventoryType(Class) );
 	// added class check because somebody made FindInventoryType() return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
-		bJustSpawned = Instigator.AddInventory( Self );
-		//Super(Inventory).GiveTo(Other);
+		//bJustSpawned = Instigator.AddInventory( Self );
+		bJustSpawned = True;
+		Super(Inventory).GiveTo(Other);
 		bPossiblySwitch = True;
 		W = Self;
 	}
@@ -1719,10 +1720,6 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	
 	if ( SWAmmo > 0 )
 		AddAmmo(Clamp(SWAmmo, 0, MaxAmmo(0)), 0);
-	
-	// Go to InitialState
-	if ( Instigator.Weapon == W )
-		SetInitialState();
 }
 
 function SilentGiveTo(Pawn Other, optional Pickup Pickup)
@@ -1801,6 +1798,7 @@ function DropFrom( vector StartLocation )
 	if ( Instigator != None )  {
 		DetachFromPawn(Instigator);
 		Direction = vector(Instigator.Rotation);
+		Velocity = Instigator.Velocity;
 		if ( Instigator.Health > 0 )  {
 			SW = Class<UM_BaseWeaponPickup>(PickupClass).default.SingleWeaponClass;
 			if ( SW != None )  {
@@ -1816,8 +1814,10 @@ function DropFrom( vector StartLocation )
 			}
 		}
 	}
-	else if ( Owner != None )
+	else if ( Owner != None )  {
 		Direction = vector(Owner.Rotation);
+		Velocity = Owner.Velocity;
+	}
 
 	if ( PickupClass != None )
 		Pickup = Spawn(PickupClass,,, StartLocation);

@@ -414,7 +414,7 @@ function PlayDyingSound()
 	}
 }
 
-function Died(Controller Killer, class<DamageType> damageType, vector HitLocation)
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
     AmbientSound = None;
 
@@ -424,7 +424,7 @@ function Died(Controller Killer, class<DamageType> damageType, vector HitLocatio
     	bNoExhaustRespawn = True;
     }
 
-    Super.Died( Killer, damageType, HitLocation );
+    Super.Died( Killer, DamageType, HitLocation );
 }
 
 simulated function ProcessHitFX()

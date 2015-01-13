@@ -20,6 +20,12 @@ class UM_ZombieCrawler extends UM_ZombieCrawlerBase;
 // NOTE: All Variables are declared in the base class to eliminate hitching
 //----------------------------------------------------------------------------
 
+simulated event PreBeginPlay()
+{
+	Super.PreBeginPlay();
+	bPoisonous = FRand() <= PoisonousChance;
+}
+
 simulated event PostBeginPlay()
 {
 	// Randomizing PounceSpeed
@@ -27,6 +33,28 @@ simulated event PostBeginPlay()
 		PounceSpeed *= BaseActor.static.GetRandFloat(0.9, 1.1);
 	
 	Super.PostBeginPlay();
+	
+	if ( bPoisonous )  {
+		CurrentDamtype = PoisonDamageType;
+		PoisonDamageRandRange.Min *= DifficultyDamageModifer();
+		PoisonDamageRandRange.Max *= DifficultyDamageModifer();
+	}
+	else
+		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+}
+
+simulated event PostNetBeginPlay()
+{
+	local	int		i;
+	
+	Super.PostNetBeginPlay();
+	
+	if ( bPoisonous )  {
+		MenuName = "Poisonous" @ MenuName;
+		Skins.Length = PoisonousSkins.Length;
+		for ( i = 0; i < PoisonousSkins.Length; ++i )
+			Skins[i] = PoisonousSkins[i];
+	}
 }
 
 function bool DoPounce()
@@ -35,11 +63,11 @@ function bool DoPounce()
 		 VSize(Location - Controller.Target.Location) > (MeleeRange * 5) )
 		Return False;
 
+	bPouncing = True;
 	Velocity = Normal(Controller.Target.Location - Location) * PounceSpeed;
 	Velocity.Z = JumpZ;
 	SetPhysics(PHYS_Falling);
 	ZombieSpringAnim();
-	bPouncing = True;
 	
 	Return True;
 }
@@ -51,19 +79,20 @@ simulated function ZombieSpringAnim()
 
 event Landed(vector HitNormal)
 {
-	bPouncing = False;
 	Super.Landed(HitNormal);
+	bPouncing = False;
 }
 
 event Bump(actor Other)
 {
-	
 	// TODO: is there a better way
 	if ( bPouncing && KFHumanPawn(Other) != None )  {
-		if ( CurrentDamtype != None )
+		if ( bPoisonous )
+			KFHumanPawn(Other).TakeDamage( BaseActor.static.GetRandRangeFloat(PoisonDamageRandRange), self, Location, Velocity, PoisonDamageType );
+		else if ( CurrentDamtype != None )
 			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
 		else
-			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(3)] );
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(ArrayCount(ZombieDamType))] );
 		//TODO - move this to humanpawn.takedamage? Also see KFMonster.MeleeDamageTarget
 		if ( KFHumanPawn(Other).Health <= 0 )
 			KFHumanPawn(Other).SpawnGibs(Rotation, 1);
@@ -100,25 +129,24 @@ simulated function int DoAnimAction( name AnimName )
 
 simulated event SetAnimAction(name NewAction)
 {
-	local int meleeAnimIndex;
-
 	if ( NewAction == '' )
 		Return;
 
-	if ( NewAction == 'DoorBash' )
-		CurrentDamtype = ZombieDamType[Rand(3)];
-	else
-	{
-		for ( meleeAnimIndex = 0; meleeAnimIndex < 2; meleeAnimIndex++ )
-		{
-			if ( NewAction == MeleeAnims[meleeAnimIndex] )
-			{
-				if ( Physics == PHYS_Falling )
-					NewAction = MeleeAirAnims[meleeAnimIndex];
-				CurrentDamtype = ZombieDamType[meleeAnimIndex];
-				Break;
-			}
-		}
+	if ( NewAction == 'DoorBash' )  {
+		if ( bPoisonous )
+			CurrentDamtype = PoisonDamageType;
+		else
+			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+	}
+	else if ( NewAction == 'Claw' )  {
+		if ( bPoisonous )
+			CurrentDamtype = PoisonDamageType;
+		else
+			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+		if ( Physics == PHYS_Falling )
+			NewAction = MeleeAirAnims[Rand(ArrayCount(MeleeAirAnims))];
+		else
+			NewAction = MeleeAnims[Rand(ArrayCount(MeleeAnims))];
 	}
 	
 	ExpectingChannel = DoAnimAction(NewAction);
@@ -128,8 +156,7 @@ simulated event SetAnimAction(name NewAction)
 	else
 		bWaitForAnim = False;
 
-	if ( Level.NetMode!=NM_Client )
-	{
+	if ( Level.NetMode != NM_Client )  {
 		AnimAction = NewAction;
 		bResetAnimAct = True;
 		ResetAnimActTime = Level.TimeSeconds + 0.3;
@@ -156,6 +183,10 @@ static simulated function PreCacheMaterials(LevelInfo myLevel)
 	myLevel.AddPrecacheMaterial(Combiner'KF_Specimens_Trip_T.crawler_cmb');
 	myLevel.AddPrecacheMaterial(Combiner'KF_Specimens_Trip_T.crawler_env_cmb');
 	myLevel.AddPrecacheMaterial(Texture'KF_Specimens_Trip_T.crawler_diff');
+	// PoisonousSkins
+	myLevel.AddPrecacheMaterial(Texture'kf_fx_trip_t.siren.siren_scream_energy');
+	myLevel.AddPrecacheMaterial(Combiner'kf_fx_trip_t.siren.siren_scream_cmb');
+	//myLevel.AddPrecacheMaterial(FinalBlend'kf_fx_trip_t.siren.siren_scream_fb');
 }
 
 defaultproperties

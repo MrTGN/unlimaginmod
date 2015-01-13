@@ -1562,16 +1562,16 @@ simulated function bool SpectatorSpecialCalcView(PlayerController Viewer, out Ac
 }
 
 // Overridden to do a cool slomo death view of the patriarch dying
-function Died(Controller Killer, class<DamageType> damageType, vector HitLocation)
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	local Controller C;
+	local	Controller	C;
 
-    Super.Died(Killer, damageType, HitLocation);
+    Super.Died(Killer, DamageType, HitLocation);
 
-	if( KFGameType(Level.Game) != None )
+	if ( KFGameType(Level.Game) != None )
 		KFGameType(Level.Game).DoBossDeath();
 
-	for( C=Level.ControllerList; C!=None; C=C.NextController )  {
+	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
 		if ( PlayerController(C) != None )  {
 			PlayerController(C).SetViewTarget(Self);
 			PlayerController(C).ClientSetViewTarget(Self);

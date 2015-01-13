@@ -62,15 +62,30 @@ simulated function float GetCollisionVSize()
 	Return VSize(CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0));
 }
 
+// Disable Collision 
+// Useful before calling latent Destroy() function.
+simulated function DisableCollision()
+{
+	if ( bCanBeDamaged )  {
+		bCanBeDamaged = False;
+		bProjTarget = False;
+		bBlockZeroExtentTraces = False;
+		bBlockNonZeroExtentTraces = False;
+		SetCollision(False);
+	}
+}
+
 simulated event BaseChange()
 {
-	if ( Base == None || Base.bDeleteMe )
+	if ( Base == None || Base.bDeleteMe )  {
+		DisableCollision();
 		Destroy();
+	}
 }
 
 simulated function bool CanBeDamaged()
 {
-	Return bCanBeDamaged && Base != None && !Base.bDeleteMe;
+	Return bCanBeDamaged && Pawn(Base) != None && !Base.bDeleteMe && Pawn(Base).Health > 0;
 }
 
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
@@ -78,7 +93,7 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 	if ( Base != None )
 		Base.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
 	else
-		Log("No base Pawn!",Name);
+		Log("No base Pawn!", Name);
 }
 
 //[end] Functions

@@ -54,13 +54,14 @@ var		class<DamageType>			DrowningDamageType;
 var		range						BileDamageRandRange;
 var		transient	float			BileIntensity;
 var		transient	float			LastBileTime;
+var	transient	class<DamageType>	LastBileDamageType;
 var		transient	bool			bIsTakingBileDamage;
 
 // Poison Damage
 var		float						PoisonFrequency;
 var		transient	float			PoisonIntensity;
 var		transient	float			NextPoisonTime, LastPoisonTime;
-var		transient	class<DamageType>	LastPoisonDamageType;
+var	transient	class<DamageType>	LastPoisonDamageType;
 var		transient	Pawn			PoisonInstigator;
 var		transient	bool			bIsTakingPoisonDamage;
 
@@ -74,6 +75,7 @@ var		transient	bool			bIsTakingBurnDamage;
 
 // Falling
 var		class<DamageType>			FallingDamageType;
+var		class<DamageType>			LavaDamageType;
 
 // Movement Modifiers
 var		float						HealthMovementModifier;
@@ -149,6 +151,28 @@ var		transient	float			SurvivedAfterVomitTime;
 var		bool						bScreamedAt, bHasSurvivedAfterScream;
 var		transient	float			SurvivedAfterScreamTime;
 
+var		class<PlayerDeathMark>		PlayerDeathMarkClass;
+
+// BallisticCollision
+struct BallisticCollisionData
+{
+	var	UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
+	var	class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
+	var	float							AreaRadius;	// Radius of the area mesh collision cyllinder
+	var	float							AreaHeight;	// Half-height area mesh collision cyllinder
+	var	name							AreaBone;	// Name Of the bone area will be attached to
+	var	vector							AreaOffset;	// Area offset from the bone
+	var	rotator							AreaRotation;	// Area relative rotation from the bone
+	var	float							AreaImpactStrength;	// J / mm2
+	var	int								AreaHealth;	// Health amount of this body part
+	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
+	var	float							AreaSizeScale;	// Size scaling
+	var	bool							bArmoredArea;	// This area can be covered with armor
+};
+
+var	array<BallisticCollisionData>		BallisticCollision;
+var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference for code in IsHeadShot() function
+
 //[end] Varibles
 //====================================================================
 
@@ -157,11 +181,17 @@ var		transient	float			SurvivedAfterScreamTime;
 
 replication
 {
+	// Variable replication from the server to all clients
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		FireSpeedModif, PRIChangedTrigger;
 	
+	// Variable replication from the server to client-owner
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		VeterancyChangedTrigger;
+	
+	// Server to client-owner function call replication
+	reliable if ( Role == ROLE_Authority )
+		ClientAddPoisonEffects;
 }
 
 //[end] Replication
@@ -324,13 +354,75 @@ function AddDefaultInventory()
 	Controller.ClientSwitchToBestWeapon();
 }
 
+function BuildBallisticCollision()
+{
+	local	int		i;
+	
+	// Server only
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	for ( i = 0; i < BallisticCollision.Length; ++i )  {
+		if ( BallisticCollision[i].AreaClass != None )  {
+			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
+			// if exist
+			if ( BallisticCollision[i].Area != None )  {
+				// HeadBallisticCollision
+				if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
+					HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+				// CollisionSize
+				BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+				// Attaching
+				if ( BallisticCollision[i].AreaBone != '' )
+					AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
+				else
+					BallisticCollision[i].Area.SetBase( Self );
+				// if attached
+				if ( BallisticCollision[i].Area.Base != None )  {
+					// AreaOffset
+					if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+						BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
+					// AreaRotation
+					if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+						BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation * DrawScale );
+				}
+				// Area.ImpactStrength
+				if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
+					BallisticCollision[i].Area.ImpactStrength = BallisticCollision[i].AreaImpactStrength * DrawScale * BaseActor.static.GetRandFloat(0.9, 1.1);
+			}
+		}
+	}
+}
+
+function DestroyBallisticCollision()
+{
+	local	int		i;
+	
+	// Server only
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	HeadBallisticCollision = None;
+	while ( BallisticCollision.Length > 0 )  {
+		i = BallisticCollision.Length - 1;
+		if ( BallisticCollision[i].Area != None )  {
+			BallisticCollision[i].Area.DisableCollision();
+			BallisticCollision[i].Area.Destroy();
+		}
+		BallisticCollision.Remove(i, 1);
+	}
+}
+
 simulated event PostBeginPlay()
 {
 	Super(Pawn).PostBeginPlay();
 	
-	if ( Level.bStartup && !bNoDefaultInventory )
-		AddDefaultInventory();
-	
+	if ( Role == ROLE_Authority )  {
+		if ( Level.bStartup && !bNoDefaultInventory )
+			AddDefaultInventory();
+		// BallisticCollision
+		BuildBallisticCollision();
+	}
 	AssignInitialPose();
 	
 	if ( Level.NetMode != NM_DedicatedServer && bActorShadows && bPlayerShadows )  {
@@ -346,6 +438,9 @@ simulated event PostBeginPlay()
 	
 	DyingMessageHealth = HealthMax * 0.25;
 }
+
+// Clearing old function
+simulated function ToggleAuxCollision( bool NewbCollision ) { }
 
 // my PRI now has a new team
 simulated function NotifyTeamChanged()
@@ -376,24 +471,6 @@ simulated event ClientTrigger()
 
 simulated event PostNetReceive() { }
 
-function UpdateGroundSpeed()
-{
-	// GroundSpeed always replicated from the server to the client-owner
-	if ( Role == ROLE_Authority )  {
-		GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
-		NetUpdateTime = Level.TimeSeconds - 1.0;
-	}
-}
-
-function UpdateJumpZ()
-{
-	// JumpZ always replicated from the server to the client-owner
-	if ( Role == ROLE_Authority )  {
-		JumpZ = default.JumpZ * CarryWeightJumpModifier * VeterancyJumpBonus * BaseActor.static.GetRandRangeFloat( JumpRandRange );
-		NetUpdateTime = Level.TimeSeconds - 1.0;
-	}
-}
-
 // Movement speed according to the healths
 function UpdateHealthMovementModifiers()
 {
@@ -403,17 +480,6 @@ function UpdateHealthMovementModifiers()
 	// Normal Health
 	else
 		HealthMovementModifier = ((float(Health) / HealthMax) * NormalHealthMovementModifier) + (1.0 - NormalHealthMovementModifier);
-}
-
-// Sets the current Health
-protected function SetHealth( int NewHealth )
-{
-	Health = Max(NewHealth, 0);
-	if ( Health == 0 )
-		Return;
-	
-	UpdateHealthMovementModifiers();
-	UpdateGroundSpeed();
 }
 
 // Movement speed according to the carry weight
@@ -433,16 +499,6 @@ function UpdateCarryWeightMovementModifiers()
 	}
 }
 
-// Sets the current CarryWeight
-function SetCarryWeight( float NewCarryWeight )
-{
-	CurrentWeight = NewCarryWeight;
-	
-	UpdateCarryWeightMovementModifiers();
-	UpdateGroundSpeed();
-	UpdateJumpZ();
-}
-
 function UpdateInventoryMovementModifiers()
 {
 	if ( UM_BaseWeapon(Weapon) != None )
@@ -454,6 +510,45 @@ function UpdateInventoryMovementModifiers()
 	
 	if ( UM_PlayerRepInfo != None && Weapon != None )
 		InventoryMovementModifier *= UM_PlayerRepInfo.GetWeaponPawnMovementBonus(Weapon);
+}
+
+function UpdateGroundSpeed()
+{
+	// GroundSpeed always replicated from the server to the client-owner
+	if ( Role == ROLE_Authority )  {
+		GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+}
+
+function UpdateJumpZ()
+{
+	// JumpZ always replicated from the server to the client-owner
+	if ( Role == ROLE_Authority )  {
+		JumpZ = default.JumpZ * CarryWeightJumpModifier * VeterancyJumpBonus * BaseActor.static.GetRandRangeFloat( JumpRandRange );
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+}
+
+// Sets the current Health
+protected function SetHealth( int NewHealth )
+{
+	Health = Max(NewHealth, 0);
+	if ( Health == 0 )
+		Return;
+	
+	UpdateHealthMovementModifiers();
+	UpdateGroundSpeed();
+}
+
+// Sets the current CarryWeight
+function SetCarryWeight( float NewCarryWeight )
+{
+	CurrentWeight = NewCarryWeight;
+	
+	UpdateCarryWeightMovementModifiers();
+	UpdateGroundSpeed();
+	UpdateJumpZ();
 }
 
 function CheckVeterancyCarryWeightLimit()
@@ -470,13 +565,12 @@ function CheckVeterancyCarryWeightLimit()
 	MaxCarryOverweight = MaxCarryWeight * MaxOverweightScale;
 	
 	// If we are carrying too much, drop something.
-	while ( CurrentWeight > MaxCarryWeight && t < 6 )  {
+	while ( CurrentWeight > MaxCarryOverweight && t < 6 )  {
 		++t; // Incrementing up to 5 to restrict the number of attempts to drop weapon
 		// Find the weapon to drop
 		for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 			// If it's a weapon and it can be thrown
 			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
-				I.Velocity = Velocity;
 				I.DropFrom(Location + VRand() * 10.0);
 				Break;	// Stop searching
 			}
@@ -548,34 +642,32 @@ simulated function NotifyVeterancyChanged()
 	if ( Role == ROLE_Authority )  {
 		CheckVeterancyCarryWeightLimit();
 		CheckVeterancyAmmoLimit();
-	}
-	UpdateHealthMovementModifiers();
-	UpdateCarryWeightMovementModifiers();
-	UpdateInventoryMovementModifiers();
-	UpdateGroundSpeed();
-	UpdateJumpZ();
+		UpdateHealthMovementModifiers();
+		UpdateCarryWeightMovementModifiers();
+		UpdateInventoryMovementModifiers();
+		UpdateGroundSpeed();
+		UpdateJumpZ();
 	
-	/*	If there is no UM_PlayerRepInfo, notifying the client-owner 
-		about changes by ClientTrigger() event. 
-		In other case NotifyVeterancyChanged() function will be called
-		on the client-owner from UM_PlayerRepInfo.
-		This logic used to be sure that client-owner has received all ReplicationInfo data. */
-	if ( Role == ROLE_Authority && UM_PlayerRepInfo == None )  {
-		if ( VeterancyChangedTrigger < 255 )
-			++VeterancyChangedTrigger;
-		else
-			VeterancyChangedTrigger = 0;
-		bClientTrigger = !bClientTrigger;
+		/*	If there is no UM_PlayerRepInfo, notifying the client-owner about changes by ClientTrigger() event. 
+			In other case NotifyVeterancyChanged() function will be called on the client-owner from UM_PlayerRepInfo.
+			This logic used to be sure that client-owner will receive all ReplicationInfo data.	*/
+		if ( UM_PlayerRepInfo == None )  {
+			if ( VeterancyChangedTrigger < 255 )
+				++VeterancyChangedTrigger;
+			else
+				VeterancyChangedTrigger = 0;
+			bClientTrigger = !bClientTrigger;
+		}
 	}
 	
 	// Notify all weapons in the Inventory list
 	// Inventory var exists only on the server and on the client-owner
 	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
-		//if ( I.Instigator != Self )
-			//I.Instigator = Self;
+		if ( I.Instigator != Self )
+			I.Instigator = Self;
 		if ( UM_BaseWeapon(I) != None )
 			UM_BaseWeapon(I).NotifyOwnerVeterancyChanged();
-		// To prevent the infinity loop because of the error in the LinkedList
+		// To prevent the infinity loop
 		++Count;
 	}
 }
@@ -709,7 +801,7 @@ simulated function UpdateViewPosition()
 final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
 	local	vector		TraceEnd, HitLocation, HitNormal;
-	local	float		f, SquaredDistToTarget;
+	local	float		f, SquaredDistToTarget, BestAim, TargetDist;
 	local	rotator		AimRotation;
 	local	Actor		SpawnBlocker;
 	
@@ -736,16 +828,24 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 			LastCameraRotation = LastViewRotation;
 			LastCameraDirection = LastViewDirection;
 		}
-		
 		TraceEnd = LastCameraLocation + LastCameraDirection * f;
-		// Tracing from the player camera to find the target
-		foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(4.0, 4.0, 4.0) )  {
-			if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self /*&& !LastAimTarget.bHidden */
-				 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )  {
-				Break;	// We have found the Target
+		
+		// adjust aim based on FOV
+        if ( Controller != None )  {
+			BestAim = 0.90;
+			LastAimTarget = Controller.PickTarget( BestAim, TargetDist, LastCameraDirection, LastCameraLocation, f );
+		}
+		
+		if ( LastAimTarget == None )  {
+			// Tracing from the player camera to find the target
+			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(2.0, 2.0, 2.0) )  {
+				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self /*&& !LastAimTarget.bHidden */
+					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )  {
+					Break;	// We have found the Target
+				}
+				else
+					LastAimTarget = None;	// Target is not satisfy the conditions of search
 			}
-			else
-				LastAimTarget = None;	// Target is not satisfy the conditions of search
 		}
 		
 		// If we didn't find the Target just get the TraceEnd location
@@ -907,7 +1007,7 @@ function DoBounce( bool bUpdating )
 		BounceVictim = None;
 	}
 	
-	BounceMomentum *= 0.50;
+	BounceMomentum *= 0.6;
 }
 
 //ToDo: issue #214
@@ -982,31 +1082,6 @@ function bool DoJump( bool bUpdating )
     
 	Return False;
 }
-
-event Landed( vector HitNormal )
-{
-	BounceMomentum = default.BounceMomentum;
-	if ( UM_PlayerRepInfo != None )
-		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
-	else
-		BounceRemaining = default.BounceRemaining;
-	
-	ImpactVelocity = vect(0.0,0.0,0.0);
-	TakeFallingDamage();
-	if ( Health > 0 )
-		PlayLanded(Velocity.Z);
-		
-	if ( Velocity.Z < -200 && PlayerController(Controller) != None )  {
-		bJustLanded = PlayerController(Controller).bLandingShake;
-		OldZ = Location.Z;
-	}
-	
-	LastHitBy = None;
-    //MultiJumpRemaining = MaxMultiJump;
-    if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
-        PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
-}
-
 
 function name GetOffhandBoneFor( Inventory I )
 {
@@ -1509,7 +1584,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	}
 }
 
-simulated function AddBlur( float BlurDuration, float Intensity )
+// Clien-owner AutonomousProxy function
+function AddBlur( float BlurDuration, float Intensity )
 {
 	if ( KFPC != None && Viewport(KFPC.Player) != None && !bUsingHitBlur && bUseBlurEffect )  {
 		StartingBlurFadeOutTime = BlurDuration;
@@ -1529,13 +1605,18 @@ simulated function AddBlur( float BlurDuration, float Intensity )
 	}
 }
 
-simulated function DoHitCamEffects( vector HitDirection, float JarrScale, float BlurDuration, float JarDurationScale )
+// Clien-owner AutonomousProxy function
+// ToDo: issue #256
+// нужно перписать эту функцию. Уж слишком много ненужной информации она пересылает с сервера.
+function DoHitCamEffects( vector HitDirection, float JarrScale, float BlurDuration, float JarDurationScale )
 {
 	if ( KFPC != None && Viewport(KFPC.Player) != None )
 		Super.DoHitCamEffects(HitDirection, JarrScale, BlurDuration, JarDurationScale);
 }
 
-simulated function StopHitCamEffects()
+// ToDo: issue #256
+// Clien-owner AutonomousProxy function
+function StopHitCamEffects()
 {
 	if ( KFPC != None && Viewport(KFPC.Player) != None )  {
 		CurrentBlurIntensity = 0.0;
@@ -1547,11 +1628,126 @@ simulated function StopHitCamEffects()
 	}
 }
 
-//ToDo: issue #204
-function ArmorAbsorbDamage( out int Damage, Pawn instigatedBy, out Vector Momentum, class<DamageType> DamageType )
+function ThrowInventoryBeforeDying()
 {
-	if ( DamageType.default.bArmorStops )
-		Damage = ShieldAbsorb( Damage );
+	local	Inventory	I;
+	local	int			Count;
+	
+	if ( Role < ROLE_Authority || (DrivenVehicle != None && !DrivenVehicle.bAllowWeaponToss) )
+		Return;
+	
+	if ( Controller != None && Weapon != None )
+		Controller.LastPawnWeapon = Weapon.Class;
+	
+	// Find weapons to drop
+	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+		// If it's a weapon and it can be thrown
+		if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
+			KFWeapon(I).HolderDied();
+			I.DropFrom(Location + VRand() * 10.0);
+		}
+		// To prevent the infinity loop because of the error in the LinkedList
+		++Count;
+	}
+}
+
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
+{
+	local	int				i;
+	local	Trigger			T;
+	local	NavigationPoint	N;
+	local	PlayerDeathMark	D;
+	
+	// if already destroyed, or level is being cleaned up
+	if ( bDeleteMe || Level.Game == None || Level.bLevelChange )
+		Return;
+	
+	if ( DamageType.default.bCausedByWorld && (Killer == None || Killer == Controller) && LastHitBy != None )
+		Killer = LastHitBy;
+	
+	// mutator hook to prevent deaths
+	// WARNING - don't prevent bot suicides - they suicide when really needed
+	if ( Level.Game.PreventDeath(self, Killer, DamageType, HitLocation) )  {
+		SetHealth( Max(Health, 1) );	// mutator should set this higher
+		Return;
+	}
+	
+	StopHitCamEffects(); // ToDo: issue #256
+	DestroyBallisticCollision();
+	SetHealth(0);
+	ThrowInventoryBeforeDying();
+	
+	// PlayerDeathMark
+	if ( PlayerDeathMarkClass != None )  {
+		D = Spawn(PlayerDeathMarkClass);
+		if ( D != None )
+			D.Velocity = Velocity;
+	}
+	
+	if ( DrivenVehicle != None )  {
+		Velocity = DrivenVehicle.Velocity;
+		DrivenVehicle.DriverDied();
+		DrivenVehicle = None;
+	}
+	
+	if ( Controller != None )  {
+		Controller.WasKilledBy(Killer);
+		Level.Game.Killed(Killer, Controller, self, DamageType);
+	}
+	else
+		Level.Game.Killed(Killer, Controller(Owner), self, DamageType);
+	
+	if ( Killer != None )
+		TriggerEvent(Event, self, Killer.Pawn);
+	else
+		TriggerEvent(Event, self, None);
+	
+	// make sure to untrigger any triggers requiring player touch
+	if ( IsPlayerPawn() || WasPlayerPawn() )  {
+		PhysicsVolume.PlayerPawnDiedInVolume(self);
+		ForEach TouchingActors( Class'Trigger', T )
+			T.PlayerToucherDied( Self );
+		// event for HoldObjectives
+		ForEach TouchingActors( Class'NavigationPoint', N )  {
+			if ( N.bReceivePlayerToucherDiedNotify )
+				N.PlayerToucherDied( Self );
+		}
+	}
+	
+	// remove powerup effects, etc.
+	RemovePowerups();
+	
+	// making attached SealSquealProjectile explode when this pawn dies
+	for ( i = 0; i < Attached.Length; ++i )  {
+		if ( SealSquealProjectile(Attached[i]) != None )
+			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
+	}
+	
+	Velocity.Z *= 1.3;
+	if ( IsHumanControlled() )
+		PlayerController(Controller).ForceDeathUpdate();
+	
+	/*	// From the Pawn class
+	if ( DamageType != None && DamageType.default.bAlwaysGibs )
+		ChunkUp( Rotation, DamageType.default.GibPerterbation );
+	else  {
+		NetUpdateFrequency = default.NetUpdateFrequency;
+		PlayDying(DamageType, HitLocation);
+		if ( Level.Game.bGameEnded )
+			Return;
+		// ClientDying
+		if ( !bPhysicsAnimUpdate && !IsLocallyControlled() )
+			ClientDying(DamageType, HitLocation);
+	}	*/
+	
+	// From the KFPawn class
+	NetUpdateFrequency = default.NetUpdateFrequency;
+	PlayDying(DamageType, HitLocation);
+	if ( Level.Game.bGameEnded )
+		Return;
+	// ClientDying
+	if ( !bPhysicsAnimUpdate && !IsLocallyControlled() )
+		ClientDying(DamageType, HitLocation);
 }
 
 // Process the damage taking and return the taken damage value
@@ -1605,7 +1801,9 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	
 	//ToDo: issue #204
 	// if ( Armor != None )
-		ArmorAbsorbDamage( Damage, instigatedBy, Momentum, DamageType );
+		//ArmorAbsorbDamage( Damage, instigatedBy, Momentum, DamageType );
+	if ( DamageType.default.bArmorStops )
+		Damage = ShieldAbsorb( Damage );
 	//[end]
 	
 	// Just return if this wouldn't even damage us.
@@ -1714,7 +1912,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			LastBileTime = Level.TimeSeconds;
 			NextBileTime = LastBileTime + BileFrequency;
 			// Damage Info
-			LastBileDamagedByType = DamageType;
+			LastBileDamageType = DamageType;
 			BileInstigator = InstigatedBy;
 			BileIntensity = FMin( (BileIntensity + float(Damage)), float(OverhealedHealthMax) );
 			// Start to taking BileDamage
@@ -1734,6 +1932,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 }
+
 
 // Can Healer heal this human or not
 simulated function bool CanBeHealed( bool bMedicamentCanOverheal, UM_HumanPawn Healer, optional out int HealMax )
@@ -1863,10 +2062,11 @@ protected function ReduceOverheal()
 	SetHealth( Max( (Health - 1), int(HealthMax) ) );
 }
 
-simulated function AddHealth() { }
+// Clearing old function
+function AddHealth() { }
 
 // Healing with HealIntensity decreasing
-protected function AppendHealth()
+protected function IncreaseHealth()
 {
 	local	int		DeltaHealIntensity;
 	
@@ -1895,6 +2095,18 @@ protected function AppendHealth()
 	}
 }
 
+// Clien-owner AutonomousProxy function
+function ClientAddPoisonEffects( int DeltaPoisonDamage )
+{
+	if ( !IsLocallyControlled() )
+		Return;
+	
+	AddBlur( (float(DeltaPoisonDamage) * 0.25), FMin((float(DeltaPoisonDamage) * 0.2), 1.0) );
+	// Shake controller
+	if ( Controller != None )
+		Controller.DamageShake( DeltaPoisonDamage );
+}
+
 // Take a Poison Damage (called from the Tick)
 function TakePoisonDamage()
 {
@@ -1911,9 +2123,8 @@ function TakePoisonDamage()
 		// if has taken damage
 		if ( DeltaPoisonDamage > 0 )  {
 			LastPoisonTime = Level.TimeSeconds;
-			// Shake controller
-			if ( Controller != None )
-				Controller.DamageShake( DeltaPoisonDamage * 2 );
+			// Do Poison Effects
+			ClientAddPoisonEffects(DeltaPoisonDamage);
 		}
 	}
 	// Checking PoisonIntensity
@@ -1936,7 +2147,7 @@ function TakeBileDamage()
 		// Decreasing BileIntensity
 		BileIntensity = FMax( (BileIntensity - float(DeltaBileDamage)), 0.0 );
 		// Damaging
-		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamagedByType );
+		DeltaBileDamage = ProcessTakeDamage( DeltaBileDamage, BileInstigator, Location, vect(0.0, 0.0, 0.0), LastBileDamageType );
 		// if has taken damage
 		if ( DeltaBileDamage > 0 )  {
 			LastBileTime = Level.TimeSeconds;
@@ -1950,10 +2161,10 @@ function TakeBileDamage()
 				BileCamVect.X = FRand();
 				BileCamVect.Y = FRand();
 				BileCamVect.Z = FRand();
-				if ( class<DamTypeBileDeckGun>(LastBileDamagedByType) != None )
+				if ( class<DamTypeBileDeckGun>(LastBileDamageType) != None )
 					DoHitCamEffects( BileCamVect, 0.25, 0.75, 0.5 );
 				else
-					DoHitCamEffects( BileCamVect, 0.35, 2.0,1.0 );
+					DoHitCamEffects( BileCamVect, 0.35, 2.0, 1.0 );
 			}
 		}
 	}
@@ -2113,7 +2324,8 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
-simulated function UpdateCameraBlur( float DeltaTime )
+// Clien-owner AutonomousProxy function
+function UpdateCameraBlur( float DeltaTime )
 {
 	local	float	BlurAmount;
 	
@@ -2149,7 +2361,7 @@ simulated event Tick( float DeltaTime )
 			
 			// Healing
 			if ( bIsHealing && Level.TimeSeconds >= NextHealTime )
-				AppendHealth();
+				IncreaseHealth();
 			
 			// Poison Damage
 			if ( bIsTakingPoisonDamage && Level.TimeSeconds >= NextPoisonTime )
@@ -2244,6 +2456,46 @@ simulated event Tick( float DeltaTime )
 	// Locally controlled client camera Blur Effect
 	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )
 		UpdateCameraBlur(DeltaTime);
+}
+
+event Landed( vector HitNormal )
+{
+	BounceMomentum = default.BounceMomentum;
+	if ( UM_PlayerRepInfo != None )
+		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
+	else
+		BounceRemaining = default.BounceRemaining;
+	
+	ImpactVelocity = vect(0.0,0.0,0.0);
+	TakeFallingDamage();
+	if ( Health > 0 )
+		PlayLanded(Velocity.Z);
+		
+	if ( Velocity.Z < -200 && PlayerController(Controller) != None )  {
+		bJustLanded = PlayerController(Controller).bLandingShake;
+		OldZ = Location.Z;
+	}
+	
+	LastHitBy = None;
+    //MultiJumpRemaining = MaxMultiJump;
+    if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
+        PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
+}
+
+event FellOutOfWorld( eKillZType KillType )
+{
+	if ( Level.NetMode == NM_Client || (Controller != None && Controller.AvoidCertainDeath()) )
+		Return;
+	
+	SetHealth(0);
+	
+	if ( KillType == KILLZ_Lava )
+		Died( None, LavaDamageType, Location );
+	else  {
+		if ( KillType != KILLZ_Suicide && Physics != PHYS_Karma )
+			SetPhysics(PHYS_None);
+		Died( None, FallingDamageType, Location );
+	}
 }
 
 event Timer()
@@ -2344,7 +2596,8 @@ exec function SwitchToLastWeapon()
 
 defaultproperties
 {
-     ViewPositionUpdateDelay=0.001
+     PlayerDeathMarkClass=Class'PlayerDeathMark'
+	 ViewPositionUpdateDelay=0.001
 	 // 1 ms AimRotation delay
 	 AimRotationDelay=0.001
 	 // HealedMessage
@@ -2359,7 +2612,7 @@ defaultproperties
      WaterSpeed=180.000000
      AirSpeed=230.000000
      // PoisonDamage
-	 PoisonFrequency=0.25
+	 PoisonFrequency=0.5
 	 // BileDamage
 	 BileFrequency=0.5
 	 BileDamageRandRange=(Min=3.0,Max=6.0)
@@ -2373,6 +2626,7 @@ defaultproperties
 	 BurningDamageType=Class'DamTypeBurned'
 	 // Falling
 	 FallingDamageType=Class'Fell'
+	 LavaDamageType=Class'FellLava'
 	 // CarryWeight
 	 WeightMovementModifier=0.14
 	 WeightJumpModifier=0.06
@@ -2386,8 +2640,8 @@ defaultproperties
 	 OverhealMovementModifier=0.2
 	 NormalHealthMovementModifier=0.3
 	 // Drugs
-	 DrugsBlurDuration=5.0
-	 DrugsBlurIntensity=0.5
+	 DrugsBlurDuration=6.0
+	 DrugsBlurIntensity=0.6
 	 DrugEffectHealIntensity=30.0
 	 LoseDrugEffectHealIntensity=20.0
 	 DrugsAimErrorScale=1.15

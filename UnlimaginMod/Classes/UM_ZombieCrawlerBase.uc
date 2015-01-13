@@ -12,15 +12,28 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:10
 //================================================================================
-class UM_ZombieCrawlerBase extends UM_Monster;
+class UM_ZombieCrawlerBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 
 var() float PounceSpeed;
 var bool bPouncing;
 
-var(Anims)	name				MeleeAirAnims[3]; // Attack anims for when flying through the air
-var			class<DamageType>	PoisonDamageType;
+var(Anims)		name				MeleeAirAnims[3]; // Attack anims for when flying through the air
+
+var				bool				bPoisonous;
+var				float				PoisonousChance;
+var(Display)	array<Material>		PoisonousSkins;
+var				class<DamTypeZombieAttack>	PoisonDamageType;
+var				range				PoisonDamageRandRange;
+
+
+replication
+{
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		bPoisonous;
+}
 
 //-------------------------------------------------------------------------------
 // NOTE: All Code resides in the child class(this class was only created to
@@ -29,7 +42,13 @@ var			class<DamageType>	PoisonDamageType;
 
 defaultproperties
 {
+	 PoisonousChance=0.25
+	 PoisonousSkins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
+	 //PoisonousSkins(1)=ConstantColor'KillingFloorLabTextures.Statics.elevater_glow'
+	 //PoisonousSkins(1)=FinalBlend'kf_fx_trip_t.siren.siren_scream_fb'
+	 PoisonousSkins(1)=Combiner'kf_fx_trip_t.siren.siren_scream_cmb'
 	 PoisonDamageType=Class'UnlimaginMod.UM_ZombieDamType_CrawlerPoison'
+	 PoisonDamageRandRange=(Min=6.0,Max=8.0)
 	 ExtraSpeedChance=0.200000
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // JumpZ

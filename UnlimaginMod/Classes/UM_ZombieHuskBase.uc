@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:18
 //================================================================================
-class UM_ZombieHuskBase extends UM_Monster;
+class UM_ZombieHuskBase extends UM_Monster
+	Abstract;
 
 var     float   NextFireProjectileTime; // Track when we will fire again
 var()   float   ProjectileFireInterval; // How often to fire the fire projectile
@@ -51,10 +52,12 @@ defaultproperties
      SeveredArmAttachScale=0.900000
      SeveredLegAttachScale=0.900000
      SeveredHeadAttachScale=0.900000
-     PlayerCountHealthScale=0.100000
+     //PlayerCountHealthScale=0.100000
+	 //PlayerNumHeadHealthScale=0.050000
+	 PlayerCountHealthScale=0.05
+	 PlayerNumHeadHealthScale=0.05
      OnlineHeadshotOffset=(X=20.000000,Z=55.000000)
      HeadHealth=200.000000
-     PlayerNumHeadHealthScale=0.050000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Husk.Husk_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Husk.Husk_Death'
      ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Husk.Husk_Challenge'

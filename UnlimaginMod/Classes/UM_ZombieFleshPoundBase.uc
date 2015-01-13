@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:12
 //================================================================================
-class UM_ZombieFleshPoundBase extends UM_Monster;
+class UM_ZombieFleshPoundBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 
@@ -84,11 +85,11 @@ defaultproperties
      SeveredArmAttachScale=1.300000
      SeveredLegAttachScale=1.200000
      SeveredHeadAttachScale=1.500000
-     PlayerCountHealthScale=0.250000
+     PlayerCountHealthScale=0.2
+	 PlayerNumHeadHealthScale=0.2
      OnlineHeadshotOffset=(X=22.000000,Z=68.000000)
      OnlineHeadshotScale=1.300000
      HeadHealth=700.000000
-     PlayerNumHeadHealthScale=0.300000
      MotionDetectorThreat=5.000000
      bBoss=True
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Fleshpound.FP_Pain'

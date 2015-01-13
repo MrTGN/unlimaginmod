@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:06
 //================================================================================
-class UM_ZombieClotBase extends UM_Monster;
+class UM_ZombieClotBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_Freaks_Trip.ukx
@@ -27,7 +28,7 @@ var	float	ClotGrabMessageDelay;	// Amount of time between a player saying "I've 
 
 replication
 {
-	reliable if(bNetDirty && Role == ROLE_Authority)
+	reliable if ( Role == ROLE_Authority && bNetDirty )
 		bGrappling;
 }
 

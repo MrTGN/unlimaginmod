@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:00
 //================================================================================
-class UM_ZombieBossBase extends UM_Monster;
+class UM_ZombieBossBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPatch2.utx
 #exec OBJ LOAD FILE=KF_Specimens_Trip_T.utx
@@ -103,7 +104,9 @@ defaultproperties
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.200000
      SeveredHeadAttachScale=1.500000
-     PlayerCountHealthScale=0.750000
+     //PlayerCountHealthScale=0.750000
+	 PlayerCountHealthScale=0.6
+	 PlayerNumHeadHealthScale=0.6
      BurningWalkFAnims(0)="WalkF"
      BurningWalkFAnims(1)="WalkF"
      BurningWalkFAnims(2)="WalkF"

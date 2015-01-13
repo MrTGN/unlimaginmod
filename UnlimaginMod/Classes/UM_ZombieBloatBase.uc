@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 22:54
 //================================================================================
-class UM_ZombieBloatBase extends UM_Monster;
+class UM_ZombieBloatBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd.uax
@@ -57,7 +58,9 @@ defaultproperties
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.300000
      SeveredHeadAttachScale=1.700000
-     PlayerCountHealthScale=0.250000
+     //PlayerCountHealthScale=0.250000
+	 PlayerCountHealthScale=0.15
+	 PlayerNumHeadHealthScale=0.15
      OnlineHeadshotOffset=(X=5.000000,Z=70.000000)
      OnlineHeadshotScale=1.500000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Pain'

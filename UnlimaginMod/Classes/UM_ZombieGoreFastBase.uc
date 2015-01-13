@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:15
 //================================================================================
-class UM_ZombieGoreFastBase extends UM_Monster;
+class UM_ZombieGoreFastBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 
@@ -46,7 +47,9 @@ defaultproperties
      CrispUpThreshhold=8
      SeveredArmAttachScale=0.900000
      SeveredLegAttachScale=0.900000
-     PlayerCountHealthScale=0.150000
+     //PlayerCountHealthScale=0.150000
+	 PlayerCountHealthScale=0.1
+	 PlayerNumHeadHealthScale=0.1
      OnlineHeadshotOffset=(X=5.000000,Z=53.000000)
      OnlineHeadshotScale=1.500000
      MotionDetectorThreat=0.500000

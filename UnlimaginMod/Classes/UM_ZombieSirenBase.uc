@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:26
 //================================================================================
-class UM_ZombieSirenBase extends UM_Monster;
+class UM_ZombieSirenBase extends UM_Monster
+	Abstract;
 
 var () int ScreamRadius; // AOE for scream attack.
 
@@ -73,11 +74,13 @@ defaultproperties
      CrispUpThreshhold=7
      bCanDistanceAttackDoors=True
      SeveredLegAttachScale=0.700000
-     PlayerCountHealthScale=0.100000
+     //PlayerCountHealthScale=0.100000
+	 //PlayerNumHeadHealthScale=0.050000
+	 PlayerCountHealthScale=0.05
+	 PlayerNumHeadHealthScale=0.05
      OnlineHeadshotOffset=(X=6.000000,Z=41.000000)
      OnlineHeadshotScale=1.200000
      HeadHealth=200.000000
-     PlayerNumHeadHealthScale=0.050000
      MotionDetectorThreat=2.000000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Death'

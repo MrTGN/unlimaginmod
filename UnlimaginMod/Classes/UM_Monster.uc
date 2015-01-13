@@ -47,6 +47,7 @@ var				range	DamageScaleRange;
 var				float	MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
 var				float	MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
 
+// BallisticCollision
 struct BallisticCollisionData
 {
 	var	UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
@@ -57,7 +58,9 @@ struct BallisticCollisionData
 	var	vector							AreaOffset;	// Area offset from the bone
 	var	rotator							AreaRotation;	// Area relative rotation from the bone
 	var	float							AreaImpactStrength;	// J / mm2
+	var	int								AreaHealth;	// Health amount of this body part
 	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
+	var	float							AreaSizeScale;	// Size scaling
 	var	bool							bArmoredArea;	// This area can be covered with armor
 };
 
@@ -121,6 +124,10 @@ function BuildBallisticCollision()
 {
 	local	int		i;
 	
+	// Server only
+	if ( Role < ROLE_Authority )
+		Return;
+	
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
 		if ( BallisticCollision[i].AreaClass != None )  {
 			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
@@ -157,11 +164,17 @@ function DestroyBallisticCollision()
 {
 	local	int		i;
 	
+	// Server only
+	if ( Role < ROLE_Authority )
+		Return;
+	
 	HeadBallisticCollision = None;
 	while ( BallisticCollision.Length > 0 )  {
 		i = BallisticCollision.Length - 1;
-		if ( BallisticCollision[i].Area != None )
+		if ( BallisticCollision[i].Area != None )  {
+			BallisticCollision[i].Area.DisableCollision();
 			BallisticCollision[i].Area.Destroy();
+		}
 		BallisticCollision.Remove(i, 1);
 	}
 }
@@ -228,7 +241,7 @@ simulated event PostBeginPlay()
 	DECAP = false;
 
 	// Difficulty Scaling
-	if ( Level.Game != None && !bDiffAdjusted )  {
+	if ( Role == ROLE_Authority && Level.Game != None && !bDiffAdjusted )  {
 		//log(self$" Beginning ground speed "$default.GroundSpeed);
 		if ( Level.Game.NumPlayers <= 3 )
 			HiddenGroundSpeed = default.HiddenGroundSpeed;
@@ -249,7 +262,7 @@ simulated event PostBeginPlay()
 			MovementSpeedDifficultyScale = 1.3;
 
 		if ( CurrentDamType == None )
-			CurrentDamType = ZombieDamType[Rand(3)];
+			CurrentDamType = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
 		
 		//[block] Speed Randomization
 		AirSpeed *= MovementSpeedDifficultyScale;
@@ -328,9 +341,24 @@ simulated function PlayDyingAnimation( Class<DamageType> DamageType, Vector HitL
 	Super.PlayDyingAnimation(DamageType, HitLoc );
 } */
 
+
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
+{
+	local	int		i;
+	
+	// making attached SealSquealProjectile explode when this pawn dies
+	for ( i = 0; i < Attached.Length; ++i )  {
+		if ( SealSquealProjectile(Attached[i]) != None )
+			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
+	}
+	DestroyBallisticCollision();
+	Super(Pawn).Died( Killer, DamageType, HitLocation );
+}
+
 simulated event Destroyed()
 {
 	DestroyBallisticCollision();
+	
 	Super.Destroyed();
 }
 
@@ -698,7 +726,7 @@ simulated event SetAnimAction(name NewAction)
 		Return;
 	
 	if ( NewAction == 'DoorBash' )
-		CurrentDamtype = ZombieDamType[Rand(3)];
+		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
 	else  {
 		for ( meleeAnimIndex = 0; meleeAnimIndex < 2; meleeAnimIndex++ )  {
 			if ( NewAction == MeleeAnims[meleeAnimIndex] )  {
@@ -862,6 +890,16 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
+function RemoveHead()
+{
+	if ( HeadBallisticCollision != None )  {
+		HeadBallisticCollision.DisableCollision();
+		HeadBallisticCollision.Destroy();
+	}
+	//ToDo: issue #264
+	Super.RemoveHead();
+}
+
 event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector momentum, class<DamageType> damageType, optional int HitIndex )
 {
 	local bool bIsHeadshot;
@@ -882,12 +920,10 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
         Damage *= ZappedDamageMod;
 
 	// Zeds and fire dont mix.
-	if ( class<UM_BaseDamType_IncendiaryBullet>(damageType) != None || 
-		 class<UM_BaseDamType_Flame>(damageType) != None ||
-		 (class<KFWeaponDamageType>(damageType) != None && class<KFWeaponDamageType>(damageType).default.bDealBurningDamage) )
-    {
-        if ( BurnDown<=0 || Damage > LastBurnDamage )  {
-			 // LastBurnDamage variable is storing last burn damage (unperked) received,
+	if ( class<UM_BaseDamType_IncendiaryBullet>(damageType) != None || class<UM_BaseDamType_Flame>(damageType) != None
+		 || (class<KFWeaponDamageType>(damageType) != None && class<KFWeaponDamageType>(damageType).default.bDealBurningDamage) )  {
+        if ( BurnDown < 1 || Damage > LastBurnDamage )  {
+			// LastBurnDamage variable is storing last burn damage (unperked) received,
 			// which will be used to make additional damage per every burn tick (second).
 			LastBurnDamage = Damage;
 
@@ -903,18 +939,18 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 				FireDamageClass = class'DamTypeFlamethrower';
         }
 
-		if ( class<DamTypeMAC10MPInc>(damageType) == none &&
-			 class<UM_BaseDamType_IncendiaryBullet>(damageType) == none )
+		if ( class<DamTypeMAC10MPInc>(damageType) == None &&
+			 class<UM_BaseDamType_IncendiaryBullet>(damageType) == None )
             Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
 
         // BurnDown variable indicates how many ticks are remaining for zed to burn.
         // It is 0, when zed isn't burning (or stopped burning).
         // So all the code below will be executed only, if zed isn't already burning
-        if ( BurnDown <= 0 )  {
+        if ( BurnDown < 1 )  {
             if ( HeatAmount > 4 || Damage >= 15 )  {
-                bBurnified = true;
+                bBurnified = True;
                 BurnDown = 10; // Inits burn tick count to 10
-                SetGroundSpeed(GroundSpeed *= 0.80); // Lowers movement speed by 20%
+                SetGroundSpeed(GroundSpeed * 0.8); // Lowers movement speed by 20%
                 BurnInstigator = instigatedBy;
                 SetTimer(1.0,false); // Sets timer function to be executed each second
             }
@@ -1066,7 +1102,9 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-     // Monster Size
+     PlayerCountHealthScale=0.1
+	 PlayerNumHeadHealthScale=0.1
+	 // Monster Size
 	 SizeScaleRange=(Min=0.8,Max=1.2)
 	 // Monster Speed
 	 SpeedScaleRange=(Min=0.8,Max=1.1)

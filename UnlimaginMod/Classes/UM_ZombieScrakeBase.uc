@@ -12,7 +12,8 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:23
 //================================================================================
-class UM_ZombieScrakeBase extends UM_Monster;
+class UM_ZombieScrakeBase extends UM_Monster
+	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 
@@ -65,12 +66,14 @@ defaultproperties
      Intelligence=BRAINS_Mammal
      SeveredArmAttachScale=1.100000
      SeveredLegAttachScale=1.100000
-     PlayerCountHealthScale=0.500000
+     //PlayerCountHealthScale=0.500000
+	 //PlayerNumHeadHealthScale=0.300000
+	 PlayerCountHealthScale=0.3
+	 PlayerNumHeadHealthScale=0.3
      PoundRageBumpDamScale=0.010000
      OnlineHeadshotOffset=(X=22.000000,Y=5.000000,Z=58.000000)
      OnlineHeadshotScale=1.500000
      HeadHealth=650.000000
-     PlayerNumHeadHealthScale=0.300000
      MotionDetectorThreat=3.000000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Death'

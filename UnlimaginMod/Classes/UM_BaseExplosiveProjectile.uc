@@ -199,22 +199,20 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 {
 	local Actor			Victim;
 	local float			DamageScale, Dist;
-	local vector		Dir, VictimHitLocation;
+	local vector		Dir;
 	local int			NumKilled, i;
-	local KFMonster		Monster;
 	local array<Pawn>	CheckedPawns;
-	local bool			bAlreadyChecked, bIgnoreThisVictim;
+	local bool			bIgnoreThisVictim;
 
 	if ( bHurtEntry || DamageAmount <= 0.0 )
 		Return;
 
 	bHurtEntry = True;
 	
-	foreach VisibleCollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation, True )  {
+	//foreach VisibleCollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation, True )  {
+	foreach CollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation )  {
 		if ( Victim != None && Victim != Self && !Victim.bDeleteMe && Victim != Hurtwall
 			 && FluidSurfaceInfo(Victim) == None && (!bIgnoreSameClassProj || Victim.Class != Class) )  {
-			// Resets to the default values
-			Monster = None;
 			// Check IgnoredVictims array
 			bIgnoreThisVictim = False;
 			for ( i = 0; i < IgnoredVictims.Length; ++i )  {
@@ -232,7 +230,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			
 			// BallisticCollision check
 			if ( UM_BallisticCollision(Victim) != None )  {
-				if ( Victim.Base != None )
+				if ( UM_BallisticCollision(Victim).CanBeDamaged() )
 					Victim = Victim.Base;
 				else
 					Continue;	// Skip this BallisticCollision
@@ -244,27 +242,26 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			DamageScale = 1.0 - FMax( 0.0, ((Dist - Victim.CollisionRadius) / DamageRadius) );
 			// if Pawn
 			if ( Pawn(Victim) != None )  {
-				bAlreadyChecked = False;
+				bIgnoreThisVictim = False;
 				// Check CheckedPawns array
 				for ( i = 0; i < CheckedPawns.Length; ++i )  {
 					// comparison by object
 					if ( CheckedPawns[i] == Victim )  {
-						bAlreadyChecked = True;
+						bIgnoreThisVictim = True;
 						Break;
 					}
 				}
 				// Ignore already Checked Pawns
-				if ( bAlreadyChecked )
+				if ( bIgnoreThisVictim )
 					Continue;
 				
 				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
 				// Do not damage a friendly Pawn
-				if ( !CanHurtPawn( Pawn(Victim) ) )
+				if ( !CanHurtPawn(Pawn(Victim)) )
 					Continue;
 				
-				Monster = KFMonster(Victim);
-				if ( Monster != None && Monster.Health > 0 )
-					DamageScale *= Monster.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
+				if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
+					DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 				else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
 					DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 			}
@@ -274,18 +271,18 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			
 			if ( Instigator == None || Instigator.Controller == None )
 				Victim.SetDelayedDamageInstigatorController( InstigatorController );
-			
-			VictimHitLocation = Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir;
+			// Damage Victim
 			Victim.TakeDamage(
-				(DamageScale * DamageAmount), Instigator, VictimHitLocation,
+				(DamageScale * DamageAmount), Instigator, 
+				(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
 				(DamageScale * Momentum * Dir), DamageType
 			);
-			
+			// Damage Vehicle Driver
 			if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
 				Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
 				
 			// Calculating number of Victim
-			if ( Monster != None && Monster.Health < 1 )
+			if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
 				NumKilled++;
 		}
 	}
@@ -294,8 +291,6 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		 && FluidSurfaceInfo(LastTouched) == None && (!bIgnoreSameClassProj || LastTouched.Class != Class) )  {
 		Victim = LastTouched;
 		LastTouched = None;
-		// Resets to the default values
-		Monster = None;
 		// Check IgnoredVictims array
 		bIgnoreThisVictim = False;
 		for ( i = 0; i < IgnoredVictims.Length; ++i )  {
@@ -306,7 +301,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 		// BallisticCollision check
 		if ( UM_BallisticCollision(Victim) != None )  {
-			if ( Victim.Base != None )
+			if ( UM_BallisticCollision(Victim).CanBeDamaged() )
 				Victim = Victim.Base;
 			else
 				bIgnoreThisVictim = True;	// Skip this BallisticCollision
@@ -316,46 +311,49 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Dir = Victim.Location - HitLocation;
 			Dist = FMax( VSize(Dir), 1.0 );
 			Dir = Dir / Dist;
-			DamageScale = FMax((Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)),(1.0 - FMax(0, ((Dist - Victim.CollisionRadius) / DamageRadius))));
+			DamageScale = FMax( (Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)), (1.0 - FMax(0.0, ((Dist - Victim.CollisionRadius) / DamageRadius))) );
 			if ( Pawn(Victim) != None )  {
-				// Do not damage a friendly Pawn
-				if ( !CanHurtPawn( Pawn(Victim) ) )
-					bIgnoreThisVictim = True;
-				else  {
-					Monster = KFMonster(Victim);
-					if ( Monster != None && Monster.Health > 0 )
-						DamageScale *= Monster.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
+				if ( CanHurtPawn(Pawn(Victim)) )  {
+					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
+						DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 					else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
 						DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 				}
+				else
+					bIgnoreThisVictim = True;	// Do not damage a friendly Pawn
 			}
-			// outside the DamageRadius
+			// if not outside the DamageRadius
 			if ( !bIgnoreThisVictim && DamageScale > 0.0 )  {
 				if ( Instigator == None || Instigator.Controller == None )
 					Victim.SetDelayedDamageInstigatorController( InstigatorController );
-				
-				VictimHitLocation = Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir;
+				// Damage Victim
 				Victim.TakeDamage(
-					(DamageScale * DamageAmount), Instigator, VictimHitLocation,
+					(DamageScale * DamageAmount), Instigator,
+					(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
 					(DamageScale * Momentum * Dir), DamageType
 				);
-				
+				// Damage Vehicle Driver
 				if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
 					Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
 				
 				// Calculating number of Victim
-				if ( Monster != None && Monster.Health < 1 )
+				if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
 					NumKilled++;
 			}
 		}
 	}
 
-	if ( NumKilled >= LongDramaticEventKills )
-		KFGameType(Level.Game).DramaticEvent(0.08, LongDramaticEventDuration);
-	else if ( NumKilled >= MediumDramaticEvenKills )
-		KFGameType(Level.Game).DramaticEvent(0.05, MediumDramaticEventDuration);
-	else if ( NumKilled >= SmallDramaticEventKills )
-		KFGameType(Level.Game).DramaticEvent(0.03, SmallDramaticEventDuration);
+	/* ToDo: создать функцию в UnlimaginGameType, принимающую количество убитых взрывом
+		и включающую соответстующее замедление игры.
+		issue #261.	*/
+	if ( KFGameType(Level.Game) != None )  {
+		if ( NumKilled >= LongDramaticEventKills )
+			KFGameType(Level.Game).DramaticEvent(0.08, LongDramaticEventDuration);
+		else if ( NumKilled >= MediumDramaticEvenKills )
+			KFGameType(Level.Game).DramaticEvent(0.05, MediumDramaticEventDuration);
+		else if ( NumKilled >= SmallDramaticEventKills )
+			KFGameType(Level.Game).DramaticEvent(0.03, SmallDramaticEventDuration);
+	}
 	
 	bHurtEntry = False;
 }

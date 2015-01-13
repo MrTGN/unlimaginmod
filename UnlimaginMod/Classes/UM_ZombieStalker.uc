@@ -362,14 +362,12 @@ function RemoveHead()
 	}
 }
 
-function Died(Controller Killer, class<DamageType> damageType, vector HitLocation)
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	if ( DisabledPawn != none )
-	{
-		DisabledPawn.bMovementDisabled = false;
-		DisabledPawn = none;
+	if ( DisabledPawn != None )  {
+		DisabledPawn.bMovementDisabled = False;
+		DisabledPawn = None;
 	}
-
 	Super.Died(Killer, damageType, HitLocation);
 }
 
@@ -391,13 +389,11 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 
 simulated function Destroyed()
 {
-    Super.Destroyed();
-
-	if( DisabledPawn != none )
-	{
-		DisabledPawn.bMovementDisabled = false;
-		DisabledPawn = none;
+    if ( DisabledPawn != None )  {
+		DisabledPawn.bMovementDisabled = False;
+		DisabledPawn = None;
 	}
+	Super.Destroyed();
 }
 
 // Give her the ability to spring.

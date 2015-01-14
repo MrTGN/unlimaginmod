@@ -22,11 +22,15 @@ class UM_BallisticCollision extends UM_BaseActor
 //========================================================================
 //[block] Variables
 
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+
 var			float			ImpactStrength;			// J / mm2
+var			range			ImpactStrengthScaleRange;
 var			float			FrictionCoefficient;	// Surface material friction coefficient. 1.0 - no friction. 0.0 - 100% friction.
 var			float			PlasticityCoefficient;	// Plasticity coefficient of the surface material. 1.0 - not plastic material. 0.0 - 100% plastic material.
 var			float			DamageScale;
 var			int				Health, HealthMax;
+var			range			HealthScaleRange;
 
 //[end] Varibles
 //====================================================================
@@ -50,6 +54,17 @@ event PreBeginPlay()
 {
 	if ( Pawn(Owner) != None )
 		Instigator = Pawn(Owner);
+}
+
+function SetImpactStrength( float NewImpactStrength )
+{
+	ImpactStrength = NewImpactStrength * BaseActor.static.GetRandRangeFloat( ImpactStrengthScaleRange );
+}
+
+function SetInitialHealth( float InitialHealth )
+{
+	HealthMax = Round( InitialHealth * BaseActor.static.GetRandRangeFloat(HealthScaleRange) );
+	Health = HealthMax;
 }
 
 simulated function vector GetCollisionExtetnt()
@@ -104,6 +119,8 @@ defaultproperties
 	 // if ImpactStrength < 6.0 standard 19x9mm bullet can penetrate this area
 	 // ImpactStrength * ProjectileCrossSectionalArea = Energy to penetrate this area
 	 ImpactStrength=8.0
+	 ImpactStrengthScaleRange=(Min=0.9,Max=1.1)
+	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 FrictionCoefficient=0.54
 	 PlasticityCoefficient=0.39
 	 // Lighting

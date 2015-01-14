@@ -92,8 +92,8 @@ defaultproperties
 	 Skins(0)=Texture'KF_Specimens_Trip_T_Two.burns.burns_tatters'
      Skins(1)=Shader'KF_Specimens_Trip_T_Two.burns.burns_shdr'
 	 Mesh=SkeletalMesh'UM_Husk_A.Husk_Mesh'
-	 MeshTestCollisionHeight=45.0
-	 MeshTestCollisionRadius=16.0
+	 //MeshTestCollisionHeight=45.0
+	 //MeshTestCollisionRadius=16.0
 	 CollisionHeight=45.0
 	 CollisionRadius=16.0
      BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.2,AreaHeight=6.4,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=0.2,Z=0.0),AreaImpactStrength=6.8)

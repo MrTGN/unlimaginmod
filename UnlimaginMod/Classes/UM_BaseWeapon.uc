@@ -1820,11 +1820,11 @@ function DropFrom( vector StartLocation )
 	}
 
 	if ( PickupClass != None )
-		Pickup = Spawn(PickupClass,,, StartLocation);
+		Pickup = Spawn( PickupClass, Owner,, StartLocation );
 	
 	if ( Pickup != None )  {
 		Pickup.InitDroppedPickupFor(self);
-		Pickup.Velocity = Velocity + (Direction * 100);
+		Pickup.Velocity = Velocity + (Direction * 100.0);
 		if ( SW != None && KFW != None && KFWeaponPickup(Pickup) != None )  {
 			KFWeaponPickup(Pickup).AmmoAmount[0] = AmmoThrown;
 			KFWeaponPickup(Pickup).MagAmmoRemaining = MagAmmoRemaining;

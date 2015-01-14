@@ -107,8 +107,8 @@ defaultproperties
 	 Skins(0)=Shader'KF_Specimens_Trip_T.scrake_FB'
      Skins(1)=TexPanner'KF_Specimens_Trip_T.scrake_saw_panner'
 	 Mesh=SkeletalMesh'UM_Scrake_A.Scrake_Mesh'
-	 MeshTestCollisionHeight=59.6
-	 MeshTestCollisionRadius=20.0
+	 //MeshTestCollisionHeight=59.6
+	 //MeshTestCollisionRadius=20.0
 	 CollisionHeight=59.6
 	 CollisionRadius=20.0
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.0,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.4,Z=0.0),AreaImpactStrength=10.0)

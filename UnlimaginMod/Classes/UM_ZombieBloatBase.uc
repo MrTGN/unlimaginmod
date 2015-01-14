@@ -95,8 +95,8 @@ defaultproperties
      
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.bloat_cmb'
 	 Mesh=SkeletalMesh'UM_Bloat_A.Bloat_Mesh'
-	 MeshTestCollisionHeight=62.0
-	 MeshTestCollisionRadius=25.0
+	 //MeshTestCollisionHeight=62.0
+	 //MeshTestCollisionRadius=25.0
 	 CollisionHeight=62.0
 	 CollisionRadius=25.0
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)

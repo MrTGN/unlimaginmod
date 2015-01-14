@@ -27,6 +27,8 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 var				bool	bRandomSizeAdjusted, bThisIsMiniBoss;
 
+var				range	MassScaleRange;
+var				range	SoundsPitchRange;
 //	Monster Size
 var				float	ExtraSizeChance;
 var				range	SizeScaleRange, ExtraSizeScaleRange;
@@ -44,9 +46,6 @@ var				range	MeleeRangeScale;
 // Monster Damage
 var				range	DamageScaleRange;
 
-var				float	MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
-var				float	MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
-
 // BallisticCollision
 struct BallisticCollisionData
 {
@@ -58,14 +57,13 @@ struct BallisticCollisionData
 	var	vector							AreaOffset;	// Area offset from the bone
 	var	rotator							AreaRotation;	// Area relative rotation from the bone
 	var	float							AreaImpactStrength;	// J / mm2
-	var	int								AreaHealth;	// Health amount of this body part
+	var	float							AreaHealth;	// Health amount of this body part
 	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
-	var	float							AreaSizeScale;	// Size scaling
 	var	bool							bArmoredArea;	// This area can be covered with armor
 };
 
 var	array<BallisticCollisionData>		BallisticCollision;
-var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference for code in IsHeadShot() function
+var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
 //[end] Varibles
 //====================================================================
@@ -97,18 +95,16 @@ function RandomizeMonsterSizes()
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
-	
+	SoundPitch = default.SoundPitch / RandomSizeMult * BaseActor.static.GetRandPitch( SoundsPitchRange );
 	// Sizes
-	Mass = default.Mass * RandomSizeMult;
+	Mass = default.Mass * RandomSizeMult * BaseActor.static.GetRandRangeFloat( MassScaleRange );
 	// CollisionSize scaled by DrawScale
-	SetCollisionSize( (MeshTestCollisionRadius * DrawScale), (MeshTestCollisionHeight * DrawScale) );
+	PrePivot.Z = default.CollisionHeight * DrawScale - default.CollisionHeight;
+	SetCollisionSize( (default.CollisionRadius * DrawScale), (default.CollisionHeight * DrawScale) );
 	// EyeHeight scaled by DrawScale
 	BaseEyeHeight = default.BaseEyeHeight * DrawScale;
 	EyeHeight = default.EyeHeight * DrawScale;
-	//PrePivot.Z = CollisionHeight - default.CollisionHeight;
-	PrePivot.Z = (MeshTestCollisionRadius * DrawScale - MeshTestCollisionRadius) * DrawScale;
-	//PrePivot.Z = MeshTestCollisionRadius * DrawScale - MeshTestCollisionRadius;
-	
+		
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
 	
@@ -130,32 +126,36 @@ function BuildBallisticCollision()
 	
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
 		if ( BallisticCollision[i].AreaClass != None )  {
+			// Spawning
 			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
-			// if exist
-			if ( BallisticCollision[i].Area != None )  {
-				// HeadBallisticCollision
-				if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
-					HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
-				// CollisionSize
-				BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
-				// Attaching
-				if ( BallisticCollision[i].AreaBone != '' )
-					AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
-				else
-					BallisticCollision[i].Area.SetBase( Self );
-				// if attached
-				if ( BallisticCollision[i].Area.Base != None )  {
-					// AreaOffset
-					if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-						BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
-					// AreaRotation
-					if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
-						BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation * DrawScale );
-				}
-				// Area.ImpactStrength
-				if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
-					BallisticCollision[i].Area.ImpactStrength = BallisticCollision[i].AreaImpactStrength * DrawScale * BaseActor.static.GetRandFloat(0.9, 1.1);
+			if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
+				Continue; // Skip if not exist
+			
+			// HeadBallisticCollision
+			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
+				HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+			// CollisionSize
+			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+			// Attaching
+			if ( BallisticCollision[i].AreaBone != '' )
+				AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
+			else
+				BallisticCollision[i].Area.SetBase( Self );
+			// if attached
+			if ( BallisticCollision[i].Area.Base != None )  {
+				// AreaOffset
+				if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
+				// AreaRotation
+				if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+					BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
 			}
+			// AreaImpactStrength
+			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
+				BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
+			// AreaHealth
+			if ( BallisticCollision[i].AreaHealth > 0.0 )
+				BallisticCollision[i].Area.SetInitialHealth( BallisticCollision[i].AreaHealth * DrawScale );
 		}
 	}
 }
@@ -895,6 +895,7 @@ function RemoveHead()
 	if ( HeadBallisticCollision != None )  {
 		HeadBallisticCollision.DisableCollision();
 		HeadBallisticCollision.Destroy();
+		HeadBallisticCollision = None;
 	}
 	//ToDo: issue #264
 	Super.RemoveHead();
@@ -1102,8 +1103,10 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-     PlayerCountHealthScale=0.1
+     SoundsPitchRange=(Min=0.9,Max=1.1)
+	 PlayerCountHealthScale=0.1
 	 PlayerNumHeadHealthScale=0.1
+	 MassScaleRange=(Min=0.95,Max=1.05)
 	 // Monster Size
 	 SizeScaleRange=(Min=0.8,Max=1.2)
 	 // Monster Speed
@@ -1120,7 +1123,7 @@ defaultproperties
 	 DamageScaleRange=(Min=0.9,Max=1.1)
 	 // Extra Sizes
 	 ExtraSizeChance=0.150000
-	 ExtraSizeScaleRange=(Min=0.52,Max=1.25)
+	 ExtraSizeScaleRange=(Min=0.55,Max=1.25)
 	 // Extra Speed
 	 ExtraSpeedChance=0.200000
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.0)
@@ -1150,8 +1153,8 @@ defaultproperties
 	 bBlockNonZeroExtentTraces=True
 	 
 	 DrawScale=1.000000
-	 MeshTestCollisionHeight=50.0
-	 MeshTestCollisionRadius=25.0
+	 //MeshTestCollisionHeight=50.0
+	 //MeshTestCollisionRadius=25.0
 	 CollisionHeight=50.0
 	 CollisionRadius=25.0
 	 

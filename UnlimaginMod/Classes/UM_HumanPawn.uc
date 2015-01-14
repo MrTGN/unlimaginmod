@@ -164,14 +164,13 @@ struct BallisticCollisionData
 	var	vector							AreaOffset;	// Area offset from the bone
 	var	rotator							AreaRotation;	// Area relative rotation from the bone
 	var	float							AreaImpactStrength;	// J / mm2
-	var	int								AreaHealth;	// Health amount of this body part
+	var	float							AreaHealth;	// Health amount of this body part
 	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
-	var	float							AreaSizeScale;	// Size scaling
 	var	bool							bArmoredArea;	// This area can be covered with armor
 };
 
 var	array<BallisticCollisionData>		BallisticCollision;
-var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference for code in IsHeadShot() function
+var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
 //[end] Varibles
 //====================================================================
@@ -364,32 +363,36 @@ function BuildBallisticCollision()
 	
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
 		if ( BallisticCollision[i].AreaClass != None )  {
+			// Spawning
 			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
-			// if exist
-			if ( BallisticCollision[i].Area != None )  {
-				// HeadBallisticCollision
-				if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
-					HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
-				// CollisionSize
-				BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
-				// Attaching
-				if ( BallisticCollision[i].AreaBone != '' )
-					AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
-				else
-					BallisticCollision[i].Area.SetBase( Self );
-				// if attached
-				if ( BallisticCollision[i].Area.Base != None )  {
-					// AreaOffset
-					if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-						BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
-					// AreaRotation
-					if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
-						BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation * DrawScale );
-				}
-				// Area.ImpactStrength
-				if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
-					BallisticCollision[i].Area.ImpactStrength = BallisticCollision[i].AreaImpactStrength * DrawScale * BaseActor.static.GetRandFloat(0.9, 1.1);
+			if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
+				Continue; // Skip if not exist
+			
+			// HeadBallisticCollision
+			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
+				HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+			// CollisionSize
+			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+			// Attaching
+			if ( BallisticCollision[i].AreaBone != '' )
+				AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
+			else
+				BallisticCollision[i].Area.SetBase( Self );
+			// if attached
+			if ( BallisticCollision[i].Area.Base != None )  {
+				// AreaOffset
+				if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
+				// AreaRotation
+				if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+					BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
 			}
+			// AreaImpactStrength
+			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
+				BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
+			// AreaHealth
+			if ( BallisticCollision[i].AreaHealth > 0.0 )
+				BallisticCollision[i].Area.SetInitialHealth( BallisticCollision[i].AreaHealth * DrawScale );
 		}
 	}
 }
@@ -556,6 +559,7 @@ function CheckVeterancyCarryWeightLimit()
 	local	byte		t;
 	local	Inventory	I;
 	local	int			Count;
+	local	vector		DropLocation;
 	
 	if ( UM_PlayerRepInfo != None )
 		MaxCarryWeight = UM_PlayerRepInfo.GetPawnMaxCarryWeight(default.MaxCarryWeight);
@@ -564,6 +568,7 @@ function CheckVeterancyCarryWeightLimit()
 	
 	MaxCarryOverweight = MaxCarryWeight * MaxOverweightScale;
 	
+	DropLocation = Location + CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0);
 	// If we are carrying too much, drop something.
 	while ( CurrentWeight > MaxCarryOverweight && t < 6 )  {
 		++t; // Incrementing up to 5 to restrict the number of attempts to drop weapon
@@ -571,7 +576,7 @@ function CheckVeterancyCarryWeightLimit()
 		for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
 			// If it's a weapon and it can be thrown
 			if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
-				I.DropFrom(Location + VRand() * 10.0);
+				I.DropFrom(DropLocation + VRand() * 12.0);
 				Break;	// Stop searching
 			}
 			// To prevent the infinity loop because of the error in the LinkedList
@@ -1630,8 +1635,10 @@ function StopHitCamEffects()
 
 function ThrowInventoryBeforeDying()
 {
-	local	Inventory	I;
-	local	int			Count;
+	local	Inventory			I;
+	local	int					c;
+	local	vector				DropLocation;
+	local	array<KFWeapon>		DropedWeapons;
 	
 	if ( Role < ROLE_Authority || (DrivenVehicle != None && !DrivenVehicle.bAllowWeaponToss) )
 		Return;
@@ -1640,14 +1647,22 @@ function ThrowInventoryBeforeDying()
 		Controller.LastPawnWeapon = Weapon.Class;
 	
 	// Find weapons to drop
-	for ( I = Inventory; I != None && Count < 1000; I = I.Inventory )  {
+	for ( I = Inventory; I != None && c < 1000; I = I.Inventory )  {
 		// If it's a weapon and it can be thrown
-		if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )  {
-			KFWeapon(I).HolderDied();
-			I.DropFrom(Location + VRand() * 10.0);
-		}
+		if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow )
+			DropedWeapons[DropedWeapons.Length] = KFWeapon(I);
 		// To prevent the infinity loop because of the error in the LinkedList
-		++Count;
+		++c;
+	}
+
+	DropLocation = Location + CollisionRadius * Vect(1.0, 1.0, 0.0) + CollisionHeight * Vect(0.0, 0.0, 1.0);
+	while ( DropedWeapons.Length > 0 )  {
+		c = DropedWeapons.Length - 1;
+		if ( DropedWeapons[c] != None )  {
+			DropedWeapons[c].HolderDied();
+			DropedWeapons[c].DropFrom(DropLocation + VRand() * 12.0);
+		}
+		DropedWeapons.Remove(c, 1);
 	}
 }
 
@@ -1674,8 +1689,8 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	
 	StopHitCamEffects(); // ToDo: issue #256
 	DestroyBallisticCollision();
-	SetHealth(0);
 	ThrowInventoryBeforeDying();
+	SetHealth(0);
 	
 	// PlayerDeathMark
 	if ( PlayerDeathMarkClass != None )  {
@@ -1886,6 +1901,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		}
 	}
 	else if ( Class<UM_ZombieDamType_Poison>(DamageType) != None )  {
+		if ( ShieldStrength > 0.0 )
+			Damage = ShieldAbsorb( Damage );
 		// Start to taking a PoisonDamage if damage was significant enough
 		if ( Damage > 2 )  {
 			bAllowedToChangeHealth = False;

@@ -26,8 +26,17 @@ var		byte						PRIChangedTrigger, ClientPRIChangedTrigger;
 var		byte						VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
 
 // DyingMessage
-var		int							DyingMessageHealth;
+var		transient		int			DyingMessageHealth;
+var		float						DyingMessageHealthScale;
 var		transient		float		NextDyingMessageTime;
+
+// DyingCamera
+var		transient		int			DyingCameraEffectHealth;
+var		float						DyingCameraEffectHealthScale;
+var		transient		float		NextDyingCameraEffectTime;
+var		float						DyingCameraEffectDelay;
+var		float						DyingBlurDuration;
+var		float						DyingBlurIntensityScale;
 
 // Firing
 var		float						FireSpeedModif;
@@ -84,7 +93,7 @@ var		float						InventoryMovementModifier;
 var		float						VeterancyMovementModifier;
 
 // Healing
-var		bool						bAllowedToChangeHealth;	// Prevents from changing Health by several functions at the same time
+var		transient	bool			bPreventHealthChanging;	// Prevents from changing Health by several functions at the same time
 var		float						HealDelay; 
 var		transient	float			NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
@@ -438,8 +447,14 @@ simulated event PostBeginPlay()
 		PlayerShadow.LightDirection = Normal(vect(1,1,3));
 		PlayerShadow.InitShadow();
 	}
+}
+
+simulated event PostNetBeginPlay()
+{
+	DyingMessageHealth = Round( HealthMax * DyingMessageHealthScale );
+	DyingCameraEffectHealth = Round( HealthMax * DyingCameraEffectHealthScale );
 	
-	DyingMessageHealth = HealthMax * 0.25;
+	Super.PostNetBeginPlay();
 }
 
 // Clearing old function
@@ -1687,6 +1702,12 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 		Return;
 	}
 	
+	bPreventHealthChanging = True;
+	bIsHealing = False;
+	bIsTakingPoisonDamage = False;
+	bIsTakingBileDamage = False;
+	bIsTakingBurnDamage = False;
+	
 	StopHitCamEffects(); // ToDo: issue #256
 	DestroyBallisticCollision();
 	ThrowInventoryBeforeDying();
@@ -1825,7 +1846,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( Damage < 1 )
 		Return 0;
 	
-	bAllowedToChangeHealth = False;
+	bPreventHealthChanging = True;
 	// Achievements Helper
 	if ( KFMonster(InstigatedBy) != None )
 		KFMonster(InstigatedBy).bDamagedAPlayer = True;
@@ -1861,15 +1882,15 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		if ( InstigatedBy != None && InstigatedBy != self )
 			LastHitBy = InstigatedBy.Controller;
 		
-		if ( KFPC != None && Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds > NextDyingMessageTime )  {
+		if ( KFPC != None && Level.Game.NumPlayers > 1 && Health <= DyingMessageHealth && Level.TimeSeconds >= NextDyingMessageTime )  {
 			NextDyingMessageTime = Level.TimeSeconds + DyingMessageDelay;
 			// Tell everyone we're dying
 			KFPC.Speech('AUTO', 6, "");
 		}
+		bPreventHealthChanging = False;
 	}
 	MakeNoise(1.0);
-	bAllowedToChangeHealth = True;
-	
+		
 	Return Damage;
 }
 
@@ -1885,7 +1906,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {
 		// Burnified if the burn damage was significant enough
 		if ( Damage > 2 )  {
-			bAllowedToChangeHealth = False;
+			bPreventHealthChanging = True;
 			// Updating timers
 			LastBurningTime = Level.TimeSeconds;
 			NextBurningTime = LastBurningTime + BurningFrequency;
@@ -1895,7 +1916,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			// Start to taking BurnDamage
 			bIsTakingBurnDamage = True;
 			// Allow operations with Health
-			bAllowedToChangeHealth = True;
+			bPreventHealthChanging = False;
 			// Burning does not cause an instant damage
 			Return;
 		}
@@ -1905,7 +1926,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			Damage = ShieldAbsorb( Damage );
 		// Start to taking a PoisonDamage if damage was significant enough
 		if ( Damage > 2 )  {
-			bAllowedToChangeHealth = False;
+			bPreventHealthChanging = True;
 			// Updating timers
 			LastPoisonTime = Level.TimeSeconds;
 			NextPoisonTime = LastPoisonTime + PoisonFrequency;
@@ -1916,7 +1937,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			// Start to taking PoisonDamage
 			bIsTakingPoisonDamage = True;
 			// Allow operations with Health
-			bAllowedToChangeHealth = True;
+			bPreventHealthChanging = False;
 			// Poison does not cause an instant damage
 			Return;
 		}
@@ -1924,7 +1945,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	else if ( Class<DamTypeVomit>(DamageType) != None )  {
 		// Start to taking a BileDamage if damage was significant enough
 		if ( Damage > 2 )  {
-			bAllowedToChangeHealth = False;
+			bPreventHealthChanging = True;
 			// Updating timers
 			LastBileTime = Level.TimeSeconds;
 			NextBileTime = LastBileTime + BileFrequency;
@@ -1935,7 +1956,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			// Start to taking BileDamage
 			bIsTakingBileDamage = True;
 			// Allow operations with Health
-			bAllowedToChangeHealth = True;
+			bPreventHealthChanging = False;
 			// Bile does not cause an instant damage
 			Return;
 		}
@@ -2117,8 +2138,8 @@ function ClientAddPoisonEffects( int DeltaPoisonDamage )
 {
 	if ( !IsLocallyControlled() )
 		Return;
-	
-	AddBlur( (float(DeltaPoisonDamage) * 0.25), FMin((float(DeltaPoisonDamage) * 0.2), 1.0) );
+
+	AddBlur( (float(DeltaPoisonDamage) * 0.25), FMin((float(DeltaPoisonDamage) * 0.25), 1.0) );
 	// Shake controller
 	if ( Controller != None )
 		Controller.DamageShake( DeltaPoisonDamage );
@@ -2341,7 +2362,15 @@ simulated function StopBurnFX()
 	bBurnApplied = False;
 }
 
-// Clien-owner AutonomousProxy function
+/* Clien-owner AutonomousProxy function.
+	Adds Dying Camera Effect.	*/
+function ClientAddDyingCameraEffect()
+{
+	NextDyingCameraEffectTime = Level.TimeSeconds + DyingCameraEffectDelay;
+	AddBlur( DyingBlurDuration, ((HealthMax - float(Health)) * DyingBlurIntensityScale) );
+}
+
+// Clien-owner AutonomousProxy function.
 function UpdateCameraBlur( float DeltaTime )
 {
 	local	float	BlurAmount;
@@ -2371,7 +2400,7 @@ simulated event Tick( float DeltaTime )
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		}
 		// Operations with Pawn Health
-		if ( bAllowedToChangeHealth )  {
+		if ( !bPreventHealthChanging )  {
 			// Overheal Reduction
 			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
 				ReduceOverheal();
@@ -2470,9 +2499,15 @@ simulated event Tick( float DeltaTime )
 	
 	Super(xPawn).Tick(DeltaTime);
 	
-	// Locally controlled client camera Blur Effect
-	if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 && IsLocallyControlled() )
-		UpdateCameraBlur(DeltaTime);
+	if ( IsLocallyControlled() )  {
+		// DyingCameraEffect
+		if ( Health <= DyingCameraEffectHealth && Health > 0 && Level.TimeSeconds >= NextDyingCameraEffectTime )
+			ClientAddDyingCameraEffect();
+		
+		// Locally controlled client camera Blur Effect
+		if ( !bUsingHitBlur && BlurFadeOutTime > 0.0 )
+			UpdateCameraBlur(DeltaTime);
+	}
 }
 
 event Landed( vector HitNormal )
@@ -2628,6 +2663,13 @@ defaultproperties
 	 GroundSpeed=200.000000
      WaterSpeed=180.000000
      AirSpeed=230.000000
+	 // DyingMessage
+	 DyingMessageHealthScale=0.25
+	 // DyingCameraEffect
+	 DyingCameraEffectHealthScale=0.2
+	 DyingCameraEffectDelay=1.0
+	 DyingBlurDuration=3.0
+	 DyingBlurIntensityScale=0.0096
      // PoisonDamage
 	 PoisonFrequency=0.5
 	 // BileDamage

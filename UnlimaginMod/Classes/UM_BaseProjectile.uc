@@ -538,6 +538,7 @@ state InTheWater
 	
 	simulated event Tick( float DeltaTime )
 	{
+		Global.Tick( DeltaTime );
 		if ( Level.TimeSeconds > NextProjectileUpdateTime
 			 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
 			UpdateProjectilePerformance();			
@@ -967,7 +968,16 @@ defaultproperties
 	 bReplicateSpawnTime=False
 	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
+	 
+	 CollisionRadius=0.000000
+     CollisionHeight=0.000000
+     bCollideActors=True
+     bCollideWorld=True
+     bUseCylinderCollision=True
 	 bSwitchToZeroCollision=True
+	 bBlockZeroExtentTraces=True
+     bBlockNonZeroExtentTraces=True
+     bBlockHitPointTraces=False
 	 // Do not use TrueBallistics by default
 	 // Change it in the subclasses if you need TrueBallistics calculations
 	 // TrueBallistics
@@ -1002,6 +1012,10 @@ defaultproperties
 	 InitialUpdateTimeDelay=0.100000
 	 UpdateTimeDelay=0.100000
 	 ImpactSound=None
+	 // AmbientSound Settings
+	 SoundVolume=255
+	 SoundPitch=64
+     SoundRadius=250.000000
 	 //[end]
 	 WeaponRecoilScale=1.000000
 	 //[block] Replication
@@ -1021,7 +1035,6 @@ defaultproperties
 	 bCanRebound=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
-	 //bBounce=False
 	 bBounce=True
 	 bIgnoreOutOfWorld=False	// Don't destroy if enters zone zero
 	 bOrientToVelocity=False	// Orient in the direction of current velocity.
@@ -1031,5 +1044,5 @@ defaultproperties
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy
 	 //LifeSpan
-	 LifeSpan=8.000000
+	 LifeSpan=0.000000
 }

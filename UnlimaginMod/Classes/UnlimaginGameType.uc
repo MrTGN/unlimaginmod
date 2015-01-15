@@ -79,6 +79,15 @@ var		string							UM_LoginMenuClass;
 var		float							ExitZedTime;
 var		float							BotAtHumanFriendlyFireScale;
 
+// Do slomo event when was killed a specified number of victims
+struct DramaticKillData
+{
+	var	int		MinKilled;
+	var	float	EventChance;
+	var	float	EventDuration;
+};
+var		array<DramaticKillData>			DramaticKills;
+
 event PreBeginPlay()
 {
 	Super(Invasion).PreBeginPlay();
@@ -109,14 +118,14 @@ function SetGameSpeed( float T )
     local	float	OldSpeed;
 
     if ( !AllowGameSpeedChange() )  {
-        Level.TimeDilation = 1.1;
+        Level.TimeDilation = Level.default.TimeDilation;
         GameSpeed = 1.0;
         default.GameSpeed = GameSpeed;
     }
     else  {
         OldSpeed = GameSpeed;
         GameSpeed = FMax(T, 0.1);
-        Level.TimeDilation = 1.1 * GameSpeed;
+        Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
         if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
             default.GameSpeed = GameSpeed;
             class'GameInfo'.static.StaticSaveConfig();
@@ -126,6 +135,66 @@ function SetGameSpeed( float T )
     SetTimer((Level.TimeDilation / GameSpeed), True);
 }
 
+// Called when a dramatic event happens that might cause slomo
+// BaseZedTimePossibility - the attempted probability of doing a slomo event
+function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedTimeDuration )
+{
+	local	float		TimeSinceLastEvent;
+	local	Controller	C;
+
+	TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
+	if ( BaseZedTimePossibility < 1.0 )  {
+		// Don't go in slomo if we were just IN slomo
+		if ( TimeSinceLastEvent < 10.0 )
+			Return;
+		
+		// More than a minute ago
+		if ( TimeSinceLastEvent > 60.0 )
+			BaseZedTimePossibility *= 4.0;
+		// More than a half-minute ago
+		else if( TimeSinceLastEvent > 30.0 )
+			BaseZedTimePossibility *= 2.0;
+	}
+	
+	// if we getting a chance for slomo event
+	if ( FRand() <= BaseZedTimePossibility )  {
+		bZEDTimeActive = True;
+		bSpeedingBackUp = False;
+		LastZedTimeEvent = Level.TimeSeconds;
+		
+		if ( DesiredZedTimeDuration > 0.0 )
+			CurrentZEDTimeDuration = DesiredZedTimeDuration;
+		else
+			CurrentZEDTimeDuration = ZEDTimeDuration;
+
+		SetGameSpeed(ZedTimeSlomoScale);
+
+		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
+			// ZedTime Clien Notify
+			if ( KFPlayerController(C) != None )
+				KFPlayerController(C).ClientEnterZedTime();
+			// ZedTime Stat
+			if ( C.PlayerReplicationInfo != None && KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements) != None )
+				KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements).AddZedTime(ZEDTimeDuration);
+		}
+	}
+}
+
+function CheckForDramaticKill( int NumKilled )
+{
+	local	int		i;
+	
+	// Minimal number of killed
+	if ( NumKilled < 2 )
+		Return;
+	
+	for ( i = DramaticKills.Length - 1; i >= 0; --i )  {
+		if ( NumKilled >= DramaticKills[i].MinKilled )  {
+			DramaticEvent( DramaticKills[i].EventChance, DramaticKills[i].EventDuration );
+			Return;
+		}
+	}
+}
 
 function LoadUpMonsterList()
 {
@@ -512,7 +581,7 @@ event Tick( float DeltaTime )
 	}
 	
 	if ( bZEDTimeActive )  {
-		TrueTimeFactor = 1.1 / Level.TimeDilation;
+		TrueTimeFactor = Level.default.TimeDilation / Level.TimeDilation;
 		CurrentZEDTimeDuration -= DeltaTime * TrueTimeFactor;
 		if ( CurrentZEDTimeDuration > 0.0 && CurrentZEDTimeDuration < ExitZedTime )  {
 			if ( !bSpeedingBackUp )  {
@@ -1755,14 +1824,21 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
-     ActorPoolClass=Class'UnlimaginMod.UM_ActorPool'
+     DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
+	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
+	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=3.5)
+	 DramaticKills(3)=(MinKilled=15,EventChance=0.4,EventDuration=4.0)
+	 DramaticKills(4)=(MinKilled=20,EventChance=0.8,EventDuration=4.5)
+	 DramaticKills(5)=(MinKilled=25,EventChance=1.0,EventDuration=5.0)
+	 
+	 ActorPoolClass=Class'UnlimaginMod.UM_ActorPool'
 	 BotAtHumanFriendlyFireScale=0.5
 	 //EndGameBossClass
 	 UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss"
 	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_HALLOWEEN"
 	 //UM_EndGameBossClass="UnlimaginMod.UM_ZombieBoss_XMas"
 	 
-	  
+	 
 	 //MonsterClasses
 	 UM_MonsterClasses(0)=(MClassName="UnlimaginMod.UM_ZombieClot",Mid="A")
      UM_MonsterClasses(1)=(MClassName="UnlimaginMod.UM_ZombieCrawler",Mid="B")

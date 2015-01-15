@@ -343,12 +343,12 @@ function AddDefaultInventory()
 		Level.Game.AddGameSpecificInventory(self);
 		if ( UM_PlayerRepInfo == None || !UM_PlayerRepInfo.AddDefaultVeterancyInventory(self) )  {
 			// OptionalEquipment
-			for ( i = ArrayCount(OptionalEquipment); i > 0; --i )  {
+			for ( i = ArrayCount(OptionalEquipment) - 1; i >= 0; --i )  {
 				if ( SelectedEquipment[i] == 1 && OptionalEquipment[i] != "" )
 					CreateInventory(OptionalEquipment[i]);
 			}
 			// RequiredEquipment
-			for ( i = ArrayCount(RequiredEquipment); i > 0; --i )  {
+			for ( i = ArrayCount(RequiredEquipment) - 1; i >= 0; --i )  {
 				if ( RequiredEquipment[i] != "" )
 					CreateInventory(RequiredEquipment[i]);
 			}
@@ -2669,7 +2669,7 @@ defaultproperties
 	 DyingCameraEffectHealthScale=0.2
 	 DyingCameraEffectDelay=1.0
 	 DyingBlurDuration=3.0
-	 DyingBlurIntensityScale=0.0096
+	 DyingBlurIntensityScale=0.0095
      // PoisonDamage
 	 PoisonFrequency=0.5
 	 // BileDamage

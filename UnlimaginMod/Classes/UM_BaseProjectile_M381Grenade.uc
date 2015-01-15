@@ -17,67 +17,6 @@
 class UM_BaseProjectile_M381Grenade extends UM_BaseProjectile_LowVelocityGrenade
 	Abstract;
 
-
-//========================================================================
-//[block] Variables
-
-var		float		ArmingDelay, ArmedTime;
-
-//[end] Varibles
-//====================================================================
-
-//========================================================================
-//[block] Replication
-
-replication
-{
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		ArmedTime;
-}
-
-//[end] Replication
-//====================================================================
-
-//========================================================================
-//[block] Functions
-
-simulated static function CalcDefaultProperties()
-{
-	Super.CalcDefaultProperties();
-	// ArmingDelay
-	if ( default.MaxSpeed > 0.0 && default.ArmingRange > 0.0 )  {
-		default.ArmingDelay = default.ArmingRange / default.MaxSpeed;
-		// InitialAccelerationTime
-		if ( default.bTrueBallistics && default.bInitialAcceleration )
-			default.ArmingDelay += default.InitialAccelerationTime;
-	}
-}
-
-simulated function ResetToDefaultProperties()
-{
-	Super.ResetToDefaultProperties();
-	// ArmingDelay
-	ArmingDelay = default.ArmingDelay;
-}
-
-function ServerInitialUpdate()
-{
-	Super.ServerInitialUpdate();
-	ArmedTime = Level.TimeSeconds + ArmingDelay;
-}
-
-// Detonator is armed
-simulated function bool IsArmed()
-{
-	if ( ArmedTime > 0.0 && Level.TimeSeconds < ArmedTime )
-		Return False;
-	
-	Return Super.IsArmed();
-}
-
-//[end] Functions
-//====================================================================
-
 defaultproperties
 {
 	 BallisticCoefficient=0.132000

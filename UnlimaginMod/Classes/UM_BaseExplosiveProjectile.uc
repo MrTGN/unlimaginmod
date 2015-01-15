@@ -59,13 +59,12 @@ var		UM_BaseActor.SoundData		DisintegrateSound, ExplodeSound;
 var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
-var		float				ArmingRange;	// Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
+// ArmingDelay
+var		float				ArmingRange; // Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
 var		float				SquaredArmingRange;
-
-//DramaticEvents
-var		float				SmallDramaticEventDuration, MediumDramaticEventDuration, LongDramaticEventDuration;
-var		int					SmallDramaticEventKills, MediumDramaticEvenKills, LongDramaticEventKills;
-
+var		float				ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
+var		transient	float	ArmedTime;
+var					bool	bArmed;
 
 // How much damage to do when this Projectile impacts something before exploding
 var(Impact)		float		ImpactDamage;
@@ -100,6 +99,13 @@ simulated static function CalcDefaultProperties()
 		default.ArmingRange = default.ArmingRange * Maths.static.GetMeterInUU();
 		// Squared ArmingRange
 		default.SquaredArmingRange = Square(default.ArmingRange);
+		// ArmingDelay
+		if ( default.ArmingDelay <= 0.0 && default.MaxSpeed > 0.0 )  {
+			default.ArmingDelay = default.ArmingRange / default.MaxSpeed;
+			// InitialAccelerationTime
+			if ( default.bTrueBallistics && default.bInitialAcceleration )
+				default.ArmingDelay += default.InitialAccelerationTime;
+		}
 	}
 }
 
@@ -109,6 +115,11 @@ simulated function ResetToDefaultProperties()
 	// ArmingRange
 	ArmingRange = default.ArmingRange;
 	SquaredArmingRange = default.SquaredArmingRange;
+	// ArmingDelay
+	if ( default.ArmingDelay > 0.0 )  {
+		bArmed = False;
+		ArmingDelay = default.ArmingDelay;
+	}
 }
 
 //[block] Dynamic Loading
@@ -135,6 +146,21 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
+simulated function SetArmingDelay( float NewArmingDelay )
+{
+	if ( NewArmingDelay > 0.0 )  {
+		bArmed = False;
+		ArmedTime = Level.TimeSeconds + NewArmingDelay;
+	}
+}
+
+simulated event PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+	// ArmedTime
+	SetArmingDelay( ArmingDelay );
+}
+
 simulated event PostNetReceive()
 {
 	if ( bHidden && !bDisintegrated )
@@ -149,7 +175,23 @@ simulated function bool IsArmed()
 	if ( bDisintegrated || bHasExploded )
 		Return False;
 	
-	Return True;
+	Return bArmed;
+}
+
+simulated function Disarm()
+{
+	ArmedTime = 0.0;
+	bArmed = False;
+	LifeSpan = 1.0;
+}
+
+simulated event Tick( float DeltaTime )
+{
+	// Arming
+	if ( !bArmed && ArmedTime > 0.0 && Level.TimeSeconds >= ArmedTime )  {
+		ArmedTime = 0.0;
+		bArmed = True;
+	}
 }
 
 // Check for friendly Pawns within radius
@@ -283,7 +325,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				
 			// Calculating number of Victim
 			if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
-				NumKilled++;
+				++NumKilled;
 		}
 	}
 	
@@ -338,22 +380,13 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				
 				// Calculating number of Victim
 				if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
-					NumKilled++;
+					++NumKilled;
 			}
 		}
 	}
 
-	/* ToDo: создать функцию в UnlimaginGameType, принимающую количество убитых взрывом
-		и включающую соответстующее замедление игры.
-		issue #261.	*/
-	if ( KFGameType(Level.Game) != None )  {
-		if ( NumKilled >= LongDramaticEventKills )
-			KFGameType(Level.Game).DramaticEvent(0.08, LongDramaticEventDuration);
-		else if ( NumKilled >= MediumDramaticEvenKills )
-			KFGameType(Level.Game).DramaticEvent(0.05, MediumDramaticEventDuration);
-		else if ( NumKilled >= SmallDramaticEventKills )
-			KFGameType(Level.Game).DramaticEvent(0.03, SmallDramaticEventDuration);
-	}
+	if ( UnlimaginGameType(Level.Game) != None )
+		UnlimaginGameType(Level.Game).CheckForDramaticKill( NumKilled );
 	
 	bHurtEntry = False;
 }
@@ -438,7 +471,7 @@ event Timer()
 		Destroy();
 }
 
-simulated function Explode(vector HitLocation, vector HitNormal)
+simulated function Explode( vector HitLocation, vector HitNormal )
 {
 	bCanBeDamaged = False;
 	bHasExploded = True;
@@ -448,9 +481,11 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	if ( Role == ROLE_Authority )  {
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 		BlowUp(HitLocation);
-		SetTimer(0.1, false);
+		//SetTimer(0.1, false);
+		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
 	}
 	
+	SetCollision(False);
 	// Explode effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( ExplodeSound.Snd != None )
@@ -464,7 +499,6 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		}
 	}
 	
-	SetCollision(False);
 	// Shrapnel
 	if ( Role == ROLE_Authority )
 		SpawnShrapnel();
@@ -478,7 +512,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 }
 
 // Make the projectile distintegrate, instead of explode
-simulated function Disintegrate(vector HitLocation, vector HitNormal)
+simulated function Disintegrate( vector HitLocation, vector HitNormal )
 {
 	bCanBeDamaged = False;
 	bDisintegrated = True;
@@ -490,9 +524,11 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
 		BlowUp(HitLocation);
-		SetTimer(0.1, false);
+		//SetTimer(0.1, false);
+		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
 	}
 	
+	SetCollision(False);
 	// Disintegrate effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( DisintegrateSound.Snd != None )
@@ -578,6 +614,7 @@ simulated event Destroyed()
 defaultproperties
 {
      bCanBeDamaged=True
+	 bArmed=True
 	 bIgnoreSameClassProj=True
 	 bCanHurtOwner=True
 	 DisintegrateDamageScale=0.100000
@@ -597,13 +634,6 @@ defaultproperties
      ShakeOffsetMag=(X=5.000000,Y=10.000000,Z=5.000000)
      ShakeOffsetRate=(X=325.000000,Y=325.000000,Z=325.000000)
      ShakeOffsetTime=3.500000
-	 //DramaticEvents
-	 SmallDramaticEventDuration=2.000000
-	 MediumDramaticEventDuration=3.000000
-	 LongDramaticEventDuration=4.000000
-	 SmallDramaticEventKills=2
-	 MediumDramaticEvenKills=4
-	 LongDramaticEventKills=8
 	 //Disintegration
 	 DisintegrateChance=0.950000
 	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'

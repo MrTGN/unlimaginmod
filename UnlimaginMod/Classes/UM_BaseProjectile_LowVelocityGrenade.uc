@@ -17,24 +17,19 @@
 class UM_BaseProjectile_LowVelocityGrenade extends UM_BaseExplosiveProjectile
 	Abstract;
 
-
 //========================================================================
 //[block] Variables
 
-var		float		FlyingTime, TimeToStartFalling;
-var		bool		bArmed;
+// FlyingTime
+var		float				FlyingTime;
+var		transient	float	TimeToStartFalling;
+var					bool	bFell;
 
 //[end] Varibles
 //====================================================================
 
 //========================================================================
 //[block] Replication
-
-replication
-{
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		TimeToStartFalling;
-}
 
 //[end] Replication
 //====================================================================
@@ -64,39 +59,25 @@ simulated function ResetToDefaultProperties()
 	FlyingTime = default.FlyingTime;
 }
 
-function ServerInitialUpdate()
+simulated event PostNetBeginPlay()
 {
+	// TimeToStartFalling
 	if ( FlyingTime > 0.0 )
-		TimeToStartFalling = Level.TimeSeconds + FlyingTime * GetBallisticRandMult();
-}
-
-simulated event PostBeginPlay()
-{
-	Super.PostBeginPlay();
-	bArmed = True;
-}
-
-// Detonator is armed
-simulated function bool IsArmed()
-{
-	if ( bArmed )
-		Return Super.IsArmed();
+		TimeToStartFalling = Level.TimeSeconds + FlyingTime;
 	
-	Return False;
+	Super.PostNetBeginPlay();
 }
 
 simulated event Tick( float DeltaTime )
 {
+	Super.Tick( DeltaTime );
 	// Start falling
-	if ( Velocity != Vect(0.0, 0.0, 0.0) && Physics == default.Physics 
-		 && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )
-		SetPhysics(PHYS_Falling);
-}
-
-simulated function Disarm()
-{
-	bArmed = False;
-	LifeSpan = 1.0;
+	if ( !bFell && TimeToStartFalling > 0.0 && Level.TimeSeconds >= TimeToStartFalling )  {
+		TimeToStartFalling = 0.0;
+		bFell = True;
+		if ( Physics == default.Physics && Velocity != Vect(0.0, 0.0, 0.0) )
+			SetPhysics(PHYS_Falling);
+	}
 }
 
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
@@ -130,6 +111,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 
 simulated event Landed( Vector HitNormal )
 {
+	bFell = True;
 	Disarm();
 	Super(UM_BaseProjectile).Landed(HitNormal);
 }
@@ -219,7 +201,7 @@ defaultproperties
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
 	 //Trail
-	 Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
+	 Trail=(EmitterClass=Class'UnlimaginMod.UM_LowVelocityGrenadeTrail',EmitterRotation=(Pitch=32768))
 	 //HitEffects
 	 HitSoundVolume=1.250000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)

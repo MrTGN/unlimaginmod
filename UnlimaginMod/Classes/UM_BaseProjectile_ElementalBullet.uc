@@ -169,7 +169,9 @@ simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation,
 
 defaultproperties
 {
-     bIgnoreSameClassProj=True
+     bAutoLifeSpan=True
+	 bArmed=True
+	 bIgnoreSameClassProj=True
 	 ShrapnelClass=None
 	 bCanDisintegrate=True
 	 // Explosion camera shakes
@@ -245,8 +247,6 @@ defaultproperties
 	 Physics=PHYS_Projectile
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy
-	 //LifeSpan
-	 LifeSpan=8.000000
 	 // Style for rendering sprites, meshes.
 	 Style=STY_Alpha
 	 // Whether to apply ambient attenuation.

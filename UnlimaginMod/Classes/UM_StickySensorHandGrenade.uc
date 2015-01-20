@@ -226,9 +226,8 @@ state Stuck
 		local	Inventory	Inv;
 		
 		if ( Pawn(A) != None && Pawn(A) == Instigator && Pawn(A).Inventory != None )  {
-			for( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )  {
-				if ( UM_Weapon_HandGrenade(Inv) != None && 
-					UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {
+			for ( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )  {
+				if ( UM_Weapon_HandGrenade(Inv) != None && UM_Weapon_HandGrenade(Inv).AmmoAmount(0) < UM_Weapon_HandGrenade(Inv).MaxAmmo(0) )  {
 					UM_Weapon_HandGrenade(Inv).AddAmmo(1,0);
 					if ( PickupSound.Snd != None )
 						PlaySound(PickupSound.Snd, PickupSound.Slot, PickupSound.Vol, PickupSound.bNoOverride, PickupSound.Radius, BaseActor.static.GetRandPitch(PickupSound.PitchRange), PickupSound.bUse3D);

@@ -208,7 +208,7 @@ defaultproperties
      bCollideWorld=True
      bUseCylinderCollision=True
 	 CollisionRadius=3.000000
-     CollisionHeight=6.000000
+     CollisionHeight=3.000000
 	 //DrawScale
      DrawScale=0.400000
 	 //Glow

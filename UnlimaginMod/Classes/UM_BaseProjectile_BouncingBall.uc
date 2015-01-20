@@ -40,43 +40,7 @@ simulated function ZeroProjectileEnergy()
 
 state NoEnergy
 {
-	Ignores HitWall;
 	
-	simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
-	{
-		local	Inventory	Inv;
-		
-		if ( Role == ROLE_Authority && Pawn(A) != None && Pawn(A) == Instigator && 
-			 Pawn(A).Inventory != None && MyDamageType != None && 
-			 Class<WeaponDamageType>(MyDamageType) != None &&
-			 Class<WeaponDamageType>(MyDamageType).default.WeaponClass != None )
-		{
-			for( Inv = Pawn(A).Inventory; Inv != None; Inv = Inv.Inventory )
-			{
-				if ( KFWeapon(Inv) != None && 
-					 Inv.Class == Class<WeaponDamageType>(MyDamageType).default.WeaponClass &&
-					 KFWeapon(Inv).AmmoAmount(0) < KFWeapon(Inv).MaxAmmo(0) )  {
-					KFWeapon(Inv).AddAmmo(1,0);
-					if ( PickupSound.Snd != None )
-						PlaySound(PickupSound.Snd, PickupSound.Slot, PickupSound.Vol, PickupSound.bNoOverride, PickupSound.Radius, BaseActor.static.GetRandPitch(PickupSound.PitchRange), PickupSound.bUse3D);
-					Break;
-				}
-			}
-			Destroy();
-		}
-	}
-	
-	simulated event Landed(vector HitNormal)
-	{
-		if ( Physics != PHYS_None )
-		{
-			SetPhysics(PHYS_None);
-			bCollideWorld = False;
-			SpawnHitEffects(Location, HitNormal);
-			if( Instigator != None && Level.NetMode != NM_Client )
-				MakeNoise(0.3);
-		}
-	}
 }
 
 //[end] Functions
@@ -85,22 +49,23 @@ state NoEnergy
 
 defaultproperties
 {
-     ProjectileDiameter=60.0
+     ProjectileDiameter=30.0
 	 BounceBonus=1.500000
 	 bAutoLifeSpan=False
 	 LifeSpan=120.000000
 	 //[block] Ballistic performance
+	 CollisionRadius=3.000000
+     CollisionHeight=3.000000
 	 BallisticRandRange=(Min=0.94,Max=1.06)
 	 //EffectiveRange in Meters
-	 EffectiveRange=100.000000
-	 MaxEffectiveRange=150.000000
+	 EffectiveRange=300.000000
+	 MaxEffectiveRange=350.000000
 	 //Expansion
 	 ExpansionCoefficient=1.00000	// For FMJ
-	 ProjectileMass=0.400000	// kilograms
+	 ProjectileMass=0.300000	// kilograms
      MuzzleVelocity=100.000000	// m/sec
-	 UpdateTimeDelay=0.100000
 	 //[end]
-	 HeadShotDamageMult=1.100000
+	 HeadShotDamageMult=1.250000
 	 bBounce=True
 	 bCanRebound=True
 	 bOrientToVelocity=True
@@ -108,11 +73,9 @@ defaultproperties
 	 //Trail
 	 DrawType=DT_StaticMesh
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
-	 DrawScale=8.000000
-	 Damage=100.000000
+	 DrawScale=7.000000
+	 Damage=300.000000
 	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Slot=SLOT_Pain,Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 bNetTemporary=False
 	 MyDamageType=None
-	 CollisionRadius=3.00000
-     CollisionHeight=6.000000
 }

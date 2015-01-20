@@ -78,8 +78,6 @@ defaultproperties
 	 //PlayerNumHeadHealthScale=0.050000
 	 PlayerCountHealthScale=0.05
 	 PlayerNumHeadHealthScale=0.05
-     OnlineHeadshotOffset=(X=6.000000,Z=41.000000)
-     OnlineHeadshotScale=1.200000
      HeadHealth=200.000000
      MotionDetectorThreat=2.000000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Pain'
@@ -116,10 +114,12 @@ defaultproperties
 	 Skins(0)=FinalBlend'KF_Specimens_Trip_T.siren_hair_fb'
      Skins(1)=Combiner'KF_Specimens_Trip_T.siren_cmb'
 	 Mesh=SkeletalMesh'UM_Siren_A.Siren_Mesh'
-	 //MeshTestCollisionHeight=50.0
-	 //MeshTestCollisionRadius=14.0
-	 CollisionHeight=50.0
-	 CollisionRadius=14.0
+	 MeshTestCollisionHeight=50.0
+	 MeshTestCollisionRadius=14.0
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
+	 CollisionHeight=66.0
+	 CollisionRadius=19.0
      BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=0.6,Y=-2.0,Z=0.0),AreaImpactStrength=5.6)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=34.8,AreaImpactStrength=6.9)
@@ -127,6 +127,9 @@ defaultproperties
 	 EyeHeight=44.0
 	 // DrawScale
 	 DrawScale=1.050000
+	 
+	 OnlineHeadshotOffset=(X=6.000000,Z=42.000000)
+     OnlineHeadshotScale=1.200000
 	 
      RotationRate=(Yaw=45000,Roll=0)
 }

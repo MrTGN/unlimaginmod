@@ -24,7 +24,7 @@ var(Anims)		name				MeleeAirAnims[3]; // Attack anims for when flying through th
 
 var				bool				bPoisonous;
 var				float				PoisonousChance;
-var(Display)	array<Material>		PoisonousSkins;
+var(Display)	Material			PoisonousMaterial;
 var				class<DamTypeZombieAttack>	PoisonDamageType;
 var				range				PoisonDamageRandRange;
 
@@ -43,10 +43,9 @@ replication
 defaultproperties
 {
 	 PoisonousChance=0.25
-	 PoisonousSkins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
-	 //PoisonousSkins(1)=ConstantColor'KillingFloorLabTextures.Statics.elevater_glow'
-	 //PoisonousSkins(1)=FinalBlend'kf_fx_trip_t.siren.siren_scream_fb'
-	 PoisonousSkins(1)=Combiner'kf_fx_trip_t.siren.siren_scream_cmb'
+	 //PoisonousMaterial=ConstantColor'KillingFloorLabTextures.Statics.elevater_glow'
+	 //PoisonousMaterial=FinalBlend'kf_fx_trip_t.siren.siren_scream_fb'
+	 PoisonousMaterial=Combiner'kf_fx_trip_t.siren.siren_scream_cmb'
 	 PoisonDamageType=Class'UnlimaginMod.UM_ZombieDamType_CrawlerPoison'
 	 PoisonDamageRandRange=(Min=6.0,Max=8.0)
 	 ExtraSpeedChance=0.200000
@@ -86,8 +85,6 @@ defaultproperties
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.850000
      SeveredHeadAttachScale=1.100000
-     OnlineHeadshotOffset=(X=28.000000,Z=7.000000)
-     OnlineHeadshotScale=1.200000
      MotionDetectorThreat=0.340000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Death'
@@ -138,10 +135,12 @@ defaultproperties
      
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
 	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
-	 //MeshTestCollisionHeight=20.0
-	 //MeshTestCollisionRadius=36.0
-	 CollisionHeight=20.0
-	 CollisionRadius=36.0
+	 MeshTestCollisionHeight=20.0
+	 MeshTestCollisionRadius=36.0
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
+	 CollisionHeight=27.0
+	 CollisionRadius=52.0
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.4,AreaHeight=7.5,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=20.0,AreaImpactStrength=6.6)
@@ -149,4 +148,7 @@ defaultproperties
 	 EyeHeight=8.0
 	 // DrawScale
 	 DrawScale=1.100000
+	 
+	 OnlineHeadshotOffset=(X=30.000000,Z=5.000000)
+     OnlineHeadshotScale=1.200000
 }

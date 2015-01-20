@@ -25,6 +25,10 @@ class UM_Monster extends KFMonster
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
+// Falling
+var		class<DamageType>			FallingDamageType;
+var		class<DamageType>			LavaDamageType;
+
 var				bool	bRandomSizeAdjusted, bThisIsMiniBoss;
 
 var				range	MassScaleRange;
@@ -45,6 +49,9 @@ var				range	JumpZScaleRange;
 var				range	MeleeRangeScale;
 // Monster Damage
 var				range	DamageScaleRange;
+
+var				float	MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
+var				float	MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
 
 // BallisticCollision
 struct BallisticCollisionData
@@ -83,6 +90,19 @@ replication
 //========================================================================
 //[block] Functions
 
+function DropToGround()
+{
+	bCollideWorld = default.bCollideWorld;
+	bInterpolating = False;
+	if ( Health > 0 )  {
+		SetCollision( default.bCollideActors, default.bBlockActors );
+		SetPhysics(PHYS_Falling);
+		AmbientSound = None;
+		if ( IsHumanControlled() )
+			Controller.GotoState(LandMovementState);
+	}
+}
+
 function RandomizeMonsterSizes()
 {
 	local	float	RandomSizeMult;
@@ -98,21 +118,28 @@ function RandomizeMonsterSizes()
 	SoundPitch = default.SoundPitch / RandomSizeMult * BaseActor.static.GetRandPitch( SoundsPitchRange );
 	// Sizes
 	Mass = default.Mass * RandomSizeMult * BaseActor.static.GetRandRangeFloat( MassScaleRange );
+	
 	// CollisionSize scaled by DrawScale
-	PrePivot.Z = default.CollisionHeight * DrawScale - default.CollisionHeight;
-	SetCollisionSize( (default.CollisionRadius * DrawScale), (default.CollisionHeight * DrawScale) );
-	// EyeHeight scaled by DrawScale
-	BaseEyeHeight = default.BaseEyeHeight * DrawScale;
-	EyeHeight = default.EyeHeight * DrawScale;
+	//PrePivot.Z = default.MeshTestCollisionHeight * DrawScale - default.CollisionHeight + default.PrePivot.Z + 12.0;
+	SetCollisionSize( (default.MeshTestCollisionRadius * default.DrawScale * RandomSizeMult), (default.MeshTestCollisionHeight * default.DrawScale * RandomSizeMult) );
+	//PrePivot.Z = default.MeshTestCollisionHeight * default.DrawScale * RandomSizeMult - default.CollisionHeight + default.PrePivot.Z;
+	PrePivot.Z = default.MeshTestCollisionHeight * default.DrawScale * RandomSizeMult - default.MeshTestCollisionHeight + default.PrePivot.Z;
+	// Camera EyeHeight scaled by DrawScale
+	BaseEyeHeight = default.BaseEyeHeight * default.DrawScale * RandomSizeMult;
+	EyeHeight = default.EyeHeight * default.DrawScale * RandomSizeMult;
 		
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
-	OnlineHeadshotOffset = default.OnlineHeadshotOffset * RandomSizeMult;
+	//OnlineHeadshotOffset = default.OnlineHeadshotOffset * default.DrawScale * RandomSizeMult;
 	
 	HeadHeight = default.HeadHeight * RandomSizeMult;
 	
-	CrouchHeight = default.CrouchHeight * RandomSizeMult;
-	CrouchRadius = default.CrouchRadius * RandomSizeMult;
+	//Collision - Note: un-crouching messes up the collision size
+	//CrouchHeight = default.MeshTestCollisionHeight * default.DrawScale * RandomSizeMult * 0.65;
+	CrouchHeight = default.MeshTestCollisionHeight * default.DrawScale * RandomSizeMult;
+	CrouchRadius = default.MeshTestCollisionRadius * default.DrawScale * RandomSizeMult;
 	
+	//SetPhysics(PHYS_Falling);
+		
 	bRandomSizeAdjusted = True;
 }
 
@@ -179,6 +206,29 @@ function DestroyBallisticCollision()
 	}
 }
 
+function AddVelocity( vector NewVelocity )
+{
+	if ( bIgnoreForces || NewVelocity == vect(0,0,0) || VSizeSquared(NewVelocity) < 2500.0 )
+		Return;
+	
+	if ( Physics == PHYS_Falling && AIController(Controller) != None )
+		ImpactVelocity += NewVelocity;
+	
+	if ( Physics == PHYS_Walking || ((Physics == PHYS_Ladder || Physics == PHYS_Spider) && NewVelocity.Z > Default.JumpZ) )
+		SetPhysics(PHYS_Falling);
+	
+	if ( Velocity.Z > 380.0 && NewVelocity.Z > 0.0 )
+		NewVelocity.Z *= 0.5;
+	
+	Velocity += NewVelocity;
+}
+
+// Sets the current Health
+protected function SetHealth( int NewHealth )
+{
+	Health = Max(NewHealth, 0);
+}
+
 event PreBeginPlay()
 {
 	if ( !bRandomSizeAdjusted )
@@ -193,7 +243,15 @@ simulated event PostBeginPlay()
 	local	float	MovementSpeedDifficultyScale;
 	
 	if ( ROLE == ROLE_Authority )  {
+		//PrePivot.Z -= 12.0;
 		BuildBallisticCollision();
+		if ( HeadBallisticCollision != None )
+			OnlineHeadshotOffset = HeadBallisticCollision.Location - (Location - CollisionHeight * Vect(0.0, 0.0, 1.0));
+		
+		// Landing to the Ground
+		Move( Location + Vect(0.0, 0.0, 12.0) );
+		SetPhysics(PHYS_Falling);
+		
 		if ( ControllerClass != None && Controller == None )
 			Controller = Spawn(ControllerClass);
 
@@ -320,6 +378,15 @@ simulated event PostBeginPlay()
 		AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
 		MovementAnims[0] = AdditionalWalkAnims[Rand(AdditionalWalkAnims.length)];
 	}
+}
+
+simulated event PostNetBeginPlay()
+{
+	EnableChannelNotify(1, 1);
+	AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
+	AnimBlendParams(1, 1.0, 0.0,, HeadBone);
+	
+	Super(Pawn).PostNetBeginPlay();
 }
 
 // Setters for extra collision cylinders
@@ -461,6 +528,22 @@ function float NumPlayersHeadHealthModifer()
 		AdjustedModifier += (Min(NumEnemies, 9) - 1) * PlayerNumHeadHealthScale;
 
 	Return AdjustedModifier;
+}
+
+event FellOutOfWorld( eKillZType KillType )
+{
+	if ( Level.NetMode == NM_Client || (Controller != None && Controller.AvoidCertainDeath()) )
+		Return;
+	
+	SetHealth(0);
+	
+	if ( KillType == KILLZ_Lava )
+		Died( None, LavaDamageType, Location );
+	else  {
+		if ( KillType != KILLZ_Suicide && Physics != PHYS_Karma )
+			SetPhysics(PHYS_None);
+		Died( None, FallingDamageType, Location );
+	}
 }
 
 // move karma objects by a kick
@@ -1103,7 +1186,11 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-     SoundsPitchRange=(Min=0.9,Max=1.1)
+     // Falling
+	 FallingDamageType=Class'Fell'
+	 LavaDamageType=Class'FellLava'
+	 // SoundsPitchRange
+	 SoundsPitchRange=(Min=0.9,Max=1.1)
 	 PlayerCountHealthScale=0.1
 	 PlayerNumHeadHealthScale=0.1
 	 MassScaleRange=(Min=0.95,Max=1.05)
@@ -1144,7 +1231,6 @@ defaultproperties
 	 bCollideActors=True
 	 bCollideWorld=True
 	 bBlockActors=True
-	 bBlockPlayers=True
 	 bUseCylinderCollision=True
 	 // This collision flags was moved to the BallisticCollision
 	 bBlockProjectiles=False
@@ -1157,6 +1243,8 @@ defaultproperties
 	 //MeshTestCollisionRadius=25.0
 	 CollisionHeight=50.0
 	 CollisionRadius=25.0
+	 CrouchHeight=34.0
+	 CrouchRadius=25.0
 	 
 	 PrePivot=(X=0.0,Y=0.0,Z=0.0)
 }

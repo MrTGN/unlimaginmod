@@ -221,6 +221,38 @@ simulated function bool MonsterIsInRadius( float MonsterSearchRadius )
 	Return False;
 }
 
+// Check for friendly Pawns in radius
+simulated function bool AllyIsInRadius( float AllySearchRadius )
+{
+	local	Pawn	P;
+	
+	UpdateInstigatorTeamNum();
+	
+	foreach CollidingActors( Class'Pawn', P, AllySearchRadius, Location )  {
+		if ( P != None && P.Health > 0 && ((Instigator != None && P == Instigator)
+				|| (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0 && P.GetTeamNum() == InstigatorTeamNum))
+					 && FastTrace( P.Location, Location ) )
+			Return True;
+	}
+	
+	Return False;
+}
+
+// Check for enemy Pawns in radius
+simulated function bool EnemyIsInRadius( float EnemySearchRadius )
+{
+	local	Pawn	P;
+	
+	UpdateInstigatorTeamNum();
+	
+	foreach CollidingActors( Class'Pawn', P, EnemySearchRadius, Location )  {
+		if ( P != None && P.Health > 0 && P.GetTeamNum() != InstigatorTeamNum && FastTrace( P.Location, Location ) )
+			Return True;
+	}
+	
+	Return False;
+}
+
 // Called when projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
@@ -267,16 +299,26 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			if ( bIgnoreThisVictim )
 				Continue;
 			
+			/*
 			if ( Victim == LastTouched )
-				LastTouched = None;
+				LastTouched = None;	*/
 			
 			// BallisticCollision check
 			if ( UM_BallisticCollision(Victim) != None )  {
-				if ( UM_BallisticCollision(Victim).CanBeDamaged() )
-					Victim = Victim.Base;
+				if ( UM_BallisticCollision(Victim).CanBeDamaged() )  {
+					if ( Victim == LastTouched )  {
+						CheckedPawns[CheckedPawns.Length] = Pawn(Victim.Base);
+						// Skip LastTouched
+						Continue;
+					}
+					else
+						Victim = Victim.Base;
+				}
 				else
 					Continue;	// Skip this BallisticCollision
 			}
+			else if ( Victim == LastTouched )
+				Continue;	// Skip LastTouched
 			
 			Dir = Victim.Location - HitLocation;
 			Dist = FMax( VSize(Dir), 1.0 );
@@ -302,11 +344,22 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				if ( !CanHurtPawn(Pawn(Victim)) )
 					Continue;
 				
+				// Extended FastTraces from bones Locations
+				/*
 				if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
 					DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 				else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
 					DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
+				*/
+				if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
+					DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
+				else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
+					DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
 			}
+			// Check for the blocking world geometry
+			else if ( !FastTrace( Victim.Location, HitLocation ) )
+				Continue;
+			
 			// outside the DamageRadius
 			if ( DamageScale <= 0.0 )
 				Continue;
@@ -356,14 +409,23 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			DamageScale = FMax( (Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)), (1.0 - FMax(0.0, ((Dist - Victim.CollisionRadius) / DamageRadius))) );
 			if ( Pawn(Victim) != None )  {
 				if ( CanHurtPawn(Pawn(Victim)) )  {
+					// Extended FastTraces from bones Locations
+					/*
 					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
 						DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 					else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
 						DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
+					*/
+					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
+						DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
+					else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
+						DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
 				}
 				else
 					bIgnoreThisVictim = True;	// Do not damage a friendly Pawn
 			}
+			else
+				bIgnoreThisVictim = FastTrace( Victim.Location, HitLocation );
 			// if not outside the DamageRadius
 			if ( !bIgnoreThisVictim && DamageScale > 0.0 )  {
 				if ( Instigator == None || Instigator.Controller == None )
@@ -468,7 +530,7 @@ event Timer()
 	if ( IsArmed() )
 		Explode(Location, Vector(Rotation));
 	else
-		Destroy();
+		Destroy();	// ToDo: убрать это, я буду уничтожать снаряды через LifeSpan
 }
 
 simulated function Explode( vector HitLocation, vector HitNormal )
@@ -553,14 +615,12 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 	if ( Instigator == None || EventInstigator == Instigator || EventInstigator.GetTeamNum() != Instigator.GetTeamNum()
 		 || (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
-		if ( DisintegrateDamageTypes.Length > 0 )  {
-			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
-				if ( DamageType == DisintegrateDamageTypes[i] )  {
-					if ( FRand() <= DisintegrateChance )
-						Disintegrate(HitLocation, Vector(Rotation));
-					
-					Return;
-				}
+		for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
+			if ( DamageType == DisintegrateDamageTypes[i] )  {
+				if ( FRand() <= DisintegrateChance )
+					Disintegrate(HitLocation, Vector(Rotation));
+				
+				Return;
 			}
 		}
 		

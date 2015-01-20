@@ -139,7 +139,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 }
 
 // TakeDamage must be simulated because it is a bNetTemporary actor
-simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex)
+simulated event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
 	local	int		i;
 
@@ -149,14 +149,12 @@ simulated event TakeDamage(int Damage, Pawn EventInstigator, vector HitLocation,
 	if ( Instigator == None || EventInstigator == Instigator || EventInstigator.GetTeamNum() != Instigator.GetTeamNum()
 		 || (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
-		if ( DisintegrateDamageTypes.Length > 0 )  {
-			for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
-				if ( DamageType == DisintegrateDamageTypes[i] )  {
-					if ( bCanDisintegrate )
-						Disintegrate(HitLocation, Vector(Rotation));
-					
-					Return;
-				}
+		for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
+			if ( DamageType == DisintegrateDamageTypes[i] )  {
+				if ( bCanDisintegrate )
+					Disintegrate(HitLocation, Vector(Rotation));
+				
+				Return;
 			}
 		}
 		
@@ -231,13 +229,6 @@ defaultproperties
 	 //Light
 	 AmbientGlow=30		// Ambient brightness, or 255=pulsing.
 	 bUnlit=True		// Lights don't affect actor.
-	 //Collision
-	 CollisionRadius=0.000000
-     CollisionHeight=0.000000
-	 bBlockHitPointTraces=False
-	 bSwitchToZeroCollision=True
-	 bCollideActors=True
-     bCollideWorld=True
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True

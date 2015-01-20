@@ -20,12 +20,6 @@ class UM_ZombieCrawler extends UM_ZombieCrawlerBase;
 // NOTE: All Variables are declared in the base class to eliminate hitching
 //----------------------------------------------------------------------------
 
-simulated event PreBeginPlay()
-{
-	Super.PreBeginPlay();
-	bPoisonous = FRand() <= PoisonousChance;
-}
-
 simulated event PostBeginPlay()
 {
 	// Randomizing PounceSpeed
@@ -34,10 +28,16 @@ simulated event PostBeginPlay()
 	
 	Super.PostBeginPlay();
 	
-	if ( bPoisonous )  {
+	// Server only next
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	if ( FRand() <= PoisonousChance )  {
+		bPoisonous = True;
 		CurrentDamtype = PoisonDamageType;
 		PoisonDamageRandRange.Min *= DifficultyDamageModifer();
 		PoisonDamageRandRange.Max *= DifficultyDamageModifer();
+		SetOverlayMaterial(PoisonousMaterial, 1800.0, False); // 30 minutes
 	}
 	else
 		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
@@ -45,16 +45,10 @@ simulated event PostBeginPlay()
 
 simulated event PostNetBeginPlay()
 {
-	local	int		i;
-	
 	Super.PostNetBeginPlay();
 	
-	if ( bPoisonous )  {
+	if ( bPoisonous )
 		MenuName = "Poisonous" @ MenuName;
-		Skins.Length = PoisonousSkins.Length;
-		for ( i = 0; i < PoisonousSkins.Length; ++i )
-			Skins[i] = PoisonousSkins[i];
-	}
 }
 
 function bool DoPounce()

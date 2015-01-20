@@ -58,8 +58,6 @@ defaultproperties
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.800000
      SeveredHeadAttachScale=0.800000
-     OnlineHeadshotOffset=(X=20.000000,Z=37.000000)
-     OnlineHeadshotScale=1.300000
      MotionDetectorThreat=0.340000
      HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Pain'
      DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Death'
@@ -84,10 +82,12 @@ defaultproperties
      
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.clot_cmb'
 	 Mesh=SkeletalMesh'UM_Clot_A.Clot_Mesh'
-	 //MeshTestCollisionHeight=50.0
-	 //MeshTestCollisionRadius=17.0
-	 CollisionHeight=50.0
-	 CollisionRadius=17.0
+	 MeshTestCollisionHeight=50.0
+	 MeshTestCollisionRadius=17.0
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
+	 CollisionHeight=69.0
+	 CollisionRadius=24.0
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.6,AreaHeight=6.6,AreaBone="CHR_Head",AreaOffset=(X=1.6,Y=-1.6,Z=0.0),AreaImpactStrength=5.4)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=17.0,AreaHeight=36.8,AreaImpactStrength=7.4)
@@ -95,6 +95,9 @@ defaultproperties
 	 EyeHeight=44.0
 	 // DrawScale
      DrawScale=1.100000
+	 
+	 OnlineHeadshotOffset=(X=10.000000,Z=42.000000)
+     OnlineHeadshotScale=1.300000
 
      RotationRate=(Yaw=45000,Roll=0)
 }

@@ -45,7 +45,8 @@ event Timer()
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
-			bEnemyDetected = MonsterIsInRadius(DetectionRadius);
+			//bEnemyDetected = MonsterIsInRadius(DetectionRadius);
+			bEnemyDetected = EnemyIsInRadius(DetectionRadius);
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
@@ -55,9 +56,11 @@ event Timer()
 		}
 		// Armed
 		else  {
-			bEnemyDetected = MonsterIsInRadius(DamageRadius);
+			//bEnemyDetected = MonsterIsInRadius(DamageRadius);
+			bEnemyDetected = EnemyIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !FriendlyPawnIsInRadius(DamageRadius) )
+				//if ( !FriendlyPawnIsInRadius(DamageRadius) )
+				if ( !AllyIsInRadius(DamageRadius) )
 					Explode(Location, Vector(Rotation));
 				else if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);

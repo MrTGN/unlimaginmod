@@ -74,12 +74,12 @@ var	transient	class<DamageType>	LastPoisonDamageType;
 var		transient	Pawn			PoisonInstigator;
 var		transient	bool			bIsTakingPoisonDamage;
 
-// Burning Damage
-var		range						BurningDamageRandRange;
+// Burn Damage
+var		range						BurnDamageRandRange;
+var		class<DamageType>			BurnDamageType;
 var		float						BurningFrequency;
 var		transient	float			BurningIntensity;
-var		transient	float			NextBurningTime, LastBurningTime;
-var		class<DamageType>			BurningDamageType;
+var		transient	float			NextBurnTime, LastBurnTime;
 var		transient	bool			bIsTakingBurnDamage;
 
 // Falling
@@ -489,6 +489,23 @@ simulated event ClientTrigger()
 
 simulated event PostNetReceive() { }
 
+function AddVelocity( vector NewVelocity )
+{
+	if ( bIgnoreForces || NewVelocity == vect(0,0,0) )
+		Return;
+	
+	if ( Physics == PHYS_Falling && AIController(Controller) != None )
+		ImpactVelocity += NewVelocity;
+	
+	if ( Physics == PHYS_Walking || ((Physics == PHYS_Ladder || Physics == PHYS_Spider) && NewVelocity.Z > Default.JumpZ) )
+		SetPhysics(PHYS_Falling);
+	
+	if ( Velocity.Z > 380.0 && NewVelocity.Z > 0.0 )
+		NewVelocity.Z *= 0.5;
+	
+	Velocity += NewVelocity;
+}
+
 // Movement speed according to the healths
 function UpdateHealthMovementModifiers()
 {
@@ -826,7 +843,7 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 	local	Actor		SpawnBlocker;
 	
 	UpdateViewPosition();
-	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(4.0, 4.0, 4.0));
+	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(1.0, 1.0, 1.0));
 	if ( SpawnBlocker != None )  {
 		//Log("SpawnBlocker found!", Name);
 		LastAimTarget = SpawnBlocker;
@@ -858,9 +875,9 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		
 		if ( LastAimTarget == None )  {
 			// Tracing from the player camera to find the target
-			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(2.0, 2.0, 2.0) )  {
+			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(1.0, 1.0, 1.0) )  {
 				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self /*&& !LastAimTarget.bHidden */
-					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget || LastAimTarget.bBlockActors) )  {
+					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget /*|| LastAimTarget.bBlockActors*/) )  {
 					Break;	// We have found the Target
 				}
 				else
@@ -1702,6 +1719,7 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 		Return;
 	}
 	
+	bCanBeDamaged = False;
 	bPreventHealthChanging = True;
 	bIsHealing = False;
 	bIsTakingPoisonDamage = False;
@@ -1894,84 +1912,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	Return Damage;
 }
 
-// server only
-event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
-{
-	// GodMode or FriendlyFire
-	if ( (Controller != None && Controller.bGodMode) || Damage < 1
-		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
-			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
-		Return;
-	
-	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {
-		// Burnified if the burn damage was significant enough
-		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
-			// Updating timers
-			LastBurningTime = Level.TimeSeconds;
-			NextBurningTime = LastBurningTime + BurningFrequency;
-			// Damage Info
-			BurnInstigator = InstigatedBy;
-			BurningIntensity = FMin( (BurningIntensity + float(Damage)), float(OverhealedHealthMax) );
-			// Start to taking BurnDamage
-			bIsTakingBurnDamage = True;
-			// Allow operations with Health
-			bPreventHealthChanging = False;
-			// Burning does not cause an instant damage
-			Return;
-		}
-	}
-	else if ( Class<UM_ZombieDamType_Poison>(DamageType) != None )  {
-		if ( ShieldStrength > 0.0 )
-			Damage = ShieldAbsorb( Damage );
-		// Start to taking a PoisonDamage if damage was significant enough
-		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
-			// Updating timers
-			LastPoisonTime = Level.TimeSeconds;
-			NextPoisonTime = LastPoisonTime + PoisonFrequency;
-			// Damage Info
-			LastPoisonDamageType = DamageType;
-			PoisonInstigator = InstigatedBy;
-			PoisonIntensity = FMin( (PoisonIntensity + float(Damage) * 0.5), float(OverhealedHealthMax) );
-			// Start to taking PoisonDamage
-			bIsTakingPoisonDamage = True;
-			// Allow operations with Health
-			bPreventHealthChanging = False;
-			// Poison does not cause an instant damage
-			Return;
-		}
-	}
-	else if ( Class<DamTypeVomit>(DamageType) != None )  {
-		// Start to taking a BileDamage if damage was significant enough
-		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
-			// Updating timers
-			LastBileTime = Level.TimeSeconds;
-			NextBileTime = LastBileTime + BileFrequency;
-			// Damage Info
-			LastBileDamageType = DamageType;
-			BileInstigator = InstigatedBy;
-			BileIntensity = FMin( (BileIntensity + float(Damage)), float(OverhealedHealthMax) );
-			// Start to taking BileDamage
-			bIsTakingBileDamage = True;
-			// Allow operations with Health
-			bPreventHealthChanging = False;
-			// Bile does not cause an instant damage
-			Return;
-		}
-	}	
-	// Survived 10 Seconds After Scream Achievement
-	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-		 && !bHasSurvivedAfterScream && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
-		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
-		bScreamedAt = True;
-	}
-	
-	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-}
-
-
 // Can Healer heal this human or not
 simulated function bool CanBeHealed( bool bMedicamentCanOverheal, UM_HumanPawn Healer, optional out int HealMax )
 {
@@ -2162,7 +2102,8 @@ function TakePoisonDamage()
 		if ( DeltaPoisonDamage > 0 )  {
 			LastPoisonTime = Level.TimeSeconds;
 			// Do Poison Effects
-			ClientAddPoisonEffects(DeltaPoisonDamage);
+			if ( Controller != None )
+				ClientAddPoisonEffects(DeltaPoisonDamage);
 		}
 	}
 	// Checking PoisonIntensity
@@ -2217,21 +2158,21 @@ function TakeBileDamage()
 function TakeFireDamage( int Damage, pawn BInstigator ) { }
 
 // Take a Burning Damage (called from the Tick)
-function TakeBurningDamage()
+function TakeBurnDamage()
 {
 	local	int		DeltaBurningDamage;
 	
-	NextBurningTime = Level.TimeSeconds + BurningFrequency;
+	NextBurnTime = Level.TimeSeconds + BurningFrequency;
 	// Rounding BurningIntensity per delay
-	DeltaBurningDamage = Round( FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurningDamageRandRange)) * (Level.TimeSeconds - LastBurningTime) );
+	DeltaBurningDamage = Round( FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurnDamageRandRange)) * (Level.TimeSeconds - LastBurnTime) );
 	if ( DeltaBurningDamage > 0 )  {
 		// Decreasing BurningIntensity
 		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
 		// Damaging
-		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurningDamageType );
+		DeltaBurningDamage = ProcessTakeDamage( DeltaBurningDamage, BurnInstigator, Location, vect(0.0, 0.0, 0.0), BurnDamageType );
 		// if has taken damage
 		if ( DeltaBurningDamage > 0 )  {
-			LastBurningTime = Level.TimeSeconds;
+			LastBurnTime = Level.TimeSeconds;
 			// Burning Effects
 			if ( !bBurnified )
 				bBurnified = True;
@@ -2290,6 +2231,98 @@ event BreathTimer()
 		Return;
 	
 	TakeDrowningDamage();
+}
+
+// server only
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
+{
+	// GodMode or FriendlyFire
+	if ( Role < ROLE_Authority || (Controller != None && Controller.bGodMode) || Damage < 1
+		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
+			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
+		Return;
+	
+	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {
+		// Burnified if the burn damage was significant enough
+		if ( Damage > 2 )  {
+			bPreventHealthChanging = True;
+			// Damage Info
+			BurnInstigator = InstigatedBy;
+			BurningIntensity = FMin( (BurningIntensity + float(Damage)), float(OverhealedHealthMax) );
+			if ( !bIsTakingBurnDamage )  {
+				// Start to taking BurnDamage
+				bIsTakingBurnDamage = True;
+				LastBurnTime = Level.TimeSeconds - BurningFrequency;
+				TakeBurnDamage(); // Take Burn Damage right now
+			}
+			else  {
+				// Updating timers
+				LastBurnTime = Level.TimeSeconds;
+				NextBurnTime = LastBurnTime + BurningFrequency;
+			}
+			// Allow operations with Health
+			bPreventHealthChanging = Health < 1;
+			Return;
+		}
+	}
+	else if ( Class<UM_ZombieDamType_Poison>(DamageType) != None )  {
+		if ( Class<UM_ZombieDamType_CrawlerPoison>(DamageType) != None && ShieldStrength > 0.0 )
+			Damage = ShieldAbsorb( Damage );
+		// Start to taking a PoisonDamage if damage was significant enough
+		if ( Damage > 2 )  {
+			bPreventHealthChanging = True;
+			// Damage Info
+			LastPoisonDamageType = DamageType;
+			PoisonInstigator = InstigatedBy;
+			PoisonIntensity = FMin( (PoisonIntensity + float(Damage) * 0.5), float(OverhealedHealthMax) );
+			if ( !bIsTakingPoisonDamage )  {
+				// Start to taking PoisonDamage
+				bIsTakingPoisonDamage = True;
+				LastPoisonTime = Level.TimeSeconds - PoisonFrequency;
+				TakePoisonDamage(); // Take Poison Damage right now
+			}
+			else  {
+				// Updating timers
+				LastPoisonTime = Level.TimeSeconds;
+				NextPoisonTime = LastPoisonTime + PoisonFrequency;
+			}
+			// Allow operations with Health
+			bPreventHealthChanging = Health < 1;
+			Return;
+		}
+	}
+	else if ( Class<DamTypeVomit>(DamageType) != None )  {
+		// Start to taking a BileDamage if damage was significant enough
+		if ( Damage > 2 )  {
+			bPreventHealthChanging = True;
+			// Damage Info
+			LastBileDamageType = DamageType;
+			BileInstigator = InstigatedBy;
+			BileIntensity = FMin( (BileIntensity + float(Damage)), float(OverhealedHealthMax) );
+			if ( !bIsTakingBileDamage )  {
+				// Start to taking BileDamage
+				bIsTakingBileDamage = True;
+				LastBileTime = Level.TimeSeconds - BileFrequency;
+				TakeBileDamage(); // Take Bile Damage right now
+			}
+			else  {
+				// Updating timers
+				LastBileTime = Level.TimeSeconds;
+				NextBileTime = LastBileTime + BileFrequency;
+			}
+			// Allow operations with Health
+			bPreventHealthChanging = Health < 1;
+			Return;
+		}
+	}	
+	// Survived 10 Seconds After Scream Achievement
+	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
+		 && !bHasSurvivedAfterScream && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
+		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
+		bScreamedAt = True;
+	}
+	
+	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 }
 
 // Clearing
@@ -2418,8 +2451,8 @@ simulated event Tick( float DeltaTime )
 				TakeBileDamage();
 			
 			// Burning Damage
-			if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurningTime )
-				TakeBurningDamage();
+			if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurnTime )
+				TakeBurnDamage();
 		}
 		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
 		// Survived 10 Seconds After Vomit Achievement
@@ -2666,10 +2699,10 @@ defaultproperties
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
 	 // DyingCameraEffect
-	 DyingCameraEffectHealthScale=0.2
+	 DyingCameraEffectHealthScale=0.25
 	 DyingCameraEffectDelay=1.0
 	 DyingBlurDuration=3.0
-	 DyingBlurIntensityScale=0.0095
+	 DyingBlurIntensityScale=0.0085
      // PoisonDamage
 	 PoisonFrequency=0.5
 	 // BileDamage
@@ -2680,9 +2713,9 @@ defaultproperties
 	 DrowningDamageFrequency=1.0
      DrowningDamageType=Class'Drowned'
 	 // Burning
-	 BurningDamageRandRange=(Min=4.0,Max=6.0)
+	 BurnDamageRandRange=(Min=4.0,Max=6.0)
 	 BurningFrequency=0.5
-	 BurningDamageType=Class'DamTypeBurned'
+	 BurnDamageType=Class'DamTypeBurned'
 	 // Falling
 	 FallingDamageType=Class'Fell'
 	 LavaDamageType=Class'FellLava'

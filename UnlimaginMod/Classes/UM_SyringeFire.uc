@@ -166,7 +166,7 @@ defaultproperties
      AmmoPerFire=250
 	 HealBoostAmount=20
 	 // Healing
-	 HealingRange=80.0
+	 HealingRange=85.0
 	 PotentialPatientSearchRange=100.0
 	 MaxPatientSearchAngle=50.0
 	 // No healing delays

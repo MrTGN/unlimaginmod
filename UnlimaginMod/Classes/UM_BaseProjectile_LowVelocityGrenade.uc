@@ -163,7 +163,6 @@ defaultproperties
 	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.1)
 	 bIgnoreSameClassProj=True
 	 ProjectileDiameter=40.0
-	 bArmed=False
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000

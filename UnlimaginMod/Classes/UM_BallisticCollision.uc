@@ -134,6 +134,7 @@ defaultproperties
 	 bProjTarget=True
 	 bBlockZeroExtentTraces=True
 	 bBlockNonZeroExtentTraces=True
+	 bBlockHitPointTraces=False
 	 bUseCylinderCollision=True
 	 bBlockKarma=False
 	 bBlocksTeleport=False

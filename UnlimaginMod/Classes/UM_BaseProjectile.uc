@@ -63,6 +63,8 @@ var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall
 
 var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 
+var				int			InstigatorTeamNum;
+
 // Replication variables
 var				Vector		SpawnLocation;	// The location where this projectile was spawned
 var				bool		bReplicateSpawnLocation; // Storing and replicate projectile spawn location from server in SpawnLocation variable
@@ -268,6 +270,28 @@ simulated function ResetToDefaultProperties()
 	BCInverse = default.BCInverse;
 }
 
+simulated function UpdateInstigatorTeamNum()
+{
+	if ( Instigator != None )
+		InstigatorTeamNum = Instigator.GetTeamNum();
+	else if ( InstigatorController != None )
+		InstigatorTeamNum = InstigatorController.GetTeamNum();
+}
+
+// Set new Instigator
+simulated function SetInstigator( Pawn NewInstigator )
+{
+	if ( Instigator != NewInstigator )
+		Instigator = NewInstigator;
+	
+	// InstigatorController
+	if ( Instigator != None )
+		InstigatorController = Instigator.Controller;
+	
+	UpdateInstigatorTeamNum();
+	UpdateBonuses();
+}
+
 // Veterancy Penetration and Bounce bonuses
 simulated function UpdateBonuses()
 {
@@ -277,14 +301,15 @@ simulated function UpdateBonuses()
 		PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 	else
 		Log("Can't find Instigator in UpdateBonuses() function!", Name);
+	
 	// Bonuses
 	if ( PRI != None )  {
-		PenetrationBonus *= PRI.GetProjectilePenetrationBonus(Class) / ExpansionCoefficient;
-		BounceBonus *= PRI.GetProjectileBounceBonus(Class) / ExpansionCoefficient;
+		PenetrationBonus = default.PenetrationBonus * PRI.GetProjectilePenetrationBonus(Class) / ExpansionCoefficient;
+		BounceBonus = default.BounceBonus * PRI.GetProjectileBounceBonus(Class) / ExpansionCoefficient;
 	}
-	else  {	
-		PenetrationBonus /= ExpansionCoefficient;
-		BounceBonus /= ExpansionCoefficient;
+	else  {
+		PenetrationBonus = default.PenetrationBonus / ExpansionCoefficient;
+		BounceBonus = default.BounceBonus / ExpansionCoefficient;
 	}
 }
 
@@ -305,8 +330,9 @@ simulated event PreBeginPlay()
 			//Instigator = WeaponMuzzle.Instigator;
 		//else
 		if ( Pawn(Owner) != None )
-			Instigator = Pawn(Owner);
-		UpdateBonuses();
+			SetInstigator( Pawn(Owner) );
+		else
+			SetInstigator( Instigator );
 	}
 		
 	//ToDo: проверить на глюки подгрузку в этом месте!
@@ -442,11 +468,8 @@ simulated event PostBeginPlay()
 		if ( bReplicateSpawnLocation )
 			SpawnLocation = Location;
 		// InstigatorController
-		if ( Instigator != None )  {
-			InstigatorController = Instigator.Controller;
-			if ( InstigatorController != None && InstigatorController.ShotTarget != None && InstigatorController.ShotTarget.Controller != None )
-				InstigatorController.ShotTarget.Controller.ReceiveProjectileWarning( Self );
-		}
+		if ( InstigatorController != None && InstigatorController.ShotTarget != None && InstigatorController.ShotTarget.Controller != None )
+			InstigatorController.ShotTarget.Controller.ReceiveProjectileWarning( Self );
     }
 	
 	/*ToDo: попробую переместить это в PreBeginPlay(). #Проверить!
@@ -482,7 +505,7 @@ simulated function ClientPostInitialReplication()
 	local	float	SquareSpeed;
 	
 	// Updating Bonuses on clients
-	UpdateBonuses();
+	SetInstigator( Instigator );
 	
 	if ( default.Speed > 0.0 )  {
 		// Velocity replicated from the server
@@ -577,6 +600,9 @@ simulated function bool CanHurtPawn( Pawn P )
 	if ( P == None )
 		Return False;
 	
+	UpdateInstigatorTeamNum();
+	
+	/*
 	// Do not damage a friendly Pawn
 	if ( Instigator != None )  {
 		if ( (!bCanHurtOwner && P == Instigator )
@@ -588,6 +614,19 @@ simulated function bool CanHurtPawn( Pawn P )
 		if ( (!bCanHurtOwner && InstigatorController == P.Controller) 
 			 || (InstigatorController != P.Controller && UM_GameReplicationInfo(Level.GRI) != None
 				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatorController.GetTeamNum() == P.Controller.GetTeamNum()) )
+			Return False;
+	}	*/
+	
+	if ( Instigator != None )  {
+		if ( P == Instigator )
+			Return bCanHurtOwner;
+		else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == InstigatorTeamNum )
+			Return False;
+	}
+	else if ( InstigatorController != None && P.Controller != None )  {
+		if ( InstigatorController == P.Controller )
+			Return bCanHurtOwner;
+		else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.Controller.GetTeamNum() == InstigatorTeamNum )
 			Return False;
 	}
 	
@@ -625,7 +664,6 @@ simulated function StopProjectile()
 // Called when the projectile has lost all energy
 simulated function ZeroProjectileEnergy()
 {
-	//bBounce = False;
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_Falling);
@@ -855,7 +893,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 			ST = EST_Default;
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
-		EnergyByNormal = f * f * SpeedSquaredToEnergy;
+		EnergyByNormal = Square(f) * SpeedSquaredToEnergy;
 		// Stuck or Rebound
 		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			VectVelDotNorm = HitNormal * f;
@@ -867,7 +905,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 			// Decreasing performance
 			UpdateProjectilePerformance(True);
 			// Landed on the next colliding with ground
-			if ( Speed < MinSpeed )
+			if ( Speed <= MinSpeed )
 				bBounce = False;
 			
 			Return;
@@ -921,6 +959,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 InstigatorTeamNum=255	// Default TeamNum
 	 // EST_Default
 	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Rock
@@ -968,11 +1007,12 @@ defaultproperties
 	 bReplicateSpawnTime=False
 	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
-	 
+	 //Collision
 	 CollisionRadius=0.000000
      CollisionHeight=0.000000
      bCollideActors=True
      bCollideWorld=True
+	 bBlockActors=False
      bUseCylinderCollision=True
 	 bSwitchToZeroCollision=True
 	 bBlockZeroExtentTraces=True

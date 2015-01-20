@@ -75,8 +75,7 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 {
 	local float ret;
 
-	if( class<KFWeaponDamageType>(DmgType) != none && class<KFWeaponDamageType>(DmgType).default.bIsMeleeDamage )
-	{
+	if ( DmgType == Class'UM_DamTypeM79BouncingBall' || (class<KFWeaponDamageType>(DmgType) != none && class<KFWeaponDamageType>(DmgType).default.bIsMeleeDamage) )  {
 		if ( KFPRI.ClientVeteranSkillLevel == 0 )
 			ret = float(InDamage) * 1.10;
 		// Up to 100% increase in Melee Damage
@@ -111,7 +110,7 @@ static function float GetPawnJumpModifier( UM_PlayerReplicationInfo PRI )
 
 static function int GetPawnMaxBounce( UM_PlayerReplicationInfo PRI )
 {
-	Return Min(PRI.ClientVeteranSkillLevel, 4); // Can bounce if SkillLevel > 0
+	Return Min(PRI.ClientVeteranSkillLevel, 5); // Can bounce if SkillLevel > 0
 }
 
 // Pawn Movement Bonus while wielding this weapon
@@ -193,6 +192,24 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%r",GetPercentStr(0.7 + 0.05*float(Level)));
 	ReplaceText(S,"%l",GetPercentStr(FMin(0.05*float(Level),0.65f)));
 	return S;
+}
+
+// Projectile Penetration Bonus
+static function float GetProjectilePenetrationBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
+{
+	if ( Class<UM_BaseProjectile_BouncingBall>(ProjClass) != None )
+		Return 2.0 + float(Min(PRI.ClientVeteranSkillLevel, 8));	// Up to 1000% bonus
+	
+	Return 1.0;
+}
+
+// Projectile Bounce Bonus
+static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
+{
+	if ( Class<UM_BaseProjectile_BouncingBall>(ProjClass) != None && PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.00 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 50% bonus
+	
+	Return 1.0;
 }
 
 defaultproperties

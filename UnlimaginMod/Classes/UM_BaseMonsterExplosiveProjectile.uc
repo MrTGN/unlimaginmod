@@ -88,6 +88,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 defaultproperties
 {
      bAutoLifeSpan=True
+	 ArmingDelay=0.2
 	 UpdateTimeDelay=0.100000
 	 ShrapnelClass=None
 	 CullDistance=5000.000000

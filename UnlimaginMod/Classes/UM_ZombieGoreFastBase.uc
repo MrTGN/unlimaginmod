@@ -94,6 +94,7 @@ defaultproperties
 	 // DrawScale
 	 DrawScale=1.200000
 	 
+	 //OnlineHeadshotOffset=(X=5.000000,Z=53.000000)
 	 OnlineHeadshotOffset=(X=5.000000,Z=42.000000)
      OnlineHeadshotScale=1.500000
 	 

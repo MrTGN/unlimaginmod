@@ -739,7 +739,7 @@ function PossessedBy( Controller C )
 		if ( bSetPCRotOnPossess )
 			C.SetRotation(Rotation);
 		// Clien-owner
-		if ( Level.NetMode != NM_Standalone )
+		if ( Level.NetMode != NM_StandAlone )
 			RemoteRole = ROLE_AutonomousProxy;
 		BecomeViewTarget();
 	}
@@ -756,7 +756,7 @@ function PossessedBy( Controller C )
 	else
 		PRIChangedTrigger = 0;
 	// If it is a Standalone game or ListenServer
-	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+	if ( Level.NetMode == NM_StandAlone || Level.NetMode == NM_ListenServer )
 		NotifyTeamChanged();
 	
 	if ( UM_PlayerRepInfo != None )  {
@@ -790,7 +790,7 @@ function UnPossessed()
 	else
 		PRIChangedTrigger = 0;
 	// If it is a Standalone game or ListenServer
-	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_ListenServer )
+	if ( Level.NetMode == NM_StandAlone || Level.NetMode == NM_ListenServer )
 		NotifyTeamChanged();
 	
 	NotifyVeterancyChanged();
@@ -875,15 +875,18 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		
 		if ( LastAimTarget == None )  {
 			// Tracing from the player camera to find the target
-			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, Vect(1.0, 1.0, 1.0) )  {
-				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self /*&& !LastAimTarget.bHidden */
-					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget /*|| LastAimTarget.bBlockActors*/) )  {
+			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation )  {
+				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self && !LastAimTarget.bHidden
+					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget /*|| LastAimTarget.bBlockActors*/) )
 					Break;	// We have found the Target
-				}
 				else
 					LastAimTarget = None;	// Target is not satisfy the conditions of search
 			}
 		}
+		
+		// Pick any target
+		if ( LastAimTarget == None )
+			LastAimTarget = Trace(LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, True);
 		
 		// If we didn't find the Target just get the TraceEnd location
 		if ( LastAimTarget == None )
@@ -923,7 +926,8 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		AimRotation = LastViewRotation;
 	}
 	else
-		AimRotation = rotator(Normal(LastAimTargetLocation - SpawnLocation));
+		AimRotation = rotator(LastAimTargetLocation - SpawnLocation);
+		//AimRotation = rotator(Normal(LastAimTargetLocation - SpawnLocation));
 	
 	if ( bOnDrugs )
 		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
@@ -931,9 +935,8 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		f = WeaponFire.GetAimError();
 	// Adjusting AimError to the AimRotation
 	if ( f > 0.0 )  {
-		AimRotation.Yaw += f * (FRand() - 0.5);
-		AimRotation.Pitch += f * (FRand() - 0.5);
-		AimRotation.Roll += f * (FRand() - 0.5);
+		AimRotation.Yaw += Round(f * (FRand() - 0.5));
+		AimRotation.Pitch += Round(f * (FRand() - 0.5));
 	}
 	
 	Return AimRotation;
@@ -1804,7 +1807,84 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 		ClientDying(DamageType, HitLocation);
 }
 
-// Process the damage taking and return the taken damage value
+// Clearing old functions
+function OldPlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIndex ) { }
+function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIndex ) { }
+
+// Spawn and play effects when damage was taken
+function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType )
+{
+	local	Vector	HitNormal, HitRay;
+    local	Name	HitBone;
+    local	float	HitBoneDist;
+    local	bool	bRecentHit, bShowEffects;
+
+	if ( DamageType == None || Damage < 1 )
+		Return;
+	
+	bRecentHit = (Level.TimeSeconds - LastPainTime) < 0.2;
+	
+	// spawn some blood
+	if ( Damage >= DamageType.default.DamageThreshold )
+		SpawnHitEmitter();
+	
+	bShowEffects = ( Level.NetMode != NM_StandAlone || (Level.TimeSeconds - LastRenderTime) < 2.5 
+					 || (InstigatedBy != None && PlayerController(InstigatedBy.Controller) != None) 
+					 || PlayerController(Controller) != None );
+	// Visual Hit Effects next
+	if ( !bShowEffects )
+		Return;
+	
+	// HitRay and HitNormal
+	if ( InstigatedBy != None )  {
+		HitRay = Normal( HitLocation - (InstigatedBy.Location + InstigatedBy.EyePosition()) );
+		HitNormal = Normal( Normal(InstigatedBy.Location - HitLocation) + Vect(0.0, 0.0, 2.8) + VRand() * 0.2 );
+	}
+	else  {
+		HitRay = Vect(0.0, 0.0, 0.0);
+		HitNormal = Normal( Vect(0.0, 0.0, 3.8) + VRand() * 0.2 );
+	}
+	
+	// HitLocation
+	if ( DamageType.default.bLocationalHit )
+		CalcHitLoc( HitLocation, HitRay, HitBone, HitBoneDist );
+	else  {
+		HitLocation = Location;
+		HitBone = FireRootBone;
+		HitBoneDist = 0.0;
+	}
+	
+	if ( DamageType.default.bAlwaysSevers && DamageType.default.bSpecial )
+		HitBone = HeadBone;
+	
+	// BloodSplat
+	if ( DamageType.Default.bCausesBlood && Level.Game != None && !Level.Game.static.NoBlood() && (!bRecentHit || FRand() > 0.8) )  {
+		if ( Momentum != Vect(0.0, 0.0, 0.0) )
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Momentum) );
+		else if ( InstigatedBy != None )
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(InstigatedBy - Location);
+		else
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(HitLocation - Location);
+	}
+	
+	// Siren mortal damage effect
+	if ( Class<UM_ZombieDamType_SirenScream>(DamageType) != None && Health < 1 )  {
+		// 32400 ~ squared 3 meters
+		if ( InstigatedBy != None && VSizeSquared(InstigatedBy.Location - Location) < 32400.0 )
+			DoDamageFX( 'obliterate', (Damage * 5000), DamageType, rotator(HitNormal) );
+		else  {
+			DoDamageFX( HeadBone, (Damage * 5000), DamageType, rotator(HitNormal) );
+			PlaySound( DecapitationSound, SLOT_Misc, 1.3, True, 520.0,, True );
+		}
+	}
+	else
+		DoDamageFX( HitBone, Damage, DamageType, rotator(HitNormal) );
+	
+	if ( DamageType.default.DamageOverlayMaterial != None && Health > 0 )
+		SetOverlayMaterial( DamageType.default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, False );
+}
+
+// Process the damaging and return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
 	local	Controller	Killer;
@@ -1876,7 +1956,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		HitLocation = Location;
 	
 	SetHealth( Health - Damage );
-	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
+	PlayDamageEffects( Damage, InstigatedBy, HitLocation, Momentum, DamageType );
 	// Pawn died
 	if ( Health < 1 )  {
 		if ( InstigatedBy != None && InstigatedBy != self )
@@ -2316,8 +2396,8 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 		}
 	}	
 	// Survived 10 Seconds After Scream Achievement
-	else if ( (Class<UM_ZombieDamType_SirenScream>(DamageType) != None || Class<SirenScreamDamage>(DamageType) != None) 
-		 && !bHasSurvivedAfterScream && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
+	else if ( Class<UM_ZombieDamType_SirenScream>(DamageType) != None && !bHasSurvivedAfterScream 
+			 && Level.Game != None && Level.Game.GameDifficulty >= 4.0 && !bScreamedAt )  {
 		SurvivedAfterScreamTime = Level.TimeSeconds + 10.0;
 		bScreamedAt = True;
 	}

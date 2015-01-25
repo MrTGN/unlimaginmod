@@ -1,5 +1,5 @@
 // Written by .:..: (2009)
-Class UM_StatsObject extends Object
+Class UM_StatsObject extends UM_BaseObject
 	PerObjectConfig
 	Config(UnlimaginServerStats);
 

@@ -32,6 +32,9 @@ var			float			DamageScale;
 var			int				Health, HealthMax;
 var			range			HealthScaleRange;
 
+var			Controller		InstigatorController;
+var			int				InstigatorTeamNum;
+
 //[end] Varibles
 //====================================================================
 
@@ -50,10 +53,51 @@ replication
 //========================================================================
 //[block] Functions
 
+// Updates InstigatorTeamNum
+simulated function UpdateInstigatorTeamNum()
+{
+	if ( Instigator != None )
+		InstigatorTeamNum = Instigator.GetTeamNum();
+	else if ( InstigatorController != None )
+		InstigatorTeamNum = InstigatorController.GetTeamNum();
+}
+
+// Updates and returns InstigatorTeamNum
+simulated function int GetInstigatorTeamNum()
+{
+	UpdateInstigatorTeamNum();
+	Return InstigatorTeamNum;
+}
+
+// Set new Instigator
+simulated function SetInstigator( Pawn NewInstigator )
+{
+	if ( Instigator != NewInstigator )
+		Instigator = NewInstigator;
+	
+	// InstigatorController
+	if ( Instigator != None )
+		InstigatorController = Instigator.Controller;
+	
+	UpdateInstigatorTeamNum();
+}
+
 event PreBeginPlay()
 {
-	if ( Pawn(Owner) != None )
-		Instigator = Pawn(Owner);
+	// Updating Instigator on the server
+	if ( Role == ROLE_Authority )  {
+		if ( Pawn(Owner) != None )
+			SetInstigator( Pawn(Owner) );
+		else
+			SetInstigator( Instigator );
+	}
+}
+
+simulated event PostNetBeginPlay()
+{
+	// Updating Instigator on clients
+	if ( Role < ROLE_Authority )
+		SetInstigator( Instigator );
 }
 
 function SetImpactStrength( float NewImpactStrength )
@@ -100,13 +144,13 @@ simulated event BaseChange()
 
 simulated function bool CanBeDamaged()
 {
-	Return bCanBeDamaged && Pawn(Base) != None && !Base.bDeleteMe && Pawn(Base).Health > 0;
+	Return bCanBeDamaged && Instigator != None && !Instigator.bDeleteMe && Instigator.Health > 0;
 }
 
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
-	if ( Base != None )
-		Base.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
+	if ( Instigator != None )
+		Instigator.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
 	else
 		Log("No base Pawn!", Name);
 }

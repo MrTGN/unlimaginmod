@@ -113,9 +113,6 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	local	name		NearestBone;
 	local	float		dist;
 	
-	if ( A == Instigator || A.Base == Instigator )
-		Return;
-	
 	bStuck = True;
 	bCollideWorld = False;
 	DestroyTrail();
@@ -138,10 +135,18 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 		GoToState('Stuck');
 }
 
+simulated function bool CanStickTo( Actor A )
+{
+	if ( bStuck || A == None || A == Instigator || A.Base == Instigator )
+		Return False;
+	
+	Return True;
+}
+
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( !bStuck )
+	if ( CanStickTo(A) )
 		Stick(A, TouchLocation, TouchNormal);
 	
 	LastTouched = None;
@@ -149,7 +154,7 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 
 simulated event HitWall( vector HitNormal, actor Wall )
 {
-	if ( !bStuck )
+	if ( CanStickTo(Wall) )
 		Stick(Wall, (Location + HitNormal), HitNormal);
 }
 

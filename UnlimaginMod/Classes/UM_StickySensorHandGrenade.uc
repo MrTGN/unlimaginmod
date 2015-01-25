@@ -164,9 +164,6 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 		bTimerSet = True;
 	}
 	
-	if ( A == Instigator || A.Base == Instigator )
-		Return;
-	
 	bStuck = True;
 	bCollideWorld = False;
 	DestroyTrail();
@@ -191,7 +188,7 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 
 simulated function bool CanStickTo( Actor A )
 {
-	if ( bStuck || (A != None && (A == Instigator || A.Base == Instigator)) )
+	if ( bStuck || A == None || A == Instigator || A.Base == Instigator )
 		Return False;
 	
 	Return True;

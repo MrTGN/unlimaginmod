@@ -60,6 +60,7 @@ var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spa
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
 var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
+var				bool		bCanHurtSameTypeProjectile; // This projectile can hurt the same type projectile (projectile with the same class)
 
 var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 
@@ -270,12 +271,20 @@ simulated function ResetToDefaultProperties()
 	BCInverse = default.BCInverse;
 }
 
+// Updates InstigatorTeamNum
 simulated function UpdateInstigatorTeamNum()
 {
 	if ( Instigator != None )
 		InstigatorTeamNum = Instigator.GetTeamNum();
 	else if ( InstigatorController != None )
 		InstigatorTeamNum = InstigatorController.GetTeamNum();
+}
+
+// Updates and returns InstigatorTeamNum
+simulated function int GetInstigatorTeamNum()
+{
+	UpdateInstigatorTeamNum();
+	Return InstigatorTeamNum;
 }
 
 // Set new Instigator
@@ -594,45 +603,6 @@ simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 		GotoState('InTheWater');
 }
 
-simulated function bool CanHurtPawn( Pawn P )
-{
-	// Return False if Pawn == None
-	if ( P == None )
-		Return False;
-	
-	UpdateInstigatorTeamNum();
-	
-	/*
-	// Do not damage a friendly Pawn
-	if ( Instigator != None )  {
-		if ( (!bCanHurtOwner && P == Instigator )
-			 || (P != Instigator && UM_GameReplicationInfo(Level.GRI) != None
-				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == Instigator.GetTeamNum()) )
-			Return False;
-	}
-	else if ( InstigatorController != None && P.Controller != None )  {
-		if ( (!bCanHurtOwner && InstigatorController == P.Controller) 
-			 || (InstigatorController != P.Controller && UM_GameReplicationInfo(Level.GRI) != None
-				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatorController.GetTeamNum() == P.Controller.GetTeamNum()) )
-			Return False;
-	}	*/
-	
-	if ( Instigator != None )  {
-		if ( P == Instigator )
-			Return bCanHurtOwner;
-		else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.GetTeamNum() == InstigatorTeamNum )
-			Return False;
-	}
-	else if ( InstigatorController != None && P.Controller != None )  {
-		if ( InstigatorController == P.Controller )
-			Return bCanHurtOwner;
-		else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && P.Controller.GetTeamNum() == InstigatorTeamNum )
-			Return False;
-	}
-	
-	Return True;
-}
-
 function HurtRadius( 
  float				DamageAmount, 
  float				DamageRadius,
@@ -752,14 +722,81 @@ simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
 
-// Can damage this Actor
+// Can this projectile hurt specified BallisticCollision
+simulated function bool	CanHurtThisBallisticCollision( UM_BallisticCollision BallisticCollision )
+{
+	// Return False if no BallisticCollision was specified
+	if ( BallisticCollision == None || !BallisticCollision.CanBeDamaged() )
+		Return False;
+	
+	// HurtOwner
+	if ( (Instigator != None && BallisticCollision.Instigator == Instigator)
+		 || (InstigatorController != None && BallisticCollision.InstigatorController == InstigatorController) )
+		Return bCanHurtOwner;
+	// FriendlyFire
+	else if ( UM_GameReplicationInfo(Level.GRI) != None && BallisticCollision.GetInstigatorTeamNum() == GetInstigatorTeamNum() )
+		Return UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0;
+	
+	Return True;
+}
+
+// Can this projectile damage specified pawn
+simulated function bool CanHurtThisPawn( Pawn P )
+{
+	// Return False if no Pawn was specified
+	if ( P == None || !P.bCanBeDamaged )
+		Return False;
+	
+	// HurtOwner
+	if ( (Instigator != None && P == Instigator) || (InstigatorController != None && P.Controller == InstigatorController) )
+		Return bCanHurtOwner;
+	// FriendlyFire
+	else if ( UM_GameReplicationInfo(Level.GRI) != None && P.GetTeamNum() == GetInstigatorTeamNum() )
+		Return UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0;
+	
+	Return True;
+}
+
+// Can this projectile damage specified projectile
+simulated function bool CanHurtThisProjectile( Projectile Proj )
+{
+	// Return False if no projectile was specified
+	if ( Proj == None || !Proj.bCanBeDamaged )
+		Return False;
+	
+	// Same Projectile Type
+	if ( Proj.Class == Class )
+		Return bCanHurtSameTypeProjectile;
+	// Same Owner
+	else if ( (Instigator != None && Proj.Instigator == Instigator)
+			 || (InstigatorController != None && Proj.InstigatorController == InstigatorController) )
+		Return True;
+	// FriendlyFire
+	else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 )  {
+		UpdateInstigatorTeamNum();
+		if ( UM_BaseProjectile(Proj) != None )
+			Return UM_BaseProjectile(Proj).GetInstigatorTeamNum() != InstigatorTeamNum;
+		else if ( Proj.Instigator != None )
+			Return Proj.Instigator.GetTeamNum() != InstigatorTeamNum;
+		else if ( Proj.InstigatorController != None )
+			Return Proj.InstigatorController.GetTeamNum() != InstigatorTeamNum;
+	}
+	
+	Return True;
+}
+
+// Can this projectile damage specified Actor
 simulated function bool CanHitThisActor( Actor A )
 {
 	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
 		Return False;
 	
-	if ( Pawn(A) != None )
-		Return CanHurtPawn( Pawn(A) );
+	if ( UM_BallisticCollision(A) != None )
+		Return CanHurtThisBallisticCollision( UM_BallisticCollision(A) );
+	else if ( Pawn(A) != None )
+		Return CanHurtThisPawn( Pawn(A) );
+	else if ( Projectile(A) != None )
+		Return CanHurtThisProjectile( Projectile(A) );
 	
 	Return True;
 }
@@ -960,6 +997,7 @@ simulated event Destroyed()
 defaultproperties
 {
 	 InstigatorTeamNum=255	// Default TeamNum
+	 bCanHurtSameTypeProjectile=False
 	 // EST_Default
 	 ImpactSurfaces(0)=(ImpactStrength=1.0,FrictionCoefficient=0.7,PlasticityCoefficient=0.5)
 	 // EST_Rock

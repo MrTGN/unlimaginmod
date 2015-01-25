@@ -45,39 +45,55 @@ class UnlimaginGameType extends KFGameType
 #exec OBJ LOAD FILE=KF_MAC10MPAnims.ukx
 #exec OBJ LOAD FILE=KF_MAC10MPSnd.uax
 
-/*var()	globalconfig 	int		UM_MaximumPlayers;
-var()	globalconfig 	int		UM_WaveTotalMaxMonsters;*/
+//========================================================================
+//[block] Variables
 
-var()	int		UM_MaximumPlayers;
-var()	int		UM_WaveTotalMaxMonsters;
+// Constants
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-var()	string					UM_EndGameBossClass; // class of the end game boss, moved to non config - Ramm
-var()	string					UM_FallbackMonsterClass;
-var()	array<MClassTypes>		UM_MonsterClasses; // Unlimagin monster classed
-var()	array<string>			UM_MonsterSquads; // Unlimagin monster squads
-var()	array<SpecialSquad>		UM_SpecialSquads; // The special squad array for a long game
-var()	array<SpecialSquad>		UM_FinalSquads; // Squads that spawn with the Patriarch
+var		int								UM_TimeBetweenWaves;
 
-var()	WaveInfo				UM_Waves[16];	// Wave config
-/*
-var()	globalconfig	int		UM_FinalWave;
-var()	globalconfig	int		UM_MaxZombiesOnce; // Max zombies that can be in play at once
-var()	globalconfig	int		UM_TimeBetweenWaves;*/
+var		int								MaxHumanPlayers;
 
-var()	int		UM_FinalWave;
-var()	int		UM_MaxZombiesOnce; // Max zombies that can be in play at once
-var()	int		UM_TimeBetweenWaves;
+// GameWaves
+struct WaveData
+{
+	var	int		MinMonsters;
+	var	int		MaxMonsters;
+	var	int		MaxMonstersAtOnce;
+	var	int		MonstersPerPlayer;
+	var	float	MonstersSpawnDelay;
+	var	float	WaveDifficulty;
+};
+var		array<WaveData>					GameWaves;
 
-var		float	DefaultGameSpeed;
+// WaveMonsters
+struct WaveMonsterData
+{
+	var	string				MonsterClassName;
+	var	class<UM_Monster>	MonsterClass;
+	//var	int					MinWave;
+	//var	int					MaxWave;
+	var	array<int>			WaveLimits;	// -1 no limit at all
+	var	array<float>		WaveSpawnChances;
+	var	array<float>		WaveSpawnDelays;
+	var	transient	float	NextSpawnTime;
+};
+var		array<WaveMonsterData>			WaveMonsters;
 
-var		Class<UM_ActorPool>		ActorPoolClass;
+// BossWaveMonsters
+struct BossWaveMonsterData
+{
+	var	string				MonsterClassName;
+	var	class<UM_Monster>	MonsterClass;
+	var	int					WaveLimit;
+	var	float				WaveSpawnChance;
+};
+var		array<BossWaveMonsterData>		BossWaveMonsters;
+// BossMonsterClass
+var		string							BossMonsterClassName;
+var		class<UM_Monster>				BossMonsterClass;
 
-var		class<KFMonstersCollection>		UM_MonsterCollection;
-var		Class<KFLevelRules>				DefaultLevelRulesClass;
-var		string							UM_LoginMenuClass;
-
-var		float							ExitZedTime;
-var		float							BotAtHumanFriendlyFireScale;
 
 // Do slomo event when was killed a specified number of victims
 struct DramaticKillData
@@ -87,6 +103,33 @@ struct DramaticKillData
 	var	float	EventDuration;
 };
 var		array<DramaticKillData>			DramaticKills;
+
+// Will be config string at release version
+var		string							GameTypeProfileClassName;
+var		class<UM_GameTypeProfile>		GameTypeProfileClass;
+
+var		float							DefaultGameSpeed;
+
+var		Class<UM_ActorPool>				ActorPoolClass;
+
+var		class<KFMonstersCollection>		UM_MonsterCollection;
+var		Class<KFLevelRules>				DefaultLevelRulesClass;
+var		string							UM_LoginMenuClass;
+
+var		float							ExitZedTime;
+var		float							BotAtHumanFriendlyFireScale;
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
+
+//[end] Replication
+//====================================================================
+
+//========================================================================
+//[block] Functions
 
 event PreBeginPlay()
 {
@@ -117,12 +160,7 @@ function SetGameSpeed( float T )
 {
     local	float	OldSpeed;
 
-    if ( !AllowGameSpeedChange() )  {
-        Level.TimeDilation = Level.default.TimeDilation;
-        GameSpeed = 1.0;
-        default.GameSpeed = GameSpeed;
-    }
-    else  {
+    if ( AllowGameSpeedChange() )  {
         OldSpeed = GameSpeed;
         GameSpeed = FMax(T, 0.1);
         Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
@@ -131,6 +169,11 @@ function SetGameSpeed( float T )
             class'GameInfo'.static.StaticSaveConfig();
         }
     }
+	else  {
+		Level.TimeDilation = Level.default.TimeDilation;
+        GameSpeed = 1.0;
+        default.GameSpeed = GameSpeed;
+	}
 	
     SetTimer((Level.TimeDilation / GameSpeed), True);
 }
@@ -196,68 +239,148 @@ function CheckForDramaticKill( int NumKilled )
 	}
 }
 
-function LoadUpMonsterList()
+function LoadGameTypeProfile()
 {
-	local int i,j,q,c,n;
-	local Class<KFMonster> MC;
-	local string S,ID;
-	local bool bInitSq;
-	local array<IMClassList> InitMList;
-
-    /*if( KFGameLength != GL_Custom )
-    {
-        InitMList = LoadUpMonsterListFromCollection();
-    }
-    else
-    {
-        InitMList = LoadUpMonsterListFromGameType();
-    }*/
-	InitMList = LoadUpMonsterListFromCollection();
-
-	//Log("Got"@j@"monsters. Loading up monster squads...",'Init');
-	for( i=0; i<MonsterSquad.Length; i++ )
-	{
-		S = MonsterSquad[i];
-		if( S=="" )
-			Continue;
-		bInitSq = False;
-		n = 0;
-		While( S!="" )
-		{
-			q = int(Left(S,1));
-			ID = Mid(S,1,1);
-			S = Mid(S,2);
-			MC = None;
-			for( j=0; j<InitMList.Length; j++ )
-			{
-				if( InitMList[j].ID~=ID )
-				{
-					MC = InitMList[j].MClass;
-					Break;
-				}
-			}
-			if( MC==None )
-				Continue;
-			if( !bInitSq )
-			{
-				InitSquads.Length = c+1;
-				bInitSq = True;
-			}
-			while( (q--)>0 )
-			{
-				InitSquads[c].MSquad.Length = n+1;
-				InitSquads[c].MSquad[n] = MC;
-				n++;
-			}
-		}
-		if( bInitSq )
-			c++;
+	local	int		i, j;
+	
+	if ( GameTypeProfileClassName != "" )
+		GameTypeProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameTypeProfileClassName) );
+	else  {
+		Warn("GameTypeProfileClassName not specified!", Class.Outer.Name);
+		GameTypeProfileClassName = "UnlimaginMod.UM_DefaultGameProfile";
+		GameTypeProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameTypeProfileClassName) );
 	}
-	//Log("Got"@c@"monster squads.",'Init');
-	if( FallbackMonster==class'EliteKrall' && InitMList.Length>0 )
-		FallbackMonster = InitMList[0].MClass;
+	
+	if ( GameTypeProfileClass == None )  {
+		Warn("GameTypeProfileClass wasn't found!", Class.Outer.Name);
+		Return;
+	}
+	
+	// DramaticKills
+	default.DramaticKills.Length = GameTypeProfileClass.default.DramaticKills.Length;
+	DramaticKills.Length = default.DramaticKills.Length;
+	for ( i = 0; i < GameTypeProfileClass.default.DramaticKills.Length; ++i )  {
+		// MinKilled
+		default.DramaticKills[i].MinKilled = GameTypeProfileClass.default.DramaticKills[i].MinKilled;
+		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
+		// EventChance
+		default.DramaticKills[i].EventChance = GameTypeProfileClass.default.DramaticKills[i].EventChance;
+		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
+		// EventDuration
+		default.DramaticKills[i].EventDuration = GameTypeProfileClass.default.DramaticKills[i].EventDuration;
+		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
+	}
+	
+	// WaveMonsters
+	default.WaveMonsters.Length = GameTypeProfileClass.default.WaveMonsters.Length;
+	WaveMonsters.Length = default.WaveMonsters.Length;
+	for ( i = 0; i < GameTypeProfileClass.default.WaveMonsters.Length; ++i )  {
+		// MonsterClassName
+		default.WaveMonsters[i].MonsterClassName = GameTypeProfileClass.default.WaveMonsters[i].MonsterClassName;
+		WaveMonsters[i].MonsterClassName = default.WaveMonsters[i].MonsterClassName;
+		// WaveLimits
+		default.WaveMonsters[i].WaveLimits.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveLimits.Length;
+		WaveMonsters[i].WaveLimits.Length = default.WaveMonsters[i].WaveLimits.Length;
+		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveLimits.Length; ++j )  {
+			default.WaveMonsters[i].WaveLimits[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveLimits[j];
+			WaveMonsters[i].WaveLimits[j] = default.WaveMonsters[i].WaveLimits[j];
+		}
+		// WaveSpawnChances
+		default.WaveMonsters[i].WaveSpawnChances.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length;
+		WaveMonsters[i].WaveSpawnChances.Length = default.WaveMonsters[i].WaveSpawnChances.Length;
+		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnChances[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances[j];
+			WaveMonsters[i].WaveSpawnChances[j] = default.WaveMonsters[i].WaveSpawnChances[j];
+		}
+		// WaveSpawnDelays
+		default.WaveMonsters[i].WaveSpawnDelays.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length;
+		WaveMonsters[i].WaveSpawnDelays.Length = default.WaveMonsters[i].WaveSpawnDelays.Length;
+		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnDelays[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays[j];
+			WaveMonsters[i].WaveSpawnDelays[j] = default.WaveMonsters[i].WaveSpawnDelays[j];
+		}
+	}
+	
+	// GameWaves
+	default.GameWaves.Length = GameTypeProfileClass.default.GameWaves.Length;
+	GameWaves.Length = default.GameWaves.Length;
+	for ( i = 0; i < GameTypeProfileClass.default.GameWaves.Length; ++i )  {
+		// MinMonsters
+		default.GameWaves[i].MinMonsters = GameTypeProfileClass.default.GameWaves[i].MinMonsters;
+		GameWaves[i].MinMonsters = default.GameWaves[i].MinMonsters;
+		// MaxMonsters
+		default.GameWaves[i].MaxMonsters = GameTypeProfileClass.default.GameWaves[i].MaxMonsters;
+		GameWaves[i].MaxMonsters = default.GameWaves[i].MaxMonsters;
+		// MaxMonstersAtOnce
+		default.GameWaves[i].MaxMonstersAtOnce = GameTypeProfileClass.default.GameWaves[i].MaxMonstersAtOnce;
+		GameWaves[i].MaxMonstersAtOnce = default.GameWaves[i].MaxMonstersAtOnce;
+		// MonstersPerPlayer
+		default.GameWaves[i].MonstersPerPlayer = GameTypeProfileClass.default.GameWaves[i].MonstersPerPlayer;
+		GameWaves[i].MonstersPerPlayer = default.GameWaves[i].MonstersPerPlayer;
+		// WaveDifficulty
+		default.GameWaves[i].WaveDifficulty = GameTypeProfileClass.default.GameWaves[i].WaveDifficulty;
+		GameWaves[i].WaveDifficulty = default.GameWaves[i].WaveDifficulty;
+	}
+	
+	// BossMonsterClassName
+	default.BossMonsterClassName = GameTypeProfileClass.default.BossMonsterClassName;
+	BossMonsterClassName = default.BossMonsterClassName;
+	
+	// BossWaveMonsters
+	default.BossWaveMonsters.Length = GameTypeProfileClass.default.BossWaveMonsters.Length;
+	BossWaveMonsters.Length = default.BossWaveMonsters.Length;
+	for ( i = 0; i < GameTypeProfileClass.default.BossWaveMonsters.Length; ++i )  {
+		// MonsterClassName
+		default.BossWaveMonsters[i].MonsterClassName = GameTypeProfileClass.default.BossWaveMonsters[i].MonsterClassName;
+		BossWaveMonsters[i].MonsterClassName = default.BossWaveMonsters[i].MonsterClassName;
+		// WaveLimit
+		default.BossWaveMonsters[i].WaveLimit = GameTypeProfileClass.default.BossWaveMonsters[i].WaveLimit;
+		BossWaveMonsters[i].WaveLimit = default.BossWaveMonsters[i].WaveLimit;
+		// WaveSpawnChance
+		default.BossWaveMonsters[i].WaveSpawnChance = GameTypeProfileClass.default.BossWaveMonsters[i].WaveSpawnChance;
+		BossWaveMonsters[i].WaveSpawnChance = default.BossWaveMonsters[i].WaveSpawnChance;
+	}
+	
+	// MaxHumanPlayers
+	default.MaxHumanPlayers = GameTypeProfileClass.default.MaxHumanPlayers;
+	MaxHumanPlayers = default.MaxHumanPlayers;
+	
+	Log("-------- GameTypeProfile Loaded --------", Class.Outer.Name);
 }
 
+function LoadUpMonsterList()
+{
+	local	int		i;
+	
+	LoadGameTypeProfile();
+	if ( BossMonsterClassName != "" )
+		BossMonsterClass = Class<UM_Monster>( BaseActor.static.LoadClass(BossMonsterClassName) );
+	else
+		Warn("BossMonsterClassName not specified!", Class.Outer.Name);
+	
+	// WaveMonsters
+	for ( i = 0; i < default.WaveMonsters.Length; ++i )  {
+		if ( default.WaveMonsters[i].MonsterClassName != "" )  {
+			default.WaveMonsters[i].MonsterClass = Class<UM_Monster>( BaseActor.static.LoadClass(default.WaveMonsters[i].MonsterClassName) );
+			WaveMonsters[i].MonsterClass = default.WaveMonsters[i].MonsterClass;
+		}
+	}
+	
+	// BossWaveMonsters
+	for ( i = 0; i < default.BossWaveMonsters.Length; ++i )  {
+		if ( default.BossWaveMonsters[i].MonsterClassName != "" )  {
+			default.BossWaveMonsters[i].MonsterClass = Class<UM_Monster>( BaseActor.static.LoadClass(default.BossWaveMonsters[i].MonsterClassName) );
+			BossWaveMonsters[i].MonsterClass = default.BossWaveMonsters[i].MonsterClass;
+		}
+	}
+}
+
+/* Initialize the game.
+ The GameInfo's InitGame() function is called before any other scripts (including
+ PreBeginPlay() ), and is used by the GameInfo to initialize parameters and spawn
+ its helper classes.
+ Warning: this is called before actors' PreBeginPlay.
+*/
 event InitGame( string Options, out string Error )
 {
 //	local int i,j;
@@ -269,30 +392,27 @@ event InitGame( string Options, out string Error )
 
 	Super(xTeamGame).InitGame(Options, Error);
 	
-	FallbackMonster = class<Monster>(DynamicLoadObject(UM_FallbackMonsterClass, class'Class'));
-	//if (FallbackMonster == None)
-	//	FallbackMonster = class'EliteKrall';
-
 	MaxLives = 1;
 	bForceRespawn = True;
 
 	DefaultGameSpeed = default.GameSpeed;
-	MaxPlayers = Clamp( UM_MaximumPlayers, 0, 32);
+	MaxPlayers = Clamp( MaxHumanPlayers, 1, 32);
 	
 	FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0);
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
 		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
 	
-
-	foreach DynamicActors(class'KFLevelRules',KFLRit)
-	{
+	// LevelRules
+	foreach DynamicActors( class'KFLevelRules', KFLRit)  {
 		if ( KFLRules == None )
 			KFLRules = KFLRit;
 		else 
 			Warn("MULTIPLE KFLEVELRULES FOUND!!!!!");
 	}
-	foreach AllActors(class'ShopVolume',SH)
+	// ShopList
+	foreach AllActors(class'ShopVolume', SH)
 		ShopList[ShopList.Length] = SH;
+	// ZedSpawnList
 	foreach AllActors(class'ZombieVolume',ZZ)
 		ZedSpawnList[ZedSpawnList.Length] = ZZ;
 
@@ -304,9 +424,7 @@ event InitGame( string Options, out string Error )
 
 	InOpt = ParseOption(Options, "UseBots");
 	if ( InOpt != "" )
-	{
 		bNoBots = bool(InOpt);
-	}
 
 	log("Game length = "$KFGameLength);
 
@@ -322,32 +440,32 @@ event InitGame( string Options, out string Error )
 	UpdateGameLength();
 
 	// Set difficulty based values
-	if ( GameDifficulty >= 7.0 ) // Hell on Earth
-	{
+	if ( GameDifficulty >= 7.0 )  {
+		// Hell on Earth
 		TimeBetweenWaves = UM_TimeBetweenWaves;
 		StartingCash = StartingCashHell;
 		MinRespawnCash = MinRespawnCashHell;
 	}
-	else if ( GameDifficulty >= 5.0 ) // Suicidal
-	{
+	else if ( GameDifficulty >= 5.0 )  {
+		// Suicidal
 		TimeBetweenWaves = UM_TimeBetweenWaves;
 		StartingCash = StartingCashSuicidal;
 		MinRespawnCash = MinRespawnCashSuicidal;
 	}
-	else if ( GameDifficulty >= 4.0 ) // Hard
-	{
+	else if ( GameDifficulty >= 4.0 )  {
+		// Hard
 		TimeBetweenWaves = UM_TimeBetweenWaves;
 		StartingCash = StartingCashHard;
 		MinRespawnCash = MinRespawnCashHard;
 	}
-	else if ( GameDifficulty >= 2.0 ) // Normal
-	{
+	else if ( GameDifficulty >= 2.0 )  {
+		// Normal
 		TimeBetweenWaves = UM_TimeBetweenWaves;
 		StartingCash = StartingCashNormal;
 		MinRespawnCash = MinRespawnCashNormal;
 	}
-	else //if ( GameDifficulty == 1.0 ) // Beginner
-	{
+	else  {
+		// Beginner
 		TimeBetweenWaves = UM_TimeBetweenWaves;
 		StartingCash = StartingCashBeginner;
 		MinRespawnCash = MinRespawnCashBeginner;
@@ -357,71 +475,22 @@ event InitGame( string Options, out string Error )
 	
 	FinalWave = Clamp(UM_FinalWave,5,15);
 	
-	PrepareSpecialSquads();
-
-	/*for( i=0; i<3; i++ )
-	{
-		FinalSquads[i] = UM_FinalSquads[i];
-	}*/
-
 	LoadUpMonsterList();
 	
 	//Spawning ActorPool
-	if ( ActorPoolClass != None && Class'UM_GlobalData'.default.ActorPool == None )
-	{
+	if ( ActorPoolClass != None && Class'UM_GlobalData'.default.ActorPool == None )  {
 		log("-------- Creating ActorPool --------",Class.Outer.Name);
 		Spawn(ActorPoolClass);
 	}
-	//Spawn(Class'UM_TestActor');
 }
 
-function NotifyGameEvent(int EventNumIn)
+function NotifyGameEvent( int EventNumIn )
 {
-	if(MonsterCollection != class'UM_KFMonstersCollection' )
-	{//we already have an event
-
-		if(EventNumIn == 3 && MonsterCollection != class'UM_KFMonstersXMasCollection')
-		{
-			log("Was we should be in halloween mode but we aren't!");
-		}
-		if(EventNumIn == 2 && MonsterCollection != class'UM_KFMonstersHalloweenCollection')
-		{
-			log("Was we should be in halloween mode but we aren't!");
-		}
-		if(EventNumIn == 0 && MonsterCollection != class'UM_KFMonstersCollection')
-		{
-			log("Was we shouldn't have an event but we do!");
-		}
-		return;
-	}
-
-    if(EventNumIn == 2 )
-    {
-        MonsterCollection = class'UM_KFMonstersHalloweenCollection';
-    }
-    else if(EventNumIn == 3 )
-    {
-        MonsterCollection = class'UM_KFMonstersXMasCollection';
-    }
-    //EventNum = EventNumIn;
-    PrepareSpecialSquads();
     LoadUpMonsterList();
 }
 
-simulated function PrepareSpecialSquadsFromCollection()
-{
-	local int i;
-	
-	for( i=0; i<FinalWave; i++ )  {
-		Waves[i] = UM_Waves[i];
-		MonsterCollection.default.SpecialSquads[i] = MonsterCollection.default.NormalSpecialSquads[i];
-	}
-}
-
-simulated function PrepareSpecialSquads()
-{
-	PrepareSpecialSquadsFromCollection();
-}
+simulated function PrepareSpecialSquadsFromCollection() { }
+simulated function PrepareSpecialSquads() { }
 
 exec function SetFriendlyFireScale( float NewFriendlyFireScale )
 {
@@ -604,6 +673,248 @@ event Tick( float DeltaTime )
 	}
 }
 
+function ResetToDefaultMonsterList()
+{
+	local	int		i, j;
+	
+	// WaveMonsters
+	WaveMonsters.Length = default.WaveMonsters.Length;
+	for ( i = 0; i < default.WaveMonsters.Length; ++i )  {
+		// MonsterClass
+		WaveMonsters[i].MonsterClass = default.WaveMonsters[i].MonsterClass;
+		// WaveLimits
+		WaveMonsters[i].WaveLimits.Length = default.WaveMonsters[i].WaveLimits.Length;
+		for ( j = 0; j < default.WaveMonsters[i].WaveLimits.Length; ++j )
+			WaveMonsters[i].WaveLimits[j] = default.WaveMonsters[i].WavesLimit[j];
+		// WaveSpawnChances
+		WaveMonsters[i].WaveSpawnChances.Length = default.WaveMonsters[i].WaveSpawnChances.Length;
+		for ( j = 0; j < default.WaveMonsters[i].WaveSpawnChances.Length; ++j )
+			WaveMonsters[i].WaveSpawnChances[j] = default.WaveMonsters[i].WaveSpawnChances[j];
+		// WaveSpawnDelays
+		WaveMonsters[i].WaveSpawnDelays.Length = default.WaveMonsters[i].WaveSpawnDelays.Length;
+		for ( j = 0; j < default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )
+			WaveMonsters[i].WaveSpawnDelays[j] = default.WaveMonsters[i].WaveSpawnDelays[j];
+	}
+}
+
+
+function ModifyMonsterListByDifficulty()
+{
+	local	int		i, j;
+	local	float	DifficultyMod;
+	
+	// Hell on Earth
+	if ( GameDifficulty >= 7.0 )
+		DifficultyMod = 1.75;
+	// Suicidal
+	else if ( GameDifficulty >= 5.0 )
+		DifficultyMod = 1.5;
+	// Hard
+	else if ( GameDifficulty >= 4.0 )
+		DifficultyMod = 1.25;
+	// Normal
+	else if ( GameDifficulty >= 2.0 )
+		DifficultyMod = 1.0;
+	// Beginner
+	else
+		DifficultyMod = 0.75;
+	
+	// scale Monster WaveLimits by difficulty
+	for ( i = 0; i < WaveMonsters.Length; ++i )  {
+		for ( j = 0; j < WaveMonsters[i].WaveLimits.Length; ++j )
+			WaveMonsters[i].WaveLimits[j] *= DifficultyMod;
+	}
+}
+
+function ModifyMonsterListByNumPlayers()
+{
+	local	int		i, j, CurrentNumPlayers;
+	local	float	NumPlayersMod;
+	
+	CurrentNumPlayers = FMin( (NumPlayers + NumBots), 12);
+	switch ( CurrentNumPlayers )  {
+		case 1:
+		case 2:
+			NumPlayersMod = float(CurrentNumPlayers);
+			Break;
+		
+		case 3:
+		case 4:
+			NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers - 2) * 0.25;
+			Break;
+		
+		case 5:
+			//NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers - 1) * 0.25;
+			NumPlayersMod = 4.0;
+			Break;
+		
+		default:
+			NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
+	}
+	
+	// scale Monster WaveLimits by difficulty
+	for ( i = 0; i < WaveMonsters.Length; ++i )  {
+		for ( j = 0; j < WaveMonsters[i].WaveLimits.Length; ++j )
+			WaveMonsters[i].WaveLimits[j] *= DifficultyMod;
+	}
+}
+
+function SetupWave()
+{
+	local int i,j;
+	local float NewMaxMonsters;
+	//local int m;
+	local float DifficultyMod, NumPlayersMod;
+	local int UsedNumPlayers;
+
+	if ( WaveNum > 15 )
+	{
+		SetupRandomWave();
+		return;
+	}
+
+	TraderProblemLevel = 0;
+	rewardFlag=false;
+	ZombiesKilled=0;
+	WaveMonsters = 0;
+	WaveNumClasses = 0;
+	NewMaxMonsters = Waves[WaveNum].WaveMaxMonsters;
+
+	// scale number of zombies by difficulty
+	if ( GameDifficulty >= 7.0 ) // Hell on Earth
+	{
+		DifficultyMod=1.7;
+	}
+	else if ( GameDifficulty >= 5.0 ) // Suicidal
+	{
+		DifficultyMod=1.5;
+	}
+	else if ( GameDifficulty >= 4.0 ) // Hard
+	{
+		DifficultyMod=1.3;
+	}
+	else if ( GameDifficulty >= 2.0 ) // Normal
+	{
+		DifficultyMod=1.0;
+	}
+	else //if ( GameDifficulty == 1.0 ) // Beginner
+	{
+		DifficultyMod=0.7;
+	}
+
+	UsedNumPlayers = NumPlayers + NumBots;
+
+	// Scale the number of zombies by the number of players. Don't want to
+	// do this exactly linear, or it just gets to be too many zombies and too
+	// long of waves at higher levels - Ramm
+	switch ( UsedNumPlayers )
+	{
+		case 1:
+			NumPlayersMod=1;
+			break;
+		case 2:
+			NumPlayersMod=2;
+			break;
+		case 3:
+			NumPlayersMod=2.75;
+			break;
+		case 4:
+			NumPlayersMod=3.5;
+			break;
+		case 5:
+			NumPlayersMod=4;
+			break;
+		case 6:
+			NumPlayersMod=4.5;
+			break;
+        default:
+            NumPlayersMod=UsedNumPlayers*0.8; // in case someone makes a mutator with > 6 players
+	}
+
+	NewMaxMonsters = NewMaxMonsters * DifficultyMod * NumPlayersMod;
+	
+	if ( UM_WaveTotalMaxMonsters <= 5)
+		UM_WaveTotalMaxMonsters = 20;
+
+	TotalMaxMonsters = Clamp(NewMaxMonsters,5,UM_WaveTotalMaxMonsters);  //11, MAX=UM_WaveTotalMaxMonsters, MIN 5
+
+	MaxMonsters = Clamp(TotalMaxMonsters,5,MaxZombiesOnce);
+	//log("****** "$MaxMonsters$" Max at once!");
+
+	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonsters = TotalMaxMonsters;
+	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonstersOn = True;
+	WaveEndTime = Level.TimeSeconds + Waves[WaveNum].WaveDuration;
+	AdjustedDifficulty = GameDifficulty + Waves[WaveNum].WaveDifficulty;
+
+	j = ZedSpawnList.Length;
+	for( i=0; i<j; i++ )
+		ZedSpawnList[i].Reset();
+	j = 1;
+	SquadsToUse.Length = 0;
+
+	for ( i=0; i<InitSquads.Length; i++ )
+	{
+		if ( (j & Waves[WaveNum].WaveMask) != 0 )
+		{
+			SquadsToUse.Insert(0,1);
+			SquadsToUse[0] = i;
+
+			// Ramm ZombieSpawn debugging
+			/*for ( m=0; m<InitSquads[i].MSquad.Length; m++ )
+			{
+				log("Wave "$WaveNum$" Squad "$SquadsToUse.Length$" Monster "$m$" "$InitSquads[i].MSquad[m]);
+			}
+			log("****** "$TotalMaxMonsters);*/
+		}
+		j *= 2;
+	}
+
+	// Save this for use elsewhere
+	InitialSquadsToUseSize = SquadsToUse.Length;
+	bUsedSpecialSquad=false;
+	SpecialListCounter=1;
+
+	//Now build the first squad to use
+	BuildNextSquad();
+}
+
+function UM_Monster SpawnRandWaveMonster()
+{
+	local	UM_Monster		M;
+	local	int				r, t;
+	local	NavigationPoint	StartSpot;
+	
+	while ( M == None && t < 100 )  {
+		++t;
+		r = Rand(WaveMonsters.Length);
+		if ( WaveMonsters[r].MonsterClass != None && (WaveMonsters[r].WaveLimits.Length <= WaveNum || WaveMonsters[r].WaveLimits[WaveNum] != 0)
+			 && (WaveMonsters[r].WaveSpawnChances.Length <= WaveNum || FRand() <= WaveMonsters[r].WaveSpawnChances[WaveNum]) 
+			 && Level.TimeSeconds >= WaveMonsters[r].NextSpawnTime )  {
+			// Spawn New Monster
+			StartSpot = FindPlayerStart(None, 1);
+			if ( StartSpot == None )
+				Return None;
+			M = Spawn( WaveMonsters[r].MonsterClass,,, (StartSpot.Location + Vect(0.0, 0.0, 1.0) * (WaveMonsters[r].MonsterClass.Default.CollisionHeight - StartSpot.CollisionHeight), StartSpot.Rotation );
+			if ( M != None && M.bDeleteMe )  {
+				M = None;
+				Continue;
+			}
+			// NextSpawnTime
+			if ( WaveMonsters[r].WaveSpawnDelays.Length > WaveNum && WaveMonsters[r].WaveSpawnDelays[WaveNum] > 0.0 )
+				WaveMonsters[r].NextSpawnTime = Level.TimeSeconds + WaveMonsters[r].WaveSpawnDelays[WaveNum];
+			// WavesLimit
+			if ( WaveMonsters[r].WavesLimit.Length > WaveNum && WaveMonsters[r].WavesLimit[WaveNum] > 0 )  {
+				--WaveMonsters[r].WavesLimit[WaveNum];
+				// Remove this WaveMonster until next wave.
+				if ( WaveMonsters[r].WavesLimit[WaveNum] < 1 )
+					WaveMonsters.Remove(r, 1);
+			}
+		}
+	}
+	
+	Return M;
+}
+
 State MatchInProgress
 {
 	function bool UpdateMonsterCount() // To avoid invasion errors.
@@ -776,6 +1087,7 @@ State MatchInProgress
 		}
 	}
 
+	// ToDo: переписать тут спавн монстров.
 	event Timer()
 	{
 		local Controller C;
@@ -1577,125 +1889,6 @@ event PostLogin( PlayerController NewPlayer )
         NewPlayer.SteamStatsAndAchievements.bUsedCheats = true;
 }
 
-function SetupWave()
-{
-	local int i,j;
-	local float NewMaxMonsters;
-	//local int m;
-	local float DifficultyMod, NumPlayersMod;
-	local int UsedNumPlayers;
-
-	if ( WaveNum > 15 )
-	{
-		SetupRandomWave();
-		return;
-	}
-
-	TraderProblemLevel = 0;
-	rewardFlag=false;
-	ZombiesKilled=0;
-	WaveMonsters = 0;
-	WaveNumClasses = 0;
-	NewMaxMonsters = Waves[WaveNum].WaveMaxMonsters;
-
-	// scale number of zombies by difficulty
-	if ( GameDifficulty >= 7.0 ) // Hell on Earth
-	{
-		DifficultyMod=1.7;
-	}
-	else if ( GameDifficulty >= 5.0 ) // Suicidal
-	{
-		DifficultyMod=1.5;
-	}
-	else if ( GameDifficulty >= 4.0 ) // Hard
-	{
-		DifficultyMod=1.3;
-	}
-	else if ( GameDifficulty >= 2.0 ) // Normal
-	{
-		DifficultyMod=1.0;
-	}
-	else //if ( GameDifficulty == 1.0 ) // Beginner
-	{
-		DifficultyMod=0.7;
-	}
-
-	UsedNumPlayers = NumPlayers + NumBots;
-
-	// Scale the number of zombies by the number of players. Don't want to
-	// do this exactly linear, or it just gets to be too many zombies and too
-	// long of waves at higher levels - Ramm
-	switch ( UsedNumPlayers )
-	{
-		case 1:
-			NumPlayersMod=1;
-			break;
-		case 2:
-			NumPlayersMod=2;
-			break;
-		case 3:
-			NumPlayersMod=2.75;
-			break;
-		case 4:
-			NumPlayersMod=3.5;
-			break;
-		case 5:
-			NumPlayersMod=4;
-			break;
-		case 6:
-			NumPlayersMod=4.5;
-			break;
-        default:
-            NumPlayersMod=UsedNumPlayers*0.8; // in case someone makes a mutator with > 6 players
-	}
-
-	NewMaxMonsters = NewMaxMonsters * DifficultyMod * NumPlayersMod;
-	
-	if ( UM_WaveTotalMaxMonsters <= 5)
-		UM_WaveTotalMaxMonsters = 20;
-
-	TotalMaxMonsters = Clamp(NewMaxMonsters,5,UM_WaveTotalMaxMonsters);  //11, MAX=UM_WaveTotalMaxMonsters, MIN 5
-
-	MaxMonsters = Clamp(TotalMaxMonsters,5,MaxZombiesOnce);
-	//log("****** "$MaxMonsters$" Max at once!");
-
-	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonsters = TotalMaxMonsters;
-	KFGameReplicationInfo(Level.Game.GameReplicationInfo).MaxMonstersOn = True;
-	WaveEndTime = Level.TimeSeconds + Waves[WaveNum].WaveDuration;
-	AdjustedDifficulty = GameDifficulty + Waves[WaveNum].WaveDifficulty;
-
-	j = ZedSpawnList.Length;
-	for( i=0; i<j; i++ )
-		ZedSpawnList[i].Reset();
-	j = 1;
-	SquadsToUse.Length = 0;
-
-	for ( i=0; i<InitSquads.Length; i++ )
-	{
-		if ( (j & Waves[WaveNum].WaveMask) != 0 )
-		{
-			SquadsToUse.Insert(0,1);
-			SquadsToUse[0] = i;
-
-			// Ramm ZombieSpawn debugging
-			/*for ( m=0; m<InitSquads[i].MSquad.Length; m++ )
-			{
-				log("Wave "$WaveNum$" Squad "$SquadsToUse.Length$" Monster "$m$" "$InitSquads[i].MSquad[m]);
-			}
-			log("****** "$TotalMaxMonsters);*/
-		}
-		j *= 2;
-	}
-
-	// Save this for use elsewhere
-	InitialSquadsToUseSize = SquadsToUse.Length;
-	bUsedSpecialSquad=false;
-	SpecialListCounter=1;
-
-	//Now build the first squad to use
-	BuildNextSquad();
-}
-
 function AddSpecialSquad()
 {
 	AddSpecialSquadFromCollection();
@@ -1822,9 +2015,13 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 	Super.EndGame(Winner, Reason);
 }
 
+//[end] Functions
+//====================================================================
+
 defaultproperties
 {
-     DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
+     GameTypeProfileClassName="UnlimaginMod.UM_DefaultGameProfile"
+	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
 	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
 	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=3.5)
 	 DramaticKills(3)=(MinKilled=15,EventChance=0.4,EventDuration=4.0)

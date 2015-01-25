@@ -105,6 +105,7 @@ defaultproperties
 	 // DrawScale
 	 DrawScale=1.400000
 	 
+	 //OnlineHeadshotOffset=(X=20.000000,Z=55.000000)
 	 OnlineHeadshotOffset=(X=10.000000,Z=38.000000)
 	 
      SoundVolume=200

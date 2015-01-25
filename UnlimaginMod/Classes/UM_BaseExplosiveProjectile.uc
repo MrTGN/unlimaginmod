@@ -22,15 +22,15 @@ class UM_BaseExplosiveProjectile extends UM_BaseProjectile
 //[block] Variables
 
 // camera shakes
-var(Shakes)		vector		ShakeRotMag;		// how far to rot view
-var(Shakes)		vector		ShakeRotRate;		// how fast to rot view
-var(Shakes)		float		ShakeRotTime;		// how much time to rot the instigator's view
-var(Shakes)		vector		ShakeOffsetMag;		// max view offset vertically
-var(Shakes)		vector		ShakeOffsetRate;	// how fast to offset view vertically
-var(Shakes)		float		ShakeOffsetTime;	// how much time to offset view
+var(Shakes)		vector				ShakeRotMag;		// how far to rot view
+var(Shakes)		vector				ShakeRotRate;		// how fast to rot view
+var(Shakes)		float				ShakeRotTime;		// how much time to rot the instigator's view
+var(Shakes)		vector				ShakeOffsetMag;		// max view offset vertically
+var(Shakes)		vector				ShakeOffsetRate;	// how fast to offset view vertically
+var(Shakes)		float				ShakeOffsetTime;	// how much time to offset view
 
-var(Shakes)		float		ShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRadiusScale;
-var(Shakes)		float		MaxEpicenterShakeScale; // Maximum shake scale in explosion epicenter
+var(Shakes)		float				ShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRadiusScale;
+var(Shakes)		float				MaxEpicenterShakeScale; // Maximum shake scale in explosion epicenter
 
 
 // With DisintegrateDamageTypes array you can set damage types 
@@ -38,38 +38,37 @@ var(Shakes)		float		MaxEpicenterShakeScale; // Maximum shake scale in explosion 
 var		array< class<DamageType> >	DisintegrateDamageTypes;
 
 // Use IgnoredVictims array to assign Victims that will be ignored in HurtRadius function
-var		array< name >		IgnoredVictims;
-var		bool				bIgnoreSameClassProj;	//Ignore projectiles with the same class in HurtRadius
+var		array< name >				IgnoredVictims;
 
 //Shrapnel
 var		class<UM_BaseProjectile>	ShrapnelClass;
-var		int					MaxShrapnelAmount, MinShrapnelAmount;
+var		int							MaxShrapnelAmount, MinShrapnelAmount;
 
 //[block] Effects
-var		bool				bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
-var		bool				bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
+var		bool						bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
+var		bool						bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
 
-var		float				DisintegrateChance;	// Chance of this projectile to Disintegrate
-var		float				DisintegrateDamageScale; // Scale damage by this multiplier when projectile disintegrating
+var		float						DisintegrateChance;	// Chance of this projectile to Disintegrate
+var		float						DisintegrateDamageScale; // Scale damage by this multiplier when projectile disintegrating
 
 // Sounds
 var		UM_BaseActor.SoundData		DisintegrateSound, ExplodeSound;
 
 // Visual Effect
-var		class<Emitter>		ExplosionVisualEffect, DisintegrationVisualEffect;
+var		class<Emitter>				ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
 // ArmingDelay
-var		float				ArmingRange; // Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
-var		float				SquaredArmingRange;
-var		float				ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
-var		transient	float	ArmedTime;
-var					bool	bArmed;
+var		float						ArmingRange; // Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
+var		float						SquaredArmingRange;
+var		float						ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
+var		transient	float			ArmedTime;
+var					bool			bArmed;
 
 // How much damage to do when this Projectile impacts something before exploding
-var(Impact)		float		ImpactDamage;
-var(Impact)		float		ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
-var		class<DamageType>	ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
+var(Impact)		float				ImpactDamage;
+var(Impact)		float				ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
+var		class<DamageType>			ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
 
 
 //[end] Varibles
@@ -229,7 +228,7 @@ simulated function bool AllyIsInRadius( float AllySearchRadius )
 	UpdateInstigatorTeamNum();
 	
 	foreach CollidingActors( Class'Pawn', P, AllySearchRadius, Location )  {
-		if ( P != None && P.Health > 0 && ((Instigator != None && P == Instigator)
+		if ( P != None && P.Health > 0 && ((Instigator != None && P == Instigator) || (InstigatorController != None && P.Controller == InstigatorController)
 				|| (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0 && P.GetTeamNum() == InstigatorTeamNum))
 					 && FastTrace( P.Location, Location ) )
 			Return True;
@@ -283,10 +282,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 
 	bHurtEntry = True;
 	
-	//foreach VisibleCollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation, True )  {
 	foreach CollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation )  {
-		if ( Victim != None && Victim != Self && !Victim.bDeleteMe && Victim != Hurtwall
-			 && FluidSurfaceInfo(Victim) == None && (!bIgnoreSameClassProj || Victim.Class != Class) )  {
+		if ( Victim != None && Victim != Self && !Victim.bDeleteMe && !Victim.bHidden 
+			 && Victim != Hurtwall && FluidSurfaceInfo(Victim) == None )  {
 			// Check IgnoredVictims array
 			bIgnoreThisVictim = False;
 			for ( i = 0; i < IgnoredVictims.Length; ++i )  {
@@ -303,11 +301,16 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			if ( Victim == LastTouched )
 				LastTouched = None;	*/
 			
+			// Projectile check
+			if ( Projectile(Victim) != None )  {
+				if ( !CanHurtThisProjectile( Projectile(Victim) ) )
+					Continue;
+			}
 			// BallisticCollision check
-			if ( UM_BallisticCollision(Victim) != None )  {
+			else if ( UM_BallisticCollision(Victim) != None )  {
 				if ( UM_BallisticCollision(Victim).CanBeDamaged() )  {
 					if ( Victim == LastTouched )  {
-						CheckedPawns[CheckedPawns.Length] = Pawn(Victim.Base);
+						CheckedPawns[CheckedPawns.Length] = Victim.Instigator;
 						// Skip LastTouched
 						Continue;
 					}
@@ -317,7 +320,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				else
 					Continue;	// Skip this BallisticCollision
 			}
-			else if ( Victim == LastTouched )
+			
+			if ( Victim == LastTouched )
 				Continue;	// Skip LastTouched
 			
 			Dir = Victim.Location - HitLocation;
@@ -341,7 +345,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				
 				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
 				// Do not damage a friendly Pawn
-				if ( !CanHurtPawn(Pawn(Victim)) )
+				if ( !CanHurtThisPawn(Pawn(Victim)) )
 					Continue;
 				
 				// Extended FastTraces from bones Locations
@@ -382,8 +386,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 	}
 	
-	if ( LastTouched != None && LastTouched != Self && !LastTouched.bDeleteMe && LastTouched != Hurtwall
-		 && FluidSurfaceInfo(LastTouched) == None && (!bIgnoreSameClassProj || LastTouched.Class != Class) )  {
+	if ( LastTouched != None && LastTouched != Self && !LastTouched.bDeleteMe && !LastTouched.bHidden
+		 && LastTouched != Hurtwall && FluidSurfaceInfo(LastTouched) == None )  {
 		Victim = LastTouched;
 		LastTouched = None;
 		// Check IgnoredVictims array
@@ -394,10 +398,15 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				Break;
 			}
 		}
+		// Projectile check
+		if ( Projectile(Victim) != None )  {
+			if ( !CanHurtThisProjectile( Projectile(Victim) ) )
+				bIgnoreThisVictim = True;
+		}
 		// BallisticCollision check
-		if ( UM_BallisticCollision(Victim) != None )  {
-			if ( UM_BallisticCollision(Victim).CanBeDamaged() )
-				Victim = Victim.Base;
+		else if ( UM_BallisticCollision(Victim) != None )  {
+			if ( CanHurtThisBallisticCollision( UM_BallisticCollision(Victim) ) )
+				Victim = Victim.Instigator;
 			else
 				bIgnoreThisVictim = True;	// Skip this BallisticCollision
 		}
@@ -408,7 +417,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Dir = Dir / Dist;
 			DamageScale = FMax( (Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)), (1.0 - FMax(0.0, ((Dist - Victim.CollisionRadius) / DamageRadius))) );
 			if ( Pawn(Victim) != None )  {
-				if ( CanHurtPawn(Pawn(Victim)) )  {
+				if ( CanHurtThisPawn(Pawn(Victim)) )  {
 					// Extended FastTraces from bones Locations
 					/*
 					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )

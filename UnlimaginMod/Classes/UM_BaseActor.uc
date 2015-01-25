@@ -23,6 +23,7 @@ class UM_BaseActor extends Actor
 
 // Constants
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+const	bTestBuild = True; // Unlocking dlc weapons and other stuff for testing
 
 // Read http://udn.epicgames.com/Two/ActorFunctions.html#PlayAnim for more info
 struct	AnimData

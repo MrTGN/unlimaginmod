@@ -23,12 +23,12 @@ state ZombieHunt
 		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
 		{
 			// 25% chance of first player to see this Gorefast saying something
-			if ( UnlimaginGameType(Level.Game) != None )
+			if ( UM_InvasionGame(Level.Game) != None )
 			{
-				if ( !UnlimaginGameType(Level.Game).bDidSpottedGorefastMessage && FRand() < 0.25 )
+				if ( !UM_InvasionGame(Level.Game).bDidSpottedGorefastMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 13, "");
-					UnlimaginGameType(Level.Game).bDidSpottedGorefastMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedGorefastMessage = true;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )

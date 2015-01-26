@@ -1,18 +1,22 @@
-//================================================================================
-//	Package:		 UnlimaginMod
-//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UnlimaginGameType
-//	Parent class:	 KFGameType
-//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
-//
-//	Also some parts of the code with some changes copied from: 
-//	Killing Floor Source - Copyright © 2009-2013 Tripwire Interactive, LLC 
-//	Unreal Tournament 2004 Source - Copyright © 2004-2013 Epic Games, Inc.
-//––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Creation date:	 06.10.2012 13:12
-//================================================================================
-class UnlimaginGameType extends KFGameType
+/*==================================================================================
+	Package:		 UnlimaginMod
+	Class name:		 UM_InvasionGame
+	Creation date:	 06.10.2012 13:12
+----------------------------------------------------------------------------------
+	Copyright © 2012 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+
+	May contain some parts of the code from: 
+	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
+	Unreal Tournament 2004 Source, Copyright © 2004-2014 Epic Games, Inc.
+
+	This program is free software; you can redistribute and/or modify
+	it under the terms of the Open Unreal Mod License version 1.1.
+----------------------------------------------------------------------------------
+	GitHub:			 github.com/unlimagin/unlimaginmod
+----------------------------------------------------------------------------------
+	Comment:		 
+==================================================================================*/
+class UM_InvasionGame extends KFGameType
 	config;
 
 #exec OBJ LOAD FILE=KillingFloorTextures.utx
@@ -56,24 +60,25 @@ var		int								UM_TimeBetweenWaves;
 var		int								MaxHumanPlayers;
 
 // GameWaves
-struct WaveData
+struct GameWaveData
 {
 	var	int		MinMonsters;
 	var	int		MaxMonsters;
+	var	int		MinMonstersAtOnce;
 	var	int		MaxMonstersAtOnce;
-	var	int		MonstersPerPlayer;
-	var	float	MonstersSpawnDelay;
+	var	int		MinMonsterSquad;
+	var	int		MaxMonsterSquad;
+	var	range	SquadsSpawnPeriod;
 	var	float	WaveDifficulty;
+	var	range	BreakTime;
 };
-var		array<WaveData>					GameWaves;
+var		array<GameWaveData>				GameWaves;
 
 // WaveMonsters
 struct WaveMonsterData
 {
 	var	string				MonsterClassName;
 	var	class<UM_Monster>	MonsterClass;
-	//var	int					MinWave;
-	//var	int					MaxWave;
 	var	array<int>			WaveLimits;	// -1 no limit at all
 	var	array<float>		WaveSpawnChances;
 	var	array<float>		WaveSpawnDelays;
@@ -105,8 +110,8 @@ struct DramaticKillData
 var		array<DramaticKillData>			DramaticKills;
 
 // Will be config string at release version
-var		string							GameTypeProfileClassName;
-var		class<UM_GameTypeProfile>		GameTypeProfileClass;
+var		string							GameSettingsProfileClassName;
+var		class<UM_GameSettingsProfile>	GameSettingsProfileClass;
 
 var		float							DefaultGameSpeed;
 
@@ -243,106 +248,118 @@ function LoadGameTypeProfile()
 {
 	local	int		i, j;
 	
-	if ( GameTypeProfileClassName != "" )
-		GameTypeProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameTypeProfileClassName) );
+	if ( GameSettingsProfileClassName != "" )
+		GameSettingsProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
 	else  {
-		Warn("GameTypeProfileClassName not specified!", Class.Outer.Name);
-		GameTypeProfileClassName = "UnlimaginMod.UM_DefaultGameProfile";
-		GameTypeProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameTypeProfileClassName) );
+		Warn("GameSettingsProfileClassName not specified!", Class.Outer.Name);
+		GameSettingsProfileClassName = "UnlimaginMod.UM_DefaultInvasionGameProfile";
+		GameSettingsProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
 	}
 	
-	if ( GameTypeProfileClass == None )  {
-		Warn("GameTypeProfileClass wasn't found!", Class.Outer.Name);
+	if ( GameSettingsProfileClass == None )  {
+		Warn("GameSettingsProfileClass wasn't found!", Class.Outer.Name);
 		Return;
 	}
 	
 	// DramaticKills
-	default.DramaticKills.Length = GameTypeProfileClass.default.DramaticKills.Length;
+	default.DramaticKills.Length = GameSettingsProfileClass.default.DramaticKills.Length;
 	DramaticKills.Length = default.DramaticKills.Length;
-	for ( i = 0; i < GameTypeProfileClass.default.DramaticKills.Length; ++i )  {
+	for ( i = 0; i < GameSettingsProfileClass.default.DramaticKills.Length; ++i )  {
 		// MinKilled
-		default.DramaticKills[i].MinKilled = GameTypeProfileClass.default.DramaticKills[i].MinKilled;
+		default.DramaticKills[i].MinKilled = GameSettingsProfileClass.default.DramaticKills[i].MinKilled;
 		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
 		// EventChance
-		default.DramaticKills[i].EventChance = GameTypeProfileClass.default.DramaticKills[i].EventChance;
+		default.DramaticKills[i].EventChance = GameSettingsProfileClass.default.DramaticKills[i].EventChance;
 		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
 		// EventDuration
-		default.DramaticKills[i].EventDuration = GameTypeProfileClass.default.DramaticKills[i].EventDuration;
+		default.DramaticKills[i].EventDuration = GameSettingsProfileClass.default.DramaticKills[i].EventDuration;
 		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
 	}
 	
 	// WaveMonsters
-	default.WaveMonsters.Length = GameTypeProfileClass.default.WaveMonsters.Length;
+	default.WaveMonsters.Length = GameSettingsProfileClass.default.WaveMonsters.Length;
 	WaveMonsters.Length = default.WaveMonsters.Length;
-	for ( i = 0; i < GameTypeProfileClass.default.WaveMonsters.Length; ++i )  {
+	for ( i = 0; i < GameSettingsProfileClass.default.WaveMonsters.Length; ++i )  {
 		// MonsterClassName
-		default.WaveMonsters[i].MonsterClassName = GameTypeProfileClass.default.WaveMonsters[i].MonsterClassName;
+		default.WaveMonsters[i].MonsterClassName = GameSettingsProfileClass.default.WaveMonsters[i].MonsterClassName;
 		WaveMonsters[i].MonsterClassName = default.WaveMonsters[i].MonsterClassName;
 		// WaveLimits
-		default.WaveMonsters[i].WaveLimits.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveLimits.Length;
+		default.WaveMonsters[i].WaveLimits.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits.Length;
 		WaveMonsters[i].WaveLimits.Length = default.WaveMonsters[i].WaveLimits.Length;
-		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveLimits.Length; ++j )  {
-			default.WaveMonsters[i].WaveLimits[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveLimits[j];
+		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits.Length; ++j )  {
+			default.WaveMonsters[i].WaveLimits[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits[j];
 			WaveMonsters[i].WaveLimits[j] = default.WaveMonsters[i].WaveLimits[j];
 		}
 		// WaveSpawnChances
-		default.WaveMonsters[i].WaveSpawnChances.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length;
+		default.WaveMonsters[i].WaveSpawnChances.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length;
 		WaveMonsters[i].WaveSpawnChances.Length = default.WaveMonsters[i].WaveSpawnChances.Length;
-		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length; ++j )  {
-			default.WaveMonsters[i].WaveSpawnChances[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnChances[j];
+		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnChances[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances[j];
 			WaveMonsters[i].WaveSpawnChances[j] = default.WaveMonsters[i].WaveSpawnChances[j];
 		}
 		// WaveSpawnDelays
-		default.WaveMonsters[i].WaveSpawnDelays.Length = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length;
+		default.WaveMonsters[i].WaveSpawnDelays.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length;
 		WaveMonsters[i].WaveSpawnDelays.Length = default.WaveMonsters[i].WaveSpawnDelays.Length;
-		for ( j = 0; j < GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )  {
-			default.WaveMonsters[i].WaveSpawnDelays[j] = GameTypeProfileClass.default.WaveMonsters[i].WaveSpawnDelays[j];
+		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnDelays[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays[j];
 			WaveMonsters[i].WaveSpawnDelays[j] = default.WaveMonsters[i].WaveSpawnDelays[j];
 		}
 	}
 	
 	// GameWaves
-	default.GameWaves.Length = GameTypeProfileClass.default.GameWaves.Length;
+	default.GameWaves.Length = GameSettingsProfileClass.default.GameWaves.Length;
 	GameWaves.Length = default.GameWaves.Length;
-	for ( i = 0; i < GameTypeProfileClass.default.GameWaves.Length; ++i )  {
+	for ( i = 0; i < GameSettingsProfileClass.default.GameWaves.Length; ++i )  {
 		// MinMonsters
-		default.GameWaves[i].MinMonsters = GameTypeProfileClass.default.GameWaves[i].MinMonsters;
+		default.GameWaves[i].MinMonsters = GameSettingsProfileClass.default.GameWaves[i].MinMonsters;
 		GameWaves[i].MinMonsters = default.GameWaves[i].MinMonsters;
 		// MaxMonsters
-		default.GameWaves[i].MaxMonsters = GameTypeProfileClass.default.GameWaves[i].MaxMonsters;
+		default.GameWaves[i].MaxMonsters = GameSettingsProfileClass.default.GameWaves[i].MaxMonsters;
 		GameWaves[i].MaxMonsters = default.GameWaves[i].MaxMonsters;
+		// MinMonstersAtOnce
+		default.GameWaves[i].MinMonstersAtOnce = GameSettingsProfileClass.default.GameWaves[i].MinMonstersAtOnce;
+		GameWaves[i].MinMonstersAtOnce = default.GameWaves[i].MinMonstersAtOnce;
 		// MaxMonstersAtOnce
-		default.GameWaves[i].MaxMonstersAtOnce = GameTypeProfileClass.default.GameWaves[i].MaxMonstersAtOnce;
+		default.GameWaves[i].MaxMonstersAtOnce = GameSettingsProfileClass.default.GameWaves[i].MaxMonstersAtOnce;
 		GameWaves[i].MaxMonstersAtOnce = default.GameWaves[i].MaxMonstersAtOnce;
-		// MonstersPerPlayer
-		default.GameWaves[i].MonstersPerPlayer = GameTypeProfileClass.default.GameWaves[i].MonstersPerPlayer;
-		GameWaves[i].MonstersPerPlayer = default.GameWaves[i].MonstersPerPlayer;
+		// MinMonsterSquad
+		default.GameWaves[i].MinMonsterSquad = GameSettingsProfileClass.default.GameWaves[i].MinMonsterSquad;
+		GameWaves[i].MinMonsterSquad = default.GameWaves[i].MinMonsterSquad;
+		// MaxMonsterSquad
+		default.GameWaves[i].MaxMonsterSquad = GameSettingsProfileClass.default.GameWaves[i].MaxMonsterSquad;
+		GameWaves[i].MaxMonsterSquad = default.GameWaves[i].MaxMonsterSquad;
+		// SquadsSpawnPeriod
+		default.GameWaves[i].SquadsSpawnPeriod = GameSettingsProfileClass.default.GameWaves[i].SquadsSpawnPeriod;
+		GameWaves[i].SquadsSpawnPeriod = default.GameWaves[i].SquadsSpawnPeriod;
 		// WaveDifficulty
-		default.GameWaves[i].WaveDifficulty = GameTypeProfileClass.default.GameWaves[i].WaveDifficulty;
+		default.GameWaves[i].WaveDifficulty = GameSettingsProfileClass.default.GameWaves[i].WaveDifficulty;
 		GameWaves[i].WaveDifficulty = default.GameWaves[i].WaveDifficulty;
+		// BreakTime
+		default.GameWaves[i].BreakTime = GameSettingsProfileClass.default.GameWaves[i].BreakTime;
+		GameWaves[i].BreakTime = default.GameWaves[i].BreakTime;
 	}
 	
 	// BossMonsterClassName
-	default.BossMonsterClassName = GameTypeProfileClass.default.BossMonsterClassName;
+	default.BossMonsterClassName = GameSettingsProfileClass.default.BossMonsterClassName;
 	BossMonsterClassName = default.BossMonsterClassName;
 	
 	// BossWaveMonsters
-	default.BossWaveMonsters.Length = GameTypeProfileClass.default.BossWaveMonsters.Length;
+	default.BossWaveMonsters.Length = GameSettingsProfileClass.default.BossWaveMonsters.Length;
 	BossWaveMonsters.Length = default.BossWaveMonsters.Length;
-	for ( i = 0; i < GameTypeProfileClass.default.BossWaveMonsters.Length; ++i )  {
+	for ( i = 0; i < GameSettingsProfileClass.default.BossWaveMonsters.Length; ++i )  {
 		// MonsterClassName
-		default.BossWaveMonsters[i].MonsterClassName = GameTypeProfileClass.default.BossWaveMonsters[i].MonsterClassName;
+		default.BossWaveMonsters[i].MonsterClassName = GameSettingsProfileClass.default.BossWaveMonsters[i].MonsterClassName;
 		BossWaveMonsters[i].MonsterClassName = default.BossWaveMonsters[i].MonsterClassName;
 		// WaveLimit
-		default.BossWaveMonsters[i].WaveLimit = GameTypeProfileClass.default.BossWaveMonsters[i].WaveLimit;
+		default.BossWaveMonsters[i].WaveLimit = GameSettingsProfileClass.default.BossWaveMonsters[i].WaveLimit;
 		BossWaveMonsters[i].WaveLimit = default.BossWaveMonsters[i].WaveLimit;
 		// WaveSpawnChance
-		default.BossWaveMonsters[i].WaveSpawnChance = GameTypeProfileClass.default.BossWaveMonsters[i].WaveSpawnChance;
+		default.BossWaveMonsters[i].WaveSpawnChance = GameSettingsProfileClass.default.BossWaveMonsters[i].WaveSpawnChance;
 		BossWaveMonsters[i].WaveSpawnChance = default.BossWaveMonsters[i].WaveSpawnChance;
 	}
 	
 	// MaxHumanPlayers
-	default.MaxHumanPlayers = GameTypeProfileClass.default.MaxHumanPlayers;
+	default.MaxHumanPlayers = GameSettingsProfileClass.default.MaxHumanPlayers;
 	MaxHumanPlayers = default.MaxHumanPlayers;
 	
 	Log("-------- GameTypeProfile Loaded --------", Class.Outer.Name);
@@ -722,7 +739,7 @@ function ModifyMonsterListByDifficulty()
 	// scale Monster WaveLimits by difficulty
 	for ( i = 0; i < WaveMonsters.Length; ++i )  {
 		for ( j = 0; j < WaveMonsters[i].WaveLimits.Length; ++j )
-			WaveMonsters[i].WaveLimits[j] *= DifficultyMod;
+			WaveMonsters[i].WaveLimits[j] = Round( float(WaveMonsters[i].WaveLimits[j]) * DifficultyMod );
 	}
 }
 
@@ -739,12 +756,14 @@ function ModifyMonsterListByNumPlayers()
 			Break;
 		
 		case 3:
+			NumPlayersMod = 2.75;
+			Break;
+		
 		case 4:
-			NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers - 2) * 0.25;
+			NumPlayersMod = 3.5;
 			Break;
 		
 		case 5:
-			//NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers - 1) * 0.25;
 			NumPlayersMod = 4.0;
 			Break;
 		
@@ -752,13 +771,14 @@ function ModifyMonsterListByNumPlayers()
 			NumPlayersMod = float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
 	}
 	
-	// scale Monster WaveLimits by difficulty
+	// scale Monster WaveLimits by number of Players
 	for ( i = 0; i < WaveMonsters.Length; ++i )  {
 		for ( j = 0; j < WaveMonsters[i].WaveLimits.Length; ++j )
-			WaveMonsters[i].WaveLimits[j] *= DifficultyMod;
+			WaveMonsters[i].WaveLimits[j] = Round( float(WaveMonsters[i].WaveLimits[j]) * NumPlayersMod );
 	}
 }
 
+//ToDo: issue #42
 function SetupWave()
 {
 	local int i,j;
@@ -2020,7 +2040,7 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
-     GameTypeProfileClassName="UnlimaginMod.UM_DefaultGameProfile"
+     GameSettingsProfileClassName="UnlimaginMod.UM_DefaultInvasionGameProfile"
 	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
 	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
 	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=3.5)
@@ -2203,7 +2223,5 @@ defaultproperties
 	 DefaultLevelRulesClass=Class'UnlimaginMod.UM_SRGameRules'
 	 GameReplicationInfoClass=Class'UnlimaginMod.UM_GameReplicationInfo'
 	 
-     UM_MaximumPlayers=12
-	  
-     GameName="Unlimagin Mod"
+     GameName="Unlimagin Mod Wave Game"
 }

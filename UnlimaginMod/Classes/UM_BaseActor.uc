@@ -62,7 +62,7 @@ struct	SoundData
 
 simulated static final function int GetRandInt( int MinI, int MaxI )
 {
-	Return	Min( (MinI + Round(float(MaxI - MinI) * FRand())), MaxI );
+	Return	MinI + Round(float(MaxI - MinI) * FRand());
 }
 
 simulated static final function float GetRandFloat( float MinF, float MaxF )

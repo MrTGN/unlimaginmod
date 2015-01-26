@@ -23,12 +23,12 @@ state ZombieHunt
 		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
 		{
 			// 25% chance of first player to see this Siren saying something
-			if ( UnlimaginGameType(Level.Game) != None )
+			if ( UM_InvasionGame(Level.Game) != None )
 			{
-				if ( !UnlimaginGameType(Level.Game).bDidSpottedSirenMessage && FRand() < 0.25 )
+				if ( !UM_InvasionGame(Level.Game).bDidSpottedSirenMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 15, "");
-					UnlimaginGameType(Level.Game).bDidSpottedSirenMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedSirenMessage = true;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )

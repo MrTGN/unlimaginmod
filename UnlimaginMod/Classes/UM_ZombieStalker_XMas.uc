@@ -120,14 +120,14 @@ simulated function UnCloakStalker()
 		Visibility = default.Visibility;
 		bCloaked = false;
 
-		if ( UnlimaginGameType(Level.Game) != None )
+		if ( UM_InvasionGame(Level.Game) != None )
 		{
 			// 25% chance of our Enemy saying something about us being invisible
-			if( Level.NetMode!=NM_Client && !UnlimaginGameType(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=none &&
+			if( Level.NetMode!=NM_Client && !UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=none &&
 			 PlayerController(Controller.Enemy.Controller)!=none )
 			{
 				PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
-				UnlimaginGameType(Level.Game).bDidStalkerInvisibleMessage = true;
+				UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage = true;
 			}
 		}
 		else if ( KFGameType(Level.Game) != None )

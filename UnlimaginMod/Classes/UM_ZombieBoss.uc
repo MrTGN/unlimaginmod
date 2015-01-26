@@ -1034,8 +1034,8 @@ Begin:
     	CloakBoss();
     	PlaySound(sound'KF_EnemiesFinalSnd.Patriarch.Kev_SaveMe', SLOT_Misc, 2.0,,500.0);
     	
-		if ( UnlimaginGameType(Level.Game) != None && UnlimaginGameType(Level.Game).FinalSquadNum == SyringeCount )
-			UnlimaginGameType(Level.Game).AddBossBuddySquad();
+		if ( UM_InvasionGame(Level.Game) != None && UM_InvasionGame(Level.Game).FinalSquadNum == SyringeCount )
+			UM_InvasionGame(Level.Game).AddBossBuddySquad();
 		else if( KFGameType(Level.Game) != None && KFGameType(Level.Game).FinalSquadNum == SyringeCount )
     	   KFGameType(Level.Game).AddBossBuddySquad();
 

@@ -1129,8 +1129,8 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 		Super(Skaarj).TakeDamage(Damage, instigatedBy, hitLocation, momentum, damageType);
 
 	if ( bIsHeadShot && Health <= 0 )  {
-		if ( UnlimaginGameType(Level.Game) != None )
-			UnlimaginGameType(Level.Game).DramaticEvent(0.03);
+		if ( UM_InvasionGame(Level.Game) != None )
+			UM_InvasionGame(Level.Game).DramaticEvent(0.03);
 		else if ( KFGameType(Level.Game) != None )
 			KFGameType(Level.Game).DramaticEvent(0.03);
 	}

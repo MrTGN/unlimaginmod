@@ -22,7 +22,7 @@ Class UnlimaginMutator extends Mutator
 //========================================================================
 //[block] Variables
 
-const		UnlimaginModVersion = "0.001a";
+const		UnlimaginModVersion = "0.114";
 //const		UnlimaginModBuildDate = ;
 
 struct ReplacedPickupData
@@ -262,7 +262,7 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 	local	int		i;
 	
 	// Check for the ReplacedPickups
-	if ( Other != None && Class<Pickup>(Other.Class) != None )  {
+	if ( Pickup(Other) != None )  {
 		for ( i = 0; i < ReplacedPickups.Length; ++i )  {
 			if ( ReplacedPickups[i].DefaultClass != '' && Other.IsA(ReplacedPickups[i].DefaultClass) )  {
 				ReplaceWith( Other, ReplacedPickups[i].ReplaceByClass );

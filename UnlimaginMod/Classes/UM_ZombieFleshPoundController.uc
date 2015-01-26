@@ -26,12 +26,12 @@ state ZombieHunt
 		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
 		{
 			// 25% chance of first player to see this Fleshpound saying something
-			if ( UnlimaginGameType(Level.Game) != None )
+			if ( UM_InvasionGame(Level.Game) != None )
 			{
-				if ( !UnlimaginGameType(Level.Game).bDidSpottedFleshpoundMessage && FRand() < 0.25 )
+				if ( !UM_InvasionGame(Level.Game).bDidSpottedFleshpoundMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 12, "");
-					UnlimaginGameType(Level.Game).bDidSpottedFleshpoundMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedFleshpoundMessage = true;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )

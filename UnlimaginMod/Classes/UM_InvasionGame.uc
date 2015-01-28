@@ -16,7 +16,8 @@
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
-class UM_InvasionGame extends KFGameType
+class UM_InvasionGame extends UM_BaseGameType
+	DependsOn(UM_BaseActor)
 	config;
 
 #exec OBJ LOAD FILE=KillingFloorTextures.utx
@@ -52,77 +53,51 @@ class UM_InvasionGame extends KFGameType
 //========================================================================
 //[block] Variables
 
-// Constants
-const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-
 var		int								UM_TimeBetweenWaves;
-
-var		int								MaxHumanPlayers;
 
 // GameWaves
 struct GameWaveData
 {
-	var	int		MinMonsters;
-	var	int		MaxMonsters;
-	var	int		MinMonstersAtOnce;
-	var	int		MaxMonstersAtOnce;
-	var	int		MinMonsterSquad;
-	var	int		MaxMonsterSquad;
-	var	range	SquadsSpawnPeriod;
-	var	float	WaveDifficulty;
-	var	range	BreakTime;
+	var()	config	int					MinMonsters;
+	var()	config	int					MaxMonsters;
+	var()	config	UM_BaseActor.IRange	MonstersAtOnce;
+	var()	config	UM_BaseActor.IRange	MonsterSquadSize;
+	var()	config	range				SquadsSpawnPeriod;
+	var()	config	float				WaveDifficulty;
+	var()	config	range				BreakTime;
 };
 var		array<GameWaveData>				GameWaves;
 
 // WaveMonsters
 struct WaveMonsterData
 {
-	var	string				MonsterClassName;
-	var	class<UM_Monster>	MonsterClass;
-	var	array<int>			WaveLimits;	// -1 no limit at all
-	var	array<float>		WaveSpawnChances;
-	var	array<float>		WaveSpawnDelays;
-	var	transient	float	NextSpawnTime;
+	var()	config	string				MonsterClassName;
+	var()	config	class<UM_Monster>	MonsterClass;
+	var()	config	array<int>			WaveMinLimits;	// -1 no limit at all
+	var()	config	array<int>			WaveMaxLimits;	// -1 no limit at all
+	var		transient	int				CurrentWaveLimit;
+	var()	config	array<float>		WaveSpawnChances;
+	var()	config	array<float>		WaveSpawnDelays;
+	var		transient	float			NextSpawnTime;
 };
 var		array<WaveMonsterData>			WaveMonsters;
 
 // BossWaveMonsters
 struct BossWaveMonsterData
 {
-	var	string				MonsterClassName;
-	var	class<UM_Monster>	MonsterClass;
-	var	int					WaveLimit;
-	var	float				WaveSpawnChance;
+	var()	config	string				MonsterClassName;
+	var()	config	class<UM_Monster>	MonsterClass;
+	var()	config	int					WaveLimit;
+	var()	config	float				WaveSpawnChance;
 };
 var		array<BossWaveMonsterData>		BossWaveMonsters;
 // BossMonsterClass
 var		string							BossMonsterClassName;
 var		class<UM_Monster>				BossMonsterClass;
 
-
-// Do slomo event when was killed a specified number of victims
-struct DramaticKillData
-{
-	var	int		MinKilled;
-	var	float	EventChance;
-	var	float	EventDuration;
-};
-var		array<DramaticKillData>			DramaticKills;
-
-// Will be config string at release version
-var		string							GameSettingsProfileClassName;
-var		class<UM_GameSettingsProfile>	GameSettingsProfileClass;
-
-var		float							DefaultGameSpeed;
-
 var		Class<UM_ActorPool>				ActorPoolClass;
 
 var		class<KFMonstersCollection>		UM_MonsterCollection;
-var		Class<KFLevelRules>				DefaultLevelRulesClass;
-var		string							UM_LoginMenuClass;
-
-var		float							ExitZedTime;
-var		float							BotAtHumanFriendlyFireScale;
 
 //[end] Varibles
 //====================================================================
@@ -136,240 +111,112 @@ var		float							BotAtHumanFriendlyFireScale;
 //========================================================================
 //[block] Functions
 
-event PreBeginPlay()
-{
-	Super(Invasion).PreBeginPlay();
-
-	KFGameReplicationInfo(GameReplicationInfo).bNoBots = bNoBots;
-	KFGameReplicationInfo(GameReplicationInfo).PendingBots = 0;
-	KFGameReplicationInfo(GameReplicationInfo).GameDiff = GameDifficulty;
-	KFGameReplicationInfo(GameReplicationInfo).bEnemyHealthBars = bEnemyHealthBars;
-
-	HintTime_1 = 99999999.00;
-	HintTime_2 = 99999999.00;
-
-	bShowHint_2 = true;
-	bShowHint_3 = true;
-}
-
-function bool AllowGameSpeedChange()
-{
-	if ( Level.NetMode == NM_Standalone )
-		Return True;
-	
-	Return bAllowMPGameSpeed;
-}
-
-// Set gameplay speed.
-function SetGameSpeed( float T )
-{
-    local	float	OldSpeed;
-
-    if ( AllowGameSpeedChange() )  {
-        OldSpeed = GameSpeed;
-        GameSpeed = FMax(T, 0.1);
-        Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
-        if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
-            default.GameSpeed = GameSpeed;
-            class'GameInfo'.static.StaticSaveConfig();
-        }
-    }
-	else  {
-		Level.TimeDilation = Level.default.TimeDilation;
-        GameSpeed = 1.0;
-        default.GameSpeed = GameSpeed;
-	}
-	
-    SetTimer((Level.TimeDilation / GameSpeed), True);
-}
-
-// Called when a dramatic event happens that might cause slomo
-// BaseZedTimePossibility - the attempted probability of doing a slomo event
-function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedTimeDuration )
-{
-	local	float		TimeSinceLastEvent;
-	local	Controller	C;
-
-	TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
-	if ( BaseZedTimePossibility < 1.0 )  {
-		// Don't go in slomo if we were just IN slomo
-		if ( TimeSinceLastEvent < 10.0 )
-			Return;
-		
-		// More than a minute ago
-		if ( TimeSinceLastEvent > 60.0 )
-			BaseZedTimePossibility *= 4.0;
-		// More than a half-minute ago
-		else if( TimeSinceLastEvent > 30.0 )
-			BaseZedTimePossibility *= 2.0;
-	}
-	
-	// if we getting a chance for slomo event
-	if ( FRand() <= BaseZedTimePossibility )  {
-		bZEDTimeActive = True;
-		bSpeedingBackUp = False;
-		LastZedTimeEvent = Level.TimeSeconds;
-		
-		if ( DesiredZedTimeDuration > 0.0 )
-			CurrentZEDTimeDuration = DesiredZedTimeDuration;
-		else
-			CurrentZEDTimeDuration = ZEDTimeDuration;
-
-		SetGameSpeed(ZedTimeSlomoScale);
-
-		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
-			// ZedTime Clien Notify
-			if ( KFPlayerController(C) != None )
-				KFPlayerController(C).ClientEnterZedTime();
-			// ZedTime Stat
-			if ( C.PlayerReplicationInfo != None && KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements) != None )
-				KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements).AddZedTime(ZEDTimeDuration);
-		}
-	}
-}
-
-function CheckForDramaticKill( int NumKilled )
-{
-	local	int		i;
-	
-	// Minimal number of killed
-	if ( NumKilled < 2 )
-		Return;
-	
-	for ( i = DramaticKills.Length - 1; i >= 0; --i )  {
-		if ( NumKilled >= DramaticKills[i].MinKilled )  {
-			DramaticEvent( DramaticKills[i].EventChance, DramaticKills[i].EventDuration );
-			Return;
-		}
-	}
-}
-
-function LoadGameTypeProfile()
+protected function bool LoadGameSettingsProfile()
 {
 	local	int		i, j;
+	local	class<UM_DefaultInvasionGameProfile>	IGP;
 	
-	if ( GameSettingsProfileClassName != "" )
-		GameSettingsProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
-	else  {
-		Warn("GameSettingsProfileClassName not specified!", Class.Outer.Name);
-		GameSettingsProfileClassName = "UnlimaginMod.UM_DefaultInvasionGameProfile";
-		GameSettingsProfileClass = Class<UM_GameTypeProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
-	}
+	if ( !Super.LoadGameSettingsProfile() )
+		Return False;
 	
-	if ( GameSettingsProfileClass == None )  {
-		Warn("GameSettingsProfileClass wasn't found!", Class.Outer.Name);
-		Return;
-	}
-	
-	// DramaticKills
-	default.DramaticKills.Length = GameSettingsProfileClass.default.DramaticKills.Length;
-	DramaticKills.Length = default.DramaticKills.Length;
-	for ( i = 0; i < GameSettingsProfileClass.default.DramaticKills.Length; ++i )  {
-		// MinKilled
-		default.DramaticKills[i].MinKilled = GameSettingsProfileClass.default.DramaticKills[i].MinKilled;
-		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
-		// EventChance
-		default.DramaticKills[i].EventChance = GameSettingsProfileClass.default.DramaticKills[i].EventChance;
-		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
-		// EventDuration
-		default.DramaticKills[i].EventDuration = GameSettingsProfileClass.default.DramaticKills[i].EventDuration;
-		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
-	}
+	IGP = class<UM_DefaultInvasionGameProfile>(GameSettingsProfileClass);
+	if ( IGP == None )
+		Return False;
 	
 	// WaveMonsters
-	default.WaveMonsters.Length = GameSettingsProfileClass.default.WaveMonsters.Length;
+	default.WaveMonsters.Length = IGP.default.WaveMonsters.Length;
 	WaveMonsters.Length = default.WaveMonsters.Length;
-	for ( i = 0; i < GameSettingsProfileClass.default.WaveMonsters.Length; ++i )  {
+	for ( i = 0; i < IGP.default.WaveMonsters.Length; ++i )  {
 		// MonsterClassName
-		default.WaveMonsters[i].MonsterClassName = GameSettingsProfileClass.default.WaveMonsters[i].MonsterClassName;
+		default.WaveMonsters[i].MonsterClassName = IGP.default.WaveMonsters[i].MonsterClassName;
 		WaveMonsters[i].MonsterClassName = default.WaveMonsters[i].MonsterClassName;
 		// WaveLimits
-		default.WaveMonsters[i].WaveLimits.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits.Length;
+		default.WaveMonsters[i].WaveLimits.Length = IGP.default.WaveMonsters[i].WaveLimits.Length;
 		WaveMonsters[i].WaveLimits.Length = default.WaveMonsters[i].WaveLimits.Length;
-		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits.Length; ++j )  {
-			default.WaveMonsters[i].WaveLimits[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveLimits[j];
+		for ( j = 0; j < IGP.default.WaveMonsters[i].WaveLimits.Length; ++j )  {
+			default.WaveMonsters[i].WaveLimits[j] = IGP.default.WaveMonsters[i].WaveLimits[j];
 			WaveMonsters[i].WaveLimits[j] = default.WaveMonsters[i].WaveLimits[j];
 		}
 		// WaveSpawnChances
-		default.WaveMonsters[i].WaveSpawnChances.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length;
+		default.WaveMonsters[i].WaveSpawnChances.Length = IGP.default.WaveMonsters[i].WaveSpawnChances.Length;
 		WaveMonsters[i].WaveSpawnChances.Length = default.WaveMonsters[i].WaveSpawnChances.Length;
-		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances.Length; ++j )  {
-			default.WaveMonsters[i].WaveSpawnChances[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnChances[j];
+		for ( j = 0; j < IGP.default.WaveMonsters[i].WaveSpawnChances.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnChances[j] = IGP.default.WaveMonsters[i].WaveSpawnChances[j];
 			WaveMonsters[i].WaveSpawnChances[j] = default.WaveMonsters[i].WaveSpawnChances[j];
 		}
 		// WaveSpawnDelays
-		default.WaveMonsters[i].WaveSpawnDelays.Length = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length;
+		default.WaveMonsters[i].WaveSpawnDelays.Length = IGP.default.WaveMonsters[i].WaveSpawnDelays.Length;
 		WaveMonsters[i].WaveSpawnDelays.Length = default.WaveMonsters[i].WaveSpawnDelays.Length;
-		for ( j = 0; j < GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )  {
-			default.WaveMonsters[i].WaveSpawnDelays[j] = GameSettingsProfileClass.default.WaveMonsters[i].WaveSpawnDelays[j];
+		for ( j = 0; j < IGP.default.WaveMonsters[i].WaveSpawnDelays.Length; ++j )  {
+			default.WaveMonsters[i].WaveSpawnDelays[j] = IGP.default.WaveMonsters[i].WaveSpawnDelays[j];
 			WaveMonsters[i].WaveSpawnDelays[j] = default.WaveMonsters[i].WaveSpawnDelays[j];
 		}
 	}
 	
 	// GameWaves
-	default.GameWaves.Length = GameSettingsProfileClass.default.GameWaves.Length;
+	default.GameWaves.Length = IGP.default.GameWaves.Length;
 	GameWaves.Length = default.GameWaves.Length;
-	for ( i = 0; i < GameSettingsProfileClass.default.GameWaves.Length; ++i )  {
+	for ( i = 0; i < IGP.default.GameWaves.Length; ++i )  {
 		// MinMonsters
-		default.GameWaves[i].MinMonsters = GameSettingsProfileClass.default.GameWaves[i].MinMonsters;
+		default.GameWaves[i].MinMonsters = IGP.default.GameWaves[i].MinMonsters;
 		GameWaves[i].MinMonsters = default.GameWaves[i].MinMonsters;
 		// MaxMonsters
-		default.GameWaves[i].MaxMonsters = GameSettingsProfileClass.default.GameWaves[i].MaxMonsters;
+		default.GameWaves[i].MaxMonsters = IGP.default.GameWaves[i].MaxMonsters;
 		GameWaves[i].MaxMonsters = default.GameWaves[i].MaxMonsters;
 		// MinMonstersAtOnce
-		default.GameWaves[i].MinMonstersAtOnce = GameSettingsProfileClass.default.GameWaves[i].MinMonstersAtOnce;
+		default.GameWaves[i].MinMonstersAtOnce = IGP.default.GameWaves[i].MinMonstersAtOnce;
 		GameWaves[i].MinMonstersAtOnce = default.GameWaves[i].MinMonstersAtOnce;
 		// MaxMonstersAtOnce
-		default.GameWaves[i].MaxMonstersAtOnce = GameSettingsProfileClass.default.GameWaves[i].MaxMonstersAtOnce;
+		default.GameWaves[i].MaxMonstersAtOnce = IGP.default.GameWaves[i].MaxMonstersAtOnce;
 		GameWaves[i].MaxMonstersAtOnce = default.GameWaves[i].MaxMonstersAtOnce;
 		// MinMonsterSquad
-		default.GameWaves[i].MinMonsterSquad = GameSettingsProfileClass.default.GameWaves[i].MinMonsterSquad;
+		default.GameWaves[i].MinMonsterSquad = IGP.default.GameWaves[i].MinMonsterSquad;
 		GameWaves[i].MinMonsterSquad = default.GameWaves[i].MinMonsterSquad;
 		// MaxMonsterSquad
-		default.GameWaves[i].MaxMonsterSquad = GameSettingsProfileClass.default.GameWaves[i].MaxMonsterSquad;
+		default.GameWaves[i].MaxMonsterSquad = IGP.default.GameWaves[i].MaxMonsterSquad;
 		GameWaves[i].MaxMonsterSquad = default.GameWaves[i].MaxMonsterSquad;
 		// SquadsSpawnPeriod
-		default.GameWaves[i].SquadsSpawnPeriod = GameSettingsProfileClass.default.GameWaves[i].SquadsSpawnPeriod;
+		default.GameWaves[i].SquadsSpawnPeriod = IGP.default.GameWaves[i].SquadsSpawnPeriod;
 		GameWaves[i].SquadsSpawnPeriod = default.GameWaves[i].SquadsSpawnPeriod;
 		// WaveDifficulty
-		default.GameWaves[i].WaveDifficulty = GameSettingsProfileClass.default.GameWaves[i].WaveDifficulty;
+		default.GameWaves[i].WaveDifficulty = IGP.default.GameWaves[i].WaveDifficulty;
 		GameWaves[i].WaveDifficulty = default.GameWaves[i].WaveDifficulty;
 		// BreakTime
-		default.GameWaves[i].BreakTime = GameSettingsProfileClass.default.GameWaves[i].BreakTime;
+		default.GameWaves[i].BreakTime = IGP.default.GameWaves[i].BreakTime;
 		GameWaves[i].BreakTime = default.GameWaves[i].BreakTime;
 	}
 	
 	// BossMonsterClassName
-	default.BossMonsterClassName = GameSettingsProfileClass.default.BossMonsterClassName;
+	default.BossMonsterClassName = IGP.default.BossMonsterClassName;
 	BossMonsterClassName = default.BossMonsterClassName;
 	
 	// BossWaveMonsters
-	default.BossWaveMonsters.Length = GameSettingsProfileClass.default.BossWaveMonsters.Length;
+	default.BossWaveMonsters.Length = IGP.default.BossWaveMonsters.Length;
 	BossWaveMonsters.Length = default.BossWaveMonsters.Length;
-	for ( i = 0; i < GameSettingsProfileClass.default.BossWaveMonsters.Length; ++i )  {
+	for ( i = 0; i < IGP.default.BossWaveMonsters.Length; ++i )  {
 		// MonsterClassName
-		default.BossWaveMonsters[i].MonsterClassName = GameSettingsProfileClass.default.BossWaveMonsters[i].MonsterClassName;
+		default.BossWaveMonsters[i].MonsterClassName = IGP.default.BossWaveMonsters[i].MonsterClassName;
 		BossWaveMonsters[i].MonsterClassName = default.BossWaveMonsters[i].MonsterClassName;
 		// WaveLimit
-		default.BossWaveMonsters[i].WaveLimit = GameSettingsProfileClass.default.BossWaveMonsters[i].WaveLimit;
+		default.BossWaveMonsters[i].WaveLimit = IGP.default.BossWaveMonsters[i].WaveLimit;
 		BossWaveMonsters[i].WaveLimit = default.BossWaveMonsters[i].WaveLimit;
 		// WaveSpawnChance
-		default.BossWaveMonsters[i].WaveSpawnChance = GameSettingsProfileClass.default.BossWaveMonsters[i].WaveSpawnChance;
+		default.BossWaveMonsters[i].WaveSpawnChance = IGP.default.BossWaveMonsters[i].WaveSpawnChance;
 		BossWaveMonsters[i].WaveSpawnChance = default.BossWaveMonsters[i].WaveSpawnChance;
 	}
 	
-	// MaxHumanPlayers
-	default.MaxHumanPlayers = GameSettingsProfileClass.default.MaxHumanPlayers;
-	MaxHumanPlayers = default.MaxHumanPlayers;
-	
-	Log("-------- GameTypeProfile Loaded --------", Class.Outer.Name);
+	Return True;
+}
+
+protected function LogGameSettingsProfileLoaded()
+{
+	Log("GameSettingsProfile:" @string(GameSettingsProfileClass.default.Name) @"Loaded", Class.Outer.Name);
 }
 
 function LoadUpMonsterList()
 {
 	local	int		i;
 	
-	LoadGameTypeProfile();
 	if ( BossMonsterClassName != "" )
 		BossMonsterClass = Class<UM_Monster>( BaseActor.static.LoadClass(BossMonsterClassName) );
 	else
@@ -409,9 +256,12 @@ event InitGame( string Options, out string Error )
 
 	Super(xTeamGame).InitGame(Options, Error);
 	
+	if ( LoadGameSettingsProfile() )
+		LogGameSettingsProfileLoaded();
+	
 	MaxLives = 1;
 	bForceRespawn = True;
-
+	
 	DefaultGameSpeed = default.GameSpeed;
 	MaxPlayers = Clamp( MaxHumanPlayers, 1, 32);
 	
@@ -509,21 +359,6 @@ function NotifyGameEvent( int EventNumIn )
 simulated function PrepareSpecialSquadsFromCollection() { }
 simulated function PrepareSpecialSquads() { }
 
-exec function SetFriendlyFireScale( float NewFriendlyFireScale )
-{
-	FriendlyFireScale = FClamp(NewFriendlyFireScale, 0.0, 1.0);
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
-		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-	}
-}
-
-// For the GUI buy menu
-simulated function float GetDifficulty()
-{
-	Return GameDifficulty;
-}
-
 function UpdateGameLength()
 {
 	local Controller C;
@@ -531,162 +366,6 @@ function UpdateGameLength()
 	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
 		if ( PlayerController(C) != None && PlayerController(C).SteamStatsAndAchievements != None )
 			PlayerController(C).SteamStatsAndAchievements.bUsedCheats = PlayerController(C).SteamStatsAndAchievements.bUsedCheats || bCustomGameLength;
-	}
-}
-
-function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector HitLocation, out vector Momentum, class<DamageType> DamageType )
-{
-	local	bool		bDamageByWeaponOrVehicle;
-	local	Controller	InjuredController, InstigatorController;
-	local	int			InjuredTeamNum, InstigatorTeamNum;
-	
-	// GodMode check
-	if ( Injured == None || Injured.InGodMode() || Injured.PhysicsVolume.bNeutralZone )  {
-		Momentum = vect(0.0, 0.0, 0.0);
-		Return 0;
-	}
-	
-	InjuredController = Injured.Controller;
-	if ( InstigatedBy != None )
-		InstigatorController = InstigatedBy.Controller;
-	
-	if ( InstigatorController == None )  {
-		InstigatorController = Injured.DelayedDamageInstigatorController;
-		if ( InstigatorController == None )
-			Return Damage; // Nothing to do in this case. Just return a Damage.
-		else
-			InstigatedBy = InstigatorController.Pawn;
-	}
-	
-	// Not a self damaging
-	if ( Injured != InstigatedBy || InjuredController != InstigatorController )  {
-		bDamageByWeaponOrVehicle = (Class<WeaponDamageType>(DamageType) != None || Class<VehicleDamageType>(DamageType) != None);
-		// SpawnProtection
-		if ( bDamageByWeaponOrVehicle && (Level.TimeSeconds - Injured.SpawnTime) < SpawnProtectionTime )  {
-			Momentum = vect(0.0, 0.0, 0.0);
-			Return 0;
-		}
-		
-		if ( InstigatedBy == None )  {
-			InjuredTeamNum = InjuredController.GetTeamNum();
-			InstigatorTeamNum = InstigatorController.GetTeamNum();
-		}
-		else  {
-			InjuredTeamNum = Injured.GetTeamNum();
-			InstigatorTeamNum = InstigatedBy.GetTeamNum();
-		}
-		
-		// Friendly Fire
-		if ( InjuredTeamNum == InstigatorTeamNum )  {
-			/*
-			// GameRulesModifiers
-			if ( FriendlyFireScale <= 0.0 || (Vehicle(Injured) != None && Vehicle(Injured).bNoFriendlyFire) )  {
-				if ( GameRulesModifiers != None )
-					Return GameRulesModifiers.NetDamage( Damage, 0, Injured, InstigatedBy, HitLocation, Momentum, DamageType );
-				else  {
-					Momentum *= 0.0;
-					Return 0;
-				}
-			} */
-			// FriendlyFire is not allowed
-			if ( FriendlyFireScale <= 0.0 )  {
-				Momentum = vect(0.0, 0.0, 0.0);
-				Return 0;
-			}
-			
-			// Injured is a Bot. Yell about friendly fire.
-			if ( Bot(InjuredController) != None && InstigatedBy != None )
-				Bot(InjuredController).YellAt( InstigatedBy );
-			// Human player Controller
-			else if ( PlayerController(InjuredController) != None && InstigatorController != None ) {
-				// AutoTaunt
-				if ( InjuredController.AutoTaunt() )
-					InjuredController.SendMessage(InstigatorController.PlayerReplicationInfo, 'FRIENDLYFIRE', Rand(3), 5, 'TEAM');
-				// Human player is under the friendly Bot fire.
-				if ( KFFriendSoldierController(InstigatorController) != None || KFFriendlyAI(InstigatorController) != None
-							 || FriendlyMonsterController(InstigatorController) != None || FriendlyMonsterAI(InstigatorController) != None )  {
-					Damage *= BotAtHumanFriendlyFireScale;
-					if ( bDamageByWeaponOrVehicle )
-						Momentum *= BotAtHumanFriendlyFireScale;
-				}
-			}
-			Damage *= FriendlyFireScale;
-			if ( bDamageByWeaponOrVehicle )
-				Momentum *= FriendlyFireScale;
-		}
-		// HasFlag
-		else if ( InjuredController != None && !Injured.IsHumanControlled()
-				 && InjuredController.PlayerReplicationInfo != None && InjuredController.PlayerReplicationInfo.HasFlag != None )
-			InjuredController.SendMessage(None, 'OTHER', InjuredController.GetMessageIndex('INJURED'), 15, 'TEAM');
-		
-		// If Injured is a Monster. StatsAndAchievements.
-		if ( Monster(Injured) != None && KFPlayerController(InstigatorController) != None && Class<KFWeaponDamageType>(DamageType) != None )
-			Class<KFWeaponDamageType>(DamageType).static.AwardDamage( KFSteamStatsAndAchievements(KFPlayerController(InstigatorController).SteamStatsAndAchievements), Clamp(Damage, 1, Injured.Health) );
-	}
-	// Half damage caused by self on the StandAlone server
-	else if ( Level.NetMode == NM_StandAlone && GameDifficulty <= 3.0 && Injured.IsPlayerPawn() )
-		Damage *= 0.5;
-	
-	// InvasionBot DamagedMessage
-	if ( InvasionBot(InjuredController) != None )  {
-		if ( !InvasionBot(InjuredController).bDamagedMessage && (Injured.Health - Damage) < 50 )  {
-			InvasionBot(InjuredController).bDamagedMessage = True;
-			if ( FRand() <= 0.5 )
-				InjuredController.SendMessage(None, 'OTHER', 4, 12, 'TEAM');
-			else
-				InjuredController.SendMessage(None, 'OTHER', 13, 12, 'TEAM');
-		}
-	}
-	
-	if ( InstigatedBy != None )  {
-		Momentum *= InstigatedBy.DamageScaling;
-		Return Damage * InstigatedBy.DamageScaling;
-	}
-	else
-		Return Damage;
-}
-
-event Tick( float DeltaTime )
-{
-	local	float		TrueTimeFactor;
-    local	int			Count;
-	local	Controller	C;
-	
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
-		// FriendlyFireScale Replication
-		if ( UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )  {
-			FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0); // FClamp FriendlyFireScale
-			UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-		}
-		// GameDifficulty Replication
-		if ( UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty != GameDifficulty )  {
-			UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
-			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-		}
-	}
-	
-	if ( bZEDTimeActive )  {
-		TrueTimeFactor = Level.default.TimeDilation / Level.TimeDilation;
-		CurrentZEDTimeDuration -= DeltaTime * TrueTimeFactor;
-		if ( CurrentZEDTimeDuration > 0.0 && CurrentZEDTimeDuration < ExitZedTime )  {
-			if ( !bSpeedingBackUp )  {
-				bSpeedingBackUp = True;
-				for ( C = Level.ControllerList; C != None && Count < NumPlayers; C = C.NextController )  {
-					if ( KFPlayerController(C) != None )  {
-						KFPlayerController(C).ClientExitZedTime();
-						++Count;
-					}
-				}
-			}
-			SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
-		}
-		else if ( CurrentZEDTimeDuration <= 0.0 )  {
-			SetGameSpeed(DefaultGameSpeed);
-			bZEDTimeActive = False;
-			bSpeedingBackUp = False;
-			ZedTimeExtensionsUsed = 0;
-		}
 	}
 }
 
@@ -1868,47 +1547,6 @@ State MatchInProgress
 	}
 }
 
-event PostLogin( PlayerController NewPlayer )
-{
-    local int i;
-
-    NewPlayer.SetGRI(GameReplicationInfo);
-    NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
-
-    Super(Invasion).PostLogin(NewPlayer);
-
-    if ( UnrealPlayer(NewPlayer) != None )
-        UnrealPlayer(NewPlayer).ClientReceiveLoginMenu(UM_LoginMenuClass, bAlwaysShowLoginMenu);
-    
-	if ( NewPlayer.PlayerReplicationInfo.Team != None )
-        GameEvent("TeamChange",""$NewPlayer.PlayerReplicationInfo.Team.TeamIndex,NewPlayer.PlayerReplicationInfo);
-
-    // Initialize the listen server hosts's VOIP. Had to add this here since the
-    // Epic code to do this was calling GetLocalPlayerController() in event Login()
-    // which of course will always fail, because the PC's "Player" variable
-    // hasn't been set yet. - Ramm
-    if ( NewPlayer != None && Level.NetMode == NM_ListenServer && 
-		 Level.GetLocalPlayerController() == NewPlayer )
-		NewPlayer.InitializeVoiceChat();
-
-    if ( KFPlayerController(NewPlayer) != None )  {
-        for ( i = 0; i < InstancedWeaponClasses.Length; i++ )  {
-            KFPlayerController(NewPlayer).ClientWeaponSpawned(InstancedWeaponClasses[i], none);
-        }
-    }
-
-    if ( NewPlayer.PlayerReplicationInfo.bOnlySpectator ) // must not be a spectator
-        KFPlayerController(NewPlayer).JoinedAsSpectatorOnly();
-    else
-        NewPlayer.GotoState('PlayerWaiting');
-
-    if ( KFPlayerController(NewPlayer) != None )
-        StartInitGameMusic(KFPlayerController(NewPlayer));
-
-    if ( bCustomGameLength && NewPlayer.SteamStatsAndAchievements != None )
-        NewPlayer.SteamStatsAndAchievements.bUsedCheats = true;
-}
-
 function AddSpecialSquad()
 {
 	AddSpecialSquadFromCollection();
@@ -2212,7 +1850,7 @@ defaultproperties
 	  
      MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 
-	 UM_LoginMenuClass="UnlimaginMod.UM_SRInvasionLoginMenu"
+	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	 DefaultPlayerClassName="UnlimaginMod.UM_HumanPawn"
      ScoreBoardType="UnlimaginMod.UM_SRScoreBoard"
      HUDType="UnlimaginMod.UM_HUDKillingFloor"
@@ -2223,5 +1861,6 @@ defaultproperties
 	 DefaultLevelRulesClass=Class'UnlimaginMod.UM_SRGameRules'
 	 GameReplicationInfoClass=Class'UnlimaginMod.UM_GameReplicationInfo'
 	 
-     GameName="Unlimagin Mod Wave Game"
+     GameName="Unlimagin Monster Invasion"
+	 Description="The premise is simple: you (and, hopefully, your team) have been flown in to 'cleanse' this area of specimens. The only things moving are specimens. They will launch at you in waves. Kill them. All of them. Any and every way you can. We'll even pay you a bounty for it! Between waves, you should be able to find the merc Trader lurking in some safe spot. She'll trade your bounty for ammo, equipment and Bigger Guns. Trust me - you're going to need them! If you can survive all the waves, you'll have to top the so-called Patriarch to finish the job. Don't worry about finding him - HE will come looking for YOU!"
 }

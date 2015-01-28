@@ -456,8 +456,8 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 	}
 
-	if ( UM_InvasionGame(Level.Game) != None )
-		UM_InvasionGame(Level.Game).CheckForDramaticKill( NumKilled );
+	if ( UM_BaseGameType(Level.Game) != None )
+		UM_BaseGameType(Level.Game).CheckForDramaticKill( NumKilled );
 	
 	bHurtEntry = False;
 }

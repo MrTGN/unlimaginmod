@@ -48,6 +48,13 @@ struct	SoundData
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
+// Int Range
+struct IRange
+{
+	var()	config	int		Min;
+	var()	config	int		Max;
+};
+
 //[end] Varibles
 //====================================================================
 
@@ -65,25 +72,30 @@ simulated static final function int GetRandInt( int MinI, int MaxI )
 	Return	MinI + Round(float(MaxI - MinI) * FRand());
 }
 
+simulated static final function int GetRandRangeInt( IRange IR )
+{
+	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
+}
+
 simulated static final function float GetRandFloat( float MinF, float MaxF )
 {
 	Return	MinF + (MaxF - MinF) * FRand();
 }
 
-simulated static final function float GetRandRangeFloat( range RR )
+simulated static final function float GetRandRangeFloat( range FR )
 {
-	Return	RR.Min + (RR.Max - RR.Min) * FRand();
+	Return	FR.Min + (FR.Max - FR.Min) * FRand();
 }
 
 simulated static final function float GetExtraRandRangeFloat( 
-	range 	RR, 
+	range 	FR, 
 	float	ExtraRangeChance,
-	range	ERR )
+	range	EFR )
 {
 	if ( FRand() > ExtraRangeChance )
-		Return	RR.Min + (RR.Max - RR.Min) * FRand();	// Not Extra Range
+		Return	FR.Min + (FR.Max - FR.Min) * FRand();	// Not Extra Range
 	else
-		Return	ERR.Min + (ERR.Max - ERR.Min) * FRand();	// Extra Range
+		Return	EFR.Min + (EFR.Max - EFR.Min) * FRand();	// Extra Range
 }
 
 // RandPitch

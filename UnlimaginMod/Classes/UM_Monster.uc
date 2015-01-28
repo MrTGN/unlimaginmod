@@ -1128,12 +1128,8 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 	else
 		Super(Skaarj).TakeDamage(Damage, instigatedBy, hitLocation, momentum, damageType);
 
-	if ( bIsHeadShot && Health <= 0 )  {
-		if ( UM_InvasionGame(Level.Game) != None )
-			UM_InvasionGame(Level.Game).DramaticEvent(0.03);
-		else if ( KFGameType(Level.Game) != None )
-			KFGameType(Level.Game).DramaticEvent(0.03);
-	}
+	if ( bIsHeadShot && Health < 1 && UM_BaseGameType(Level.Game) != None )
+		UM_BaseGameType(Level.Game).DramaticEvent(0.03);
 
 	bBackstabbed = False;
 }

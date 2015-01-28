@@ -1,5 +1,7 @@
 class UM_PlayerController extends KFPlayerController;
 
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+
 var				bool		bUseAdvBehindview;
 var transient	vector		CamPos;
 var transient	rotator		CamRot;
@@ -14,14 +16,33 @@ replication
 		bUseAdvBehindview;
 }
 
-/*
-simulated event PreBeginPlay()
+function bool SpawnStatObject()
 {
-	if ( Role == ROLE_Authority && SteamStatsAndAchievementsClass == None )
-		SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( DynamicLoadObject(SteamStatsAndAchievementsClassName, Class'Class', True) );
+	if ( Level.NetMode == NM_Client || SteamStatsAndAchievementsClassName == "" )
+		Return False;
 	
-	Super.PreBeginPlay();
-} */
+	if ( SteamStatsAndAchievements != None )
+		Return True;
+	
+	SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( BaseActor.static.LoadClass(SteamStatsAndAchievementsClassName) );
+	if ( SteamStatsAndAchievementsClass == None )
+		Return False;
+	
+	SteamStatsAndAchievements = Spawn(SteamStatsAndAchievementsClass, self);
+	if ( SteamStatsAndAchievements == None )
+		Return False;
+	
+	Return True;
+}
+
+function DestroyStatObject()
+{
+	if ( Level.NetMode == NM_Client || SteamStatsAndAchievements == None )
+		Return;
+	
+	SteamStatsAndAchievements.Destroy();
+	SteamStatsAndAchievements = None;
+}
 
 //[block] Server menu functions. Function calls also replicated from the clients.
 // ClientOpenMenu
@@ -209,24 +230,24 @@ function Possess(Pawn aPawn)
 function ServerAcknowledgePossession(Pawn P, float NewHand, bool bNewAutoTaunt)
 {
 	ResetTimeMargin();
-    AcknowledgedPawn = P;
-    ServerSetHandedness(NewHand);
-    ServerSetAutoTaunt(bNewAutoTaunt);
+	AcknowledgedPawn = P;
+	ServerSetHandedness(NewHand);
+	ServerSetAutoTaunt(bNewAutoTaunt);
 }
 
 // Overidden to support resetting shake and blur values when you posses the pawn
 function AcknowledgePossession(Pawn P)
 {
 	// Tell the server if we want the trader path or not
-    if ( Role < ROLE_Authority )
-        ServerSetWantsTraderPath(bWantsTraderPath);
+	if ( Role < ROLE_Authority )
+		ServerSetWantsTraderPath(bWantsTraderPath);
 
 	if ( P != None )  {
 		StopViewShaking();
 		if ( Level.NetMode != NM_DedicatedServer )
 			SetBlur(0);
 		if ( KFHumanPawn(P) != None && KFHumanPawn(P).KFPC != self )
-            KFHumanPawn(P).KFPC = self;
+			KFHumanPawn(P).KFPC = self;
 	}
 	
 	if ( Viewport(Player) != None )  {
@@ -240,16 +261,16 @@ function AcknowledgePossession(Pawn P)
 // unpossessed a pawn (not because pawn was killed)
 function UnPossess()
 {
-    if ( Pawn != None )  {
-        SetLocation(Pawn.Location);
-        Pawn.RemoteRole = ROLE_SimulatedProxy;
-        Pawn.UnPossessed();
+	if ( Pawn != None )  {
+		SetLocation(Pawn.Location);
+		Pawn.RemoteRole = ROLE_SimulatedProxy;
+		Pawn.UnPossessed();
 		CleanOutSavedMoves();  // don't replay moves previous to unpossession
-        if ( Viewtarget == Pawn )
-            SetViewTarget(self);
-    }
-    Pawn = None;
-    GotoState('Spectating');
+		if ( Viewtarget == Pawn )
+			SetViewTarget(self);
+	}
+	Pawn = None;
+	GotoState('Spectating');
 }
 
 // Optimized PostBeginPlay() version
@@ -264,15 +285,15 @@ simulated event PostBeginPlay()
 		SpawnDefaultHUD();
 	
 	FixFOV();
-    SetViewDistance();
-    SetViewTarget(self);  // MUST have a view target!
+	SetViewDistance();
+	SetViewTarget(self);  // MUST have a view target!
 	LastActiveTime = Level.TimeSeconds;
 	
 	if ( Level.LevelEnterText != "" )
 		ClientMessage(Level.LevelEnterText);
 	
 	if ( Level.NetMode == NM_Standalone )
-        AddCheats();
+		AddCheats();
 	
 	// Precache
 	bForcePrecache = Role < ROLE_Authority;
@@ -289,10 +310,84 @@ simulated event PostBeginPlay()
 	
 	LoadComboList();
 	FillCameraList();
-    LastKillTime = -5.0;
+	LastKillTime = -5.0;
 	
 	// Spawn hint manager (if needed)
 	UpdateHintManagement(bShowHints);
+}
+
+function bool CanRestartPlayer()
+{
+    if ( PlayerReplicationInfo == None )
+		Return True;
+	
+	Return !PlayerReplicationInfo.bOnlySpectator;
+}
+
+auto state PlayerWaiting
+{
+	exec function Fire( optional float F )
+	{
+		LoadPlayers();
+	}
+
+	function bool CanRestartPlayer()
+	{
+		if ( Level.Game.GameReplicationInfo.bMatchHasBegun )
+			Return False;
+		
+		Return ( (bReadyToStart || (DeathMatch(Level.Game) != None && DeathMatch(Level.Game).bForceRespawn)) && Global.CanRestartPlayer() );
+	}
+
+	simulated function Timer()
+	{
+		if ( !bPendingLobbyDisplay || bDemoOwner || (PlayerReplicationInfo != None && PlayerReplicationInfo.bReadyToPlay) )
+			SetTimer(0, false);
+		else if ( !bRequestedSteamData && SteamStatsAndAchievements == None )  {
+			if ( Level.NetMode == NM_Standalone )  {
+				if ( SpawnStatObject() && !SteamStatsAndAchievements.Initialize(self) )  {
+					DestroyStatObject();
+					bRequestedSteamData = True;
+				}
+			}
+			else
+				bRequestedSteamData = True;
+		}
+		else if ( SteamStatsAndAchievements != None && !SteamStatsAndAchievements.bInitialized && ForceShowLobby < 10 )  {
+			if ( !bRequestedSteamData )  {
+				ForceShowLobby = 0;
+				SteamStatsAndAchievements.GetStatsAndAchievements();
+				bRequestedSteamData = True;
+			}
+			ForceShowLobby++;
+		}
+		else if ( Player != None && GUIController(Player.GUIController) != None && !GUIController(Player.GUIController).bActive && GameReplicationInfo != None )  {
+			// Spawn hint manager (if needed)
+		    UpdateHintManagement(bShowHints);
+			ShowLobbyMenu();
+			SetTimer(0, false);
+		}
+	}
+
+	simulated function EndState()
+	{
+		Super(PlayerController).EndState();
+
+		if ( Level.NetMode != NM_DedicatedServer )
+			SetupWebAPI();
+	}
+
+	// hax to open menu when player joins the game
+	simulated function BeginState()
+	{
+		Super(PlayerController).BeginState();
+
+		bRequestedSteamData = False;
+		if ( Level.NetMode != NM_DedicatedServer && bPendingLobbyDisplay )  {
+			SetTimer(0.1, true);
+			Timer();
+		}
+	}
 }
 
 // Have cut out xPlayer class ComboList logic from PlayerTick for now
@@ -321,9 +416,9 @@ simulated function SetUpWidescreenFOV()
 	local	float		ResX, ResY;
 	local	float		AspectRatio, NewFOV;
 
-    ResX = float(GUIController(Player.GUIController).ResX);
-    ResY = float(GUIController(Player.GUIController).ResY);
-    AspectRatio = ResX / ResY;
+	ResX = float(GUIController(Player.GUIController).ResX);
+	ResY = float(GUIController(Player.GUIController).ResY);
+	AspectRatio = ResX / ResY;
 
 	// 1.6 = 16/10 which is 16:10 ratio and 16:9 comes to 1.77
 	if ( bUseTrueWideScreenFOV && AspectRatio >= 1.60 )  {
@@ -342,7 +437,7 @@ simulated function SetUpWidescreenFOV()
 		else
 			log("Detected 16X10: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
 		*/
-    }
+	}
 	else  {
 		//log("Detected 4X3: "$(float(GUIController(Player.GUIController).ResX) / GUIController(Player.GUIController).ResY));
 		default.DefaultFOV = 90.0;
@@ -462,19 +557,19 @@ function ShakeView(
 	vector shRotMag,	vector shRotRate,		float shRotTime, 
 	vector shOffsetMag,	vector shOffsetRate,	float shOffsetTime )
 {
-    // VSizeSquared is faster than VSize
+	// VSizeSquared is faster than VSize
 	if ( VSizeSquared(shRotMag) > VSizeSquared(ShakeRotMax) )  {
-        ShakeRotMax  = shRotMag;
-        ShakeRotRate = shRotRate;
-        ShakeRotTime = shRotTime * vect(1.0, 1.0, 1.0);
-    }
+		ShakeRotMax  = shRotMag;
+		ShakeRotRate = shRotRate;
+		ShakeRotTime = shRotTime * vect(1.0, 1.0, 1.0);
+	}
 
-    // VSizeSquared is faster than VSize
+	// VSizeSquared is faster than VSize
 	if ( VSizeSquared(shOffsetMag) > VSizeSquared(ShakeOffsetMax) )  {
-        ShakeOffsetMax  = shOffsetMag;
-        ShakeOffsetRate = shOffsetRate;
-        ShakeOffsetTime = shOffsetTime * vect(1.0, 1.0, 1.0);
-    }
+		ShakeOffsetMax  = shOffsetMag;
+		ShakeOffsetRate = shOffsetRate;
+		ShakeOffsetTime = shOffsetTime * vect(1.0, 1.0, 1.0);
+	}
 }
 
 function StopViewShaking()
@@ -579,7 +674,7 @@ simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
 
 event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )
 {
-    local Pawn PTarget;
+	local Pawn PTarget;
 
 	if ( Base != None )
 		SetBase(None); // This error may happen on client, causing major desync.
@@ -600,17 +695,17 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 		Return;
 	}
 
-    if ( ViewTarget == None || ViewTarget.bDeleteMe )  {
+	if ( ViewTarget == None || ViewTarget.bDeleteMe )  {
 		if ( Pawn != None && !Pawn.bDeleteMe )
 			SetViewTarget(Pawn);
 		else if ( RealViewTarget != None )
 			SetViewTarget(RealViewTarget);
 		else
 			SetViewTarget(self);
-    }
+	}
 
-    ViewActor = ViewTarget;
-    CameraLocation = ViewTarget.Location;
+	ViewActor = ViewTarget;
+	CameraLocation = ViewTarget.Location;
 
 	if ( ViewTarget == Pawn )  {
 		// up and behind
@@ -625,7 +720,7 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 
 		CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 		Return;
-    }
+	}
 	
 	if ( ViewTarget == self )  {
 		CameraRotation = Rotation;
@@ -633,31 +728,31 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 		Return;
 	}
 
-    if ( ViewTarget.IsA('Projectile') )  {
-        if ( Projectile(ViewTarget).bSpecialCalcView 
+	if ( ViewTarget.IsA('Projectile') )  {
+		if ( Projectile(ViewTarget).bSpecialCalcView 
 			 && Projectile(ViewTarget).SpecialCalcView(ViewActor, CameraLocation, CameraRotation, bBehindView) )  {
-            CacheCalcView( ViewActor,CameraLocation,CameraRotation );
-            Return;
-        }
-
-        if ( !bBehindView )  {
-            CameraLocation += (ViewTarget.CollisionHeight) * vect(0,0,1);
-            CameraRotation = Rotation;
-    		CacheCalcView( ViewActor, CameraLocation, CameraRotation );
+			CacheCalcView( ViewActor,CameraLocation,CameraRotation );
 			Return;
-        }
-    }
+		}
 
-    CameraRotation = ViewTarget.Rotation;
-    PTarget = Pawn(ViewTarget);
-    if ( PTarget != None )  {
-        if ( Level.NetMode == NM_Client || (bDemoOwner && (Level.NetMode != NM_Standalone)) )  {
-            PTarget.SetViewRotation(TargetViewRotation);
-            CameraRotation = BlendedTargetViewRotation;
-            PTarget.EyeHeight = TargetEyeHeight;
-        }
-        else if ( PTarget.IsPlayerPawn() )
-            CameraRotation = PTarget.GetViewRotation();
+		if ( !bBehindView )  {
+			CameraLocation += (ViewTarget.CollisionHeight) * vect(0,0,1);
+			CameraRotation = Rotation;
+			CacheCalcView( ViewActor, CameraLocation, CameraRotation );
+			Return;
+		}
+	}
+
+	CameraRotation = ViewTarget.Rotation;
+	PTarget = Pawn(ViewTarget);
+	if ( PTarget != None )  {
+		if ( Level.NetMode == NM_Client || (bDemoOwner && (Level.NetMode != NM_Standalone)) )  {
+			PTarget.SetViewRotation(TargetViewRotation);
+			CameraRotation = BlendedTargetViewRotation;
+			PTarget.EyeHeight = TargetEyeHeight;
+		}
+		else if ( PTarget.IsPlayerPawn() )
+			CameraRotation = PTarget.GetViewRotation();
 
 		if ( PTarget.bSpecialCalcView 
 			 && PTarget.SpectatorSpecialCalcView(self, ViewActor, CameraLocation, CameraRotation) )  {
@@ -665,14 +760,14 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 			Return;
 		}
 
-        if ( !bBehindView )
-            CameraLocation += PTarget.EyePosition();
-    }
-    
+		if ( !bBehindView )
+			CameraLocation += PTarget.EyePosition();
+	}
+	
 	if ( bBehindView )  {
-        CameraLocation = CameraLocation + (ViewTarget.Default.CollisionHeight - ViewTarget.CollisionHeight) * vect(0,0,1);
-        CalcBehindView( CameraLocation, CameraRotation, (CameraDist * ViewTarget.Default.CollisionRadius) );
-    }
+		CameraLocation = CameraLocation + (ViewTarget.Default.CollisionHeight - ViewTarget.CollisionHeight) * vect(0,0,1);
+		CalcBehindView( CameraLocation, CameraRotation, (CameraDist * ViewTarget.Default.CollisionRadius) );
+	}
 
 	CacheCalcView( ViewActor, CameraLocation, CameraRotation );
 }
@@ -793,10 +888,10 @@ function ServerSetWantsTraderPath( bool bNewWantsTraderPath )
 function Timer()
 {
 	if ( !bWantsTraderPath )  {
-        bShowTraderPath = False;
-        SetTimer(0.0, False);
-    }
-    // Fairly lame place to call this, but I need a place that is called very often that is run on the server
+		bShowTraderPath = False;
+		SetTimer(0.0, False);
+	}
+	// Fairly lame place to call this, but I need a place that is called very often that is run on the server
 	else if ( Role == ROLE_Authority && bShowTraderPath )
 		UnrealMPGameInfo(Level.Game).ShowPathTo(Self, 0);
 }
@@ -836,13 +931,13 @@ exec function SwitchToBestWeapon()
 	if ( Pawn == None || Pawn.Inventory == None )
 		Return;
 
-    if ( Pawn.PendingWeapon == None )  {
+	if ( Pawn.PendingWeapon == None )  {
 	    Pawn.PendingWeapon = Pawn.Inventory.RecommendWeapon(rating);
 	    if ( Pawn.PendingWeapon == Pawn.Weapon )
 		    Pawn.PendingWeapon = None;
 	    if ( Pawn.PendingWeapon == None )
-    		Return;
-    }
+			Return;
+	}
 
 	StopFiring();
 
@@ -855,7 +950,7 @@ exec function SwitchToBestWeapon()
 // server calls this to force client to switch
 function ClientSwitchToBestWeapon()
 {
-    SwitchToBestWeapon();
+	SwitchToBestWeapon();
 }
 
 function ClientSetWeapon( class<Weapon> WeaponClass )

@@ -18,7 +18,9 @@
 	You can create as many game settings profiles as you want and switches between them. 
 ==================================================================================*/
 class UM_GameSettingsProfile extends UM_BaseObject
-	DependsOn(UM_InvasionGame)
+	DependsOn(UM_BaseGameType)
+	//Config
+	//ParseConfig
 	Abstract;
 
 //========================================================================
@@ -26,13 +28,7 @@ class UM_GameSettingsProfile extends UM_BaseObject
 
 var		int											MaxHumanPlayers;
 
-var		array<UM_InvasionGame.WaveMonsterData>		WaveMonsters;
-var		array<UM_InvasionGame.GameWaveData>			GameWaves;
-
-var		array<UM_InvasionGame.BossWaveMonsterData>	BossWaveMonsters;
-var		string										BossMonsterClassName;
-
-var		array<UM_InvasionGame.DramaticKillData>		DramaticKills;
+var		array<UM_BaseGameType.DramaticKillData>		DramaticKills;
 
 //[end] Varibles
 //====================================================================

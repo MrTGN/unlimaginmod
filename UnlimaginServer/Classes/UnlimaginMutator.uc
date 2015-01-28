@@ -230,6 +230,7 @@ final function ImplementPackage( name N )
 	ModServerPackages[ModServerPackages.Length] = S;
 }
 
+/*
 final function AddPlayerToPendingPlayers( UM_PlayerController PC )
 {
 	PendingPlayers[PendingPlayers.Length] = PC;
@@ -255,7 +256,7 @@ event Timer()
 		}
 		PendingPlayers.Remove(i, 1);
 	}
-}
+}	*/
 
 function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 {
@@ -271,8 +272,9 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 		}
 	}
 	// Finding a new joined players
+	/*  // Moved to the UM_PlayerController
 	else if ( UM_PlayerController(Other) != None )
-		AddPlayerToPendingPlayers( UM_PlayerController(Other) );
+		AddPlayerToPendingPlayers( UM_PlayerController(Other) );	*/
 	// Finding a new stats objects
 	else if ( UM_ServerStStats(Other) != None )
 		SetServerPerks( UM_ServerStStats(Other) );

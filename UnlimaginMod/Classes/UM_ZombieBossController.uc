@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBossController
-//	Parent class:	 UM_KFMonsterController
+//	Parent class:	 UM_MonsterController
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 10.10.2012 20:15
 //================================================================================
-class UM_ZombieBossController extends UM_KFMonsterController;
+class UM_ZombieBossController extends UM_MonsterController;
 
 var NavigationPoint HidingSpots;
 

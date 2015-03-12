@@ -60,7 +60,7 @@ simulated event PostNetBeginPlay()
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( CanHitThisActor(A) )
+	if ( CanHitActor(A) )
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		
 	LastTouched = None;
@@ -75,7 +75,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 		SetTimer(ExplodeTimer, False);
 	}
 	
-	if ( CanTouchThisActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;

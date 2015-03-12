@@ -741,7 +741,7 @@ simulated function bool	CanHurtThisBallisticCollision( UM_BallisticCollision Bal
 }
 
 // Can this projectile damage specified pawn
-simulated function bool CanHurtThisPawn( Pawn P )
+simulated function bool CanHurtPawn( Pawn P )
 {
 	// Return False if no Pawn was specified
 	if ( P == None || !P.bCanBeDamaged )
@@ -758,7 +758,7 @@ simulated function bool CanHurtThisPawn( Pawn P )
 }
 
 // Can this projectile damage specified projectile
-simulated function bool CanHurtThisProjectile( Projectile Proj )
+simulated function bool CanHurtProjectile( Projectile Proj )
 {
 	// Return False if no projectile was specified
 	if ( Proj == None || !Proj.bCanBeDamaged )
@@ -786,7 +786,7 @@ simulated function bool CanHurtThisProjectile( Projectile Proj )
 }
 
 // Can this projectile damage specified Actor
-simulated function bool CanHitThisActor( Actor A )
+simulated function bool CanHitActor( Actor A )
 {
 	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
 		Return False;
@@ -794,9 +794,9 @@ simulated function bool CanHitThisActor( Actor A )
 	if ( UM_BallisticCollision(A) != None )
 		Return CanHurtThisBallisticCollision( UM_BallisticCollision(A) );
 	else if ( Pawn(A) != None )
-		Return CanHurtThisPawn( Pawn(A) );
+		Return CanHurtPawn( Pawn(A) );
 	else if ( Projectile(A) != None )
-		Return CanHurtThisProjectile( Projectile(A) );
+		Return CanHurtProjectile( Projectile(A) );
 	
 	Return True;
 }
@@ -865,7 +865,7 @@ simulated function ProcessHitActor(
 		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
-simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
+simulated function bool CanTouchActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
 	/*	Todo: UM_Monster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
 		и не реагировали на класс мностров. */
@@ -889,7 +889,7 @@ simulated function bool CanTouchThisActor( out Actor A, out vector TouchLocation
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( CanHitThisActor(A) )
+	if ( CanHitActor(A) )
 		ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
 	
 	LastTouched = None;
@@ -900,7 +900,7 @@ simulated singular event Touch( Actor Other )
 {
 	local	Vector	TouchLocation, TouchNormal;
 
-	if ( CanTouchThisActor(Other, TouchLocation, TouchNormal) )
+	if ( CanTouchActor(Other, TouchLocation, TouchNormal) )
 		ProcessTouchActor(Other, TouchLocation, TouchNormal);
 }
 
@@ -957,7 +957,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 {
 	local	Vector	HitLocation;
 
-	if ( CanTouchThisActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;

@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieFleshPoundController
-//	Parent class:	 UM_KFMonsterController
+//	Parent class:	 UM_MonsterController
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 10.10.2012 21:44
 //================================================================================
-class UM_ZombieFleshPoundController extends UM_KFMonsterController;
+class UM_ZombieFleshPoundController extends UM_MonsterController;
 
 var     float       RageAnimTimeout;    // How long until the RageAnim is completed; Hack so the server doesn't get stuck in idle when its doing the Rage anim
 var		bool		bDoneSpottedCheck;

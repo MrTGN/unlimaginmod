@@ -49,7 +49,7 @@ struct	SoundData
 };
 
 // Int Range
-struct IRange
+struct IntRange
 {
 	var()	config	int		Min;
 	var()	config	int		Max;
@@ -72,7 +72,7 @@ simulated static final function int GetRandInt( int MinI, int MaxI )
 	Return	MinI + Round(float(MaxI - MinI) * FRand());
 }
 
-simulated static final function int GetRandRangeInt( IRange IR )
+simulated static final function int GetRandRangeInt( IntRange IR )
 {
 	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
 }

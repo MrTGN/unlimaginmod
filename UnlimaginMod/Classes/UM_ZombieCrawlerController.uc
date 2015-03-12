@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieCrawlerController
-//	Parent class:	 UM_KFMonsterController
+//	Parent class:	 UM_MonsterController
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 10.10.2012 20:06
 //================================================================================
-class UM_ZombieCrawlerController extends UM_KFMonsterController;
+class UM_ZombieCrawlerController extends UM_MonsterController;
 
 var	float	LastPounceTime;
 var	bool	bDoneSpottedCheck;

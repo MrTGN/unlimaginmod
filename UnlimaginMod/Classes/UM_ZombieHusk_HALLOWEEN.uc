@@ -21,7 +21,7 @@ function SpawnTwoShots()
 {
 	local vector X,Y,Z, FireStart;
 	local rotator FireRotation;
-	local UM_KFMonsterController UM_KFMonstControl;
+	local UM_MonsterController UM_KFMonstControl;
 
 	if ( Controller != None && KFDoorMover(Controller.Target) != None )  {
 		Controller.Target.TakeDamage(22,Self,Location,vect(0,0,0),Class'DamTypeVomit');
@@ -46,7 +46,7 @@ function SpawnTwoShots()
     // Turn off extra collision before spawning vomit, otherwise spawn fails
     ToggleAuxCollision(false);
 	FireRotation = Controller.AdjustAim(SavedFireProperties,FireStart,600);
-	foreach DynamicActors(class'UM_KFMonsterController', UM_KFMonstControl)
+	foreach DynamicActors(class'UM_MonsterController', UM_KFMonstControl)
 	{
         if( UM_KFMonstControl != Controller && PointDistToLine(UM_KFMonstControl.Pawn.Location, vector(FireRotation), FireStart) < 75 )
 			UM_KFMonstControl.GetOutOfTheWayOfShot(vector(FireRotation),FireStart);

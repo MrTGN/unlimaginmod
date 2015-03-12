@@ -303,7 +303,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			
 			// Projectile check
 			if ( Projectile(Victim) != None )  {
-				if ( !CanHurtThisProjectile( Projectile(Victim) ) )
+				if ( !CanHurtProjectile( Projectile(Victim) ) )
 					Continue;
 			}
 			// BallisticCollision check
@@ -345,7 +345,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				
 				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
 				// Do not damage a friendly Pawn
-				if ( !CanHurtThisPawn(Pawn(Victim)) )
+				if ( !CanHurtPawn(Pawn(Victim)) )
 					Continue;
 				
 				// Extended FastTraces from bones Locations
@@ -400,7 +400,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		}
 		// Projectile check
 		if ( Projectile(Victim) != None )  {
-			if ( !CanHurtThisProjectile( Projectile(Victim) ) )
+			if ( !CanHurtProjectile( Projectile(Victim) ) )
 				bIgnoreThisVictim = True;
 		}
 		// BallisticCollision check
@@ -417,7 +417,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Dir = Dir / Dist;
 			DamageScale = FMax( (Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)), (1.0 - FMax(0.0, ((Dist - Victim.CollisionRadius) / DamageRadius))) );
 			if ( Pawn(Victim) != None )  {
-				if ( CanHurtThisPawn(Pawn(Victim)) )  {
+				if ( CanHurtPawn(Pawn(Victim)) )  {
 					// Extended FastTraces from bones Locations
 					/*
 					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
@@ -641,7 +641,7 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( CanHitThisActor(A) )  {
+	if ( CanHitActor(A) )  {
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		if ( IsArmed() )
 			Explode(TouchLocation, TouchNormal);
@@ -654,7 +654,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 {
 	local	Vector	HitLocation;
 	
-	if ( CanTouchThisActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;

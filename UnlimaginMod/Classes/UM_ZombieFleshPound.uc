@@ -225,7 +225,7 @@ function StartCharging()
 	Velocity.X = 0;
 	Velocity.Y = 0;
 	Controller.GoToState('WaitForAnim');
-	UM_KFMonsterController(Controller).bUseFreezeHack = True;
+	UM_MonsterController(Controller).bUseFreezeHack = True;
 	RageAnimDur = GetAnimDuration('PoundRage');
     UM_ZombieFleshPoundController(Controller).SetPoundRageTimout(RageAnimDur);
 	GoToState('BeginRaging');

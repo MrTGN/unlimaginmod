@@ -110,7 +110,7 @@ simulated function Disintegrate(vector HitLocation, vector HitNormal)
 simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
 {
 	LastTouched = A;
-	if ( CanHitThisActor(A) )  {
+	if ( CanHitActor(A) )  {
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		Explode(TouchLocation, TouchNormal);
 	}
@@ -128,7 +128,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 {
 	local	Vector	HitLocation;
 
-	if ( CanTouchThisActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall, HitLocation) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall, HitLocation, HitNormal);
 		Return;

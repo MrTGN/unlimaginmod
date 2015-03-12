@@ -431,7 +431,7 @@ Begin:
     bShotAnim = True;
 	Acceleration = vect(0,0,0);
 	SetAnimAction('RadialAttack');
-	UM_KFMonsterController(Controller).bUseFreezeHack = True;
+	UM_MonsterController(Controller).bUseFreezeHack = True;
 	HandleWaitForAnim('RadialAttack');
     Sleep(GetAnimDuration('RadialAttack'));
     // TODO: this sleep is here to allow for playing the taunt sound. Take it out when the animation is extended with the taunt - Ramm
@@ -1501,7 +1501,7 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector M
 		Acceleration = vect(0,0,0);
 		SetAnimAction('KnockDown');
 		HandleWaitForAnim('KnockDown');
-		UM_KFMonsterController(Controller).bUseFreezeHack = True;
+		UM_MonsterController(Controller).bUseFreezeHack = True;
 		GoToState('KnockDown');
 	}
 }

@@ -143,7 +143,7 @@ function SpawnTwoShots()
 {
 	local vector X,Y,Z, FireStart;
 	local rotator FireRotation;
-	local UM_KFMonsterController UM_KFMonstControl;
+	local UM_MonsterController UM_KFMonstControl;
 
 	if ( HuskProjectileClass == None )  {
 		Log("No HuskProjectileClass!", Name);
@@ -175,7 +175,7 @@ function SpawnTwoShots()
 
 	FireRotation = Controller.AdjustAim(SavedFireProperties,FireStart,600);
 
-	foreach DynamicActors(class'UM_KFMonsterController', UM_KFMonstControl)
+	foreach DynamicActors(class'UM_MonsterController', UM_KFMonstControl)
 	{
         if ( UM_KFMonstControl != Controller && PointDistToLine(UM_KFMonstControl.Pawn.Location, vector(FireRotation), FireStart) < 75 )
 			UM_KFMonstControl.GetOutOfTheWayOfShot(vector(FireRotation),FireStart);

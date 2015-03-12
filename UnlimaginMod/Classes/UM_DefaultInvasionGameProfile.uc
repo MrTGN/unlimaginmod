@@ -53,13 +53,13 @@ defaultproperties
 	 WaveMonsters(7)=(MonsterClassName="UnlimaginMod.UM_ZombieSiren",WaveLimits=(0,1,2,2,4,4,6),WaveSpawnChances=(0.0,0.15,0.15,0.2,0.2,0.25,0.25),WaveSpawnDelays=(0.0,240.0,210.0,180.0,120.0,90.0,60.0))
 	 WaveMonsters(8)=(MonsterClassName="UnlimaginMod.UM_ZombieStalker",WaveLimits=(6,8,10,12,14,16,18),WaveSpawnChances=(0.45,0.45,0.5,0.55,0.55,0.5,0.5))
 	 // GameWaves - 7 waves
-	 GameWaves(0)=(MinMonsters=18,MaxMonsters=270,MonstersAtOnce=(Min=16,Max=42),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=2.0,Max=4.0),WaveDifficulty=0.2,BreakTime=(Min=90.0,Max=100.0))
-	 GameWaves(1)=(MinMonsters=24,MaxMonsters=360,MonstersAtOnce=(Min=18,Max=44),MonsterSquadSize=(Min=4,Max=6),SquadsSpawnPeriod=(Min=2.5,Max=4.5),WaveDifficulty=0.4,BreakTime=(Min=90.0,Max=110.0))
-	 GameWaves(2)=(MinMonsters=30,MaxMonsters=450,MonstersAtOnce=(Min=20,Max=46),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=2.5,Max=5.0),WaveDifficulty=0.8,BreakTime=(Min=100.0,Max=110.0))
-	 GameWaves(3)=(MinMonsters=36,MaxMonsters=540,MonstersAtOnce=(Min=22,Max=48),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=3.0,Max=5.5),WaveDifficulty=1.0,BreakTime=(Min=100.0,Max=120.0))
-	 GameWaves(4)=(MinMonsters=42,MaxMonsters=630,MonstersAtOnce=(Min=24,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.0),WaveDifficulty=1.2,BreakTime=(Min=110.0,Max=120.0))
-	 GameWaves(5)=(MinMonsters=48,MaxMonsters=720,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.5),WaveDifficulty=1.4,BreakTime=(Min=110.0,Max=130.0))
-	 GameWaves(6)=(MinMonsters=54,MaxMonsters=810,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=7.0),WaveDifficulty=1.6,BreakTime=(Min=120.0,Max=130.0))
+	 GameWaves(0)=(MinMonsters=18,MaxMonsters=270,MonstersAtOnce=(Min=16,Max=42),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=2.0,Max=4.0),WaveDifficulty=0.2,WaveDuration=(Min=480,Max=2400),BreakTime=(Min=90,Max=100))
+	 GameWaves(1)=(MinMonsters=24,MaxMonsters=360,MonstersAtOnce=(Min=18,Max=44),MonsterSquadSize=(Min=4,Max=6),SquadsSpawnPeriod=(Min=2.5,Max=4.5),WaveDifficulty=0.4,WaveDuration=(Min=600,Max=3000),BreakTime=(Min=90,Max=110))
+	 GameWaves(2)=(MinMonsters=30,MaxMonsters=450,MonstersAtOnce=(Min=20,Max=46),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=2.5,Max=5.0),WaveDifficulty=0.8,WaveDuration=(Min=720,Max=3600),BreakTime=(Min=100,Max=110))
+	 GameWaves(3)=(MinMonsters=36,MaxMonsters=540,MonstersAtOnce=(Min=22,Max=48),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=3.0,Max=5.5),WaveDifficulty=1.0,WaveDuration=(Min=840,Max=4200),BreakTime=(Min=100,Max=120))
+	 GameWaves(4)=(MinMonsters=42,MaxMonsters=630,MonstersAtOnce=(Min=24,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.0),WaveDifficulty=1.2,WaveDuration=(Min=960,Max=4800),BreakTime=(Min=110,Max=120))
+	 GameWaves(5)=(MinMonsters=48,MaxMonsters=720,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.5),WaveDifficulty=1.4,WaveDuration=(Min=1080,Max=5400),BreakTime=(Min=110,Max=130))
+	 GameWaves(6)=(MinMonsters=54,MaxMonsters=810,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=7.0),WaveDifficulty=1.6,WaveDuration=(Min=1200,Max=6000),BreakTime=(Min=120,Max=130))
 	 // Boss
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"
 	 // BossWaveMonsters

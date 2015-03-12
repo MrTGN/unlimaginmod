@@ -572,8 +572,8 @@ event Bump(actor Other)
 			KickLocation = Other.Location;
 			KickTarget = Other;
 			
-			if ( UM_KFMonsterController(Controller) != None )
-				UM_KFMonsterController(Controller).KickTarget = KActor(Other);
+			if ( UM_MonsterController(Controller) != None )
+				UM_MonsterController(Controller).KickTarget = KActor(Other);
 			else if ( KFMonsterController(Controller) != None )
 				KFMonsterController(Controller).KickTarget = KActor(Other);
 			
@@ -589,8 +589,8 @@ function KickActor()
 	KickTarget.KAddImpulse(ImpactVector, KickLocation);
 	Acceleration = vect(0,0,0);
 	Velocity = vect(0,0,0);
-	if ( UM_KFMonsterController(Controller) != None )
-		UM_KFMonsterController(controller).GotoState('Kicking');
+	if ( UM_MonsterController(Controller) != None )
+		UM_MonsterController(controller).GotoState('Kicking');
 	else if ( KFMonsterController(Controller) != None )
 		KFMonsterController(controller).GotoState('Kicking');
 	bShotAnim = true;
@@ -609,8 +609,8 @@ function bool FlipOver()
 	Velocity.Y = 0;
 	Controller.GoToState('WaitForAnim');
 	
-	if ( UM_KFMonsterController(Controller) != None )
-		UM_KFMonsterController(Controller).bUseFreezeHack = True;
+	if ( UM_MonsterController(Controller) != None )
+		UM_MonsterController(Controller).bUseFreezeHack = True;
 	else if ( KFMonsterController(Controller) != None )
 		KFMonsterController(Controller).bUseFreezeHack = True;
 	
@@ -1062,8 +1062,8 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 
 	if ( damageType != None && LastDamagedBy != None && 
 		 LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None )  {
-		if ( UM_KFMonsterController(Controller) != none )
-			UM_KFMonsterController(Controller).AddKillAssistant(LastDamagedBy.Controller, FMin(Health, Damage));
+		if ( UM_MonsterController(Controller) != none )
+			UM_MonsterController(Controller).AddKillAssistant(LastDamagedBy.Controller, FMin(Health, Damage));
 		else if ( KFMonsterController(Controller) != none )
 			KFMonsterController(Controller).AddKillAssistant(LastDamagedBy.Controller, FMin(Health, Damage));
 	}
@@ -1152,8 +1152,8 @@ function PushAwayZombie(vector PushAwayDirection, float PushAwayPower)
 		Acceleration = vect(0, 0, 0);
 		Velocity = (PushAwayPower - Mass) * Normal(PushAwayDirection);
 		Velocity.Z += 100.000000;
-		UM_KFMonsterController(Controller).bUseFreezeHack = True;
-		if ( Controller != None && UM_KFMonsterController(Controller) != None
+		UM_MonsterController(Controller).bUseFreezeHack = True;
+		if ( Controller != None && UM_MonsterController(Controller) != None
 			&& !Controller.IsInState('ZombiePushedAway') )
 			Controller.GotoState('ZombiePushedAway');
 		SetPhysics(PHYS_Falling);
@@ -1171,10 +1171,10 @@ function Dazzle(float TimeScale)
 	Acceleration = vect(0, 0, 0);
 	Velocity.X = 0;
 	Velocity.Y = 0;
-	if ( Controller != None && UM_KFMonsterController(Controller) != None
+	if ( Controller != None && UM_MonsterController(Controller) != None
 			&& !Controller.IsInState('IamDazzled') )
 		Controller.GoToState('IamDazzled');
-	UM_KFMonsterController(Controller).bUseFreezeHack = True;
+	UM_MonsterController(Controller).bUseFreezeHack = True;
 }
 
 //[end] Functions
@@ -1222,7 +1222,7 @@ defaultproperties
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-	 ControllerClass=Class'UnlimaginMod.UM_KFMonsterController'
+	 ControllerClass=Class'UnlimaginMod.UM_MonsterController'
 	 // Collision flags
 	 bCollideActors=True
 	 bCollideWorld=True

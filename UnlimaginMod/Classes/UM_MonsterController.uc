@@ -1,7 +1,7 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_KFMonsterController
+//	Class name:		 UM_MonsterController
 //	Parent class:	 KFMonsterController
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
@@ -12,19 +12,16 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 09.10.2012 19:31
 //================================================================================
-class UM_KFMonsterController extends KFMonsterController;
+class UM_MonsterController extends KFMonsterController;
 
 //var		float	MyDazzleTime;
 
 // Get rid of this Zed if he's stuck somewhere and noone has seen him
 function bool CanKillMeYet()
 {
-	if ( KFGameType(Level.Game) != None )  {
-		if ( KFMonster(Pawn) != None && KFGameType(Level.Game).WaveNum >= KFGameType(Level.Game).FinalWave )
+	if ( KFGameType(Level.Game) != None && KFMonster(Pawn) != None &&
+		( KFGameType(Level.Game).WaveNum >= KFGameType(Level.Game).FinalWave || (Level.TimeSeconds - KFMonster(Pawn).LastSeenOrRelevantTime) > 20.0 ) )
 			Return True;
-		if ( KFMonster(Pawn) != None && (Level.TimeSeconds - KFMonster(Pawn).LastSeenOrRelevantTime) > 8 )
-			Return True;
-	}
 
 	Return False;
 }

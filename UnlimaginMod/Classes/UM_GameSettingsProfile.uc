@@ -18,7 +18,7 @@
 	You can create as many game settings profiles as you want and switches between them. 
 ==================================================================================*/
 class UM_GameSettingsProfile extends UM_BaseObject
-	DependsOn(UM_BaseGameType)
+	DependsOn(UM_BaseGameInfo)
 	//Config
 	//ParseConfig
 	Abstract;
@@ -28,7 +28,7 @@ class UM_GameSettingsProfile extends UM_BaseObject
 
 var		int											MaxHumanPlayers;
 
-var		array<UM_BaseGameType.DramaticKillData>		DramaticKills;
+var		array<UM_BaseGameInfo.DramaticKillData>		DramaticKills;
 
 //[end] Varibles
 //====================================================================

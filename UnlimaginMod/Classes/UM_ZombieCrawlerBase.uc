@@ -42,6 +42,8 @@ replication
 
 defaultproperties
 {
+	 HeadShotSlowMoChargeBonus=0.25
+	 
 	 PoisonousChance=0.25
 	 //PoisonousMaterial=ConstantColor'KillingFloorLabTextures.Statics.elevater_glow'
 	 //PoisonousMaterial=FinalBlend'kf_fx_trip_t.siren.siren_scream_fb'

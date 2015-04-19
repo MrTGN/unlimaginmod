@@ -72,6 +72,10 @@ struct BallisticCollisionData
 var	array<BallisticCollisionData>		BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
+var		float							HeadShotSlowMoChargeBonus;
+
+var		transient		bool			bAddedToTheMonsterList;
+
 //[end] Varibles
 //====================================================================
 
@@ -298,80 +302,87 @@ simulated event PostBeginPlay()
 	bSTUNNED = false;
 	DECAP = false;
 
-	// Difficulty Scaling
-	if ( Role == ROLE_Authority && Level.Game != None && !bDiffAdjusted )  {
-		//log(self$" Beginning ground speed "$default.GroundSpeed);
-		if ( Level.Game.NumPlayers <= 3 )
-			HiddenGroundSpeed = default.HiddenGroundSpeed;
-		else if ( Level.Game.NumPlayers <= 5 )
-			HiddenGroundSpeed = default.HiddenGroundSpeed * 1.3;
-		else if ( Level.Game.NumPlayers >= 6 )
-			HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
+	if ( Role == ROLE_Authority && Level.Game != None )  {
+		// Difficulty Scaling
+		if ( !bDiffAdjusted )  {
+			//log(self$" Beginning ground speed "$default.GroundSpeed);
+			if ( Level.Game.NumPlayers <= 3 )
+				HiddenGroundSpeed = default.HiddenGroundSpeed;
+			else if ( Level.Game.NumPlayers <= 5 )
+				HiddenGroundSpeed = default.HiddenGroundSpeed * 1.3;
+			else if ( Level.Game.NumPlayers >= 6 )
+				HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
 
-		if( Level.Game.GameDifficulty < 2.0 )
-			MovementSpeedDifficultyScale = 0.95;
-		else if( Level.Game.GameDifficulty < 4.0 )
-			MovementSpeedDifficultyScale = 1.0;
-		else if( Level.Game.GameDifficulty < 5.0 )
-			MovementSpeedDifficultyScale = 1.15;
-		else if( Level.Game.GameDifficulty < 7.0 )
-			MovementSpeedDifficultyScale = 1.22;
-		else // Hardest difficulty
-			MovementSpeedDifficultyScale = 1.3;
+			if( Level.Game.GameDifficulty < 2.0 )
+				MovementSpeedDifficultyScale = 0.95;
+			else if( Level.Game.GameDifficulty < 4.0 )
+				MovementSpeedDifficultyScale = 1.0;
+			else if( Level.Game.GameDifficulty < 5.0 )
+				MovementSpeedDifficultyScale = 1.15;
+			else if( Level.Game.GameDifficulty < 7.0 )
+				MovementSpeedDifficultyScale = 1.22;
+			else // Hardest difficulty
+				MovementSpeedDifficultyScale = 1.3;
 
-		if ( CurrentDamType == None )
-			CurrentDamType = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-		
-		//[block] Speed Randomization
-		AirSpeed *= MovementSpeedDifficultyScale;
-		RandMult = BaseActor.static.GetExtraRandRangeFloat( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
-		if ( RandMult > SpeedScaleRange.Max )
-			bThisIsMiniBoss = True;
-		GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
-		WaterSpeed *= MovementSpeedDifficultyScale * RandMult;
-		// Store the difficulty adjusted ground speed to restore if we change it elsewhere
-		OriginalGroundSpeed = GroundSpeed;
-		//log(self$" Scaled ground speed "$GroundSpeed$" Difficulty "$Level.Game.GameDifficulty$" MovementSpeedDifficultyScale "$MovementSpeedDifficultyScale);
-		//[end]
-		
-		//[block] Healths Randomization
-		// Health
-		RandMult = BaseActor.static.GetExtraRandRangeFloat( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
-		Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
-		HealthMax = float(Health);
-		
-		// HeadHealth
-		if ( RandMult > HealthScaleRange.Max )  {
-			bThisIsMiniBoss = True;
-			RandMult = BaseActor.static.GetRandRangeFloat( ExtraHeadHealthScaleRange );
+			if ( CurrentDamType == None )
+				CurrentDamType = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+			
+			//[block] Speed Randomization
+			AirSpeed *= MovementSpeedDifficultyScale;
+			RandMult = BaseActor.static.GetExtraRandRangeFloat( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
+			if ( RandMult > SpeedScaleRange.Max )
+				bThisIsMiniBoss = True;
+			GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
+			WaterSpeed *= MovementSpeedDifficultyScale * RandMult;
+			// Store the difficulty adjusted ground speed to restore if we change it elsewhere
+			OriginalGroundSpeed = GroundSpeed;
+			//log(self$" Scaled ground speed "$GroundSpeed$" Difficulty "$Level.Game.GameDifficulty$" MovementSpeedDifficultyScale "$MovementSpeedDifficultyScale);
+			//[end]
+			
+			//[block] Healths Randomization
+			// Health
+			RandMult = BaseActor.static.GetExtraRandRangeFloat( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
+			Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
+			HealthMax = float(Health);
+			
+			// HeadHealth
+			if ( RandMult > HealthScaleRange.Max )  {
+				bThisIsMiniBoss = True;
+				RandMult = BaseActor.static.GetRandRangeFloat( ExtraHeadHealthScaleRange );
+			}
+			else
+				RandMult = BaseActor.static.GetRandRangeFloat( HeadHealthScaleRange );
+
+			HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
+			//[end]
+				
+			//floats
+			RandMult = BaseActor.static.GetRandRangeFloat( DamageScaleRange );
+			//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
+			//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
+			JumpZ = default.JumpZ * BaseActor.static.GetRandRangeFloat( JumpZScaleRange );
+			//int
+			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
+			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
+
+			
+			//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
+			//log(self$" Health "$Health$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
+			//log(self$" HeadHealth "$HeadHealth$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
+			
+			// ToDo: need to somehow distinguish a miniboss among other monsters
+			/*
+			if ( bThisIsMiniBoss )  {
+				
+			} */
+
+			bDiffAdjusted = True;
 		}
-		else
-			RandMult = BaseActor.static.GetRandRangeFloat( HeadHealthScaleRange );
-
-		HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
-		//[end]
-			
-		//floats
-		RandMult = BaseActor.static.GetRandRangeFloat( DamageScaleRange );
-		//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
-		//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-		JumpZ = default.JumpZ * BaseActor.static.GetRandRangeFloat( JumpZScaleRange );
-		//int
-		ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
-		MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
-
 		
-		//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-		//log(self$" Health "$Health$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-		//log(self$" HeadHealth "$HeadHealth$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-		
-		// ToDo: need to somehow distinguish a miniboss among other monsters
-		/*
-		if ( bThisIsMiniBoss )  {
-			
-		} */
-
-		bDiffAdjusted = True;
+		if ( !bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
+			UM_InvasionGame(Level.Game).AddNewMonsterToTheList(self);
+			bAddedToTheMonsterList = True;
+		}
 	}
 
 	if ( Level.NetMode != NM_DedicatedServer )  {
@@ -419,6 +430,12 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
 	}
 	DestroyBallisticCollision();
+	
+	if ( Role == ROLE_Authority && bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
+		UM_InvasionGame(Level.Game).RemoveMonsterFromTheList(self);
+		bAddedToTheMonsterList = False;
+	}
+	
 	Super(Pawn).Died( Killer, DamageType, HitLocation );
 }
 
@@ -427,6 +444,11 @@ simulated event Destroyed()
 	DestroyBallisticCollision();
 	
 	Super.Destroyed();
+	
+	if ( Role == ROLE_Authority && bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
+		UM_InvasionGame(Level.Game).RemoveMonsterFromTheList(self);
+		bAddedToTheMonsterList = False;
+	}
 }
 
 // Scales the damage this Zed deals by the difficulty level
@@ -1086,8 +1108,11 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 			    // Play a sound when someone gets a headshot TODO: Put in the real sound here
 				PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
 				HeadHealth -= LastDamageAmount;
-				if ( HeadHealth <= 0 || Damage > Health )
-				   RemoveHead();
+				if ( HeadHealth <= 0 || Damage > Health )  {
+					RemoveHead();
+					if ( UM_HumanPawn(instigatedBy) != None )
+						UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
+				}
 			}
 
 			// Award headshot here, not when zombie died.
@@ -1128,8 +1153,8 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 	else
 		Super(Skaarj).TakeDamage(Damage, instigatedBy, hitLocation, momentum, damageType);
 
-	if ( bIsHeadShot && Health < 1 && UM_BaseGameType(Level.Game) != None )
-		UM_BaseGameType(Level.Game).DramaticEvent(0.03);
+	if ( bIsHeadShot && Health < 1 && UM_BaseGameInfo(Level.Game) != None )
+		UM_BaseGameInfo(Level.Game).DramaticEvent(0.03);
 
 	bBackstabbed = False;
 }
@@ -1182,7 +1207,8 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-     // Falling
+     HeadShotSlowMoChargeBonus=0.2
+	 // Falling
 	 FallingDamageType=Class'Fell'
 	 LavaDamageType=Class'FellLava'
 	 // SoundsPitchRange

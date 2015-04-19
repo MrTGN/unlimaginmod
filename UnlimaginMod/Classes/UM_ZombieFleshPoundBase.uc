@@ -52,6 +52,8 @@ replication
 
 defaultproperties
 {
+	 HeadShotSlowMoChargeBonus=0.5
+	 
 	 BlockDamageReduction=0.400000
      RotMag=(X=500.000000,Y=500.000000,Z=600.000000)
      RotRate=(X=12500.000000,Y=12500.000000,Z=12500.000000)

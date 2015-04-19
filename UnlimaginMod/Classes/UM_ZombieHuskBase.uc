@@ -29,7 +29,8 @@ var		array< class<Projectile> >		RandProjectileClass;
 
 defaultproperties
 {
-     RandProjectileClass(0)=Class'UnlimaginMod.UM_HuskExplosiveProjectile'
+     HeadShotSlowMoChargeBonus=0.25
+	 RandProjectileClass(0)=Class'UnlimaginMod.UM_HuskExplosiveProjectile'
 	 RandProjectileClass(1)=Class'UnlimaginMod.UM_HuskNapalmProjectile'
 	 ProjectileFireInterval=5.500000
      BurnDamageScale=0.250000

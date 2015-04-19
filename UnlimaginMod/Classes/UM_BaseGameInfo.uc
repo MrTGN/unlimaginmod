@@ -1,6 +1,6 @@
 /*==================================================================================
 	Package:		 UnlimaginMod
-	Class name:		 UM_BaseGameType
+	Class name:		 UM_BaseGameInfo
 	Creation date:	 28.01.2015 03:23
 ----------------------------------------------------------------------------------
 	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
@@ -16,7 +16,7 @@
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
-class UM_BaseGameType extends KFGameType
+class UM_BaseGameInfo extends KFGameType
 	CacheExempt
 	HideDropdown
 	NotPlaceable

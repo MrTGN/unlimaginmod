@@ -278,6 +278,22 @@ static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 	Return True;
 }
 
+simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
+{
+	if ( PRI.ClientVeteranSkillLevel > 4 )
+		Return 0.2 * float(Min(PRI.ClientVeteranSkillLevel, 10));
+	
+	Return 0.0;
+}
+
+simulated function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
+{
+	if ( PRI.ClientVeteranSkillLevel > 0 )
+		Return 1.0 + 0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 25% bonus for the all perks
+	
+	Return 1.0;
+}
+
 // On how much this human can overheal somebody
 static function float GetOverhealPotency( UM_PlayerReplicationInfo PRI )
 {

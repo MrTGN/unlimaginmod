@@ -72,6 +72,8 @@ replication
 
 defaultproperties
 {
+	 HeadShotSlowMoChargeBonus=1.0
+	 
 	 ChargingAnim="RunF"
      HealingLevels(0)=5600
      HealingLevels(1)=3500

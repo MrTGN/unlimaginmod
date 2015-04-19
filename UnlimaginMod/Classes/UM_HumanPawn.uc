@@ -110,7 +110,7 @@ var		float						DefaultMoneyPerHealedHealth;
 
 // Overheal
 var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
-var		float						OverhealReductionPerSecond;
+var		float						OverhealReductionFrequency;	// Overhealed Health per second
 var		transient	float			NextOverhealReductionTime;
 var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
 var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
@@ -181,6 +181,15 @@ struct BallisticCollisionData
 var	array<BallisticCollisionData>		BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
+// Slowmo time like an ZedTime in original KF
+var		float							MaxSlowMoCharge; // Max SloMo charge in seconds
+var		transient		float			SlowMoCharge; // Current SloMo charge in seconds
+var		float							SlowMoChargeRegenRate; // SloMo Charge Regen per second
+var		transient		float			NextSlowMoChargeRegenTime;
+var		transient		bool			bSlowMoCharged;
+
+var		transient		bool			bAddedToTheHumanList;
+
 //[end] Varibles
 //====================================================================
 
@@ -195,7 +204,7 @@ replication
 	
 	// Variable replication from the server to client-owner
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		VeterancyChangedTrigger;
+		VeterancyChangedTrigger, SlowMoCharge;
 	
 	// Server to client-owner function call replication
 	reliable if ( Role == ROLE_Authority )
@@ -434,6 +443,10 @@ simulated event PostBeginPlay()
 			AddDefaultInventory();
 		// BallisticCollision
 		BuildBallisticCollision();
+		if ( !bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
+			UM_InvasionGame(Level.Game).AddNewHumanToTheList(self);
+			bAddedToTheHumanList = True;
+		}
 	}
 	AssignInitialPose();
 	
@@ -586,6 +599,14 @@ function SetCarryWeight( float NewCarryWeight )
 	UpdateJumpZ();
 }
 
+function CheckSlowMoCharge()
+{
+	if ( SlowMoCharge > MaxSlowMoCharge )
+		SlowMoCharge = MaxSlowMoCharge;
+	
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
 function CheckVeterancyCarryWeightLimit()
 {
 	local	byte		t;
@@ -663,6 +684,8 @@ simulated function NotifyVeterancyChanged()
 		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
 		IntuitiveShootingRange = default.IntuitiveShootingRange * UM_PlayerRepInfo.GetIntuitiveShootingModifier();
 		VeterancySyringeChargeModifier = UM_PlayerRepInfo.GetSyringeChargeModifier();
+		MaxSlowMoCharge = UM_PlayerRepInfo.GetMaxSlowMoCharge();
+		SlowMoChargeRegenRate = default.SlowMoChargeRegenRate * UM_PlayerRepInfo.GetSlowMoChargeRegenModifier();
 	}
 	else  {
 		OverhealedHealthMax = int(HealthMax);
@@ -673,10 +696,13 @@ simulated function NotifyVeterancyChanged()
 		BounceRemaining = default.BounceRemaining;
 		IntuitiveShootingRange = default.IntuitiveShootingRange;
 		VeterancySyringeChargeModifier = default.VeterancySyringeChargeModifier;
+		MaxSlowMoCharge = default.MaxSlowMoCharge;
+		SlowMoChargeRegenRate = default.SlowMoChargeRegenRate;
 	}
 	
 	// Server
 	if ( Role == ROLE_Authority )  {
+		CheckSlowMoCharge();
 		CheckVeterancyCarryWeightLimit();
 		CheckVeterancyAmmoLimit();
 		UpdateHealthMovementModifiers();
@@ -1805,6 +1831,11 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	// ClientDying
 	if ( !bPhysicsAnimUpdate && !IsLocallyControlled() )
 		ClientDying(DamageType, HitLocation);
+	
+	if ( Role == ROLE_Authority && bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
+		UM_InvasionGame(Level.Game).RemoveHumanFromTheList(self);
+		bAddedToTheHumanList = False;
+	}
 }
 
 // Clearing old functions
@@ -1925,7 +1956,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		Damage *= 2;
 	
 	if ( UM_PlayerRepInfo != None )
-		Damage = Round( float(Damage) * UM_PlayerRepInfo.GetHumanTakenDamageModifier(self, InstigatedBy, DamageType) );
+		Damage = Round( float(Damage) * UM_PlayerRepInfo.GetHumanOwnerTakenDamageModifier(InstigatedBy, DamageType) );
 	
 	if ( bOnDrugs )
 		Damage = Round( float(Damage) * DrugsDamageScale );
@@ -2116,7 +2147,7 @@ function bool GiveHealth( int HealAmount, int HealMax )
 // Overheal Reduction
 protected function ReduceOverheal()
 {
-	NextOverhealReductionTime = Level.TimeSeconds + 1.0 / OverhealReductionPerSecond;
+	NextOverhealReductionTime = Level.TimeSeconds + OverhealReductionFrequency;
 	SetHealth( Max( (Health - 1), int(HealthMax) ) );
 }
 
@@ -2503,6 +2534,29 @@ function UpdateCameraBlur( float DeltaTime )
 	}
 }
 
+protected function IncreaseSlowMoCharge()
+{
+	NextSlowMoChargeRegenTime = Level.TimeSeconds + 0.1 / SlowMoChargeRegenRate;
+	SlowMoCharge = Min( (SlowMoCharge + 0.1), MaxSlowMoCharge );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
+/*ToDo: зайдействовать эту функцию в UM_InvasionGame
+	создать там функционал по отниманию заряда каждые 100мс у SlowMoInstigator.
+	Эта переменная будет приравниваться при вызове exec функции ToggleSlowMo() из этого класса.
+*/
+function DecreaseSlowMoCharge()
+{
+	SlowMoCharge = Max( (SlowMoCharge - 0.1), 0.0 );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
+function AddSlowMoCharge( float AddCharge )
+{
+	SlowMoCharge = Min( (SlowMoCharge + AddCharge), MaxSlowMoCharge );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
 simulated event Tick( float DeltaTime )
 {
 	// Server
@@ -2534,6 +2588,10 @@ simulated event Tick( float DeltaTime )
 			if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurnTime )
 				TakeBurnDamage();
 		}
+		// SlowMo Charge
+		if ( !bSlowMoCharged && Level.TimeSeconds >= NextSlowMoChargeRegenTime )
+			IncreaseSlowMoCharge();
+		
 		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
 		// Survived 10 Seconds After Vomit Achievement
 		if ( !bHasSurvivedAfterVomit && bVomittedOn && Health > 0 && Level.TimeSeconds >= SurvivedAfterVomitTime )  {
@@ -2756,12 +2814,23 @@ exec function SwitchToLastWeapon()
     }
 }
 
+simulated event Destroyed()
+{
+	Super.Destroyed();
+	
+	if ( Role == ROLE_Authority && bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
+		UM_InvasionGame(Level.Game).RemoveHumanFromTheList(self);
+		bAddedToTheHumanList = False;
+	}
+}
+
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
-     PlayerDeathMarkClass=Class'PlayerDeathMark'
+	 SlowMoChargeRegenRate=0.02
+	 PlayerDeathMarkClass=Class'PlayerDeathMark'
 	 ViewPositionUpdateDelay=0.001
 	 // 1 ms AimRotation delay
 	 AimRotationDelay=0.001
@@ -2783,7 +2852,7 @@ defaultproperties
 	 DyingCameraEffectDelay=1.0
 	 DyingBlurDuration=3.0
 	 DyingBlurIntensityScale=0.0085
-     // PoisonDamage
+	 // PoisonDamage
 	 PoisonFrequency=0.5
 	 // BileDamage
 	 BileFrequency=0.5
@@ -2808,7 +2877,7 @@ defaultproperties
 	 // Healing
 	 DefaultMoneyPerHealedHealth=0.6
 	 HealDelay=0.1
-	 OverhealReductionPerSecond=2.0
+	 OverhealReductionFrequency=0.5
 	 OverhealMovementModifier=0.2
 	 NormalHealthMovementModifier=0.3
 	 // Drugs

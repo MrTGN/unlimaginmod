@@ -35,7 +35,9 @@ var	Class<Projectile>		BileProjectileClass;
 
 defaultproperties
 {
-     BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
+     HeadShotSlowMoChargeBonus=0.25
+	 
+	 BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
 	 ExtraSpeedScaleRange=(Max=2.8)
      MeleeAnims(0)="BloatChop2"
      MeleeAnims(1)="BloatChop2"

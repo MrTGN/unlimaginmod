@@ -193,6 +193,25 @@ simulated function float GetHealPotency()
 	Return 1.0;
 }
 
+simulated function float GetMaxSlowMoCharge()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetMaxSlowMoCharge(Self);
+	
+	if ( HumanOwner != None )
+		Return HumanOwner.default.MaxSlowMoCharge;
+	
+	Return Class'UM_HumanPawn'.default.MaxSlowMoCharge;
+}
+
+simulated function float GetSlowMoChargeRegenModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetSlowMoChargeRegenModifier(Self);
+	
+	Return 1.0;
+}
+
 // On how much this human can overheal somebody
 simulated function float GetOverhealPotency()
 {
@@ -212,10 +231,10 @@ simulated function float GetOverhealedHealthMaxModifier()
 }
 
 // New function to reduce taken damage
-simulated function float GetHumanTakenDamageModifier( UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
+simulated function float GetHumanOwnerTakenDamageModifier( Pawn Aggressor, class<DamageType> DamageType )
 {
 	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetHumanTakenDamageModifier(Self, Victim, Aggressor, DamageType);
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetHumanTakenDamageModifier(Self, HumanOwner, Aggressor, DamageType);
 	
 	Return 1.0;
 }

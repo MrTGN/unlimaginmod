@@ -185,6 +185,10 @@ var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Bal
 var		float							MaxSlowMoCharge; // Max SloMo charge in seconds
 var		transient		float			SlowMoCharge; // Current SloMo charge in seconds
 var		float							SlowMoChargeRegenRate; // SloMo Charge Regen per second
+var		const			float			SlowMoChargeUpdateAmount;
+var		const			float			MinSlowMoToggleCharge;
+var		const			float			DelayBetweenSlowMoToggle;
+var		transient		float			NextSlowMoToggleTime;
 var		transient		float			NextSlowMoChargeRegenTime;
 var		transient		bool			bSlowMoCharged;
 
@@ -209,6 +213,10 @@ replication
 	// Server to client-owner function call replication
 	reliable if ( Role == ROLE_Authority )
 		ClientAddPoisonEffects;
+	
+	// replicated functions sent to server by owning client
+	reliable if ( Role < ROLE_Authority )
+		ToggleSlowMo;
 }
 
 //[end] Replication
@@ -2436,6 +2444,38 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 }
 
+//[block] SlowMo
+protected function IncreaseSlowMoCharge()
+{
+	NextSlowMoChargeRegenTime = Level.TimeSeconds + SlowMoChargeUpdateAmount / SlowMoChargeRegenRate;
+	SlowMoCharge = Min( (SlowMoCharge + SlowMoChargeUpdateAmount), MaxSlowMoCharge );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
+// Replicated from client-owner to server
+exec function ToggleSlowMo()
+{
+	if ( Level.TimeSeconds < NextSlowMoToggleTime || SlowMoCharge < MinToggleSlowMoCharge )
+		Return;
+	
+	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
+	if ( UM_BaseGameInfo(Level.Game) != None )
+		UM_BaseGameInfo(Level.Game).ToggleSlowMoBy(Self);
+}
+
+function AddSlowMoCharge( float AddCharge )
+{
+	SlowMoCharge = Min( (SlowMoCharge + Abs(AddCharge)), MaxSlowMoCharge );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+
+function ReduceSlowMoCharge( float ReduceCharge )
+{
+	SlowMoCharge = Max( (SlowMoCharge - Abs(ReduceCharge)), 0.0 );
+	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+}
+//[end] SlowMo
+
 // Clearing
 function Drugs() { }
 
@@ -2532,29 +2572,6 @@ function UpdateCameraBlur( float DeltaTime )
 		else if( CameraEffectFound != None )
 			UnderWaterBlur(CameraEffectFound).BlurAlpha = Lerp( BlurAmount, 255, UnderWaterBlur(CameraEffectFound).default.BlurAlpha );
 	}
-}
-
-protected function IncreaseSlowMoCharge()
-{
-	NextSlowMoChargeRegenTime = Level.TimeSeconds + 0.1 / SlowMoChargeRegenRate;
-	SlowMoCharge = Min( (SlowMoCharge + 0.1), MaxSlowMoCharge );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
-}
-
-/*ToDo: зайдействовать эту функцию в UM_InvasionGame
-	создать там функционал по отниманию заряда каждые 100мс у SlowMoInstigator.
-	Эта переменная будет приравниваться при вызове exec функции ToggleSlowMo() из этого класса.
-*/
-function DecreaseSlowMoCharge()
-{
-	SlowMoCharge = Max( (SlowMoCharge - 0.1), 0.0 );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
-}
-
-function AddSlowMoCharge( float AddCharge )
-{
-	SlowMoCharge = Min( (SlowMoCharge + AddCharge), MaxSlowMoCharge );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
 }
 
 simulated event Tick( float DeltaTime )
@@ -2829,7 +2846,10 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 DelayBetweenSlowMoToggle=0.2
+	 MinToggleSlowMoCharge=1.0
 	 SlowMoChargeRegenRate=0.02
+	 SlowMoChargeUpdateAmount=0.1
 	 PlayerDeathMarkClass=Class'PlayerDeathMark'
 	 ViewPositionUpdateDelay=0.001
 	 // 1 ms AimRotation delay

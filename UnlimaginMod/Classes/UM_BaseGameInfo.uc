@@ -51,6 +51,13 @@ var		transient	float				DefaultGameSpeed;	// Sets in the InitGame event
 
 var		int								MaxHumanPlayers;
 
+var		UM_HumanPawn					SlowMoInstigator;
+var		transient	float				SlowMoDeltaTime;
+var		const		float				DelayBetweenSlowMoToggle;
+var		transient	float				NextSlowMoToggleTime;
+
+var		transient	bool				bSlowMoStartedByHuman;
+
 //[end] Varibles
 //====================================================================
 
@@ -230,9 +237,30 @@ event PostLogin( PlayerController NewPlayer )
 	log( "New Player" @NewPlayer.PlayerReplicationInfo.PlayerName @"id=" $NewPlayer.GetPlayerIDHash() );
 }
 
+function ToggleSlowMoBy( UM_HumanPawn Human )
+{
+	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Level.TimeSeconds < NextSlowMoToggleTime )
+		Return;
+	
+	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
+	bSlowMoStartedByHuman = True;
+	// Stop SlowMo
+	if ( SlowMoInstigator == Human )
+		CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, ExitZedTime );
+	// Start SlowMo
+	else  {
+		if ( SlowMoInstigator != None && SlowMoDeltaTime > 0.0 )
+			SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+		// Setting Up new SlowMoInstigator
+		SlowMoDeltaTime = 0.0;
+		SlowMoInstigator = Human;
+		DramaticEvent(1.0, SlowMoInstigator.SlowMoCharge);
+	}
+}
+
 event Tick( float DeltaTime )
 {
-	local	float		TrueTimeFactor;
+	local	float		TrueDeltaTime;
     local	int			Count;
 	local	Controller	C;
 	
@@ -251,21 +279,46 @@ event Tick( float DeltaTime )
 	}
 	
 	if ( bZEDTimeActive )  {
-		TrueTimeFactor = Level.default.TimeDilation / Level.TimeDilation;
-		CurrentZEDTimeDuration -= DeltaTime * TrueTimeFactor;
-		if ( CurrentZEDTimeDuration > 0.0 && CurrentZEDTimeDuration < ExitZedTime )  {
-			if ( !bSpeedingBackUp )  {
-				bSpeedingBackUp = True;
-				for ( C = Level.ControllerList; C != None && Count < NumPlayers; C = C.NextController )  {
-					if ( KFPlayerController(C) != None )  {
-						KFPlayerController(C).ClientExitZedTime();
-						++Count;
-					}
+		TrueDeltaTime = DeltaTime * Level.default.TimeDilation / Level.TimeDilation;
+		CurrentZEDTimeDuration -= TrueDeltaTime;
+		if ( bSlowMoStartedByHuman )
+			SlowMoDeltaTime += TrueDeltaTime;
+		// ZEDTimeDuration
+		if ( CurrentZEDTimeDuration > 0.0 )  {
+			if ( bSlowMoStartedByHuman )  {
+				// Stop SlowMo
+				if ( SlowMoInstigator == None || SlowMoInstigator.Health < 1 || SlowMoInstigator.bDeleteMe )  {
+					bSlowMoStartedByHuman = False;
+					SlowMoInstigator = None;
+					CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, ExitZedTime );
+				}
+				// Reduce SlowMoInstigator SlowMoCharge
+				else if ( SlowMoDeltaTime >= SlowMoInstigator.SlowMoChargeUpdateAmount )  {
+					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime )
+					SlowMoDeltaTime = 0.0;
 				}
 			}
-			SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
+			// Smooth exit from the ZedTime
+			if ( CurrentZEDTimeDuration < ExitZedTime )  {
+				if ( !bSpeedingBackUp )  {
+					bSpeedingBackUp = True;
+					for ( C = Level.ControllerList; C != None && Count < NumPlayers; C = C.NextController )  {
+						if ( KFPlayerController(C) != None )  {
+							KFPlayerController(C).ClientExitZedTime();
+							++Count;
+						}
+					}
+				}
+				SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
+			}
 		}
-		else if ( CurrentZEDTimeDuration <= 0.0 )  {
+		else  {
+			if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
+				SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+			bSlowMoStartedByHuman = False;
+			SlowMoInstigator = None;
+			SlowMoDeltaTime = 0.0;
+			CurrentZEDTimeDuration = 0.0;
 			SetGameSpeed(DefaultGameSpeed);
 			bZEDTimeActive = False;
 			bSpeedingBackUp = False;
@@ -468,6 +521,7 @@ defaultproperties
 	 BotAtHumanFriendlyFireScale=0.5
 	 ZEDTimeDuration=3.000000
 	 ExitZedTime=0.500000
+	 DelayBetweenSlowMoToggle=0.25
 	 
 	 MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"

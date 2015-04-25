@@ -587,7 +587,7 @@ function UpdateJumpZ()
 }
 
 // Sets the current Health
-protected function SetHealth( int NewHealth )
+function SetHealth( int NewHealth )
 {
 	Health = Max(NewHealth, 0);
 	if ( Health == 0 )
@@ -609,6 +609,13 @@ function SetCarryWeight( float NewCarryWeight )
 
 function CheckSlowMoCharge()
 {
+	if ( UM_BaseGameInfo(Level.Game) == None || MaxSlowMoCharge < UM_BaseGameInfo(Level.Game).MinToggleSlowMoCharge )  {
+		MaxSlowMoCharge = 0.0;
+		SlowMoCharge = 0.0;
+		bSlowMoCharged = True;
+		Return;
+	}
+	
 	if ( SlowMoCharge > MaxSlowMoCharge )
 		SlowMoCharge = MaxSlowMoCharge;
 	
@@ -2156,7 +2163,7 @@ function bool GiveHealth( int HealAmount, int HealMax )
 protected function ReduceOverheal()
 {
 	NextOverhealReductionTime = Level.TimeSeconds + OverhealReductionFrequency;
-	SetHealth( Max( (Health - 1), int(HealthMax) ) );
+	SetHealth( Max((Health - 1), int(HealthMax)) );
 }
 
 // Clearing old function
@@ -2455,12 +2462,11 @@ protected function IncreaseSlowMoCharge()
 // Replicated from client-owner to server
 exec function ToggleSlowMo()
 {
-	if ( Level.TimeSeconds < NextSlowMoToggleTime || SlowMoCharge < MinToggleSlowMoCharge )
+	if ( UM_BaseGameInfo(Level.Game) == None || Level.TimeSeconds < NextSlowMoToggleTime )
 		Return;
 	
 	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
-	if ( UM_BaseGameInfo(Level.Game) != None )
-		UM_BaseGameInfo(Level.Game).ToggleSlowMoBy(Self);
+	UM_BaseGameInfo(Level.Game).ToggleSlowMoBy(Self);
 }
 
 function AddSlowMoCharge( float AddCharge )
@@ -2605,6 +2611,7 @@ simulated event Tick( float DeltaTime )
 			if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurnTime )
 				TakeBurnDamage();
 		}
+		
 		// SlowMo Charge
 		if ( !bSlowMoCharged && Level.TimeSeconds >= NextSlowMoChargeRegenTime )
 			IncreaseSlowMoCharge();
@@ -2846,8 +2853,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
-	 DelayBetweenSlowMoToggle=0.2
-	 MinToggleSlowMoCharge=1.0
+	 DelayBetweenSlowMoToggle=0.25
 	 SlowMoChargeRegenRate=0.02
 	 SlowMoChargeUpdateAmount=0.1
 	 PlayerDeathMarkClass=Class'PlayerDeathMark'

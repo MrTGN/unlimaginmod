@@ -129,6 +129,8 @@ var		transient	array<UM_Monster>	MonsterList;
 
 var		transient	array< KFMonster >	JammedMonsters;
 
+var		float							ZEDTimeKillSlowMoChargeBonus;
+
 //[end] Varibles
 //====================================================================
 
@@ -1370,9 +1372,6 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = Max( (MaxMonsters + NumMonsters) , 0 );
 		
-		if ( Killed != Killer )
-			CheckKillerStats( Killer, KilledPawn, DamageType );
-		
 		if ( PlayerController(Killer) != None )  {
 			if ( !bDidTraderMovingMessage )  {
 				if ( (float(TotalMaxMonsters) / float(ZombiesKilled)) >= 0.2 )  {
@@ -1392,6 +1391,30 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 					
 					bDidMoveTowardTraderMessage = True;
 				}
+			}
+			
+			if ( Killed != Killer )  {
+				// ZEDTimeActive
+				if ( bZEDTimeActive )  {
+					if ( UM_HumanPawn(Killer.Pawn) != None )  {
+						UM_HumanPawn(Killer.Pawn).AddSlowMoCharge( ZEDTimeKillSlowMoChargeBonus );
+						ExtendZEDTime( UM_HumanPawn(Killer.Pawn) ); // Human Extend ZEDTime
+					}
+					else if ( Monster(Killer.Pawn) != None )  {
+						ResetSlowMoInstigator();
+						DramaticEvent(1.00);
+					}
+				}
+				// Chance to start Random ZEDTime
+				else if ( (Level.TimeSeconds - LastZedTimeEvent) > 0.1 )  {
+					// Possibly do a slomo event when a zombie dies, with a higher chance if the zombie is closer to a player
+					if ( Killer.Pawn != None && VSizeSquared(Killer.Pawn.Location - KilledPawn.Location) < 22500 ) // 3 meters
+						DramaticEvent(0.05);
+					else
+						DramaticEvent(0.025);
+				}
+				// CheckKillerStats
+				CheckKillerStats( Killer, KilledPawn, DamageType );
 			}
 		}
 		
@@ -1445,24 +1468,14 @@ defaultproperties
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=4.0
 	 GameSettingsProfileClassName="UnlimaginMod.UM_DefaultInvasionGameProfile"
-	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
-	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
-	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=3.5)
-	 DramaticKills(3)=(MinKilled=15,EventChance=0.4,EventDuration=4.0)
-	 DramaticKills(4)=(MinKilled=20,EventChance=0.8,EventDuration=4.5)
-	 DramaticKills(5)=(MinKilled=25,EventChance=1.0,EventDuration=5.0)
+	 
+	 ZEDTimeKillSlowMoChargeBonus=0.4
 	 
 	 ActorPoolClass=Class'UnlimaginMod.UM_ActorPool'
 	 BotAtHumanFriendlyFireScale=0.5
 
      MaxHumanPlayers=12
-	 // Kills for DramaticEvent
-	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
-	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
-	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=3.5)
-	 DramaticKills(3)=(MinKilled=15,EventChance=0.4,EventDuration=4.0)
-	 DramaticKills(4)=(MinKilled=20,EventChance=0.8,EventDuration=4.5)
-	 DramaticKills(5)=(MinKilled=25,EventChance=1.0,EventDuration=5.0)
+	 
 	 // Monsters
 	 Monsters(0)=(MonsterClassName="UnlimaginMod.UM_ZombieBloat",WaveMinLimits=(4,6,8,8,10,12,12),WaveMaxLimits=(40,60,80,80,100,120,120),WaveSpawnChances=(0.25,0.3,0.35,0.4,0.4,0.45,0.45),WaveSpawnDelays=(24.0,22.0,20.0,18.0,16.0,14.0,12.0))
 	 Monsters(1)=(MonsterClassName="UnlimaginMod.UM_ZombieClot")

@@ -55,6 +55,7 @@ var		UM_HumanPawn					SlowMoInstigator;
 var		transient	float				SlowMoDeltaTime;
 var		const		float				DelayBetweenSlowMoToggle;
 var		transient	float				NextSlowMoToggleTime;
+var		float							MinToggleSlowMoCharge;
 
 var		transient	bool				bSlowMoStartedByHuman;
 
@@ -237,25 +238,45 @@ event PostLogin( PlayerController NewPlayer )
 	log( "New Player" @NewPlayer.PlayerReplicationInfo.PlayerName @"id=" $NewPlayer.GetPlayerIDHash() );
 }
 
+function ResetSlowMoInstigator()
+{
+	if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
+		SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+	bSlowMoStartedByHuman = False;
+	SlowMoInstigator = None;
+	SlowMoDeltaTime = 0.0;
+}
+
 function ToggleSlowMoBy( UM_HumanPawn Human )
 {
-	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Level.TimeSeconds < NextSlowMoToggleTime )
+	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Level.TimeSeconds < NextSlowMoToggleTime || Human.SlowMoCharge < MinToggleSlowMoCharge )
 		Return;
 	
 	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
-	bSlowMoStartedByHuman = True;
+	
 	// Stop SlowMo
 	if ( SlowMoInstigator == Human )
 		CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, ExitZedTime );
 	// Start SlowMo
 	else  {
-		if ( SlowMoInstigator != None && SlowMoDeltaTime > 0.0 )
-			SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+		ResetSlowMoInstigator();
 		// Setting Up new SlowMoInstigator
-		SlowMoDeltaTime = 0.0;
+		bSlowMoStartedByHuman = True;
 		SlowMoInstigator = Human;
 		DramaticEvent(1.0, SlowMoInstigator.SlowMoCharge);
 	}
+}
+
+function ExtendZEDTime( UM_HumanPawn Human )
+{
+	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Human.SlowMoCharge < ZEDTimeDuration )
+		Return;
+	
+	ResetSlowMoInstigator();
+	// Setting Up new SlowMoInstigator
+	bSlowMoStartedByHuman = True;
+	SlowMoInstigator = Human;
+	DramaticEvent(1.0, ZEDTimeDuration);
 }
 
 event Tick( float DeltaTime )
@@ -285,6 +306,7 @@ event Tick( float DeltaTime )
 			SlowMoDeltaTime += TrueDeltaTime;
 		// ZEDTimeDuration
 		if ( CurrentZEDTimeDuration > 0.0 )  {
+			// SlowMo Started By a Human
 			if ( bSlowMoStartedByHuman )  {
 				// Stop SlowMo
 				if ( SlowMoInstigator == None || SlowMoInstigator.Health < 1 || SlowMoInstigator.bDeleteMe )  {
@@ -296,6 +318,7 @@ event Tick( float DeltaTime )
 				else if ( SlowMoDeltaTime >= SlowMoInstigator.SlowMoChargeUpdateAmount )  {
 					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime )
 					SlowMoDeltaTime = 0.0;
+					CurrentZEDTimeDuration = SlowMoInstigator.SlowMoCharge;
 				}
 			}
 			// Smooth exit from the ZedTime
@@ -313,16 +336,11 @@ event Tick( float DeltaTime )
 			}
 		}
 		else  {
-			if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
-				SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
-			bSlowMoStartedByHuman = False;
-			SlowMoInstigator = None;
-			SlowMoDeltaTime = 0.0;
+			ResetSlowMoInstigator();
 			CurrentZEDTimeDuration = 0.0;
 			SetGameSpeed(DefaultGameSpeed);
 			bZEDTimeActive = False;
 			bSpeedingBackUp = False;
-			ZedTimeExtensionsUsed = 0;
 		}
 	}
 }
@@ -356,6 +374,7 @@ function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedT
 {
 	local	float		TimeSinceLastEvent;
 	local	Controller	C;
+	local	int			i;
 
 	TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
 	if ( BaseZedTimePossibility < 1.0 )  {
@@ -384,13 +403,16 @@ function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedT
 
 		SetGameSpeed(ZedTimeSlomoScale);
 
-		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
+		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
+			++i;
 			// ZedTime Clien Notify
 			if ( KFPlayerController(C) != None )
 				KFPlayerController(C).ClientEnterZedTime();
+			/*
 			// ZedTime Stat
 			if ( C.PlayerReplicationInfo != None && KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements) != None )
 				KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements).AddZedTime(ZEDTimeDuration);
+			*/
 		}
 	}
 }
@@ -521,7 +543,17 @@ defaultproperties
 	 BotAtHumanFriendlyFireScale=0.5
 	 ZEDTimeDuration=3.000000
 	 ExitZedTime=0.500000
+	 
 	 DelayBetweenSlowMoToggle=0.25
+	 MinToggleSlowMoCharge=2.0
+	 
+	 // Kills for DramaticEvent
+	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=3.0)
+	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)
+	 DramaticKills(2)=(MinKilled=10,EventChance=0.2,EventDuration=4.0)
+	 DramaticKills(3)=(MinKilled=15,EventChance=0.4,EventDuration=4.0)
+	 DramaticKills(4)=(MinKilled=20,EventChance=0.8,EventDuration=5.0)
+	 DramaticKills(5)=(MinKilled=25,EventChance=1.0,EventDuration=5.0)
 	 
 	 MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"

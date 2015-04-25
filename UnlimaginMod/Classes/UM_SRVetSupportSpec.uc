@@ -249,8 +249,8 @@ static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 // Set number times Zed Time can be extended
 simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
-	if ( PRI.ClientVeteranSkillLevel > 0 )
-		Return 1.0 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 10 SlowMo seconds
+	if ( PRI.ClientVeteranSkillLevel > 3 )
+		Return 0.5 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 5 SlowMo seconds
 	
 	Return 1.0;
 }

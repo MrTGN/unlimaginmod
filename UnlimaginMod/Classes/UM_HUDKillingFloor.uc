@@ -18,6 +18,22 @@ var transient bool bFadeBW;
 
 var		UM_Syringe		Syringe;
 
+var()   SpriteWidget            SlowMoChargeBG;
+var()   SpriteWidget            SlowMoChargeIcon;
+var()   NumericWidget           SlowMoChargeDigits;
+
+simulated function SetHUDAlpha()
+{
+	Super.SetHUDAlpha();
+	
+	SlowMoChargeBG.Tints[0].A = KFHUDAlpha;
+	SlowMoChargeBG.Tints[1].A = KFHUDAlpha;
+	SlowMoChargeIcon.Tints[0].A = KFHUDAlpha;
+	SlowMoChargeIcon.Tints[1].A = KFHUDAlpha;
+	SlowMoChargeDigits.Tints[0].A = KFHUDAlpha;
+	SlowMoChargeDigits.Tints[1].A = KFHUDAlpha;
+}
+
 simulated function PostBeginPlay()
 {
 	local Font MyFont;
@@ -472,8 +488,8 @@ simulated function DrawModOverlay( Canvas C )
 		if( CurrentZone!=None || CurrentVolume!=None ) // Reset everything.
 		{
 			LastR = 0;
-    			LastG = 0;
-    			LastB = 0;
+				LastG = 0;
+				LastB = 0;
 			CurrentZone = None;
 			LastZone = None;
 			CurrentVolume = None;
@@ -568,14 +584,14 @@ simulated function DrawModOverlay( Canvas C )
 				if( LastZone.bNewKFColorCorrection )
 				{
 					LastR = LastZone.KFOverlayColor.R;
-    					LastG = LastZone.KFOverlayColor.G;
-    					LastB = LastZone.KFOverlayColor.B;
+						LastG = LastZone.KFOverlayColor.G;
+						LastB = LastZone.KFOverlayColor.B;
 				}
 				else
 				{
 					LastR = LastZone.DistanceFogColor.R;
-    					LastG = LastZone.DistanceFogColor.G;
-    					LastB = LastZone.DistanceFogColor.B;
+						LastG = LastZone.DistanceFogColor.G;
+						LastB = LastZone.DistanceFogColor.B;
 				}
 			}
 			else if ( LastVolume != none )
@@ -583,14 +599,14 @@ simulated function DrawModOverlay( Canvas C )
 				if( LastVolume.bNewKFColorCorrection )
 				{
 					LastR = LastVolume.KFOverlayColor.R;
-    					LastG = LastVolume.KFOverlayColor.G;
-    					LastB = LastVolume.KFOverlayColor.B;
+						LastG = LastVolume.KFOverlayColor.G;
+						LastB = LastVolume.KFOverlayColor.B;
 				}
 				else
 				{
-    					LastR = LastVolume.DistanceFogColor.R;
-    					LastG = LastVolume.DistanceFogColor.G;
-    					LastB = LastVolume.DistanceFogColor.B;
+						LastR = LastVolume.DistanceFogColor.R;
+						LastG = LastVolume.DistanceFogColor.G;
+						LastB = LastVolume.DistanceFogColor.B;
 				}
 			}
 			else if ( LastZone != none && LastVolume != none )
@@ -642,15 +658,17 @@ simulated function DrawEndGameHUD(Canvas C, bool bVictory)
 
 simulated function DrawHudPassA (Canvas C)
 {
-	local KFHumanPawn KFHPawn;
-	local Material TempMaterial, TempStarMaterial;
-	local int i, TempLevel;
-	local float TempX, TempY, TempSize;
-	local byte Counter;
-	local class<UM_SRVeterancyTypes> SV;
+	local	KFHumanPawn		KFHPawn;
+	local	Material		TempMaterial, TempStarMaterial;
+	local	int				i, TempLevel;
+	local	float			TempX, TempY, TempSize;
+	local	byte			Counter;
+	local	class<UM_SRVeterancyTypes>	SV;
+	local	UM_HumanPawn	HumanPawn;
 
 	KFHPawn = KFHumanPawn(PawnOwner);
-
+	HumanPawn = UM_HumanPawn(PawnOwner);
+	
 	DrawDoorHealthBars(C);
 
 	if ( !bLightHud )
@@ -669,31 +687,39 @@ simulated function DrawHudPassA (Canvas C)
 	DrawSpriteWidget(C, ArmorIcon);
 	DrawNumericWidget(C, ArmorDigits, DigitsSmall);
 
-	if ( KFHPawn != none )
-	{
-		C.SetPos(C.ClipX * WeightBG.PosX, C.ClipY * WeightBG.PosY);
-
+	if ( HumanPawn != None )  {
+		// SlowMoCharge
+		C.SetPos(C.ClipX * SlowMoChargeBG.PosX, C.ClipY * SlowMoChargeBG.PosY);
 		if ( !bLightHud )
-		{
+			C.DrawTile(SlowMoChargeBG.WidgetTexture, SlowMoChargeBG.WidgetTexture.MaterialUSize() * SlowMoChargeBG.TextureScale * 1.5 * HudCanvasScale * ResScaleX * HudScale, SlowMoChargeBG.WidgetTexture.MaterialVSize() * SlowMoChargeBG.TextureScale * HudCanvasScale * ResScaleY * HudScale, 0, 0, SlowMoChargeBG.WidgetTexture.MaterialUSize(), SlowMoChargeBG.WidgetTexture.MaterialVSize());
+		
+		DrawSpriteWidget(C, SlowMoChargeIcon);
+		C.FontScaleX = C.ClipX / 1024.0;
+		C.FontScaleY = C.FontScaleX;
+		C.SetPos(C.ClipX * SlowMoChargeDigits.PosX, C.ClipY * SlowMoChargeDigits.PosY);
+		C.DrawColor = SlowMoChargeDigits.Tints[0];
+		C.DrawText( string(HumanPawn.SlowMoCharge) @"s" );
+		C.FontScaleX = 1;
+		C.FontScaleY = 1;
+	
+		// Weight
+		C.SetPos(C.ClipX * WeightBG.PosX, C.ClipY * WeightBG.PosY);
+		if ( !bLightHud )
 			C.DrawTile(WeightBG.WidgetTexture, WeightBG.WidgetTexture.MaterialUSize() * WeightBG.TextureScale * 1.5 * HudCanvasScale * ResScaleX * HudScale, WeightBG.WidgetTexture.MaterialVSize() * WeightBG.TextureScale * HudCanvasScale * ResScaleY * HudScale, 0, 0, WeightBG.WidgetTexture.MaterialUSize(), WeightBG.WidgetTexture.MaterialVSize());
-		}
 
 		DrawSpriteWidget(C, WeightIcon);
-
 		C.Font = LoadSmallFontStatic(5);
 		C.FontScaleX = C.ClipX / 1024.0;
 		C.FontScaleY = C.FontScaleX;
 		C.SetPos(C.ClipX * WeightDigits.PosX, C.ClipY * WeightDigits.PosY);
 		C.DrawColor = WeightDigits.Tints[0];
-		C.DrawText(int(KFHPawn.CurrentWeight)$"/"$int(KFHPawn.MaxCarryWeight));
+		C.DrawText( string(HumanPawn.CurrentWeight) @"/" @string(HumanPawn.MaxCarryWeight) );
 		C.FontScaleX = 1;
 		C.FontScaleY = 1;
 	}
-
+	
 	if ( !bLightHud )
-	{
 		DrawSpriteWidget(C, GrenadeBG);
-	}
 
 	DrawSpriteWidget(C, GrenadeIcon);
 	DrawNumericWidget(C, GrenadeDigits, DigitsSmall);
@@ -759,49 +785,49 @@ simulated function DrawHudPassA (Canvas C)
 				}
 			}
 
-    		if ( MP7MMedicGun(PawnOwner.Weapon) != none || MP5MMedicGun(PawnOwner.Weapon) != none )
-    		{
-                if( MP7MMedicGun(PawnOwner.Weapon) != none )
-                {
-                    MedicGunDigits.Value = MP7MMedicGun(PawnOwner.Weapon).ChargeBar() * 100;
-                }
-                else
-                {
-                    MedicGunDigits.Value = MP5MMedicGun(PawnOwner.Weapon).ChargeBar() * 100;
-                }
+			if ( MP7MMedicGun(PawnOwner.Weapon) != none || MP5MMedicGun(PawnOwner.Weapon) != none )
+			{
+				if( MP7MMedicGun(PawnOwner.Weapon) != none )
+				{
+					MedicGunDigits.Value = MP7MMedicGun(PawnOwner.Weapon).ChargeBar() * 100;
+				}
+				else
+				{
+					MedicGunDigits.Value = MP5MMedicGun(PawnOwner.Weapon).ChargeBar() * 100;
+				}
 
-            	if ( MedicGunDigits.Value < 50 )
-            	{
-            		MedicGunDigits.Tints[0].R = 128;
-            		MedicGunDigits.Tints[0].G = 128;
-            		MedicGunDigits.Tints[0].B = 128;
+				if ( MedicGunDigits.Value < 50 )
+				{
+					MedicGunDigits.Tints[0].R = 128;
+					MedicGunDigits.Tints[0].G = 128;
+					MedicGunDigits.Tints[0].B = 128;
 
-            		MedicGunDigits.Tints[1] = SyringeDigits.Tints[0];
-            	}
-            	else if ( MedicGunDigits.Value < 100 )
-            	{
-            		MedicGunDigits.Tints[0].R = 192;
-            		MedicGunDigits.Tints[0].G = 96;
-            		MedicGunDigits.Tints[0].B = 96;
+					MedicGunDigits.Tints[1] = SyringeDigits.Tints[0];
+				}
+				else if ( MedicGunDigits.Value < 100 )
+				{
+					MedicGunDigits.Tints[0].R = 192;
+					MedicGunDigits.Tints[0].G = 96;
+					MedicGunDigits.Tints[0].B = 96;
 
-            		MedicGunDigits.Tints[1] = SyringeDigits.Tints[0];
-            	}
-            	else
-            	{
-            		MedicGunDigits.Tints[0].R = 255;
-            		MedicGunDigits.Tints[0].G = 64;
-            		MedicGunDigits.Tints[0].B = 64;
+					MedicGunDigits.Tints[1] = SyringeDigits.Tints[0];
+				}
+				else
+				{
+					MedicGunDigits.Tints[0].R = 255;
+					MedicGunDigits.Tints[0].G = 64;
+					MedicGunDigits.Tints[0].B = 64;
 
-            		MedicGunDigits.Tints[1] = MedicGunDigits.Tints[0];
-            	}
+					MedicGunDigits.Tints[1] = MedicGunDigits.Tints[0];
+				}
 
-    			if ( !bLightHud )
-    			{
-    				DrawSpriteWidget(C, MedicGunBG);
-    			}
+				if ( !bLightHud )
+				{
+					DrawSpriteWidget(C, MedicGunBG);
+				}
 
-    			DrawSpriteWidget(C, MedicGunIcon);
-    			DrawNumericWidget(C, MedicGunDigits, DigitsSmall);
+				DrawSpriteWidget(C, MedicGunIcon);
+				DrawNumericWidget(C, MedicGunDigits, DigitsSmall);
 			}
 
 			if ( Welder(PawnOwner.Weapon) != none )
@@ -1447,16 +1473,16 @@ function AddTextMessage(string M, class<LocalMessage> MessageClass, PlayerReplic
 	if( bMessageBeep && MessageClass.Default.bBeep )
 		PlayerOwner.PlayBeepSound();
 
-    for( i=0; i<ConsoleMessageCount; i++ )
-    {
-        if ( TextMessages[i].Text == "" )
-            break;
-    }
-    if( i == ConsoleMessageCount )
-    {
-        for( i=0; i<ConsoleMessageCount-1; i++ )
-            TextMessages[i] = TextMessages[i+1];
-    }
+	for( i=0; i<ConsoleMessageCount; i++ )
+	{
+		if ( TextMessages[i].Text == "" )
+			break;
+	}
+	if( i == ConsoleMessageCount )
+	{
+		for( i=0; i<ConsoleMessageCount-1; i++ )
+			TextMessages[i] = TextMessages[i+1];
+	}
 	TextMessages[i].Text = M;
 	TextMessages[i].MessageLife = Level.TimeSeconds + MessageClass.Default.LifeTime;
 	TextMessages[i].TextColor = MessageClass.static.GetConsoleColor(PRI);
@@ -1621,4 +1647,12 @@ static final function string StripColorForTTS(string s) // Strip color codes.
 
 defaultproperties
 {
+	 // SlowMoCharge
+	 SlowMoChargeBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=256,Y2=64),TextureScale=0.350000,PosX=0.155000,PosY=0.935000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=128),Tints[1]=(B=255,G=255,R=255,A=128))
+	 SlowMoChargeIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Lightning_Bolt',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.200000,PosX=0.160000,PosY=0.945000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
+	 SlowMoChargeDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.185000,PosY=0.950000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
+	 // Weight
+	 WeightBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=384,Y2=64),TextureScale=0.350000,PosX=0.295000,PosY=0.935000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
+     WeightIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Weight',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.280000,PosX=0.300000,PosY=0.941000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
+     WeightDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.335000,PosY=0.946000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
 }

@@ -2,7 +2,7 @@ Class UM_SRCustomProgress extends ReplicationInfo
 	Abstract;
 
 var() localized string ProgressName;
-var UM_SRClientPerkRepLink RepLink;
+var UM_ClientRepInfoLink RepLink;
 var UM_SRCustomProgress NextLink;
 
 replication

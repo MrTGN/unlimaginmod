@@ -5,17 +5,17 @@ class UM_SRKFBuyMenuInvList extends KFBuyMenuInvList;
 
 final function CopyAllBuyables()
 {
-	local UM_SRClientPerkRepLink L;
+	local UM_ClientRepInfoLink L;
 	local int i;
 
-	L = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	L = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if( L==None )
 		return;
 	for( i=0; i<MyBuyables.Length; ++i )
 		if( MyBuyables[i]!=None )
 			L.AllocatedObjects[L.AllocatedObjects.Length] = MyBuyables[i];
 }
-final function GUIBuyable AllocateEntry( UM_SRClientPerkRepLink L )
+final function GUIBuyable AllocateEntry( UM_ClientRepInfoLink L )
 {
 	local GUIBuyable G;
 
@@ -26,7 +26,7 @@ final function GUIBuyable AllocateEntry( UM_SRClientPerkRepLink L )
 	L.AllocatedObjects.Remove(0,1);
 	return G;
 }
-final function FreeBuyable( UM_SRClientPerkRepLink L, GUIBuyable B )
+final function FreeBuyable( UM_ClientRepInfoLink L, GUIBuyable B )
 {
 	L.AllocatedObjects[L.AllocatedObjects.Length] = B;
 }
@@ -46,11 +46,11 @@ function UpdateMyBuyables()
 	local class<KFWeaponPickup> MyPickup,MyPrimaryPickup;
 	local int DualDivider,i;
 	local class<KFVeterancyTypes> KFV;
-	local UM_SRClientPerkRepLink KFLR;
+	local UM_ClientRepInfoLink KFLR;
 	local KFPlayerReplicationInfo PRI;
 
 	PRI = KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo);
-	KFLR = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	KFLR = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if( KFLR==None || PRI==None )
 		return; // Hmmmm?
 
@@ -221,9 +221,9 @@ function UpdateMyBuyables()
 function UpdateList()
 {
 	local int i;
-	local UM_SRClientPerkRepLink KFLR;
+	local UM_ClientRepInfoLink KFLR;
 
-	KFLR = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	KFLR = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 
 	if ( MyBuyables.Length < 1 )
 	{

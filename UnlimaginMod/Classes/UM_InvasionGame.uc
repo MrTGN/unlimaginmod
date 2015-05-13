@@ -131,6 +131,8 @@ var		transient	array< KFMonster >	JammedMonsters;
 
 var		float							ZEDTimeKillSlowMoChargeBonus;
 
+var		transient	string				CurrentMapName;
+
 //[end] Varibles
 //====================================================================
 
@@ -621,6 +623,30 @@ function ClearMonsterList()
 		Remove( (MonsterList.Length - 1), 1 );
 }
 //[end] MonsterList functions
+
+function UpdateCurrentMapName()
+{
+	local	string	Ret;
+    local	int		i, j;
+	
+	// Get the MapName out of the URL
+	Ret = Level.GetLocalURL();
+	
+	i = InStr(Ret, "/") + 1;
+	if ( i < 0 || i > 16 )
+		i = 0;
+	
+	j = InStr(Ret, "?");
+	if ( j < 0 )
+		j = Len(Ret);
+	
+	if ( Mid(Ret, (j - 3), 3) ~= "rom" )
+		j -= 4;
+	
+	Ret = Mid(Ret, i, (j - i));
+	
+	CurrentMapName = Ret;
+}
 
 // Start the game - inform all actors that the match is starting, and spawn player pawns
 function StartMatch()
@@ -1358,12 +1384,6 @@ state BossWaveInProgress
 }
 //[end] BossWaveInProgress code
 
-//ToDo: дописать эту функцию!
-function CheckKillerStats( Controller Killer, Pawn KilledPawn, class<DamageType> DamageType )
-{
-	
-}
-
 function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<DamageType> DamageType )
 {
 	if ( MonsterController(Killed) != None || Monster(KilledPawn) != None )  {
@@ -1396,10 +1416,12 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 			if ( Killed != Killer )  {
 				// ZEDTimeActive
 				if ( bZEDTimeActive )  {
+					// Human Extend ZEDTime
 					if ( UM_HumanPawn(Killer.Pawn) != None )  {
 						UM_HumanPawn(Killer.Pawn).AddSlowMoCharge( ZEDTimeKillSlowMoChargeBonus );
-						ExtendZEDTime( UM_HumanPawn(Killer.Pawn) ); // Human Extend ZEDTime
+						ExtendZEDTime( UM_HumanPawn(Killer.Pawn) );
 					}
+					// Monster has killed another monster
 					else if ( Monster(Killer.Pawn) != None )  {
 						ResetSlowMoInstigator();
 						DramaticEvent(1.00);
@@ -1413,8 +1435,9 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 					else
 						DramaticEvent(0.025);
 				}
-				// CheckKillerStats
-				CheckKillerStats( Killer, KilledPawn, DamageType );
+				// All Killed Achievements Moved to the UM_ServerStats
+				if ( PlayerController(Killer) != None && UM_BaseServerStats(PlayerController(Killer).SteamStatsAndAchievements) != None )
+					UM_BaseServerStats(PlayerController(Killer).SteamStatsAndAchievements).NotifyKilled( Killed, KilledPawn, DamageType );
 			}
 		}
 		

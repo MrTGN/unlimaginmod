@@ -14,7 +14,7 @@ const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 var		bool						bDefaultPropertiesCalculated;
 
 // Player Info
-var		UM_SRClientPerkRepLink		PerkLink;
+var		UM_ClientRepInfoLink		PerkLink;
 var		UM_PlayerReplicationInfo	UM_PlayerRepInfo;	// Reference to the Player Replication Info object
 
 var		UM_Weapon_HandGrenade		HandGrenade;
@@ -1510,7 +1510,7 @@ final function bool HasWeaponClass( class<Inventory> IC )
 	Return False;
 }
 
-final function UM_SRClientPerkRepLink FindStats()
+final function UM_ClientRepInfoLink FindStats()
 {
 	local LinkedReplicationInfo L;
 
@@ -1518,8 +1518,8 @@ final function UM_SRClientPerkRepLink FindStats()
 		Return None;
 	
 	for ( L = Controller.PlayerReplicationInfo.CustomReplicationInfo; L != None; L = L.NextReplicationInfo )  {
-		if ( UM_SRClientPerkRepLink(L) != None )
-			Return UM_SRClientPerkRepLink(L);
+		if ( UM_ClientRepInfoLink(L) != None )
+			Return UM_ClientRepInfoLink(L);
 	}
 	
 	Return None;

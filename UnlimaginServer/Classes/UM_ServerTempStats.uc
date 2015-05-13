@@ -8,7 +8,7 @@ function PostBeginPlay()
 	PlayerOwner = KFPlayerController(Owner);
 	if( PlayerOwner.Player==None )
 		return; // very bad...
-	Spawn(Class'UM_ServerStStats',PlayerOwner);
+	Spawn(Class'UM_ServerStats',PlayerOwner);
 }
 
 defaultproperties

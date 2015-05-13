@@ -13,7 +13,7 @@ function bool PreDraw(Canvas Canvas)
 	Return False;
 }
 
-function InitList( UM_SRClientPerkRepLink L )
+function InitList( UM_ClientRepInfoLink L )
 {
 	local UM_SRCustomProgress P;
 	local int i;

@@ -4,7 +4,7 @@ function InitList(KFSteamStatsAndAchievements StatsAndAchievements)
 {
 	local int i;
 	local KFPlayerController KFPC;
-	local UM_SRClientPerkRepLink ST;
+	local UM_ClientRepInfoLink ST;
 	local class<KFVeterancyTypes> CurCL;
 
 	// Grab the Player Controller for later use
@@ -13,7 +13,7 @@ function InitList(KFSteamStatsAndAchievements StatsAndAchievements)
 		CurCL = KFPlayerReplicationInfo(KFPC.PlayerReplicationInfo).ClientVeteranSkill;
 
 	// Hold onto our reference
-	ST = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	ST = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if ( ST == None )
 		Return;
 
@@ -64,10 +64,10 @@ function DrawPerk(Canvas Canvas, int CurIndex, float X, float Y, float Width, fl
 	local float TempX, TempY;
 	local float IconSize, ProgressBarWidth;
 	local float TempWidth, TempHeight;
-	local UM_SRClientPerkRepLink ST;
+	local UM_ClientRepInfoLink ST;
 	local Material M,SM;
 
-	ST = Class'UM_SRClientPerkRepLink'.Static.FindStats(Canvas.Viewport.Actor);
+	ST = Class'UM_ClientRepInfoLink'.Static.FindStats(Canvas.Viewport.Actor);
 	if ( ST == None )
 		Return;
 

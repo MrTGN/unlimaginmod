@@ -20,7 +20,7 @@ function ShowPanel(bool bShow)
 	Super(MidGamePanel).ShowPanel(bShow);
 
 	if ( bShow )  {
-		if ( Class'UM_SRClientPerkRepLink'.Static.FindStats( PlayerOwner() ) != None )  {
+		if ( Class'UM_ClientRepInfoLink'.Static.FindStats( PlayerOwner() ) != None )  {
 			// Initialize the List
 			lb_PerkSelect.List.InitList(None);
 			lb_PerkProgress.List.InitList();
@@ -31,10 +31,10 @@ function ShowPanel(bool bShow)
 
 function OnPerkSelected(GUIComponent Sender)
 {
-	local UM_SRClientPerkRepLink ST;
+	local UM_ClientRepInfoLink ST;
 	local byte Idx;
 
-	ST = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	ST = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if ( ST == None || ST.CachePerks.Length == 0 )  {
 		if ( ST != None )
 			ST.ServerRequestPerks();
@@ -57,9 +57,9 @@ function OnPerkSelected(GUIComponent Sender)
 
 function bool OnSaveButtonClicked(GUIComponent Sender)
 {
-	local UM_SRClientPerkRepLink ST;
+	local UM_ClientRepInfoLink ST;
 
-	ST = Class'UM_SRClientPerkRepLink'.Static.FindStats( PlayerOwner() );
+	ST = Class'UM_ClientRepInfoLink'.Static.FindStats( PlayerOwner() );
 	if ( ST != None && lb_PerkSelect.GetIndex() >= 0 )
 		ST.ServerSelectPerk( ST.CachePerks[lb_PerkSelect.GetIndex()].PerkClass );
 	

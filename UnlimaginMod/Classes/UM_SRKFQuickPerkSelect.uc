@@ -5,12 +5,12 @@ class UM_SRKFQuickPerkSelect extends KFQuickPerkSelect;
 
 event InitComponent(GUIController MyController, GUIComponent MyOwner)
 {
-	local UM_SRClientPerkRepLink S;
+	local UM_ClientRepInfoLink S;
 
 	Super(GUIMultiComponent).InitComponent(MyController, MyOwner);
 
 	if ( PlayerOwner() != None )  {
-		S = Class'UM_SRClientPerkRepLink'.Static.FindStats( PlayerOwner() );
+		S = Class'UM_ClientRepInfoLink'.Static.FindStats( PlayerOwner() );
 		if ( S != None )
 			CheckPerksX(S);
 	}
@@ -19,7 +19,7 @@ event InitComponent(GUIController MyController, GUIComponent MyOwner)
 function bool MyOnDraw(Canvas C)
 {                                                                                                         
 	local int i, j;
-	local UM_SRClientPerkRepLink S;
+	local UM_ClientRepInfoLink S;
 	local Material M,SM;
 
 	Super(GUIMultiComponent).OnDraw(C);
@@ -34,7 +34,7 @@ function bool MyOnDraw(Canvas C)
 	C.SetPos(WinLeft * C.ClipX , WinTop * C.ClipY);
 	C.DrawTileScaled(CurPerkBack, (WinHeight * C.ClipY) / CurPerkBack.USize, (WinHeight * C.ClipY) / CurPerkBack.USize);
 
-	S = Class'UM_SRClientPerkRepLink'.Static.FindStats(C.Viewport.Actor);
+	S = Class'UM_ClientRepInfoLink'.Static.FindStats(C.Viewport.Actor);
 	if ( S != None )  {
 		// check if the current perk has changed recently
 		CheckPerksX(S);
@@ -68,10 +68,10 @@ function bool MyOnDraw(Canvas C)
 
 function bool InternalOnClick(GUIComponent Sender)
 {
-	local UM_SRClientPerkRepLink S;
+	local UM_ClientRepInfoLink S;
 
 	if ( Sender.IsA('KFIndexedGUIImage') && KFIndexedGUIImage(Sender).Index >= 0 )  {
-		S = Class'UM_SRClientPerkRepLink'.Static.FindStats( PlayerOwner() );
+		S = Class'UM_ClientRepInfoLink'.Static.FindStats( PlayerOwner() );
 		if ( S != None )
 			S.ServerSelectPerk(S.CachePerks[KFIndexedGUIImage(Sender).Index].PerkClass);
 		
@@ -81,7 +81,7 @@ function bool InternalOnClick(GUIComponent Sender)
 	Return False;	
 }
 
-function DrawCurrentPerkX( UM_SRClientPerkRepLink S, Canvas C, Int PerkIndex)
+function DrawCurrentPerkX( UM_ClientRepInfoLink S, Canvas C, Int PerkIndex)
 {
 	local Class<UM_SRVeterancyTypes> V;
 	local Material M,SM;
@@ -93,7 +93,7 @@ function DrawCurrentPerkX( UM_SRClientPerkRepLink S, Canvas C, Int PerkIndex)
 		C.DrawTileScaled(M, (WinHeight * C.ClipY) / M.MaterialUSize(), (WinHeight * C.ClipY) / M.MaterialVSize());
 }
 
-function CheckPerksX( UM_SRClientPerkRepLink S )
+function CheckPerksX( UM_ClientRepInfoLink S )
 {
 	local int i;
 	local KFPlayerReplicationInfo PRI;

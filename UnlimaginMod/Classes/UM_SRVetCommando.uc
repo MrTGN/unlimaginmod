@@ -15,7 +15,7 @@
 class UM_SRVetCommando extends UM_SRVeterancyTypes
 	Abstract;
 
-static function int GetPerkProgressInt( UM_SRClientPerkRepLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
+static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
 {
 	switch( CurLevel )
 	{

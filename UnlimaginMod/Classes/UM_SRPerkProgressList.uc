@@ -5,10 +5,10 @@ function PerkChanged(KFSteamStatsAndAchievements KFStatsAndAchievements, int New
 	local byte i,lvl;
 	local int Numerator, Denominator;
 	local float Progress;
-	local UM_SRClientPerkRepLink ST;
+	local UM_ClientRepInfoLink ST;
 
 	// Update the ItemCount and select the first item
-	ST = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	ST = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	lvl = ST.CachePerks[NewPerkIndex].CurrentLevel;
 	ItemCount = ST.CachePerks[NewPerkIndex].PerkClass.Static.GetRequirementCount(ST,lvl);
 	SetIndex(0);

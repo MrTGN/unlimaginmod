@@ -7,7 +7,7 @@ var array<string> CategoryNames;
 
 function InitComponent(GUIController MyController, GUIComponent MyOwner)
 {
-	local UM_SRClientPerkRepLink S;
+	local UM_ClientRepInfoLink S;
 	local int i,j;
 	local string C,G;
 	local xUtil.PlayerRecord PR;
@@ -22,7 +22,7 @@ function InitComponent(GUIController MyController, GUIComponent MyOwner)
 	sb_Main.RightPadding = 0.5;
 	sb_Main.ManageComponent(CharList);
 
-	S = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	S = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if ( S == None || !S.bNoStandardChars )  {
 		class'xUtil'.static.GetPlayerList(PlayerList);
 		co_Race.AddItem(StockText);

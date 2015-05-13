@@ -19,7 +19,7 @@ function AddGameRules(GameRules GR)
 
 function bool PreventDeath(Pawn Killed, Controller Killer, class<DamageType> damageType, vector HitLocation)
 {
-	local UM_SRClientPerkRepLink R;
+	local UM_ClientRepInfoLink R;
 	local UM_SRCustomProgress S;
 
 	if ( (NextGameRules != None) && NextGameRules.PreventDeath(Killed,Killer, damageType,HitLocation) )
@@ -44,7 +44,7 @@ function bool PreventDeath(Pawn Killed, Controller Killer, class<DamageType> dam
 	Return False;
 }
 
-final function UM_SRClientPerkRepLink FindStatsFor( Controller C )
+final function UM_ClientRepInfoLink FindStatsFor( Controller C )
 {
 	local LinkedReplicationInfo L;
 
@@ -52,8 +52,8 @@ final function UM_SRClientPerkRepLink FindStatsFor( Controller C )
 		Return None;
 	
 	for ( L = C.PlayerReplicationInfo.CustomReplicationInfo; L != None; L = L.NextReplicationInfo )  {
-		if ( UM_SRClientPerkRepLink(L) != None )
-			Return UM_SRClientPerkRepLink(L);
+		if ( UM_ClientRepInfoLink(L) != None )
+			Return UM_ClientRepInfoLink(L);
 	}
 	
 	return None;

@@ -774,9 +774,9 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 
 exec function ChangeCharacter(string newCharacter, optional string inClass)
 {
-	local UM_SRClientPerkRepLink S;
+	local UM_ClientRepInfoLink S;
 
-	S = Class'UM_SRClientPerkRepLink'.Static.FindStats(Self);
+	S = Class'UM_ClientRepInfoLink'.Static.FindStats(Self);
 	if ( S != None )
 		S.SelectedCharacter(newCharacter);
 	else 
@@ -785,8 +785,8 @@ exec function ChangeCharacter(string newCharacter, optional string inClass)
 
 function SetPawnClass(string inClass, string inCharacter)
 {
-	if ( UM_SRStatsBase(SteamStatsAndAchievements) != None )
-		UM_SRStatsBase(SteamStatsAndAchievements).ChangeCharacter(inCharacter);
+	if ( UM_BaseServerStats(SteamStatsAndAchievements) != None )
+		UM_BaseServerStats(SteamStatsAndAchievements).ChangeCharacter(inCharacter);
 	else  {
 		PawnSetupRecord = class'xUtil'.static.FindPlayerRecord(inCharacter);
 		PlayerReplicationInfo.SetCharacterName(inCharacter);
@@ -796,14 +796,14 @@ function SetPawnClass(string inClass, string inCharacter)
 // Called from GameType actor from DoWaveEnd() function in MatchInProgress state
 simulated function SendSelectedVeterancyToServer(optional bool bForceChange)
 {
-	if ( Level.NetMode != NM_Client && UM_SRStatsBase(SteamStatsAndAchievements) != None )
-		UM_SRStatsBase(SteamStatsAndAchievements).WaveEnded();
+	if ( Level.NetMode != NM_Client && UM_BaseServerStats(SteamStatsAndAchievements) != None )
+		UM_BaseServerStats(SteamStatsAndAchievements).WaveEnded();
 }
 
 function SelectVeterancy(class<KFVeterancyTypes> VetSkill, optional bool bForceChange)
 {
-	if ( UM_SRStatsBase(SteamStatsAndAchievements) != None )
-		UM_SRStatsBase(SteamStatsAndAchievements).ServerSelectPerk(Class<UM_SRVeterancyTypes>(VetSkill));
+	if ( UM_BaseServerStats(SteamStatsAndAchievements) != None )
+		UM_BaseServerStats(SteamStatsAndAchievements).ServerSelectPerk(Class<UM_SRVeterancyTypes>(VetSkill));
 }
 
 // Allow clients fix the behindview bug themself
@@ -1005,6 +1005,6 @@ defaultproperties
 	MidGameMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	BuyMenuClassName="UnlimaginMod.UM_SRGUIBuyMenu"
 	SteamStatsAndAchievementsClass=None
-	SteamStatsAndAchievementsClassName="UnlimaginServer.UM_ServerStStats"
+	SteamStatsAndAchievementsClassName="UnlimaginServer.UM_ServerStats"
 	PawnClass=Class'UnlimaginMod.UM_HumanPawn'
 }

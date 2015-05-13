@@ -11,7 +11,7 @@ struct SmileyMessageType
 };
 var array<SmileyMessageType> SmileyMsgs;
 
-var UM_SRClientPerkRepLink ClientRep;
+var UM_ClientRepInfoLink ClientRep;
 var transient float OldDilation,CurrentBW,DesiredBW,NextLevelTimer,LevelProgressBar,VisualProgressBar;
 var bool bUseBloom,bUseMotionBlur,bDisplayingProgress;
 var transient bool bFadeBW;
@@ -1099,7 +1099,7 @@ simulated function Tick( float Delta )
 {
 	if( ClientRep==None )
 	{
-		ClientRep = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner);
+		ClientRep = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner);
 		if( ClientRep!=None )
 			SmileyMsgs = ClientRep.SmileyTags;
 	}

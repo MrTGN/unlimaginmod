@@ -50,7 +50,7 @@ var		array< UM_PlayerController >					PendingPlayers;
 var		array<UM_StatsObject>							ActiveStats;
 var		localized		string							ServerPerksGroup;
 var		transient		UM_DatabaseUdpLink				Link;
-var		array<UM_ServerStStats>							PendingData;
+var		array<UM_ServerStats>							PendingData;
 var						KFGameType						KFGT;
 var						int								LastSavedWave, WaveCounter;
 var		array<UM_HUDKillingFloor.SmileyMessageType>	SmileyMsgs;
@@ -246,12 +246,12 @@ event Timer()
 		if ( PendingPlayers[i] != None && PendingPlayers[i].Player != None )  {
 			// Storing bUseAdvBehindview to the bEnhancedShoulderView in PlayerControllers
 			PendingPlayers[i].bUseAdvBehindview = bEnhancedShoulderView;
-			if ( UM_ServerStStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
+			if ( UM_ServerStats(PendingPlayers[i].SteamStatsAndAchievements) == None )  {
 				// Has stats but not what we need
 				if ( PendingPlayers[i].SteamStatsAndAchievements != None )
 					PendingPlayers[i].SteamStatsAndAchievements.Destroy();
 				// Spawning a new stats for the player
-				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStStats', PendingPlayers[i]);
+				PendingPlayers[i].SteamStatsAndAchievements = Spawn(Class'UM_ServerStats', PendingPlayers[i]);
 			}
 		}
 		PendingPlayers.Remove(i, 1);
@@ -276,16 +276,16 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 	else if ( UM_PlayerController(Other) != None )
 		AddPlayerToPendingPlayers( UM_PlayerController(Other) );	*/
 	// Finding a new stats objects
-	else if ( UM_ServerStStats(Other) != None )
-		SetServerPerks( UM_ServerStStats(Other) );
+	else if ( UM_ServerStats(Other) != None )
+		SetServerPerks( UM_ServerStats(Other) );
 	// Finding new stats replication actors
-	else if ( UM_SRClientPerkRepLink(Other) != None )
-		SetupRepLink( UM_SRClientPerkRepLink(Other) );
+	else if ( UM_ClientRepInfoLink(Other) != None )
+		SetupRepLink( UM_ClientRepInfoLink(Other) );
 
 	Return True;	// Wasn't replaced
 }
 
-final function SetServerPerks( UM_ServerStStats Stat )
+final function SetServerPerks( UM_ServerStats Stat )
 {
 	local int i;
 
@@ -298,7 +298,7 @@ final function SetServerPerks( UM_ServerStStats Stat )
 		Stat.Rep.CachePerks[i].PerkClass = LoadPerks[i];
 }
 
-final function SetupRepLink( UM_SRClientPerkRepLink R )
+final function SetupRepLink( UM_ClientRepInfoLink R )
 {
 	local int i;
 
@@ -399,12 +399,12 @@ final function UM_StatsObject GetStatsForPlayer( PlayerController PC )
 final function SaveStats()
 {
 	local int i;
-	local UM_SRClientPerkRepLink CP;
+	local UM_ClientRepInfoLink CP;
 
 	Log("*** Saving"@ActiveStats.Length@"stats objects ***",Class.Outer.Name);
-	foreach DynamicActors(Class'UM_SRClientPerkRepLink',CP)
-		if( CP.StatObject!=None && UM_ServerStStats(CP.StatObject).MyStatsObject!=None )
-			UM_ServerStStats(CP.StatObject).MyStatsObject.SetCustomValues(CP.CustomLink);
+	foreach DynamicActors(Class'UM_ClientRepInfoLink',CP)
+		if( CP.StatObject!=None && UM_ServerStats(CP.StatObject).MyStatsObject!=None )
+			UM_ServerStats(CP.StatObject).MyStatsObject.SetCustomValues(CP.CustomLink);
 
 	if( bUseRemoteDatabase )
 	{
@@ -429,8 +429,8 @@ final function CheckWinOrLose()
 	bWin = (KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType == 2);
 	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
 		Player = PlayerController(P);
-		if ( Player != None && UM_ServerStStats(Player.SteamStatsAndAchievements) != None )
-			UM_ServerStStats(Player.SteamStatsAndAchievements).WonLostGame(bWin);
+		if ( Player != None && UM_ServerStats(Player.SteamStatsAndAchievements) != None )
+			UM_ServerStats(Player.SteamStatsAndAchievements).WonLostGame(bWin);
 	}
 }
 
@@ -510,7 +510,7 @@ final function string GetSafeName( string S )
 	return S;
 }
 
-final function GetRemoteStatsForPlayer( UM_ServerStStats Other )
+final function GetRemoteStatsForPlayer( UM_ServerStats Other )
 {
 	local int i;
 

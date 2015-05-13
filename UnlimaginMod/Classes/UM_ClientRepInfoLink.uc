@@ -1,4 +1,4 @@
-Class UM_SRClientPerkRepLink extends LinkedReplicationInfo
+Class UM_ClientRepInfoLink extends LinkedReplicationInfo
 	DependsOn(UM_HUDKillingFloor);
 
 var int RDamageHealedStat, RWeldingPointsStat, RShotgunDamageStat, RHeadshotKillsStat, RChainsawKills,
@@ -21,7 +21,7 @@ struct FPerksListType
 };
 var array<FPerksListType> CachePerks;
 
-var UM_SRStatsBase StatObject;
+var UM_BaseServerStats StatObject;
 
 struct FShopItemIndex
 {
@@ -134,14 +134,14 @@ final function SpawnCustomLinks()
 		CachePerks[i].PerkClass.Static.AddCustomStats(Self);
 }
 
-simulated static final function UM_SRClientPerkRepLink FindStats( PlayerController Other )
+simulated static final function UM_ClientRepInfoLink FindStats( PlayerController Other )
 {
 	local LinkedReplicationInfo L;
-	local UM_SRClientPerkRepLink C;
+	local UM_ClientRepInfoLink C;
 
 	if( Other.PlayerReplicationInfo==None )
 	{
-		foreach Other.DynamicActors(Class'UM_SRClientPerkRepLink',C)
+		foreach Other.DynamicActors(Class'UM_ClientRepInfoLink',C)
 			if( C.Owner==Other )
 			{
 				C.RepLinkBroken();
@@ -150,11 +150,11 @@ simulated static final function UM_SRClientPerkRepLink FindStats( PlayerControll
 		return None; // Not yet init.
 	}
 	for( L=Other.PlayerReplicationInfo.CustomReplicationInfo; L!=None; L=L.NextReplicationInfo )
-		if( UM_SRClientPerkRepLink(L)!=None )
-			return UM_SRClientPerkRepLink(L);
+		if( UM_ClientRepInfoLink(L)!=None )
+			return UM_ClientRepInfoLink(L);
 	if( Other.Level.NetMode!=NM_Client )
 		return None; // Not yet init.
-	foreach Other.DynamicActors(Class'UM_SRClientPerkRepLink',C)
+	foreach Other.DynamicActors(Class'UM_ClientRepInfoLink',C)
 		if( C.Owner==Other )
 		{
 			C.RepLinkBroken();

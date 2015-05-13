@@ -16,7 +16,7 @@ class UM_SRVetSupportSpec extends UM_SRVeterancyTypes
 	Abstract;
 
 
-static function int GetPerkProgressInt( UM_SRClientPerkRepLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
+static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
 {
 	switch( CurLevel )
 	{
@@ -242,15 +242,6 @@ static function float GetRecoilModifier( UM_PlayerReplicationInfo PRI, WeaponFir
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 && UM_BaseShotgunFire(WF) != None )
 		Return 1.00 - 0.02 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 20% bonus
-	
-	Return 1.0;
-}
-
-// Set number times Zed Time can be extended
-simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
-{
-	if ( PRI.ClientVeteranSkillLevel > 3 )
-		Return 0.5 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 5 SlowMo seconds
 	
 	Return 1.0;
 }

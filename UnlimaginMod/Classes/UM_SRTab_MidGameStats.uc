@@ -42,12 +42,12 @@ function InitComponent(GUIController MyController, GUIComponent MyOwner)
 
 function ShowPanel(bool bShow)
 {
-	local UM_SRClientPerkRepLink L;
+	local UM_ClientRepInfoLink L;
 
 	Super.ShowPanel(bShow);
 
 	if ( bShow )  {
-		L = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+		L = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 		if ( L != None )
 			lb_PerkSelect.List.InitList(L);
 		

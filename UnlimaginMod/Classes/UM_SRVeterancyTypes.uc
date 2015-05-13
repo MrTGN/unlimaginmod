@@ -28,10 +28,10 @@ var		array< EquipmentData >		AdditionalEquipment;
 //[block] Functions
 
 // Can be used to add in custom stats.
-static function AddCustomStats( UM_SRClientPerkRepLink Other );
+static function AddCustomStats( UM_ClientRepInfoLink Other );
 
 // Return the level of perk that is available, 0 = perk is n/a.
-static function byte PerkIsAvailable( UM_SRClientPerkRepLink StatOther )
+static function byte PerkIsAvailable( UM_ClientRepInfoLink StatOther )
 {
 	local byte i;
 
@@ -45,7 +45,7 @@ static function byte PerkIsAvailable( UM_SRClientPerkRepLink StatOther )
 }
 
 // Return the number of different requirements this level has.
-static function byte GetRequirementCount( UM_SRClientPerkRepLink StatOther, byte CurLevel )
+static function byte GetRequirementCount( UM_ClientRepInfoLink StatOther, byte CurLevel )
 {
 	if ( CurLevel == StatOther.MaximumLevel )
 		Return 0;
@@ -54,7 +54,7 @@ static function byte GetRequirementCount( UM_SRClientPerkRepLink StatOther, byte
 }
 
 // Return 0-1 % of how much of the progress is done to gain this perk (for menu GUI).
-static function float GetTotalProgress( UM_SRClientPerkRepLink StatOther, byte CurLevel )
+static function float GetTotalProgress( UM_ClientRepInfoLink StatOther, byte CurLevel )
 {
 	local byte i,rc,Minimum;
 	local int R,V,NegReq;
@@ -91,7 +91,7 @@ static function float GetTotalProgress( UM_SRClientPerkRepLink StatOther, byte C
 }
 
 // Return true if this level is earned.
-static function bool LevelIsFinished( UM_SRClientPerkRepLink StatOther, byte CurLevel )
+static function bool LevelIsFinished( UM_ClientRepInfoLink StatOther, byte CurLevel )
 {
 	local byte i,rc;
 	local int R,V;
@@ -115,7 +115,7 @@ static function bool LevelIsFinished( UM_SRClientPerkRepLink StatOther, byte Cur
 }
 
 // Return 0-1 % of how much of the progress is done to gain this individual task (for menu GUI).
-static function float GetPerkProgress( UM_SRClientPerkRepLink StatOther, byte CurLevel, byte ReqNum, out int Numerator, out int Denominator )
+static function float GetPerkProgress( UM_ClientRepInfoLink StatOther, byte CurLevel, byte ReqNum, out int Numerator, out int Denominator )
 {
 	local byte Minimum;
 	local int Reduced,Cur,Fin;
@@ -154,7 +154,7 @@ static function float GetPerkProgress( UM_SRClientPerkRepLink StatOther, byte Cu
 }
 
 // Return int progress for this perk level up.
-static function int GetPerkProgressInt( UM_SRClientPerkRepLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
+static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )
 {
 	FinalInt = 1;
 	
@@ -280,8 +280,8 @@ static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 
 simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
-	if ( PRI.ClientVeteranSkillLevel > 7 )
-		Return 0.25 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 2.5 SlowMo seconds
+	if ( PRI.ClientVeteranSkillLevel > 6 )
+		Return 0.3 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 3.0 SlowMo seconds
 	
 	Return 0.0;
 }

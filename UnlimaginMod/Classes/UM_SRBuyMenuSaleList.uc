@@ -17,10 +17,10 @@ final function GUIBuyable GetSelectedBuyable()
 
 final function CopyAllBuyables()
 {
-	local UM_SRClientPerkRepLink L;
+	local UM_ClientRepInfoLink L;
 	local int i;
 
-	L = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	L = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if ( L == None )
 		Return;
 	
@@ -30,7 +30,7 @@ final function CopyAllBuyables()
 	}
 }
 
-final function GUIBuyable AllocateEntry( UM_SRClientPerkRepLink L )
+final function GUIBuyable AllocateEntry( UM_ClientRepInfoLink L )
 {
 	local GUIBuyable G;
 
@@ -90,7 +90,7 @@ function UpdateForSaleBuyables()
 {
 	local class<KFVeterancyTypes> PlayerVeterancy;
 	local KFPlayerReplicationInfo KFPRI;
-	local UM_SRClientPerkRepLink SRLR;
+	local UM_ClientRepInfoLink SRLR;
 	local GUIBuyable ForSaleBuyable;
 	local class<KFWeaponPickup> ForSalePickup;
 	local int j, DualDivider, i;
@@ -101,7 +101,7 @@ function UpdateForSaleBuyables()
 	ForSaleBuyables.Length = 0;
 
 	// Grab the items for sale
-	SRLR = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+	SRLR = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if ( SRLR == None )
 		Return; // Hmmmm?
 
@@ -200,9 +200,9 @@ function UpdateForSaleBuyables()
 function UpdateList()
 {
 	local int i,j;
-	local UM_SRClientPerkRepLink SRLR;
+	local UM_ClientRepInfoLink SRLR;
 
-	SRLR = Class'UM_SRClientPerkRepLink'.Static.FindStats( PlayerOwner() );
+	SRLR = Class'UM_ClientRepInfoLink'.Static.FindStats( PlayerOwner() );
 
 	// Update the ItemCount and select the first item
 	ItemCount = SRLR.ShopCategories.Length + ForSaleBuyables.Length;
@@ -268,7 +268,7 @@ function DrawInvItem(Canvas Canvas, int CurIndex, float X, float Y, float Width,
 {
 	local float TempX, TempY, TempHeight;
 	local float StringHeight, StringWidth;
-	local UM_SRClientPerkRepLink SRLR;
+	local UM_ClientRepInfoLink SRLR;
 
 	OnClickSound=CS_Click;
 
@@ -331,7 +331,7 @@ function DrawInvItem(Canvas Canvas, int CurIndex, float X, float Y, float Width,
 	if ( CanBuys[CurIndex] < 2 )  {
 		Canvas.SetPos(X + 4, Y + 4);
 
-		SRLR = Class'UM_SRClientPerkRepLink'.Static.FindStats(PlayerOwner());
+		SRLR = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 		if( SRLR!=None && SRLR.ShopPerkIcons.Length>ItemPerkIndexes[CurIndex] )
 			Canvas.DrawTile(SRLR.ShopPerkIcons[ItemPerkIndexes[CurIndex]], Height - 8, Height - 8, 0, 0, 256, 256);
 	}

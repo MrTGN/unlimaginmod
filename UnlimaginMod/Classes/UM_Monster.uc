@@ -431,11 +431,6 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	}
 	DestroyBallisticCollision();
 	
-	if ( Role == ROLE_Authority && bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
-		UM_InvasionGame(Level.Game).RemoveMonsterFromTheList(self);
-		bAddedToTheMonsterList = False;
-	}
-	
 	Super(Pawn).Died( Killer, DamageType, HitLocation );
 }
 
@@ -444,11 +439,6 @@ simulated event Destroyed()
 	DestroyBallisticCollision();
 	
 	Super.Destroyed();
-	
-	if ( Role == ROLE_Authority && bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
-		UM_InvasionGame(Level.Game).RemoveMonsterFromTheList(self);
-		bAddedToTheMonsterList = False;
-	}
 }
 
 // Scales the damage this Zed deals by the difficulty level

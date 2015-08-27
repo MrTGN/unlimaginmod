@@ -1,5 +1,5 @@
 Class UM_ClientRepInfoLink extends LinkedReplicationInfo
-	DependsOn(UM_HUDKillingFloor);
+	DependsOn(UM_HUD);
 
 var int RDamageHealedStat, RWeldingPointsStat, RShotgunDamageStat, RHeadshotKillsStat, RChainsawKills,
 		RStalkerKillsStat, RBullpupDamageStat, RMeleeDamageStat, RFlameThrowerDamageStat,RTotalZedTimeStat,
@@ -32,7 +32,7 @@ var array< FShopItemIndex > ShopInventory;
 var array<Material> ShopPerkIcons;
 var array<string> ShopCategories,CustomChars;
 var array<GUIBuyable> AllocatedObjects;
-var array<UM_HUDKillingFloor.SmileyMessageType> SmileyTags;
+var array<UM_HUD.SmileyMessageType> SmileyTags;
 
 var UM_SRCustomProgress CustomLink;
 
@@ -310,8 +310,8 @@ simulated final function ClientAllReceived()
 	if( SmileyTags.Length==0 )
 		return;
 	PC = Level.GetLocalPlayerController();
-	if( PC!=None && UM_HUDKillingFloor(PC.MyHUD)!=None )
-		UM_HUDKillingFloor(PC.MyHUD).SmileyMsgs = SmileyTags;
+	if( PC!=None && UM_HUD(PC.MyHUD)!=None )
+		UM_HUD(PC.MyHUD).SmileyMsgs = SmileyTags;
 }
 
 function ServerAckSkin( int Index )

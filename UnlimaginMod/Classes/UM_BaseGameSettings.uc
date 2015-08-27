@@ -1,6 +1,6 @@
 /*==================================================================================
 	Package:		 UnlimaginMod
-	Class name:		 UM_GameSettingsProfile
+	Class name:		 UM_BaseGameSettings
 	Creation date:	 24.01.2015 01:17
 ----------------------------------------------------------------------------------
 	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
@@ -17,7 +17,7 @@
 	Comment:		 This is a base game settings profile class. 
 	You can create as many game settings profiles as you want and switches between them. 
 ==================================================================================*/
-class UM_GameSettingsProfile extends UM_BaseObject
+class UM_BaseGameSettings extends UM_BaseObject
 	DependsOn(UM_BaseGameInfo)
 	//Config
 	//ParseConfig

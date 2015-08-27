@@ -1,4 +1,4 @@
-class UM_HUDKillingFloor extends HUDKillingFloor;
+class UM_HUD extends HUDKillingFloor;
 
 #exec obj load file="KFMapEndTextures.utx"
 #exec obj load file="2K4Menus.utx"
@@ -252,6 +252,135 @@ simulated function UpdateHud()
 }
 
 function DrawCustomBeacon(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY);
+
+simulated function DrawKFHUDTextElements(Canvas C)
+{
+	local float    XL, YL;
+	local int      Mnt, Sec;
+	local string   S;
+	local vector   Pos, FixedZPos;
+	local rotator  ShopDirPointerRotation;
+	local float    CircleSize;
+	local float    ResScale;
+
+	if ( PlayerOwner == None || KFGRI == None || !KFGRI.bMatchHasBegun || (KFPlayerController(PlayerOwner) != None && KFPlayerController(PlayerOwner).bShopping) )
+		Return;
+
+	ResScale =  C.SizeX / 1024.0;
+	CircleSize = FMin(128 * ResScale,128);
+	C.FontScaleX = FMin(ResScale,1.0);
+	C.FontScaleY = FMin(ResScale,1.0);
+
+	// Wave is in progress now
+	if ( KFGRI.bWaveInProgress )  {
+		//Hints
+		if ( KFPlayerController(PlayerOwner) != None )  {
+			KFPlayerController(PlayerOwner).CheckForHint(30);
+			if ( !bHint_45_TimeSet && KFGRI.WaveNumber == 1 )  {
+				Hint_45_Time = Level.TimeSeconds + 5;
+				bHint_45_TimeSet = True;
+			}
+		}
+
+		C.SetDrawColor(255, 255, 255, 255);
+		C.SetPos(C.ClipX - CircleSize, 2);
+		C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
+
+		// Show monsters count if MaxMonsters is enabled
+		if ( KFGRI.MaxMonstersOn )  {
+			S = string(KFGRI.MaxMonsters);
+			C.Font = LoadFont(1);
+			C.Strlen(S, XL, YL);
+			C.SetDrawColor(255, 50, 50, KFHUDAlpha);
+			C.SetPos((C.ClipX - CircleSize / 2 - XL / 2), (CircleSize / 2 - YL / 1.5));
+			C.DrawText(S);
+		}
+		// Show time until the wave end
+		else  {
+			Mnt = KFGRI.TimeToNextWave / 60;
+			Sec = KFGRI.TimeToNextWave - Mnt * 60;
+			S = Eval( (Mnt > 9), string(Mnt), "0" $ string(Mnt) ) $ ":" $ Eval( (Sec > 9), string(Sec), "0" $ string(Sec) );
+			C.Font = LoadFont(1);
+			C.Strlen(S, XL, YL);
+			C.SetDrawColor(255, 50, 50, KFHUDAlpha);
+			C.SetPos((C.ClipX - CircleSize / 2 - XL / 2), (CircleSize / 2 - YL / 1.5));
+			C.DrawText(S);
+		}
+
+		// Show the number of waves
+		S = WaveString @ string(KFGRI.WaveNumber + 1) $ "/" $ string(KFGRI.FinalWave);
+		C.Font = LoadFont(5);
+		C.Strlen(S, XL, YL);
+		C.SetPos((C.ClipX - CircleSize / 2 - XL / 2), (CircleSize / 2 + YL / 2.5));
+		C.DrawText(S);
+
+		//Needed for the hints showing up in the second downtime
+		bIsSecondDowntime = True;
+	}
+	// Countdown Text
+	else  {
+		C.SetDrawColor(255, 255, 255, 255);
+		C.SetPos(C.ClipX - CircleSize, 2);
+		C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Clock_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
+
+		if ( KFGRI.TimeToNextWave <= 5 && bIsSecondDowntime )
+			KFPlayerController(PlayerOwner).CheckForHint(40);
+
+		Mnt = KFGRI.TimeToNextWave / 60;
+		Sec = KFGRI.TimeToNextWave - Mnt * 60;
+		S = Eval( (Mnt > 9), string(Mnt), "0" $ string(Mnt) ) $ ":" $ Eval( (Sec > 9), string(Sec), "0" $ string(Sec) );
+		C.Font = LoadFont(2);
+		C.Strlen(S, XL, YL);
+		C.SetDrawColor(255, 50, 50, KFHUDAlpha);
+		C.SetPos(C.ClipX - CircleSize/2 - (XL / 2), CircleSize/2 - YL / 2);
+		C.DrawText(S, False);
+	}
+
+	C.FontScaleX = 1;
+	C.FontScaleY = 1;
+
+
+	if ( KFPRI == None || KFPRI.Team == None || KFPRI.bOnlySpectator )
+		Return;
+
+	// Draw the shop pointer
+	if ( ShopDirPointer == None )  {
+		ShopDirPointer = Spawn(Class'KFShopDirectionPointer');
+		ShopDirPointer.bHidden = bHideHud;
+	}
+
+	Pos.X = C.SizeX / 18.0;
+	Pos.Y = C.SizeX / 18.0;
+	Pos = PlayerOwner.Player.Console.ScreenToWorld(Pos) * 10.0 * (PlayerOwner.default.DefaultFOV / PlayerOwner.FovAngle) + PlayerOwner.CalcViewLocation;
+	ShopDirPointer.SetLocation(Pos);
+
+	if ( KFGRI.CurrentShop != None )  {
+		// Let's check for a real Z difference (i.e. different floor) doesn't make sense to rotate the arrow
+		// only because the trader is a midget or placed slightly wrong
+		if ( KFGRI.CurrentShop.Location.Z > PawnOwner.Location.Z + 50.0 || KFGRI.CurrentShop.Location.Z < PawnOwner.Location.Z - 50.f )
+		    ShopDirPointerRotation = rotator(KFGRI.CurrentShop.Location - PawnOwner.Location);
+		else  {
+		    FixedZPos = KFGRI.CurrentShop.Location;
+		    FixedZPos.Z = PawnOwner.Location.Z;
+		    ShopDirPointerRotation = rotator(FixedZPos - PawnOwner.Location);
+		}
+	}
+	else  {
+		ShopDirPointer.bHidden = True;
+		Return;
+	}
+
+	ShopDirPointer.SetRotation(ShopDirPointerRotation);
+
+	if ( Level.TimeSeconds > Hint_45_Time && Level.TimeSeconds < (Hint_45_Time + 2) && KFPlayerController(PlayerOwner) != None )
+		KFPlayerController(PlayerOwner).CheckForHint(45);
+
+	C.DrawActor(None, False, True); // Clear Z.
+	ShopDirPointer.bHidden = False;
+	C.DrawActor(ShopDirPointer, False, False);
+	ShopDirPointer.bHidden = True;
+	DrawTraderDistance(C);
+}
 
 simulated function DrawSpectatingHud(Canvas C)
 {
@@ -656,7 +785,7 @@ simulated function DrawEndGameHUD(Canvas C, bool bVictory)
 		ScoreBoard.DrawScoreboard(C);
 }
 
-simulated function DrawHudPassA (Canvas C)
+simulated function DrawHudPassA(Canvas C)
 {
 	local	KFHumanPawn		KFHPawn;
 	local	Material		TempMaterial, TempStarMaterial;
@@ -1653,6 +1782,6 @@ defaultproperties
 	 SlowMoChargeDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.185000,PosY=0.950000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
 	 // Weight
 	 WeightBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=384,Y2=64),TextureScale=0.350000,PosX=0.295000,PosY=0.935000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
-     WeightIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Weight',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.280000,PosX=0.300000,PosY=0.941000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
-     WeightDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.335000,PosY=0.946000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
+	 WeightIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Weight',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.280000,PosX=0.300000,PosY=0.941000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
+	 WeightDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.335000,PosY=0.946000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
 }

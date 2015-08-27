@@ -44,8 +44,8 @@ var		float							ExitZedTime;
 var		float							BotAtHumanFriendlyFireScale;
 
 // Will be config string at release version
-var		string							GameSettingsProfileClassName;
-var		class<UM_GameSettingsProfile>	GameSettingsProfileClass;
+var		string							GameSettingsClassName;
+var		class<UM_BaseGameSettings>		GameSettingsClass;
 
 var		transient	float				DefaultGameSpeed;	// Sets in the InitGame event
 
@@ -104,39 +104,39 @@ function bool AllowGameSpeedChange()
 	Return bAllowMPGameSpeed;
 }
 
-protected function bool LoadGameSettingsProfile()
+protected function bool LoadGameSettings()
 {
 	local	int		i;
 	
-	if ( GameSettingsProfileClassName != "" )
-		GameSettingsProfileClass = Class<UM_GameSettingsProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
+	if ( GameSettingsClassName != "" )
+		GameSettingsClass = Class<UM_BaseGameSettings>( BaseActor.static.LoadClass(GameSettingsClassName) );
 	else  {
-		Warn("GameSettingsProfileClassName not specified!", Class.Outer.Name);
-		GameSettingsProfileClassName = "UnlimaginMod.UM_DefaultInvasionGameProfile";
-		GameSettingsProfileClass = Class<UM_GameSettingsProfile>( BaseActor.static.LoadClass(GameSettingsProfileClassName) );
+		Warn("GameSettingsClassName not specified!", Class.Outer.Name);
+		GameSettingsClassName = "UnlimaginMod.UM_BaseGameSettings";
+		GameSettingsClass = Class<UM_BaseGameSettings>( BaseActor.static.LoadClass(GameSettingsClassName) );
 	}
 	
-	if ( GameSettingsProfileClass == None )  {
-		Warn("GameSettingsProfileClass wasn't found!", Class.Outer.Name);
+	if ( GameSettingsClass == None )  {
+		Warn("GameSettingsClass wasn't found!", Class.Outer.Name);
 		Return False;
 	}
 	
 	// MaxHumanPlayers
-	default.MaxHumanPlayers = GameSettingsProfileClass.default.MaxHumanPlayers;
+	default.MaxHumanPlayers = GameSettingsClass.default.MaxHumanPlayers;
 	MaxHumanPlayers = default.MaxHumanPlayers;
 	
 	// DramaticKills
-	default.DramaticKills.Length = GameSettingsProfileClass.default.DramaticKills.Length;
+	default.DramaticKills.Length = GameSettingsClass.default.DramaticKills.Length;
 	DramaticKills.Length = default.DramaticKills.Length;
-	for ( i = 0; i < GameSettingsProfileClass.default.DramaticKills.Length; ++i )  {
+	for ( i = 0; i < GameSettingsClass.default.DramaticKills.Length; ++i )  {
 		// MinKilled
-		default.DramaticKills[i].MinKilled = GameSettingsProfileClass.default.DramaticKills[i].MinKilled;
+		default.DramaticKills[i].MinKilled = GameSettingsClass.default.DramaticKills[i].MinKilled;
 		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
 		// EventChance
-		default.DramaticKills[i].EventChance = GameSettingsProfileClass.default.DramaticKills[i].EventChance;
+		default.DramaticKills[i].EventChance = GameSettingsClass.default.DramaticKills[i].EventChance;
 		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
 		// EventDuration
-		default.DramaticKills[i].EventDuration = GameSettingsProfileClass.default.DramaticKills[i].EventDuration;
+		default.DramaticKills[i].EventDuration = GameSettingsClass.default.DramaticKills[i].EventDuration;
 		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
 	}
 	
@@ -559,7 +559,7 @@ defaultproperties
 	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	 DefaultPlayerClassName="UnlimaginMod.UM_HumanPawn"
 	 ScoreBoardType="UnlimaginMod.UM_SRScoreBoard"
-	 HUDType="UnlimaginMod.UM_HUDKillingFloor"
+	 HUDType="UnlimaginMod.UM_HUD"
 	 MapListType="KFMod.KFMapList"
 	 PlayerControllerClass=Class'UnlimaginMod.UM_PlayerController'
 	 PlayerControllerClassName="UnlimaginMod.UM_PlayerController"

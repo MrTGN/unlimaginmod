@@ -68,11 +68,12 @@ struct GameWaveData
 	var()	config	UM_BaseActor.IntRange	MonstersAtOnce;
 	var()	config	UM_BaseActor.IntRange	MonsterSquadSize;
 	var()	config	range					SquadsSpawnPeriod;
+	var		config	float					SquadsSpawnEndTime;
 	var()	config	float					WaveDifficulty;
 	var()	config	UM_BaseActor.IntRange	WaveDuration;
 	var()	config	UM_BaseActor.IntRange	BreakTime;
 	var()	config	UM_BaseActor.IntRange	StartingCash;
-	var()	config	UM_BaseActor.IntRange	WaveDelay;
+	var()	config	int						WaveDelay;
 };
 var		array<GameWaveData>				GameWaves;
 
@@ -116,13 +117,18 @@ var		transient	float				NextShopListUpdateTime;
 var		float							ZedSpawnListUpdateDelay;
 var		transient	float				NextZedSpawnListUpdateTime;
 
-var		transient	int					CurrentWaveDuration, CurrentWaveMaxDuration;
-var		transient	int					MaxMonstersAtOnce;
-var		transient	float				NewMonsterSquadSpawnTime;
-var		transient	int					NewMonsterSquadSize;
+var		transient	int					WaveRemainingTime;
+var		int								MaxAliveMonsters;
+var		transient	float				NextMonsterSquadSpawnTime;
+var		transient	int					NextMonsterSquadSize;
+
+var		transient	float				NextJammedMonstersCheckTime;
+var					float				JammedMonstersCheckDelay;
 
 var		float							SpawningVolumeUpdateDelay;
 var		transient	float				NextSpawningVolumeUpdateTime;
+
+var		float							NumPlayersModifier;
 
 var		transient	array<UM_HumanPawn>	HumanList;
 var		transient	array<UM_Monster>	MonsterList;
@@ -151,15 +157,18 @@ simulated function ResetToDefaultProperties()
 	MonsterSpawnSafeRange = default.MonsterSpawnSafeRange;
 }
 
-protected function bool LoadGameSettingsProfile()
+/*Todo: удалить большую часть ненужныхприравниваний.
+	Большинство переменных будет приравниваться вызовом статической функции из GameSettings класса.
+*/
+protected function bool LoadGameSettings()
 {
 	local	int		i, j;
-	local	class<UM_DefaultInvasionGameProfile>	IGP;
+	local	class<UM_DefaultInvasionSettings>	IGP;
 	
-	if ( !Super.LoadGameSettingsProfile() )
+	if ( !Super.LoadGameSettings() )
 		Return False;
 	
-	IGP = class<UM_DefaultInvasionGameProfile>(GameSettingsProfileClass);
+	IGP = class<UM_DefaultInvasionSettings>(GameSettingsClass);
 	if ( IGP == None )
 		Return False;
 	
@@ -206,9 +215,6 @@ protected function bool LoadGameSettingsProfile()
 		// MinMonstersAtOnce
 		default.GameWaves[i].MinMonstersAtOnce = IGP.default.GameWaves[i].MinMonstersAtOnce;
 		GameWaves[i].MinMonstersAtOnce = default.GameWaves[i].MinMonstersAtOnce;
-		// MaxMonstersAtOnce
-		default.GameWaves[i].MaxMonstersAtOnce = IGP.default.GameWaves[i].MaxMonstersAtOnce;
-		GameWaves[i].MaxMonstersAtOnce = default.GameWaves[i].MaxMonstersAtOnce;
 		// MinMonsterSquad
 		default.GameWaves[i].MinMonsterSquad = IGP.default.GameWaves[i].MinMonsterSquad;
 		GameWaves[i].MinMonsterSquad = default.GameWaves[i].MinMonsterSquad;
@@ -245,12 +251,9 @@ protected function bool LoadGameSettingsProfile()
 		BossMonsters[i].WaveSpawnChance = default.BossMonsters[i].WaveSpawnChance;
 	}
 	
+	Log("GameSettingsProfile:" @string(GameSettingsClass.default.Name) @"Loaded", Class.Outer.Name);
+	
 	Return True;
-}
-
-protected function LogGameSettingsProfileLoaded()
-{
-	Log("GameSettingsProfile:" @string(GameSettingsProfileClass.default.Name) @"Loaded", Class.Outer.Name);
 }
 
 function LoadUpMonsterList()
@@ -332,8 +335,7 @@ event InitGame( string Options, out string Error )
 
 	Super(xTeamGame).InitGame(Options, Error);
 	
-	if ( LoadGameSettingsProfile() )
-		LogGameSettingsProfileLoaded();
+	LoadGameSettings();
 	
 	MaxLives = 1;
 	bForceRespawn = True;
@@ -496,7 +498,7 @@ function float GetNumPlayersModifier()
 {
 	local	int		CurrentNumPlayers;
 	
-	CurrentNumPlayers = FMin( (NumPlayers + NumBots), 12);
+	CurrentNumPlayers = FMin( (NumPlayers + NumBots), MaxHumanPlayers);
 	switch ( CurrentNumPlayers )  {
 		case 1:
 		case 2:
@@ -519,6 +521,22 @@ function float GetNumPlayersModifier()
 	Return float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
 }
 
+// Todo: #282
+function UpdateNumPlayersModifier()
+{
+	if ( class<UM_DefaultInvasionSettings>(GameSettingsClass) != None )
+		NumPlayersModifier = class<UM_DefaultInvasionSettings>(GameSettingsClass).static.GetNumPlayersModifier( self );
+	else
+		NumPlayersModifier = GetNumPlayersModifier();
+}
+
+//Todo: #275
+function UpdateMaxAliveMonsters()
+{
+	if ( class<UM_DefaultInvasionSettings>(GameSettingsClass) != None )
+		MaxAliveMonsters = class<UM_DefaultInvasionSettings>(GameSettingsClass).static.GetMaxAliveMonsters( self );
+}
+
 function ModifyMonsterListByDifficulty()
 {
 	local	int		i, j;
@@ -536,14 +554,11 @@ function ModifyMonsterListByDifficulty()
 function ModifyMonsterListByNumPlayers()
 {
 	local	int		i, j;
-	local	float	NumPlayersMod;
-	
-	NumPlayersMod = GetNumPlayersModifier();
 		
 	// scale Monster WaveLimits by number of Players
 	for ( i = 0; i < Monsters.Length; ++i )  {
 		for ( j = 0; j < Monsters[i].WaveLimits.Length; ++j )
-			Monsters[i].WaveLimits[j] = Round( float(Monsters[i].WaveLimits[j]) * NumPlayersMod );
+			Monsters[i].WaveLimits[j] = Round( float(Monsters[i].WaveLimits[j]) * NumPlayersModifier );
 	}
 }
 
@@ -570,17 +585,6 @@ function AddNewHumanToTheList( UM_HumanPawn H )
 	HumanList[HumanList.Length] = H;
 }
 
-// Called from the UM_HumanPawn when Died or Destroyed
-function RemoveHumanFromTheList( UM_HumanPawn H )
-{
-	local	int		i;
-	
-	for ( i = 0; i < HumanList.Length; ++i )  {
-		if ( HumanList[i] == H )
-			HumanList.Remove(i, 1);
-	}
-}
-
 function ClearHumanList()
 {
 	while( HumanList.Length > 0 )
@@ -604,17 +608,6 @@ function UpdateMonsterList()
 function AddNewMonsterToTheList( UM_Monster M )
 {
 	MonsterList[MonsterList.Length] = M;
-}
-
-// Called from the UM_Monster when Died or Destroyed
-function RemoveMonsterFromTheList( UM_Monster M )
-{
-	local	int		i;
-	
-	for ( i = 0; i < MonsterList.Length; ++i )  {
-		if ( MonsterList[i] == M )
-			MonsterList.Remove(i, 1);
-	}
 }
 
 function ClearMonsterList()
@@ -1033,9 +1026,9 @@ state Shopping
 //[end] Shopping
 
 //[block] WaveInProgress Code
-function UpdateCurrentWaveMaxDuration()
+function UpdateWaveRemainingTime()
 {
-	CurrentWaveMaxDuration = Min( Round(float(GameWaves[WaveNum].WaveDuration.Min) * GetDifficultyModifier() * GetNumPlayersModifier()), GameWaves[WaveNum].WaveDuration.Max );
+	WaveRemainingTime = Min( Round(float(GameWaves[WaveNum].WaveDuration.Min) * GetDifficultyModifier()), GameWaves[WaveNum].WaveDuration.Max );
 }
 
 function CheckSelectedVeterancy( KFPlayerController PC )
@@ -1053,19 +1046,13 @@ function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, 
 	local	float				BestScore, tScore;
 	local	int					i;
 	local	Controller			C;
-	local	array<Controller>	CList;
-
-	// Buil Player and Bot Controller List
-	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-		++i;	// To prevent runaway loop
-		if ( C.bIsPlayer && C.Pawn != None && C.Pawn.Health > 0 )
-			CList[CList.Length] = C;
-	}
 	
+	UpdateHumanList();
 	// First pass, pick a random player.
-	if ( CList.Length > 0 )
-		C = CList[ Rand(CList.Length) ];
-	else if ( C == None )
+	if ( HumanList.Length > 0 )
+		C = HumanList[ Rand(HumanList.Length) ].Controller;
+	
+	if ( C == None )
 		Return None; // Shouldnt get to this case, but just to be sure...
 	
 	UpdateZedSpawnList();
@@ -1084,58 +1071,17 @@ function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, 
 	Return BestZ;
 }
 
-function UpdateStartingCash()
-{
-	// StartingCash
-	StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-	// MinRespawnCash
-	MinRespawnCash = StartingCash;
-}
-
-function UpdateMaxMonsters()
-{
-	// Total max number of monsters at this wave
-	TotalMaxMonsters = Min( Round(float(BaseActor.static.GetRandRangeInt(GameWaves[WaveNum].NumMonsters)) * GetDifficultyModifier() * GetNumPlayersModifier()), GameWaves[WaveNum].MaxMonsters );
-	// Monsters left to spawn in this wave
-	MaxMonsters = Max( (TotalMaxMonsters - WaveMonsters), 0 );
-	// MaxMonsters at once on map
-	MaxMonstersAtOnce = Min( Round(float(GameWaves[WaveNum].MonstersAtOnce.Min) * GetDifficultyModifier() * GetNumPlayersModifier()), GameWaves[WaveNum].MonstersAtOnce.Max );
-}
-
-function UpdateNumMonsters()
-{
-	
-}
-
-function SetupWave()
-{
-	rewardFlag = False;
-    ZombiesKilled = 0;
-    WaveMonsters = 0;
-	NumMonsters = 0;
-	
-	// StartingCash
-	UpdateStartingCash();
-	// Monsters
-	UpdateMaxMonsters();
-	
-	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
-		KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
-		KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = True;
-	}
-}
-
 // Clear old functions
+function SetupWave() { }
 function AddSpecialSquad() { }
-function BuildNextSquad() { }
 function bool AddSquad() { }
 
-function BuildNewMonsterSquad()
+function BuildNextSquad()
 {
 	local	int				c, r,
 	
 	NextSpawnSquad.Length = 0;
-	while ( NextSpawnSquad.Length < NewMonsterSquadSize && c < 250 )  {
+	while ( NextSpawnSquad.Length < NextMonsterSquadSize && c < 250 )  {
 		++c;
 		r = Rand(Monsters.Length);
 		if ( Monsters[r].MonsterClass != None && (Monsters[r].WaveLimits.Length <= WaveNum || Monsters[r].WaveLimits[WaveNum] != 0) 
@@ -1154,7 +1100,7 @@ function BuildNewMonsterSquad()
 		}
 	}
 	// Next Monster Squad Size
-	NewMonsterSquadSize = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].MonsterSquadSize );
+	NextMonsterSquadSize = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].MonsterSquadSize );
 }
 
 function SelectNewSpawningVolume( optional bool bForceSelection )
@@ -1166,15 +1112,18 @@ function SelectNewSpawningVolume( optional bool bForceSelection )
 	LastSpawningVolume = FindSpawningVolume();
 }
 
-function SpawnNewMonsterSquad()
+function SpawnNewMonsterSquad( optional bool bForceSpawn )
 {
 	local	int		NumSpawned;
 	
 	// NextSpawnTime
-	NewMonsterSquadSpawnTime = Level.TimeSeconds + BaseActor.static.GetRandRangeFloat( GameWaves[WaveNum].SquadsSpawnPeriod ) / GetDifficultyModifier();
+	if ( !bForceSpawn )
+		NextMonsterSquadSpawnTime = Level.TimeSeconds + BaseActor.static.GetRandRangeFloat( GameWaves[WaveNum].SquadsSpawnPeriod ) / GetDifficultyModifier();
 	
 	// NewMonsterSquad
-	BuildNewMonsterSquad();
+	if ( NextSpawnSquad.Length < 1 )
+		BuildNextSquad();
+	
 	// NewSpawningVolume
 	if ( LastSpawningVolume == None )
 		SelectNewSpawningVolume(True);
@@ -1184,13 +1133,15 @@ function SpawnNewMonsterSquad()
 	if ( LastSpawningVolume == None )
 		Return;
 	
-	if ( LastSpawningVolume.SpawnInHere( NextSpawnSquad,, NumSpawned, MaxMonsters, (MaxMonstersAtOnce - NumMonsters) ) )  {
+	if ( LastSpawningVolume.SpawnInHere( NextSpawnSquad,, NumSpawned, MaxMonsters, (MaxAliveMonsters - NumMonsters) ) )  {
+		MaxMonsters = default.MaxMonsters;
 		NumMonsters += NumSpawned;
 		WaveMonsters += NumSpawned;
+		NextSpawnSquad.Length = 0;
 	}
 	else  {
 		SelectNewSpawningVolume(True);
-		NewMonsterSquadSpawnTime = Level.TimeSeconds;
+		NextMonsterSquadSpawnTime = Level.TimeSeconds + 1.0;
 	}
 }
 
@@ -1198,6 +1149,8 @@ function bool CheckForJammedMonsters()
 {
 	local	int			i;
 	local	Controller	C;
+	
+	NextJammedMonstersCheckTime = JammedMonstersCheckDelay + Level.TimeSeconds;
 	
 	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 		++i;	// To prevent runaway loop
@@ -1212,8 +1165,6 @@ function RespawnJammedMonsters()
 {
 	local	int		i;
 	
-	CurrentWaveMaxDuration += 60.0;	// Additional 60 seconds
-	
 	while ( JammedMonsters.Length > 0 )  {
 		i = JammedMonsters.Length - 1;
 		if ( Class<KFMonster>(JammedMonsters[i].Class) != None )
@@ -1224,23 +1175,9 @@ function RespawnJammedMonsters()
 	
 	NumMonsters -= NextSpawnSquad.Length;
 	WaveMonster -= NextSpawnSquad.Length;
-	MaxMonsters += NextSpawnSquad.Length;
+	//MaxMonsters += NextSpawnSquad.Length;
 	
-	// NewSpawningVolume
-	if ( LastSpawningVolume == None )
-		SelectNewSpawningVolume(True);
-	else
-		SelectNewSpawningVolume();
-	
-	if ( LastSpawningVolume == None )
-		Return;
-	
-	if ( LastSpawningVolume.SpawnInHere( NextSpawnSquad,, NumSpawned, MaxMonsters, (MaxMonstersAtOnce - NumMonsters) ) )  {
-		NumMonsters += NumSpawned;
-		WaveMonsters += NumSpawned;
-	}
-	else
-		SelectNewSpawningVolume(True);
+	SpawnNewMonsterSquad(True);
 }
 
 function DoWaveEnd()
@@ -1261,7 +1198,7 @@ function DoWaveEnd()
 	bNotifiedLastManStanding = False;
 	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 		KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = False;
-		KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
+		//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
 	}
 	
 	// ControllerList
@@ -1318,48 +1255,88 @@ function DoWaveEnd()
 	bUpdateViewTargs = True;
 }
 
+function CheckForGameEnd()
+{
+	UpdateHumanList();
+	UpdateMonsterList();
+	
+	if ( HumanList.Length < 1 )
+		EndGame(None, "TimeLimit");
+}
+
 state WaveInProgress
 {
-	function SetupWave()
+	function UpdateStartingCash()
 	{
-		Global.SetupWave();
-		
+		// StartingCash
+		StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
+		// MinRespawnCash
+		MinRespawnCash = StartingCash;
+	}
+
+	/* ToDo: убрать эту функцию и переменные в ней. 
+	Спавн ограничен по времени, а не по количеству монстров. */
+	function UpdateMaxMonsters()
+	{
+		// Total max number of monsters at this wave
+		TotalMaxMonsters = Min( Round(float(BaseActor.static.GetRandRangeInt(GameWaves[WaveNum].NumMonsters)) * GetDifficultyModifier() * NumPlayersModifier), GameWaves[WaveNum].MaxMonsters );
+		// Monsters left to spawn in this wave
+		MaxMonsters = Max( (TotalMaxMonsters - WaveMonsters), 0 );
 	}
 	
 	event BeginState()
 	{
+		rewardFlag = False;
+		ZombiesKilled = 0;
+		WaveMonsters = 0;
+		NumMonsters = 0;
 		CurrentWaveDuration = 0;
-		UpdateCurrentWaveMaxDuration();
+		UpdateWaveRemainingTime();
 		
-		SetupWave();
+		// StartingCash
+		UpdateStartingCash();
+		// Monsters
+		UpdateMaxMonsters();
+		
+		AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
 		
 		if ( !MusicPlaying )
 			StartGameMusic( True );
 		
 		bWaveInProgress = True;
-		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
+			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
+			//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = True;
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;
+		}
 	}
 	
 	event Timer()
 	{
 		Global.Timer();
 
-		++CurrentWaveDuration;
+		--WaveRemainingTime;
 		
-		//ToDo: дописать update на кол-во игроков и монстров
-		
-		// All monsters spawned
-		if ( MaxMonsters < 1 )  {
-			// if everyone's spawned and they're all dead
-			if ( NumMonsters < 1 )
-				GoToState('Shopping');
-			else if ( CurrentWaveDuration > CurrentWaveMaxDuration && CheckForJammedMonsters() )
-				RespawnJammedMonsters();
+		if ( !bFinalStartup )  {
+			bFinalStartup = True;
+			PlayStartupMessage();
 		}
-		else if ( MaxMonsters < NewMonsterSquadSize )
-			NewMonsterSquadSize = MaxMonsters;
-		else if ( Level.TimeSeconds >= NewMonsterSquadSpawnTime && (MaxMonstersAtOnce - NumMonsters) >= NewMonsterSquadSize )
+		if ( NeedPlayers() && AddBot() && (RemainingBots > 0) )
+			RemainingBots--;
+		
+		ElapsedTime++;
+		if ( GameReplicationInfo != None )
+			GameReplicationInfo.ElapsedTime = ElapsedTime;
+		
+		CheckForGameEnd();
+		
+		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime && CheckForJammedMonsters() )
+			RespawnJammedMonsters();
+		
+		if ( WaveRemainingTime < 1 )
+			GoToState('Shopping');
+		// Spawn New Monster Squad
+		else if ( Level.TimeSeconds >= NextMonsterSquadSpawnTime && WaveRemainingTime > GameWaves[WaveNum].SquadsSpawnEndTime && (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize )
 			SpawnNewMonsterSquad();
 	}
 	
@@ -1487,10 +1464,13 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
+	 MaxAliveMonsters=40
+	 NumPlayersModifier=1.0
+	 JammedMonstersCheckDelay=20
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=4.0
-	 GameSettingsProfileClassName="UnlimaginMod.UM_DefaultInvasionGameProfile"
+	 GameSettingsClassName="UnlimaginMod.UM_DefaultInvasionSettings"
 	 
 	 ZEDTimeKillSlowMoChargeBonus=0.4
 	 
@@ -1510,13 +1490,13 @@ defaultproperties
 	 Monsters(7)=(MonsterClassName="UnlimaginMod.UM_ZombieSiren",WaveLimits=(0,1,2,2,4,4,6),WaveSpawnChances=(0.0,0.15,0.15,0.2,0.2,0.25,0.25),WaveSpawnDelays=(0.0,240.0,210.0,180.0,120.0,90.0,60.0))
 	 Monsters(8)=(MonsterClassName="UnlimaginMod.UM_ZombieStalker",WaveLimits=(6,8,10,12,14,16,18),WaveSpawnChances=(0.45,0.45,0.5,0.55,0.55,0.5,0.5))
 	 // GameWaves - 7 waves
-	 GameWaves(0)=(NumMonsters=(Min=16,Max=20),MaxMonsters=270,MonstersAtOnce=(Min=16,Max=42),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=2.0,Max=4.0),WaveDifficulty=0.7,WaveDuration=(Min=480,Max=2400),BreakTime=(Min=90,Max=100),StartingCash=(Min=240,Max=280),WaveDelay=(Min=5,Max=10))
-	 GameWaves(1)=(NumMonsters=(Min=22,Max=26),MaxMonsters=360,MonstersAtOnce=(Min=18,Max=44),MonsterSquadSize=(Min=4,Max=6),SquadsSpawnPeriod=(Min=2.5,Max=4.5),WaveDifficulty=0.8,WaveDuration=(Min=600,Max=3000),BreakTime=(Min=90,Max=110),StartingCash=(Min=260,Max=300))
-	 GameWaves(2)=(NumMonsters=(Min=28,Max=32),MaxMonsters=450,MonstersAtOnce=(Min=20,Max=46),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=2.5,Max=5.0),WaveDifficulty=0.9,WaveDuration=(Min=720,Max=3600),BreakTime=(Min=100,Max=110),StartingCash=(Min=280,Max=320))
-	 GameWaves(3)=(NumMonsters=(Min=34,Max=38),MaxMonsters=540,MonstersAtOnce=(Min=22,Max=48),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=3.0,Max=5.5),WaveDifficulty=1.0,WaveDuration=(Min=840,Max=4200),BreakTime=(Min=100,Max=120),StartingCash=(Min=300,Max=340))
-	 GameWaves(4)=(NumMonsters=(Min=40,Max=44),MaxMonsters=630,MonstersAtOnce=(Min=24,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.0),WaveDifficulty=1.1,WaveDuration=(Min=960,Max=4800),BreakTime=(Min=110,Max=120),StartingCash=(Min=320,Max=360))
-	 GameWaves(5)=(NumMonsters=(Min=46,Max=50),MaxMonsters=720,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.5),WaveDifficulty=1.2,WaveDuration=(Min=1080,Max=5400),BreakTime=(Min=110,Max=130),StartingCash=(Min=340,Max=380))
-	 GameWaves(6)=(NumMonsters=(Min=52,Max=56),MaxMonsters=810,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=7.0),WaveDifficulty=1.3,WaveDuration=(Min=1200,Max=6000),BreakTime=(Min=120,Max=130),StartingCash=(Min=360,Max=400))
+	 GameWaves(0)=(NumMonsters=(Min=16,Max=20),MaxMonsters=270,MonstersAtOnce=(Min=16,Max=42),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=2.0,Max=4.0),SquadsSpawnEndTime=15,WaveDifficulty=0.7,WaveDuration=(Min=480,Max=2400),BreakTime=(Min=90,Max=100),StartingCash=(Min=240,Max=280),WaveDelay=10)
+	 GameWaves(1)=(NumMonsters=(Min=22,Max=26),MaxMonsters=360,MonstersAtOnce=(Min=18,Max=44),MonsterSquadSize=(Min=4,Max=6),SquadsSpawnPeriod=(Min=2.5,Max=4.5),SquadsSpawnEndTime=15,WaveDifficulty=0.8,WaveDuration=(Min=600,Max=3000),BreakTime=(Min=90,Max=110),StartingCash=(Min=260,Max=300))
+	 GameWaves(2)=(NumMonsters=(Min=28,Max=32),MaxMonsters=450,MonstersAtOnce=(Min=20,Max=46),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=2.5,Max=5.0),SquadsSpawnEndTime=15,WaveDifficulty=0.9,WaveDuration=(Min=720,Max=3600),BreakTime=(Min=100,Max=110),StartingCash=(Min=280,Max=320))
+	 GameWaves(3)=(NumMonsters=(Min=34,Max=38),MaxMonsters=540,MonstersAtOnce=(Min=22,Max=48),MonsterSquadSize=(Min=4,Max=8),SquadsSpawnPeriod=(Min=3.0,Max=5.5),SquadsSpawnEndTime=20,WaveDifficulty=1.0,WaveDuration=(Min=840,Max=4200),BreakTime=(Min=100,Max=120),StartingCash=(Min=300,Max=340))
+	 GameWaves(4)=(NumMonsters=(Min=40,Max=44),MaxMonsters=630,MonstersAtOnce=(Min=24,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.0),SquadsSpawnEndTime=20,WaveDifficulty=1.1,WaveDuration=(Min=960,Max=4800),BreakTime=(Min=110,Max=120),StartingCash=(Min=320,Max=360))
+	 GameWaves(5)=(NumMonsters=(Min=46,Max=50),MaxMonsters=720,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=6.5),SquadsSpawnEndTime=20,WaveDifficulty=1.2,WaveDuration=(Min=1080,Max=5400),BreakTime=(Min=110,Max=130),StartingCash=(Min=340,Max=380))
+	 GameWaves(6)=(NumMonsters=(Min=52,Max=56),MaxMonsters=810,MonstersAtOnce=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=7.0),SquadsSpawnEndTime=25,WaveDifficulty=1.3,WaveDuration=(Min=1200,Max=6000),BreakTime=(Min=120,Max=130),StartingCash=(Min=360,Max=400))
 	 // Boss
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"
 	 // BossMonsters
@@ -1533,7 +1513,7 @@ defaultproperties
 	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"
 	 DefaultPlayerClassName="UnlimaginMod.UM_HumanPawn"
 	 ScoreBoardType="UnlimaginMod.UM_SRScoreBoard"
-	 HUDType="UnlimaginMod.UM_HUDKillingFloor"
+	 HUDType="UnlimaginMod.UM_HUD"
 	 MapListType="KFMod.KFMapList"
 	 
 	 PlayerControllerClass=Class'UnlimaginMod.UM_PlayerController'

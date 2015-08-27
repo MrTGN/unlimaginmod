@@ -1846,11 +1846,6 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	// ClientDying
 	if ( !bPhysicsAnimUpdate && !IsLocallyControlled() )
 		ClientDying(DamageType, HitLocation);
-	
-	if ( Role == ROLE_Authority && bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
-		UM_InvasionGame(Level.Game).RemoveHumanFromTheList(self);
-		bAddedToTheHumanList = False;
-	}
 }
 
 // Clearing old functions
@@ -2838,15 +2833,12 @@ exec function SwitchToLastWeapon()
     }
 }
 
+/*
 simulated event Destroyed()
 {
 	Super.Destroyed();
-	
-	if ( Role == ROLE_Authority && bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
-		UM_InvasionGame(Level.Game).RemoveHumanFromTheList(self);
-		bAddedToTheHumanList = False;
-	}
-}
+
+}	*/
 
 //[end] Functions
 //====================================================================

@@ -313,6 +313,25 @@ simulated function float GetProjectileBounceBonus( Class<UM_BaseProjectile> Proj
 }
 //[end]
 
+function Reset()
+{
+	Score = 0;
+	Deaths = 0;
+	GoalsScored = 0;
+	Kills = 0;
+	
+	HasFlag = None;
+	bReadyToPlay = False;
+	if ( UM_BaseGameInfo(Level.Game) != None || KFGameType(Level.Game) != None )  {
+		NumLives = 1;
+		bOutOfLives = True;
+	}
+	else  {
+		NumLives = 0;
+		bOutOfLives = False;
+	}
+}
+
 //[end] Functions
 //====================================================================
 

@@ -324,6 +324,111 @@ function bool CanRestartPlayer()
 	Return !PlayerReplicationInfo.bOnlySpectator;
 }
 
+function ServerSpectate()
+{
+	// Proper fix for phantom pawns
+	if ( Pawn != None && !Pawn.bDeleteMe )
+		Pawn.Died(self, class'DamageType', Pawn.Location);
+
+	GotoState('Spectating');
+	bBehindView = True;
+	ServerViewNextPlayer();
+}
+
+function ClientBecameSpectator()
+{
+	UpdateURL("SpectatorOnly", "1", false);
+}
+
+// Active player wants to become a spectator
+function BecomeSpectator()
+{
+	if ( Role < ROLE_Authority )
+		Return;
+
+	// Most of original logic moved into this function in the UM_BaseGameInfo class
+	if ( !Level.Game.BecomeSpectator(self) )
+		Return;
+	
+	if ( Pawn != None )
+		Pawn.Suicide();
+
+	ServerSpectate();
+	BroadcastLocalizedMessage(class'GameMessage', 14, PlayerReplicationInfo);
+
+	ClientBecameSpectator();
+}
+
+function JoinedAsSpectatorOnly()
+{
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	if ( Pawn != None )
+		Pawn.Suicide();
+
+	if ( PlayerReplicationInfo.Team != None )
+		PlayerReplicationInfo.Team.RemoveFromTeam(self);
+	PlayerReplicationInfo.Team = None;
+	PlayerReplicationInfo.Reset();
+	
+	ServerSpectate();
+	BroadcastLocalizedMessage(Level.Game.GameMessageClass, 14, PlayerReplicationInfo);
+
+	ClientBecameSpectator();
+}
+
+
+function ClientBecameActivePlayer()
+{
+	UpdateURL("SpectatorOnly","",true);
+}
+
+// Spectating player wants to become active and join the game
+function BecomeActivePlayer()
+{
+	if ( Role < ROLE_Authority )
+		Return;
+
+	if ( !Level.Game.AllowBecomeActivePlayer(self) )
+		Return;
+
+	bBehindView = False;
+	FixFOV();
+	SetViewDistance();
+	ServerViewSelf();
+	Adrenaline = 0;
+
+	if ( UM_BaseGameInfo(Level.Game) != None )
+		UM_BaseGameInfo(Level.Game).BecomeActivePlayer(self);
+	else  {
+		--Level.Game.NumSpectators;
+		++Level.Game.NumPlayers;
+		PlayerReplicationInfo.Reset();
+		PlayerReplicationInfo.bOnlySpectator = False;
+		if ( KFGameType(Level.Game) != None )
+			PlayerReplicationInfo.Score = KFGameType(Level.Game).StartingCash;
+		if ( Level.Game.bTeamGame )
+			Level.Game.ChangeTeam(self, Level.Game.PickTeam(int(GetURLOption("Team")), None), false);
+	}
+	
+	BroadcastLocalizedMessage(Level.Game.GameMessageClass, 1, PlayerReplicationInfo);
+	
+	if ( Level.Game.bDelayedStart )
+        GotoState('PlayerWaiting');
+	// start match, or let player enter, immediately
+	else  {
+		Level.Game.bRestartLevel = False;  // let player spawn once in levels that must be restarted after every death
+		if ( Level.Game.bWaitingToStartMatch )
+			Level.Game.StartMatch();
+		else
+			Level.Game.RestartPlayer(PlayerController(Owner));
+		Level.Game.bRestartLevel = Level.Game.Default.bRestartLevel;
+	}
+
+    ClientBecameActivePlayer();
+}
+
 auto state PlayerWaiting
 {
 	exec function Fire( optional float F )

@@ -317,7 +317,7 @@ function UpdateZedSpawnList()
 function UpdateStartingCash()
 {
 	StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-	MinRespawnCash = Min( BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash ) , StartingCash );
+	MinRespawnCash = Min( BaseActor.static.GetRandRangeInt(GameWaves[WaveNum].StartingCash), StartingCash );
 }
 
 /* Initialize the game.
@@ -521,6 +521,11 @@ function float GetNumPlayersModifier()
 	Return float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
 }
 
+function UpdateNumPlayers()
+{
+	
+}
+
 // Todo: #282
 function UpdateNumPlayersModifier()
 {
@@ -554,7 +559,7 @@ function ModifyMonsterListByDifficulty()
 function ModifyMonsterListByNumPlayers()
 {
 	local	int		i, j;
-		
+	
 	// scale Monster WaveLimits by number of Players
 	for ( i = 0; i < Monsters.Length; ++i )  {
 		for ( j = 0; j < Monsters[i].WaveLimits.Length; ++j )
@@ -565,18 +570,12 @@ function ModifyMonsterListByNumPlayers()
 //[block] HumanList functions
 function UpdateHumanList()
 {
-	local	int		i, p, b;
+	local	int		i;
 	
 	for ( i = 0; i < HumanList.Length; ++i )  {
 		if ( HumanList[i] == None || HumanList[i].bDeleteMe || HumanList[i].Health < 1 )
 			HumanList.Remove(i, 1);
-		else if ( PlayerController(HumanList[i].Controller) != None )
-			++p;
-		else if ( Bot(HumanList[i].Controller) != None )
-			++b;
 	}
-	NumPlayers = p;
-	NumBots = b;
 }
 
 // Called from the UM_HumanPawn in PostBeginPlay() function
@@ -1425,30 +1424,6 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 	Super(DeathMatch).Killed( Killer, Killed, KilledPawn, DamageType );
 }
 
-// Mod this to include the choices made in the GUIClassMenu
-function RestartPlayer( Controller aPlayer )
-{
-	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
-		Return;
-
-	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {
-		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
-		aPlayer.PlayerReplicationInfo.NumLives = 1;
-		aPlayer.GoToState('Spectating');
-		Return;
-	}
-
-	Super(GameInfo).RestartPlayer(aPlayer);
-
-	// Notifying that the Veterancy info has changed
-	if ( UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo) != None )
-		UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo).NotifyVeterancyChanged();
-	
-	// Disable pawn collision during trader time
-	if ( bTradingDoorsOpen && aPlayer.bIsPlayer )
-		aPlayer.Pawn.bBlockActors = False;
-}
-
 function EndGame( PlayerReplicationInfo Winner, string Reason )
 {
 	if ( Class'UM_GlobalData'.default.ActorPool != None )  {
@@ -1464,6 +1439,8 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
+	 bSaveSpectatorScores=True
+	 
 	 MaxAliveMonsters=40
 	 NumPlayersModifier=1.0
 	 JammedMonstersCheckDelay=20

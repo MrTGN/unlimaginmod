@@ -59,6 +59,8 @@ var		float							MinToggleSlowMoCharge;
 
 var		transient	bool				bSlowMoStartedByHuman;
 
+var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
+
 //[end] Varibles
 //====================================================================
 
@@ -143,6 +145,306 @@ protected function bool LoadGameSettings()
 	Return True;
 }
 
+function GiveStartingCashTo( PlayerController P )
+{
+	if ( P == None || P.PlayerReplicationInfo == None )
+		Return;
+	
+	P.PlayerReplicationInfo.Score = StartingCash;
+}
+
+// Active player wants to become a spectator
+function bool BecomeSpectator( PlayerController P )
+{
+	if ( P.PlayerReplicationInfo == None || P.PlayerReplicationInfo.bOnlySpectator
+		 || NumSpectators >= MaxSpectators || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
+		P.ReceiveLocalizedMessage(GameMessageClass, 12);
+		Return False;
+	}
+
+	P.PlayerReplicationInfo.bOnlySpectator = True;
+	if ( !bSaveSpectatorScores )
+		P.PlayerReplicationInfo.Reset();
+	if ( P.PlayerReplicationInfo.Team != None )
+		P.PlayerReplicationInfo.Team.RemoveFromTeam(P);
+	if ( !bSaveSpectatorTeam )
+		P.PlayerReplicationInfo.Team = None;
+	
+	++NumSpectators;
+	--NumPlayers;
+	
+	if ( !bKillBots )
+		++RemainingBots;
+	
+	if ( !NeedPlayers() || AddBot() )
+		--RemainingBots;
+
+	Return True;
+}
+
+function bool AllowBecomeActivePlayer( PlayerController P )
+{
+	if ( P.PlayerReplicationInfo == None || !P.PlayerReplicationInfo.bOnlySpectator
+		 || !GameReplicationInfo.bMatchHasBegun || bMustJoinBeforeStart || NumPlayers >= MaxPlayers 
+		 || MaxLives > 0 || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
+		P.ReceiveLocalizedMessage(GameMessageClass, 13);
+		Return False;
+	}
+	
+	if ( Level.NetMode == NM_Standalone && NumBots > InitialBots )  {
+		--RemainingBots;
+		bPlayerBecameActive = True;
+	}
+	
+	Return True;
+}
+
+// Spectating player wants to become active and join the game
+function BecomeActivePlayer( PlayerController P )
+{
+	--NumSpectators;
+	++NumPlayers;
+	if ( !bSaveSpectatorScores )  {
+		P.PlayerReplicationInfo.Reset();
+		GiveStartingCashTo( P );
+	}
+	
+	P.PlayerReplicationInfo.bOnlySpectator = False;
+	if ( bTeamGame )  {
+		if ( P.PlayerReplicationInfo.Team != None )
+			ChangeTeam(P, P.PlayerReplicationInfo.Team.TeamIndex, None), false);
+		else
+			ChangeTeam(P, PickTeam(int(GetURLOption("Team")), None), false);
+	}
+}
+
+// Return True if player slots are fill
+function bool AtCapacity( bool bSpectator )
+{
+	if ( Level.NetMode == NM_Standalone )
+		Return False;
+
+	if ( bSpectator )
+		Return ( NumSpectators >= MaxSpectators && (Level.NetMode != NM_ListenServer || NumPlayers > 0) );
+	else
+		Return ( MaxPlayers > 0 && NumPlayers >= MaxPlayers );
+}
+
+// Mod this to include the choices made in the GUIClassMenu
+function RestartPlayer( Controller aPlayer )
+{
+	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
+		Return;
+
+	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {
+		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
+		aPlayer.PlayerReplicationInfo.NumLives = 1;
+		aPlayer.GoToState('Spectating');
+		Return;
+	}
+
+	Super(GameInfo).RestartPlayer(aPlayer);
+
+	// Notifying that the Veterancy info has changed
+	if ( UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo) != None )
+		UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo).NotifyVeterancyChanged();
+	
+	// Disable pawn collision during trader time
+	if ( bTradingDoorsOpen && aPlayer.bIsPlayer )
+		aPlayer.Pawn.bBlockActors = False;
+}
+
+/*	Log a player in.
+	Fails login if you set the Error string.
+	PreLogin is called before Login, but significant game time may pass before
+	Login is called, especially if content is downloaded.	*/
+event PlayerController Login( string Portal, string Options, out string Error )
+{
+	local	NavigationPoint		StartSpot;
+	local	PlayerController	NewPlayer, TestPlayer;
+	local	string				InName, InAdminName, InPassword, InChecksum, InCharacter,InSex;
+	local	byte				InTeam;
+	local	bool				bSpectator, bAdmin;
+	local	class<Security>		MySecurityClass;
+	local	Pawn				TestPawn;
+	local	Controller			C;
+
+	Options = StripColor(Options);  // Strip out color Codes
+
+	BaseMutator.ModifyLogin(Portal, Options);
+
+	// Get URL options.
+	InName     = Left(ParseOption ( Options, "Name"), 20);
+	InTeam     = GetIntOption( Options, "Team", 255 ); // default to "no team"
+	InAdminName= ParseOption ( Options, "AdminName");
+	InPassword = ParseOption ( Options, "Password" );
+	InChecksum = ParseOption ( Options, "Checksum" );
+
+	if ( HasOption(Options, "Load") )  {
+		log("Loading Savegame");
+		InitSavedLevel();
+		bIsSaveGame = True;
+
+		// Try to match up to existing unoccupied player in level,
+		// for savegames - also needed coop level switching.
+		ForEach DynamicActors( class'PlayerController', TestPlayer )  {
+			if ( TestPlayer.Player == None && TestPlayer.PlayerOwnerName ~= InName )  {
+				TestPawn = TestPlayer.Pawn;
+				if ( TestPawn != None )
+					TestPawn.SetRotation(TestPawn.Controller.Rotation);
+				log("FOUND "$TestPlayer@TestPlayer.PlayerReplicationInfo.PlayerName);
+				Return TestPlayer;
+			}
+		}
+	}
+
+	bSpectator = ( ParseOption( Options, "SpectatorOnly" ) ~= "1" );
+	if ( AccessControl != None )
+		bAdmin = AccessControl.CheckOptionsAdmin(Options);
+
+	// Make sure there is capacity except for admins. (This might have changed since the PreLogin call).
+	if ( !bAdmin && AtCapacity(bSpectator) )  {
+		Error = GameMessageClass.Default.MaxedOutMessage;
+		Return None;
+	}
+
+	// If admin, force spectate mode if the server already full of reg. players
+	if ( bAdmin && AtCapacity(false) )
+		bSpectator = True;
+
+	// Pick a team (if need teams)
+	InTeam = PickTeam(InTeam,None);
+
+	// Find a start spot.
+	StartSpot = FindPlayerStart( None, InTeam, Portal );
+
+	if ( StartSpot == None )  {
+		Error = GameMessageClass.Default.FailedPlaceMessage;
+		Return None;
+	}
+
+	if ( PlayerControllerClass == None )
+		PlayerControllerClass = class<PlayerController>(DynamicLoadObject(PlayerControllerClassName, class'Class'));
+
+	NewPlayer = Spawn(PlayerControllerClass,,,StartSpot.Location,StartSpot.Rotation);
+
+	// Handle spawn failure.
+	if ( NewPlayer == None )  {
+		log("Couldn't spawn player controller of class "$PlayerControllerClass);
+		Error = GameMessageClass.Default.FailedSpawnMessage;
+		Return None;
+	}
+
+	NewPlayer.StartSpot = StartSpot;
+	// Init player's replication info
+	NewPlayer.GameReplicationInfo = GameReplicationInfo;
+
+	// Apply security to this controller
+	MySecurityClass = class<Security>(DynamicLoadObject(SecurityClass,class'class'));
+	if ( MySecurityClass != None )  {
+		NewPlayer.PlayerSecurity = spawn(MySecurityClass,NewPlayer);
+		if ( NewPlayer.PlayerSecurity == None )
+			log("Could not spawn security for player "$NewPlayer,'Security');
+	}
+	else if ( SecurityClass == "" )
+		log("No value for Engine.GameInfo.SecurityClass -- System is not secure.",'Security');
+	else
+		log("Unknown security class ["$SecurityClass$"] -- System is not secure.",'Security');
+
+	if ( bAttractCam )
+		NewPlayer.GotoState('AttractMode');
+	else
+		NewPlayer.GotoState('Spectating');
+
+	// Init player's name
+	if ( InName == "" )
+		InName = DefaultPlayerName;
+	
+	if ( Level.NetMode != NM_Standalone || NewPlayer.PlayerReplicationInfo.PlayerName == DefaultPlayerName )
+		ChangeName( NewPlayer, InName, false );
+
+	// custom voicepack
+	NewPlayer.PlayerReplicationInfo.VoiceTypeName = ParseOption ( Options, "Voice");
+
+	InCharacter = ParseOption(Options, "Character");
+	NewPlayer.SetPawnClass(DefaultPlayerClassName, InCharacter);
+	InSex = ParseOption(Options, "Sex");
+	if ( Left(InSex,3) ~= "F" )
+		NewPlayer.SetPawnFemale();  // only effective if character not valid
+
+	// Set the player's ID.
+	NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
+
+	if ( bSpectator || NewPlayer.PlayerReplicationInfo.bOnlySpectator || !ChangeTeam(NewPlayer, InTeam, false) )  {
+		NewPlayer.PlayerReplicationInfo.bOnlySpectator = True;
+		NewPlayer.PlayerReplicationInfo.bIsSpectator = True;
+		NewPlayer.PlayerReplicationInfo.bOutOfLives = True;
+		++NumSpectators;
+
+		Return NewPlayer;
+	}
+
+	NewPlayer.StartSpot = StartSpot;
+
+	// Init player's administrative privileges and log it
+	if ( AccessControl != None && AccessControl.AdminLogin(NewPlayer, InAdminName, InPassword) )
+		AccessControl.AdminEntered(NewPlayer, InAdminName);
+
+	++NumPlayers;
+	if ( NumPlayers > 20 )
+		bLargeGameVOIP = True;
+	
+	bWelcomePending = True;
+
+	if ( bTestMode )
+		TestLevel();
+
+	//[block] From UnrealMPGameInfo class
+	if ( Level.NetMode == NM_ListenServer )  {
+		NewPlayer.VoiceReplicationInfo = VoiceReplicationInfo;
+		if ( NewPlayer == Level.GetLocalPlayerController() )
+			NewPlayer.InitializeVoiceChat();
+	}
+	else if ( Level.NetMode == NM_DedicatedServer )
+		NewPlayer.VoiceReplicationInfo = VoiceReplicationInfo;
+	//[end]
+	
+	//[block] From DeathMatch class
+	if ( bMustJoinBeforeStart && GameReplicationInfo.bMatchHasBegun )
+		UnrealPlayer(NewPlayer).bLatecomer = True;
+
+	if ( Level.NetMode == NM_Standalone )  {
+		if ( !NewPlayer.PlayerReplicationInfo.bOnlySpectator )  {
+			StandalonePlayer = NewPlayer;
+		// Compensate for the space left for the player
+		else if ( !bCustomBots && (bAutoNumBots || (bTeamGame && (InitialBots%2 == 1))) )
+			InitialBots++;
+	}
+	//[end]
+	
+	//[block] From KFGameType Class
+	if ( !NewPlayer.PlayerReplicationInfo.bOnlySpectator )
+		GiveStartingCashTo( NewPlayer );
+	
+	if ( !GameReplicationInfo.bMatchHasBegun )  {
+		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
+			if ( C.PlayerReplicationInfo != None && C.PlayerReplicationInfo.bOutOfLives && !C.PlayerReplicationInfo.bOnlySpectator )  {
+				NewPlayer.PlayerReplicationInfo.bOutOfLives = True;
+				NewPlayer.PlayerReplicationInfo.NumLives = 1;
+				Break;
+			}
+		}
+	}
+	//[end]
+	
+	// if delayed start, don't give a pawn to the player yet
+	// Normal for multiplayer games
+	if ( bDelayedStart )
+		NewPlayer.GotoState('PlayerWaiting');
+	
+	Return NewPlayer;
+}
+
 /*	Called after a successful login. This is the first place
 	it is safe to call replicated functions on the PlayerController.	*/
 event PostLogin( PlayerController NewPlayer )
@@ -198,16 +500,16 @@ event PostLogin( PlayerController NewPlayer )
 		Return;
 	
 	if ( NewPlayer.Pawn != None )
-        NewPlayer.Pawn.ClientSetRotation( NewPlayer.Pawn.Rotation );
+		NewPlayer.Pawn.ClientSetRotation( NewPlayer.Pawn.Rotation );
 	
 	if ( VotingHandler != None )
-        VotingHandler.PlayerJoin( NewPlayer );
+		VotingHandler.PlayerJoin( NewPlayer );
 	
 	if ( AccessControl != None )
-        NewPlayer.LoginDelay = AccessControl.LoginDelaySeconds;
+		NewPlayer.LoginDelay = AccessControl.LoginDelaySeconds;
 	
 	NewPlayer.ClientCapBandwidth( NewPlayer.Player.CurrentNetSpeed );
-    NotifyLogin( NewPlayer.PlayerReplicationInfo.PlayerID );
+	NotifyLogin( NewPlayer.PlayerReplicationInfo.PlayerID );
 	
 	if ( UM_PlayerController(NewPlayer) != None && UM_PlayerController(NewPlayer).SpawnStatObject() && !NewPlayer.SteamStatsAndAchievements.Initialize(NewPlayer) )
 		UM_PlayerController(NewPlayer).DestroyStatObject();
@@ -282,7 +584,7 @@ function ExtendZEDTime( UM_HumanPawn Human )
 event Tick( float DeltaTime )
 {
 	local	float		TrueDeltaTime;
-    local	int			Count;
+	local	int			Count;
 	local	Controller	C;
 	
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
@@ -348,24 +650,24 @@ event Tick( float DeltaTime )
 // Set gameplay speed.
 function SetGameSpeed( float T )
 {
-    local	float	OldSpeed;
+	local	float	OldSpeed;
 
-    if ( AllowGameSpeedChange() )  {
-        OldSpeed = GameSpeed;
-        GameSpeed = FMax(T, 0.1);
-        Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
-        if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
-            default.GameSpeed = GameSpeed;
-            class'GameInfo'.static.StaticSaveConfig();
-        }
-    }
+	if ( AllowGameSpeedChange() )  {
+		OldSpeed = GameSpeed;
+		GameSpeed = FMax(T, 0.1);
+		Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
+		if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
+			default.GameSpeed = GameSpeed;
+			class'GameInfo'.static.StaticSaveConfig();
+		}
+	}
 	else  {
 		Level.TimeDilation = Level.default.TimeDilation;
-        GameSpeed = 1.0;
-        default.GameSpeed = GameSpeed;
+		GameSpeed = 1.0;
+		default.GameSpeed = GameSpeed;
 	}
 	
-    SetTimer((Level.TimeDilation / GameSpeed), True);
+	SetTimer((Level.TimeDilation / GameSpeed), True);
 }
 
 // Called when a dramatic event happens that might cause slomo
@@ -540,6 +842,7 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 
 defaultproperties
 {
+	 bSaveSpectatorScores=False
 	 BotAtHumanFriendlyFireScale=0.5
 	 ZEDTimeDuration=3.000000
 	 ExitZedTime=0.500000

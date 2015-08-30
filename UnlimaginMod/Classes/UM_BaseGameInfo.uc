@@ -61,6 +61,10 @@ var		transient	bool				bSlowMoStartedByHuman;
 
 var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
 
+// StartingCash lottery
+var		float							ExtraStartingCashChance, ExtraStartingCashModifier;
+var		float							RespawnPenaltyCashModifier;
+
 //[end] Varibles
 //====================================================================
 
@@ -145,19 +149,40 @@ protected function bool LoadGameSettings()
 	Return True;
 }
 
-function GiveStartingCashTo( PlayerController P )
+function CheckStartingCash( PlayerController P )
 {
 	if ( P == None || P.PlayerReplicationInfo == None )
 		Return;
 	
-	P.PlayerReplicationInfo.Score = StartingCash;
+	// StartingCash lottery
+	if ( FRand() <= ExtraStartingCashChance )
+		P.PlayerReplicationInfo.Score += float(StartingCash) * ExtraStartingCashModifier;
+	else if ( P.PlayerReplicationInfo.Score < float(StartingCash) )
+		P.PlayerReplicationInfo.Score = float(StartingCash);
+}
+
+function RespawnPlayer( PlayerController P )
+{
+	if ( P == None || P.PlayerReplicationInfo == None )
+		Return;
+	
+	P.PlayerReplicationInfo.bOutOfLives = False;
+	P.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , (P.PlayerReplicationInfo.Score * RespawnPenaltyCashModifier) );
+	P.GotoState('PlayerWaiting');	// ServerReStartPlayer() will be called in this state
+	P.SetViewTarget(C);
+	P.ClientSetBehindView(False);
+	P.bBehindView = False;
+	P.ClientSetViewTarget(C.Pawn);
 }
 
 // Active player wants to become a spectator
 function bool BecomeSpectator( PlayerController P )
 {
-	if ( P.PlayerReplicationInfo == None || P.PlayerReplicationInfo.bOnlySpectator
-		 || NumSpectators >= MaxSpectators || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
+	if ( P == None || P.PlayerReplicationInfo == None )
+		Return False;
+	
+	if ( P.PlayerReplicationInfo.bOnlySpectator || NumSpectators >= MaxSpectators
+		 || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
 		P.ReceiveLocalizedMessage(GameMessageClass, 12);
 		Return False;
 	}
@@ -184,9 +209,12 @@ function bool BecomeSpectator( PlayerController P )
 
 function bool AllowBecomeActivePlayer( PlayerController P )
 {
-	if ( P.PlayerReplicationInfo == None || !P.PlayerReplicationInfo.bOnlySpectator
-		 || !GameReplicationInfo.bMatchHasBegun || bMustJoinBeforeStart || NumPlayers >= MaxPlayers 
-		 || MaxLives > 0 || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
+	if ( P == None || P.PlayerReplicationInfo == None )
+		Return False;
+	
+	if ( !P.PlayerReplicationInfo.bOnlySpectator || !GameReplicationInfo.bMatchHasBegun
+		 || bMustJoinBeforeStart || NumPlayers >= MaxPlayers || MaxLives > 0
+		 || P.IsInState('GameEnded') || P.IsInState('RoundEnded') )  {
 		P.ReceiveLocalizedMessage(GameMessageClass, 13);
 		Return False;
 	}
@@ -204,10 +232,11 @@ function BecomeActivePlayer( PlayerController P )
 {
 	--NumSpectators;
 	++NumPlayers;
-	if ( !bSaveSpectatorScores )  {
+	
+	if ( !bSaveSpectatorScores )
 		P.PlayerReplicationInfo.Reset();
-		GiveStartingCashTo( P );
-	}
+	
+	CheckStartingCash( P );
 	
 	P.PlayerReplicationInfo.bOnlySpectator = False;
 	if ( bTeamGame )  {
@@ -297,6 +326,18 @@ event PlayerController Login( string Portal, string Options, out string Error )
 			}
 		}
 	}
+	
+	//[block] From DeathMatch class
+	// check that game isn't too far along
+	if ( MaxLives > 0 )  {
+		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
+			if ( C.PlayerReplicationInfo != None && C.PlayerReplicationInfo.NumLives > LateEntryLives )  {
+				Options = "?SpectatorOnly=1"$Options;
+				Break;
+			}
+		}
+	}
+	//[end]
 
 	bSpectator = ( ParseOption( Options, "SpectatorOnly" ) ~= "1" );
 	if ( AccessControl != None )
@@ -307,9 +348,8 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		Error = GameMessageClass.Default.MaxedOutMessage;
 		Return None;
 	}
-
 	// If admin, force spectate mode if the server already full of reg. players
-	if ( bAdmin && AtCapacity(false) )
+	else if ( bAdmin && AtCapacity(false) )
 		bSpectator = True;
 
 	// Pick a team (if need teams)
@@ -424,7 +464,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 	
 	//[block] From KFGameType Class
 	if ( !NewPlayer.PlayerReplicationInfo.bOnlySpectator )
-		GiveStartingCashTo( NewPlayer );
+		CheckStartingCash( NewPlayer );
 	
 	if ( !GameReplicationInfo.bMatchHasBegun )  {
 		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
@@ -549,7 +589,7 @@ function ResetSlowMoInstigator()
 	SlowMoDeltaTime = 0.0;
 }
 
-function ToggleSlowMoBy( UM_HumanPawn Human )
+function ToggledSlowMoBy( UM_HumanPawn Human )
 {
 	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Level.TimeSeconds < NextSlowMoToggleTime || Human.SlowMoCharge < MinToggleSlowMoCharge )
 		Return;
@@ -842,6 +882,10 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 
 defaultproperties
 {
+	 ExtraStartingCashChance=0.05
+	 ExtraStartingCashModifier=4.0
+	 RespawnPenaltyCashModifier=0.92
+	 
 	 bSaveSpectatorScores=False
 	 BotAtHumanFriendlyFireScale=0.5
 	 ZEDTimeDuration=3.000000

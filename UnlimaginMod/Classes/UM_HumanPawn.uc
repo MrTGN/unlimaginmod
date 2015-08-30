@@ -216,7 +216,7 @@ replication
 	
 	// replicated functions sent to server by owning client
 	reliable if ( Role < ROLE_Authority )
-		ToggleSlowMo;
+		ServerToggleSlowMo;
 }
 
 //[end] Replication
@@ -1736,7 +1736,7 @@ function ThrowInventoryBeforeDying()
 		c = DropedWeapons.Length - 1;
 		if ( DropedWeapons[c] != None )  {
 			DropedWeapons[c].HolderDied();
-			DropedWeapons[c].DropFrom(DropLocation + VRand() * 12.0);
+			DropedWeapons[c].DropFrom(DropLocation + VRand() * float(Min(CollisionRadius, CollisionHeight)));
 		}
 		DropedWeapons.Remove(c, 1);
 	}
@@ -2455,13 +2455,21 @@ protected function IncreaseSlowMoCharge()
 }
 
 // Replicated from client-owner to server
+function ServerToggleSlowMo()
+{
+	if ( Role < ROLE_Authority || UM_BaseGameInfo(Level.Game) == None )
+		Return;
+	
+	UM_BaseGameInfo(Level.Game).ToggledSlowMoBy(Self);
+}
+
 exec function ToggleSlowMo()
 {
-	if ( UM_BaseGameInfo(Level.Game) == None || Level.TimeSeconds < NextSlowMoToggleTime )
+	if ( Level.TimeSeconds < NextSlowMoToggleTime )
 		Return;
 	
 	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
-	UM_BaseGameInfo(Level.Game).ToggleSlowMoBy(Self);
+	ServerToggleSlowMo();
 }
 
 function AddSlowMoCharge( float AddCharge )

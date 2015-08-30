@@ -68,11 +68,12 @@ struct GameWaveData
 	var()	config	UM_BaseActor.IntRange	MonstersAtOnce;
 	var()	config	UM_BaseActor.IntRange	MonsterSquadSize;
 	var()	config	range					SquadsSpawnPeriod;
-	var		config	float					SquadsSpawnEndTime;
+	var()	config	float					SquadsSpawnEndTime;
 	var()	config	float					WaveDifficulty;
 	var()	config	UM_BaseActor.IntRange	WaveDuration;
 	var()	config	UM_BaseActor.IntRange	BreakTime;
 	var()	config	UM_BaseActor.IntRange	StartingCash;
+	var()	config	int						MinRespawnCash;
 	var()	config	int						WaveDelay;
 };
 var		array<GameWaveData>				GameWaves;
@@ -312,12 +313,6 @@ function UpdateZedSpawnList()
 		if ( ZZ != None && ZZ.bVolumeIsEnabled && Level.TimeSeconds >= ZZ.LastCheckTime )
 			ZedSpawnList[ZedSpawnList.Length] = ZZ;
 	}
-}
-
-function UpdateStartingCash()
-{
-	StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-	MinRespawnCash = Min( BaseActor.static.GetRandRangeInt(GameWaves[WaveNum].StartingCash), StartingCash );
 }
 
 /* Initialize the game.
@@ -944,6 +939,20 @@ state Shopping
 		}
 	}
 	
+	function CheckForDiedPlayers()
+	{
+		local	int			i;
+		local	Controller	C;
+		
+		// ControllerList
+		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
+			++i;	// To prevent runaway loop
+			// Respawn Player
+			if ( PlayerController(C) != None && C.Pawn == None && C.CanRestartPlayer() )
+				RespawnPlayer( PlayerController(C) );
+		}
+	}
+	
 	event Timer()
 	{
 		Global.Timer();
@@ -958,8 +967,6 @@ state Shopping
 			bShowHint_3 = False;
 		}
 		
-		DecreaseWaveCountDown();
-		
 		// Out from the Shopping state
 		if ( WaveCountDown < 1 )  {
 			// Teleport players from the shops
@@ -967,20 +974,28 @@ state Shopping
 				WaveCountDown = 1;
 			else
 				GotoState('BeginNewWave');
+			
+			Return;
 		}
-		// Broadcast Localized Message about next wave
 		else if ( WaveCountDown < 5 )  {
+			// Broadcast Localized Message about next wave
 			if ( NextWaveNum < FinalWave )
 				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 1);
 			else if ( bUseEndGameBoss )
 				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 3);
 		}
-		// Have Trader tell players that they've got 10 seconds
-		else if ( WaveCountDown == 10 )
-			PlayTenSecondsLeftMessage();
-		// Have Trader tell players that they've got 30 seconds
-		else if ( WaveCountDown == 30 )
-			PlayThirtySecondsLeftMessage();
+		else  {
+			// Do not respawn died players if only 5 seconds left
+			CheckForDiedPlayers();
+			// Have Trader tell players that they've got 10 seconds
+			if ( WaveCountDown == 10 )
+				PlayTenSecondsLeftMessage();
+			// Have Trader tell players that they've got 30 seconds
+			else if ( WaveCountDown == 30 )
+				PlayThirtySecondsLeftMessage();
+		}
+		
+		DecreaseWaveCountDown();
 	}
 	
 	// Close Shops
@@ -1217,16 +1232,8 @@ function DoWaveEnd()
 				}
 			}
 			// Respawn Player
-			else if ( !C.PlayerReplicationInfo.bOnlySpectator )  {
-				C.PlayerReplicationInfo.Score = Max( MinRespawnCash, int(C.PlayerReplicationInfo.Score) );
-				if ( PlayerController(C) != None )  {
-					PlayerController(C).GotoState('PlayerWaiting');
-					PlayerController(C).SetViewTarget(C);
-					PlayerController(C).ClientSetBehindView(false);
-					PlayerController(C).bBehindView = False;
-					PlayerController(C).ClientSetViewTarget(C.Pawn);
-				}
-			}
+			else if ( PlayerController(C) != None && C.CanRestartPlayer() )
+				RespawnPlayer( PlayerController(C) );
 			
 			if ( KFPlayerController(C) != None )  {
 				if ( PlayerController(C).SteamStatsAndAchievements != None && KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements) != None )
@@ -1267,10 +1274,14 @@ state WaveInProgress
 {
 	function UpdateStartingCash()
 	{
-		// StartingCash
-		StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-		// MinRespawnCash
-		MinRespawnCash = StartingCash;
+		if ( GameSettingsClass != None )  {
+			StartingCash = BaseActor.static.GetRandRangeInt( GameSettingsClass.default.GameWaves[WaveNum].StartingCash );
+			MinRespawnCash = GameSettingsClass.default.GameWaves[WaveNum].MinRespawnCash;
+		}
+		else  {
+			StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
+			MinRespawnCash = GameWaves[WaveNum].MinRespawnCash;
+		}
 	}
 
 	/* ToDo: убрать эту функцию и переменные в ней. 

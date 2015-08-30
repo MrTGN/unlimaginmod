@@ -316,19 +316,29 @@ simulated event PostBeginPlay()
 	UpdateHintManagement(bShowHints);
 }
 
+function ServerReStartPlayer()
+{
+	if ( PlayerReplicationInfo.bOutOfLives )
+		Return; // No more main menu bug closing.
+
+	ClientCloseMenu(true, true);
+	
+	if ( Level.Game.bWaitingToStartMatch )
+		PlayerReplicationInfo.bReadyToPlay = True;
+	else
+		Level.Game.RestartPlayer(self);
+}
+
 function bool CanRestartPlayer()
 {
-    if ( PlayerReplicationInfo == None )
-		Return True;
-	
-	Return !PlayerReplicationInfo.bOnlySpectator;
+	Return PlayerReplicationInfo != None && !PlayerReplicationInfo.bOnlySpectator;
 }
 
 function ServerSpectate()
 {
 	// Proper fix for phantom pawns
 	if ( Pawn != None && !Pawn.bDeleteMe )
-		Pawn.Died(self, class'DamageType', Pawn.Location);
+		Pawn.Suicide();
 
 	GotoState('Spectating');
 	bBehindView = True;
@@ -415,7 +425,7 @@ function BecomeActivePlayer()
 	BroadcastLocalizedMessage(Level.Game.GameMessageClass, 1, PlayerReplicationInfo);
 	
 	if ( Level.Game.bDelayedStart )
-        GotoState('PlayerWaiting');
+		GotoState('PlayerWaiting');
 	// start match, or let player enter, immediately
 	else  {
 		Level.Game.bRestartLevel = False;  // let player spawn once in levels that must be restarted after every death
@@ -426,7 +436,7 @@ function BecomeActivePlayer()
 		Level.Game.bRestartLevel = Level.Game.Default.bRestartLevel;
 	}
 
-    ClientBecameActivePlayer();
+	ClientBecameActivePlayer();
 }
 
 auto state PlayerWaiting
@@ -434,6 +444,9 @@ auto state PlayerWaiting
 	exec function Fire( optional float F )
 	{
 		LoadPlayers();
+		// Restart Player by press the Fire button
+        if ( !bForcePrecache && Level.TimeSeconds > 0.2 && bReadyToStart )
+			ServerReStartPlayer();
 	}
 
 	function bool CanRestartPlayer()
@@ -948,7 +961,7 @@ exec function NextWeapon()
 	if ( HUDKillingFloor(myHUD) != None )
 		HUDKillingFloor(myHUD).NextWeapon();
 	else
-		super.NextWeapon();
+		Super.NextWeapon();
 }
 
 exec function PrevWeapon()
@@ -956,7 +969,7 @@ exec function PrevWeapon()
 	if ( HUDKillingFloor(myHUD) != None )
 		HUDKillingFloor(myHUD).PrevWeapon();
 	else
-		super.PrevWeapon();
+		Super.PrevWeapon();
 }
 
 // Fix for vehicle mod crashes.
@@ -1100,6 +1113,57 @@ function ServerSpeech( name Type, int Index, string Callsign )
 	if ( Type != 'Trader' )
 		Super.ServerSpeech(Type,Index,Callsign);
 }
+
+state Dead
+{
+	function Timer()
+	{
+		Super(xPlayer).Timer();
+	}
+
+	event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )
+	{
+		if ( Level.NetMode == NM_DedicatedServer )  {
+			Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
+			Return;
+		}
+		
+		if ( CalcViewActor != None && LastPlayerCalcView == Level.TimeSeconds && CalcViewActor.Location == CalcViewActorLocation )  {
+			ViewActor	= CalcViewActor;
+			CameraLocation	= CalcViewLocation;
+			CameraRotation	= CalcViewRotation;
+			Return;
+		}
+		
+		// try the 'special' calcview. This may return false if its not applicable, and we do the usual.
+		if ( Pawn(ViewTarget) != None && Pawn(ViewTarget).bSpecialCalcView && Pawn(ViewTarget).SpecialCalcView(ViewActor, CameraLocation, CameraRotation) )  {
+			CacheCalcView(ViewActor,CameraLocation,CameraRotation);
+			Return;
+		}
+		
+		Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
+	}
+
+	simulated function BeginState()
+	{
+		// Unzoom if we were zoomed
+		TransitionFOV(DefaultFOV,0.0);
+
+		Super(UnrealPlayer).BeginState();
+		if ( HudKillingFloor(myHUD) != None )  {
+			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
+			HudKillingFloor(myHUD).GoalTarget = ViewTarget;
+		}
+	}
+
+	simulated function EndState()
+	{
+		Super(UnrealPlayer).EndState();
+		if ( HudKillingFloor(myHUD) != None )
+			HUDKillingFloor(myHud).StopFadeEffect();
+	}
+}
+
 
 defaultproperties
 {

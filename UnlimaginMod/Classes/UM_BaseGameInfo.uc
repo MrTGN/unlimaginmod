@@ -166,6 +166,12 @@ function RespawnPlayer( PlayerController P )
 	if ( P == None || P.PlayerReplicationInfo == None )
 		Return;
 	
+	if ( P.Pawn != None )  {
+		if ( !P.Pawn.bDeleteMe )
+			P.Pawn.Suicide();
+		P.Pawn = None;
+	}
+	
 	P.PlayerReplicationInfo.bOutOfLives = False;
 	P.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , (P.PlayerReplicationInfo.Score * RespawnPenaltyCashModifier) );
 	P.GotoState('PlayerWaiting');	// ServerReStartPlayer() will be called in this state
@@ -259,10 +265,16 @@ function bool AtCapacity( bool bSpectator )
 		Return ( MaxPlayers > 0 && NumPlayers >= MaxPlayers );
 }
 
+// Player Can be restarted
+function bool PlayerCanRestart( PlayerController aPlayer )
+{
+	Return !bWaveInProgress && (!bWaveBossInProgress || (bRespawnOnBoss && !bHasSetViewYet));
+}
+
 // Mod this to include the choices made in the GUIClassMenu
 function RestartPlayer( Controller aPlayer )
 {
-	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || aPlayer.Pawn != None )
+	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || (aPlayer.Pawn != None && !aPlayer.Pawn.bDeleteMe) )
 		Return;
 
 	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {

@@ -105,6 +105,9 @@ var		array<BossWaveMonsterData>		BossMonsters;
 var		string							BossMonsterClassName;
 var		class<UM_Monster>				BossMonsterClass;
 
+var		UM_BaseActor.IntRange			BossWaveStartingCash;
+var		int								BossWaveMinRespawnCash;
+
 var		Class<UM_ActorPool>				ActorPoolClass;
 
 var		class<KFMonstersCollection>		UM_MonsterCollection;
@@ -897,9 +900,8 @@ state Shopping
 		
 		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 			++i;	// To prevent runaway loop
-			if ( C.Pawn != None && C.Pawn.Health > 0 )  {
+			if ( C.Pawn != None && C.Pawn.Health > 0 )
 				KFPlayerController(C).CheckForHint(32);
-			}
 		}
 	}
 	
@@ -941,14 +943,14 @@ state Shopping
 	
 	function CheckForDiedPlayers()
 	{
-		local	int			i;
 		local	Controller	C;
+		local	int			i;
 		
 		// ControllerList
 		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 			++i;	// To prevent runaway loop
 			// Respawn Player
-			if ( PlayerController(C) != None && C.Pawn == None && C.CanRestartPlayer() )
+			if ( PlayerController(C) != None && (C.Pawn == None || C.Pawn.Health < 1) && C.CanRestartPlayer() )
 				RespawnPlayer( PlayerController(C) );
 		}
 	}
@@ -985,7 +987,7 @@ state Shopping
 				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 3);
 		}
 		else  {
-			// Do not respawn died players if only 5 seconds left
+			// Respawn died players if more than 5 seconds left
 			CheckForDiedPlayers();
 			// Have Trader tell players that they've got 10 seconds
 			if ( WaveCountDown == 10 )
@@ -1047,11 +1049,12 @@ function UpdateWaveRemainingTime()
 
 function CheckSelectedVeterancy( KFPlayerController PC )
 {
-	if ( PC != None && KFPlayerReplicationInfo(PC.PlayerReplicationInfo) != None )  {
-		PC.bChangedVeterancyThisWave = False;
-		if ( PC.SelectedVeterancy != KFPlayerReplicationInfo(PC.PlayerReplicationInfo).ClientVeteranSkill )
-			PC.SendSelectedVeterancyToServer();
-	}
+	if ( PC == None || KFPlayerReplicationInfo(PC.PlayerReplicationInfo) == None )
+		Return;
+	
+	PC.bChangedVeterancyThisWave = False;
+	if ( PC.SelectedVeterancy != KFPlayerReplicationInfo(PC.PlayerReplicationInfo).ClientVeteranSkill )
+		PC.SendSelectedVeterancyToServer();
 }
 
 function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, optional bool bBossSpawning )
@@ -1218,40 +1221,41 @@ function DoWaveEnd()
 	// ControllerList
 	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 		++i;	// To prevent runaway loop
-		if ( C.PlayerReplicationInfo != None )  {
-			C.PlayerReplicationInfo.bOutOfLives = False;
-			C.PlayerReplicationInfo.NumLives = 0;
-			
+		if ( C.PlayerReplicationInfo == None )
+			Continue; // skip this controller
+		
+		C.PlayerReplicationInfo.bOutOfLives = False;
+		C.PlayerReplicationInfo.NumLives = 0;
+		
+		if ( PlayerController(C) == None )
+			Continue; // skip this controller
+		
+		if ( KFPlayerController(C) != None )  {
 			CheckSelectedVeterancy( KFPlayerController(C) );
-			
-			// Survivor
-			if ( C.Pawn != None )  {
-				if ( C.Pawn.Health > 0 && PlayerController(C) != None )  {
-					Survivor = PlayerController(C);
-					++SurvivorCount;
-				}
-			}
-			// Respawn Player
-			else if ( PlayerController(C) != None && C.CanRestartPlayer() )
-				RespawnPlayer( PlayerController(C) );
-			
-			if ( KFPlayerController(C) != None )  {
-				if ( PlayerController(C).SteamStatsAndAchievements != None && KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements) != None )
-					KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements).WaveEnded();
+			if ( PlayerController(C).SteamStatsAndAchievements != None && KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements) != None )
+				KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements).WaveEnded();
 
-				// Don't broadcast this message AFTER the final wave!
-				if ( NextWaveNum < FinalWave )  {
-					KFPlayerController(C).bSpawnedThisWave = False;
-					BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 2);
-				}
-				// Next Wave will be a Final Wave
-				else if ( NextWaveNum == FinalWave )
-					KFPlayerController(C).bSpawnedThisWave = False;
-				// End of the game
-				else
-					KFPlayerController(C).bSpawnedThisWave = True;
+			// Don't broadcast this message AFTER the final wave!
+			if ( NextWaveNum < FinalWave )  {
+				KFPlayerController(C).bSpawnedThisWave = False;
+				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 2);
 			}
+			// Next Wave will be a Final Wave
+			else if ( NextWaveNum == FinalWave )
+				KFPlayerController(C).bSpawnedThisWave = False;
+			// End of the game
+			else
+				KFPlayerController(C).bSpawnedThisWave = True;
 		}
+		
+		// Survivor
+		if ( C.Pawn != None && C.Pawn.Health > 0 )  {
+			Survivor = PlayerController(C);
+			++SurvivorCount;
+		}
+		// Respawn Player
+		else if ( C.CanRestartPlayer() )
+			RespawnPlayer( PlayerController(C) );
 	}
 	
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 
@@ -1362,8 +1366,23 @@ state WaveInProgress
 //[block] BossWaveInProgress Code
 state BossWaveInProgress
 {
+	function UpdateStartingCash()
+	{
+		if ( GameSettingsClass != None )  {
+			StartingCash = BaseActor.static.GetRandRangeInt( GameSettingsClass.default.BossWaveStartingCash );
+			MinRespawnCash = GameSettingsClass.default.BossWaveMinRespawnCash;
+		}
+		else  {
+			StartingCash = BaseActor.static.GetRandRangeInt( BossWaveStartingCash );
+			MinRespawnCash = BossWaveMinRespawnCash;
+		}
+	}
+	
 	event BeginState()
 	{
+		// StartingCash
+		UpdateStartingCash();
+		
 		bWaveBossInProgress = True;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;

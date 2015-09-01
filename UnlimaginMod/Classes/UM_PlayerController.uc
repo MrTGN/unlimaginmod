@@ -331,7 +331,7 @@ function ServerReStartPlayer()
 
 function bool CanRestartPlayer()
 {
-	Return PlayerReplicationInfo != None && !PlayerReplicationInfo.bOnlySpectator;
+	Return PlayerReplicationInfo != None && !PlayerReplicationInfo.bOnlySpectator && !bSpawnedThisWave && Level.Game.PlayerCanRestart(Self);
 }
 
 function ServerSpectate()
@@ -360,7 +360,7 @@ function BecomeSpectator()
 	if ( !Level.Game.BecomeSpectator(self) )
 		Return;
 	
-	if ( Pawn != None )
+	if ( Pawn != None && !Pawn.bDeleteMe )
 		Pawn.Suicide();
 
 	ServerSpectate();
@@ -374,7 +374,7 @@ function JoinedAsSpectatorOnly()
 	if ( Role < ROLE_Authority )
 		Return;
 	
-	if ( Pawn != None )
+	if ( Pawn != None && !Pawn.bDeleteMe )
 		Pawn.Suicide();
 
 	if ( PlayerReplicationInfo.Team != None )

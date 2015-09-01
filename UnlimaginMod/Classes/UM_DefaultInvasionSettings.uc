@@ -24,12 +24,17 @@ class UM_DefaultInvasionSettings extends UM_BaseGameSettings
 //========================================================================
 //[block] Variables
 
+const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+
 var		array<UM_InvasionGame.WaveMonsterData>		Monsters;
 var		array<UM_InvasionGame.GameWaveData>			GameWaves;
 
 var		array<UM_InvasionGame.BossWaveMonsterData>	BossMonsters;
 var		string										BossMonsterClassName;
 var		array<float>								NumPlayersModifiers;
+
+var		UM_BaseActor.IntRange						BossWaveStartingCash;
+var		int											BossWaveMinRespawnCash;
 
 //[end] Varibles
 //====================================================================
@@ -93,6 +98,8 @@ defaultproperties
 	 GameWaves(6)=(NumMonsters=(Min=52,Max=56),MaxMonsters=810,MaxAliveMonsters=(Min=26,Max=50),MonsterSquadSize=(Min=6,Max=10),SquadsSpawnPeriod=(Min=4.0,Max=7.0),WaveDifficulty=1.3,WaveDuration=(Min=1200,Max=6000),BreakTime=(Min=120,Max=130),StartingCash=(Min=360,Max=400),MinRespawnCash=320)
 	 // Boss
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"
+	 BossWaveStartingCash=(Min=400,Max=450)
+	 BossWaveMinRespawnCash=350
 	 // BossMonsters
 	 BossMonsters(0)=(MonsterClassName="UnlimaginMod.UM_ZombieBloat",WaveLimit=4,WaveSpawnChance=0.2)
 	 BossMonsters(1)=(MonsterClassName="UnlimaginMod.UM_ZombieClot")

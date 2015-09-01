@@ -63,18 +63,16 @@ var		bool							bDefaultPropertiesCalculated;
 // GameWaves
 struct GameWaveData
 {
-	var()	config	UM_BaseActor.IntRange	NumMonsters;
-	var()	config	int						MaxMonsters;
-	var()	config	UM_BaseActor.IntRange	MonstersAtOnce;
+	var()	config	UM_BaseActor.IntRange	AliveMonsters;
 	var()	config	UM_BaseActor.IntRange	MonsterSquadSize;
 	var()	config	range					SquadsSpawnPeriod;
 	var()	config	float					SquadsSpawnEndTime;
 	var()	config	float					WaveDifficulty;
+	var()	config	int						WaveStartDelay;
 	var()	config	UM_BaseActor.IntRange	WaveDuration;
 	var()	config	UM_BaseActor.IntRange	BreakTime;
 	var()	config	UM_BaseActor.IntRange	StartingCash;
 	var()	config	int						MinRespawnCash;
-	var()	config	int						WaveDelay;
 };
 var		array<GameWaveData>				GameWaves;
 
@@ -107,6 +105,7 @@ var		class<UM_Monster>				BossMonsterClass;
 
 var		UM_BaseActor.IntRange			BossWaveStartingCash;
 var		int								BossWaveMinRespawnCash;
+var		int								BossWaveStartDelay;
 
 var		Class<UM_ActorPool>				ActorPoolClass;
 
@@ -143,6 +142,8 @@ var		float							ZEDTimeKillSlowMoChargeBonus;
 
 var		transient	string				CurrentMapName;
 
+var		class<UM_BaseInvasionPreset>	InvasionPreset;
+
 //[end] Varibles
 //====================================================================
 
@@ -162,100 +163,97 @@ simulated function ResetToDefaultProperties()
 }
 
 /*Todo: удалить большую часть ненужныхприравниваний.
-	Большинство переменных будет приравниваться вызовом статической функции из GameSettings класса.
+	Большинство переменных будет приравниваться вызовом статической функции из GamePreset класса.
 */
-protected function bool LoadGameSettings()
+protected function bool LoadGamePreset( optional string NewPresetName )
 {
 	local	int		i, j;
-	local	class<UM_DefaultInvasionSettings>	IGP;
 	
-	if ( !Super.LoadGameSettings() )
+	if ( !Super.LoadGamePreset( NewPresetName ) )
 		Return False;
 	
-	IGP = class<UM_DefaultInvasionSettings>(GameSettingsClass);
-	if ( IGP == None )
+	InvasionPreset = class<UM_BaseInvasionPreset>(GamePreset);
+	if ( InvasionPreset == None )
 		Return False;
 	
 	// Monsters
-	default.Monsters.Length = IGP.default.Monsters.Length;
+	default.Monsters.Length = InvasionPreset.default.Monsters.Length;
 	Monsters.Length = default.Monsters.Length;
-	for ( i = 0; i < IGP.default.Monsters.Length; ++i )  {
+	for ( i = 0; i < InvasionPreset.default.Monsters.Length; ++i )  {
 		// MonsterClassName
-		default.Monsters[i].MonsterClassName = IGP.default.Monsters[i].MonsterClassName;
+		default.Monsters[i].MonsterClassName = InvasionPreset.default.Monsters[i].MonsterClassName;
 		Monsters[i].MonsterClassName = default.Monsters[i].MonsterClassName;
 		// WaveLimits
-		default.Monsters[i].WaveLimits.Length = IGP.default.Monsters[i].WaveLimits.Length;
+		default.Monsters[i].WaveLimits.Length = InvasionPreset.default.Monsters[i].WaveLimits.Length;
 		Monsters[i].WaveLimits.Length = default.Monsters[i].WaveLimits.Length;
-		for ( j = 0; j < IGP.default.Monsters[i].WaveLimits.Length; ++j )  {
-			default.Monsters[i].WaveLimits[j] = IGP.default.Monsters[i].WaveLimits[j];
+		for ( j = 0; j < InvasionPreset.default.Monsters[i].WaveLimits.Length; ++j )  {
+			default.Monsters[i].WaveLimits[j] = InvasionPreset.default.Monsters[i].WaveLimits[j];
 			Monsters[i].WaveLimits[j] = default.Monsters[i].WaveLimits[j];
 		}
 		// WaveSpawnChances
-		default.Monsters[i].WaveSpawnChances.Length = IGP.default.Monsters[i].WaveSpawnChances.Length;
+		default.Monsters[i].WaveSpawnChances.Length = InvasionPreset.default.Monsters[i].WaveSpawnChances.Length;
 		Monsters[i].WaveSpawnChances.Length = default.Monsters[i].WaveSpawnChances.Length;
-		for ( j = 0; j < IGP.default.Monsters[i].WaveSpawnChances.Length; ++j )  {
-			default.Monsters[i].WaveSpawnChances[j] = IGP.default.Monsters[i].WaveSpawnChances[j];
+		for ( j = 0; j < InvasionPreset.default.Monsters[i].WaveSpawnChances.Length; ++j )  {
+			default.Monsters[i].WaveSpawnChances[j] = InvasionPreset.default.Monsters[i].WaveSpawnChances[j];
 			Monsters[i].WaveSpawnChances[j] = default.Monsters[i].WaveSpawnChances[j];
 		}
 		// WaveSpawnDelays
-		default.Monsters[i].WaveSpawnDelays.Length = IGP.default.Monsters[i].WaveSpawnDelays.Length;
+		default.Monsters[i].WaveSpawnDelays.Length = InvasionPreset.default.Monsters[i].WaveSpawnDelays.Length;
 		Monsters[i].WaveSpawnDelays.Length = default.Monsters[i].WaveSpawnDelays.Length;
-		for ( j = 0; j < IGP.default.Monsters[i].WaveSpawnDelays.Length; ++j )  {
-			default.Monsters[i].WaveSpawnDelays[j] = IGP.default.Monsters[i].WaveSpawnDelays[j];
+		for ( j = 0; j < InvasionPreset.default.Monsters[i].WaveSpawnDelays.Length; ++j )  {
+			default.Monsters[i].WaveSpawnDelays[j] = InvasionPreset.default.Monsters[i].WaveSpawnDelays[j];
 			Monsters[i].WaveSpawnDelays[j] = default.Monsters[i].WaveSpawnDelays[j];
 		}
 	}
 	
 	// GameWaves
-	default.GameWaves.Length = IGP.default.GameWaves.Length;
+	default.GameWaves.Length = InvasionPreset.default.GameWaves.Length;
 	GameWaves.Length = default.GameWaves.Length;
-	for ( i = 0; i < IGP.default.GameWaves.Length; ++i )  {
+	for ( i = 0; i < InvasionPreset.default.GameWaves.Length; ++i )  {
 		// MinMonsters
-		default.GameWaves[i].MinMonsters = IGP.default.GameWaves[i].MinMonsters;
+		default.GameWaves[i].MinMonsters = InvasionPreset.default.GameWaves[i].MinMonsters;
 		GameWaves[i].MinMonsters = default.GameWaves[i].MinMonsters;
 		// MaxMonsters
-		default.GameWaves[i].MaxMonsters = IGP.default.GameWaves[i].MaxMonsters;
+		default.GameWaves[i].MaxMonsters = InvasionPreset.default.GameWaves[i].MaxMonsters;
 		GameWaves[i].MaxMonsters = default.GameWaves[i].MaxMonsters;
 		// MinMonstersAtOnce
-		default.GameWaves[i].MinMonstersAtOnce = IGP.default.GameWaves[i].MinMonstersAtOnce;
+		default.GameWaves[i].MinMonstersAtOnce = InvasionPreset.default.GameWaves[i].MinMonstersAtOnce;
 		GameWaves[i].MinMonstersAtOnce = default.GameWaves[i].MinMonstersAtOnce;
 		// MinMonsterSquad
-		default.GameWaves[i].MinMonsterSquad = IGP.default.GameWaves[i].MinMonsterSquad;
+		default.GameWaves[i].MinMonsterSquad = InvasionPreset.default.GameWaves[i].MinMonsterSquad;
 		GameWaves[i].MinMonsterSquad = default.GameWaves[i].MinMonsterSquad;
 		// MaxMonsterSquad
-		default.GameWaves[i].MaxMonsterSquad = IGP.default.GameWaves[i].MaxMonsterSquad;
+		default.GameWaves[i].MaxMonsterSquad = InvasionPreset.default.GameWaves[i].MaxMonsterSquad;
 		GameWaves[i].MaxMonsterSquad = default.GameWaves[i].MaxMonsterSquad;
 		// SquadsSpawnPeriod
-		default.GameWaves[i].SquadsSpawnPeriod = IGP.default.GameWaves[i].SquadsSpawnPeriod;
+		default.GameWaves[i].SquadsSpawnPeriod = InvasionPreset.default.GameWaves[i].SquadsSpawnPeriod;
 		GameWaves[i].SquadsSpawnPeriod = default.GameWaves[i].SquadsSpawnPeriod;
 		// WaveDifficulty
-		default.GameWaves[i].WaveDifficulty = IGP.default.GameWaves[i].WaveDifficulty;
+		default.GameWaves[i].WaveDifficulty = InvasionPreset.default.GameWaves[i].WaveDifficulty;
 		GameWaves[i].WaveDifficulty = default.GameWaves[i].WaveDifficulty;
 		// BreakTime
-		default.GameWaves[i].BreakTime = IGP.default.GameWaves[i].BreakTime;
+		default.GameWaves[i].BreakTime = InvasionPreset.default.GameWaves[i].BreakTime;
 		GameWaves[i].BreakTime = default.GameWaves[i].BreakTime;
 	}
 	
 	// BossMonsterClassName
-	default.BossMonsterClassName = IGP.default.BossMonsterClassName;
+	default.BossMonsterClassName = InvasionPreset.default.BossMonsterClassName;
 	BossMonsterClassName = default.BossMonsterClassName;
 	
 	// BossMonsters
-	default.BossMonsters.Length = IGP.default.BossMonsters.Length;
+	default.BossMonsters.Length = InvasionPreset.default.BossMonsters.Length;
 	BossMonsters.Length = default.BossMonsters.Length;
-	for ( i = 0; i < IGP.default.BossMonsters.Length; ++i )  {
+	for ( i = 0; i < InvasionPreset.default.BossMonsters.Length; ++i )  {
 		// MonsterClassName
-		default.BossMonsters[i].MonsterClassName = IGP.default.BossMonsters[i].MonsterClassName;
+		default.BossMonsters[i].MonsterClassName = InvasionPreset.default.BossMonsters[i].MonsterClassName;
 		BossMonsters[i].MonsterClassName = default.BossMonsters[i].MonsterClassName;
 		// WaveLimit
-		default.BossMonsters[i].WaveLimit = IGP.default.BossMonsters[i].WaveLimit;
+		default.BossMonsters[i].WaveLimit = InvasionPreset.default.BossMonsters[i].WaveLimit;
 		BossMonsters[i].WaveLimit = default.BossMonsters[i].WaveLimit;
 		// WaveSpawnChance
-		default.BossMonsters[i].WaveSpawnChance = IGP.default.BossMonsters[i].WaveSpawnChance;
+		default.BossMonsters[i].WaveSpawnChance = InvasionPreset.default.BossMonsters[i].WaveSpawnChance;
 		BossMonsters[i].WaveSpawnChance = default.BossMonsters[i].WaveSpawnChance;
 	}
-	
-	Log("GameSettingsProfile:" @string(GameSettingsClass.default.Name) @"Loaded", Class.Outer.Name);
 	
 	Return True;
 }
@@ -324,6 +322,8 @@ function UpdateZedSpawnList()
  its helper classes.
  Warning: this is called before actors' PreBeginPlay.
 */
+
+//ToDo: Переписать! Большую часть настроек вынести в LoadGamePreset и подфункции!
 event InitGame( string Options, out string Error )
 {
 //	local int i,j;
@@ -333,7 +333,8 @@ event InitGame( string Options, out string Error )
 
 	Super(xTeamGame).InitGame(Options, Error);
 	
-	LoadGameSettings();
+	InOpt = ParseOption(Options, "GamePresetClassName");
+	LoadGamePreset( InOpt );
 	
 	MaxLives = 1;
 	bForceRespawn = True;
@@ -413,7 +414,12 @@ event InitGame( string Options, out string Error )
 
 	InitialWave = 0;
 	
-	FinalWave = Clamp(UM_FinalWave,5,15);
+	if ( InvasionPreset != None )  {
+		FinalWave = InvasionPreset.default.GameWaves.Length;
+	}
+	else  {
+		
+	}
 	
 	LoadUpMonsterList();
 	
@@ -519,16 +525,11 @@ function float GetNumPlayersModifier()
 	Return float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
 }
 
-function UpdateNumPlayers()
-{
-	
-}
-
 // Todo: #282
 function UpdateNumPlayersModifier()
 {
-	if ( class<UM_DefaultInvasionSettings>(GameSettingsClass) != None )
-		NumPlayersModifier = class<UM_DefaultInvasionSettings>(GameSettingsClass).static.GetNumPlayersModifier( self );
+	if ( InvasionPreset != None )
+		NumPlayersModifier = InvasionPreset.default.NumPlayersModifiers[ Min((NumPlayers + NumBots), (InvasionPreset.default.NumPlayersModifiers.Length - 1)) ];
 	else
 		NumPlayersModifier = GetNumPlayersModifier();
 }
@@ -536,8 +537,8 @@ function UpdateNumPlayersModifier()
 //Todo: #275
 function UpdateMaxAliveMonsters()
 {
-	if ( class<UM_DefaultInvasionSettings>(GameSettingsClass) != None )
-		MaxAliveMonsters = class<UM_DefaultInvasionSettings>(GameSettingsClass).static.GetMaxAliveMonsters( self );
+	if ( InvasionPreset != None )
+		MaxAliveMonsters = Min( Round(float(InvasionPreset.default.GameWaves[WaveNum].AliveMonsters.Min) * NumPlayersModifier), InvasionPreset.default.GameWaves[WaveNum].AliveMonsters.Max );
 }
 
 function ModifyMonsterListByDifficulty()
@@ -785,14 +786,21 @@ state BeginNewWave
 	event BeginState()
 	{
 		WaveNum = NextWaveNum;
-		if ( WaveNum < FinalWave )
+		if ( WaveNum < FinalWave )  {
 			++NextWaveNum;
+			if ( InvasionPreset != None )
+				WaveCountDown = InvasionPreset.default.GameWaves[WaveNum].WaveStartDelay;
+			else
+				WaveCountDown = GameWaves[WaveNum].WaveStartDelay;
+		}
+		// BossWave
+		else if ( InvasionPreset != None )
+			WaveCountDown = InvasionPreset.default.BossWaveStartDelay;
+		else
+			WaveCountDown = BossWaveStartDelay;
 		
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
-		
-		if ( GameWaves[WaveNum].WaveDelay.Min > 0 || GameWaves[WaveNum].WaveDelay.Max > 0 )
-			WaveCountDown = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].WaveDelay );
 		
 		if ( CurrentShop == None )
 			SelectNewShop();
@@ -1278,9 +1286,9 @@ state WaveInProgress
 {
 	function UpdateStartingCash()
 	{
-		if ( GameSettingsClass != None )  {
-			StartingCash = BaseActor.static.GetRandRangeInt( GameSettingsClass.default.GameWaves[WaveNum].StartingCash );
-			MinRespawnCash = GameSettingsClass.default.GameWaves[WaveNum].MinRespawnCash;
+		if ( InvasionPreset != None )  {
+			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.GameWaves[WaveNum].StartingCash );
+			MinRespawnCash = InvasionPreset.default.GameWaves[WaveNum].MinRespawnCash;
 		}
 		else  {
 			StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
@@ -1306,6 +1314,8 @@ state WaveInProgress
 		NumMonsters = 0;
 		CurrentWaveDuration = 0;
 		UpdateWaveRemainingTime();
+		
+		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 		
 		// StartingCash
 		UpdateStartingCash();
@@ -1368,9 +1378,9 @@ state BossWaveInProgress
 {
 	function UpdateStartingCash()
 	{
-		if ( GameSettingsClass != None )  {
-			StartingCash = BaseActor.static.GetRandRangeInt( GameSettingsClass.default.BossWaveStartingCash );
-			MinRespawnCash = GameSettingsClass.default.BossWaveMinRespawnCash;
+		if ( InvasionPreset != None )  {
+			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.BossWaveStartingCash );
+			MinRespawnCash = InvasionPreset.default.BossWaveMinRespawnCash;
 		}
 		else  {
 			StartingCash = BaseActor.static.GetRandRangeInt( BossWaveStartingCash );
@@ -1477,7 +1487,7 @@ defaultproperties
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=4.0
-	 GameSettingsClassName="UnlimaginMod.UM_DefaultInvasionSettings"
+	 GamePresetClassName="UnlimaginMod.UM_DefaultInvasionPreset"
 	 
 	 ZEDTimeKillSlowMoChargeBonus=0.4
 	 

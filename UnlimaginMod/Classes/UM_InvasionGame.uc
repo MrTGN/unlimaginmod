@@ -73,6 +73,7 @@ struct GameWaveData
 	var()	config	UM_BaseActor.IntRange	BreakTime;
 	var()	config	UM_BaseActor.IntRange	StartingCash;
 	var()	config	int						MinRespawnCash;
+	var()	config	float					RespawnCashModifier;
 };
 var		array<GameWaveData>				GameWaves;
 
@@ -105,6 +106,7 @@ var		class<UM_Monster>				BossMonsterClass;
 
 var		UM_BaseActor.IntRange			BossWaveStartingCash;
 var		int								BossWaveMinRespawnCash;
+var		float							BossWaveRespawnCashModifier;
 var		int								BossWaveStartDelay;
 
 var		Class<UM_ActorPool>				ActorPoolClass;
@@ -774,6 +776,33 @@ function SetupPickups()
 	}
 }
 
+// Must be called before the new wave has begun
+function UpdateStartingCash()
+{
+	if ( InvasionPreset != None )  {
+		if ( WaveNum < FinalWave )  {
+			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.GameWaves[WaveNum].StartingCash );
+			MinRespawnCash = InvasionPreset.default.GameWaves[WaveNum].MinRespawnCash;
+			RespawnCashModifier = InvasionPreset.default.GameWaves[WaveNum].RespawnCashModifier;
+		}
+		else  {
+			StartingCash = InvasionPreset.default.BossWaveStartingCash;
+			MinRespawnCash = InvasionPreset.default.BossWaveMinRespawnCash;
+			RespawnCashModifier = InvasionPreset.default.BossWaveRespawnCashModifier;
+		}
+	}
+	else if ( WaveNum < FinalWave )  {
+		StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
+		MinRespawnCash = GameWaves[WaveNum].MinRespawnCash;
+		RespawnCashModifier = GameWaves[WaveNum].RespawnCashModifier;
+	}
+	else  {
+		StartingCash = BossWaveStartingCash;
+		MinRespawnCash = BossWaveMinRespawnCash;
+		RespawnCashModifier = BossWaveRespawnCashModifier;
+	}
+}
+
 function DecreaseWaveCountDown()
 {
 	--WaveCountDown;
@@ -807,6 +836,7 @@ state BeginNewWave
 		
 		NotifyNewWave();
 		SetupPickups();
+		UpdateStartingCash();
 	}
 	
 	event Timer()
@@ -1284,18 +1314,6 @@ function CheckForGameEnd()
 
 state WaveInProgress
 {
-	function UpdateStartingCash()
-	{
-		if ( InvasionPreset != None )  {
-			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.GameWaves[WaveNum].StartingCash );
-			MinRespawnCash = InvasionPreset.default.GameWaves[WaveNum].MinRespawnCash;
-		}
-		else  {
-			StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-			MinRespawnCash = GameWaves[WaveNum].MinRespawnCash;
-		}
-	}
-
 	/* ToDo: убрать эту функцию и переменные в ней. 
 	Спавн ограничен по времени, а не по количеству монстров. */
 	function UpdateMaxMonsters()
@@ -1317,8 +1335,6 @@ state WaveInProgress
 		
 		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 		
-		// StartingCash
-		UpdateStartingCash();
 		// Monsters
 		UpdateMaxMonsters();
 		
@@ -1376,23 +1392,8 @@ state WaveInProgress
 //[block] BossWaveInProgress Code
 state BossWaveInProgress
 {
-	function UpdateStartingCash()
-	{
-		if ( InvasionPreset != None )  {
-			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.BossWaveStartingCash );
-			MinRespawnCash = InvasionPreset.default.BossWaveMinRespawnCash;
-		}
-		else  {
-			StartingCash = BaseActor.static.GetRandRangeInt( BossWaveStartingCash );
-			MinRespawnCash = BossWaveMinRespawnCash;
-		}
-	}
-	
 	event BeginState()
 	{
-		// StartingCash
-		UpdateStartingCash();
-		
 		bWaveBossInProgress = True;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;

@@ -34,6 +34,7 @@ var		array<float>								NumPlayersModifiers;
 
 var		UM_BaseActor.IntRange						BossWaveStartingCash;
 var		int											BossWaveMinRespawnCash;
+var		float										BossWaveRespawnCashModifier;
 var		int											BossWaveStartDelay;
 
 //[end] Varibles

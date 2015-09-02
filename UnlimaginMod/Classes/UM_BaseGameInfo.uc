@@ -63,7 +63,7 @@ var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
 
 // StartingCash lottery
 var		float							ExtraStartingCashChance, ExtraStartingCashModifier;
-var		float							RespawnPenaltyCashModifier;
+var		float							RespawnCashModifier;
 
 //[end] Varibles
 //====================================================================
@@ -902,7 +902,7 @@ defaultproperties
 {
 	 ExtraStartingCashChance=0.05
 	 ExtraStartingCashModifier=4.0
-	 RespawnPenaltyCashModifier=0.92
+	 RespawnCashModifier=0.95
 	 
 	 bSaveSpectatorScores=False
 	 BotAtHumanFriendlyFireScale=0.5

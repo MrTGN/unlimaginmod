@@ -155,36 +155,46 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	Return True;
 }
 
-function CheckStartingCash( PlayerController P )
+function CheckStartingCash( Controller C )
 {
-	if ( P == None || P.PlayerReplicationInfo == None )
+	if ( C == None || C.PlayerReplicationInfo == None )
 		Return;
 	
 	// StartingCash lottery
 	if ( FRand() <= ExtraStartingCashChance )
-		P.PlayerReplicationInfo.Score += float(StartingCash) * ExtraStartingCashModifier;
-	else if ( P.PlayerReplicationInfo.Score < float(StartingCash) )
-		P.PlayerReplicationInfo.Score = float(StartingCash);
+		C.PlayerReplicationInfo.Score += float(StartingCash) * ExtraStartingCashModifier;
+	else if ( C.PlayerReplicationInfo.Score < float(StartingCash) )
+		C.PlayerReplicationInfo.Score = float(StartingCash);
 }
 
-function RespawnPlayer( PlayerController P )
+function RespawnPlayer( Controller C )
 {
-	if ( P == None || P.PlayerReplicationInfo == None )
+	if ( C == None || C.PlayerReplicationInfo == None )
 		Return;
 	
-	if ( P.Pawn != None )  {
-		if ( !P.Pawn.bDeleteMe )
-			P.Pawn.Suicide();
-		P.Pawn = None;
+	if ( C.Pawn != None )  {
+		if ( !C.Pawn.bDeleteMe )
+			C.Pawn.Suicide();
+		C.Pawn = None;
 	}
 	
-	P.PlayerReplicationInfo.bOutOfLives = False;
-	P.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , (P.PlayerReplicationInfo.Score * RespawnPenaltyCashModifier) );
-	P.GotoState('PlayerWaiting');	// ServerReStartPlayer() will be called in this state
-	P.SetViewTarget(C);
-	P.ClientSetBehindView(False);
-	P.bBehindView = False;
-	P.ClientSetViewTarget(C.Pawn);
+	C.PlayerReplicationInfo.bOutOfLives = False;
+	// Respawn player after death
+	if ( C.PlayerReplicationInfo.Deaths > 0 )
+		C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , (C.PlayerReplicationInfo.Score * RespawnPenaltyCashModifier) );
+	// Spawn a new waiting player
+	else
+		CheckStartingCash( C );
+	
+	if ( PlayerController(C) != None )  {
+		PlayerController(C).GotoState('PlayerWaiting');
+		PlayerController(C).SetViewTarget(C);
+		PlayerController(C).ClientSetBehindView(False);
+		PlayerController(C).bBehindView = False;
+		PlayerController(C).ClientSetViewTarget(C.Pawn);
+	}
+	
+	C.ServerReStartPlayer();
 }
 
 // Active player wants to become a spectator
@@ -283,13 +293,14 @@ function RestartPlayer( Controller aPlayer )
 	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || (aPlayer.Pawn != None && !aPlayer.Pawn.bDeleteMe) )
 		Return;
 
-	if ( bWaveInProgress && PlayerController(aPlayer) != None )  {
+	if ( PlayerController(aPlayer) != None && bWaveInProgress )  {
 		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
 		aPlayer.PlayerReplicationInfo.NumLives = 1;
 		aPlayer.GoToState('Spectating');
 		Return;
 	}
 
+	// Spawn Player
 	Super(GameInfo).RestartPlayer(aPlayer);
 
 	// Notifying that the Veterancy info has changed
@@ -596,6 +607,41 @@ event PostLogin( PlayerController NewPlayer )
 		StartInitGameMusic(KFPlayerController(NewPlayer));
 	
 	log( "New Player" @NewPlayer.PlayerReplicationInfo.PlayerName @"id=" $NewPlayer.GetPlayerIDHash() );
+}
+
+// Start the game - inform all actors that the match is starting, and spawn player pawns
+function StartMatch()
+{
+	local	bool	bTemp;
+	local	int		Num;
+	local	PlayerReplicationInfo	PRI;
+	
+	ForEach DynamicActors(class'PlayerReplicationInfo',PRI)
+		PRI.StartTime = 0;
+	
+	ElapsedTime = 0;
+	StartupStage = 5;
+	PlayStartupMessage();
+	StartupStage = 6;
+	
+	if ( Level.NetMode == NM_Standalone )
+        RemainingBots = InitialBots;
+    else
+        RemainingBots = 0;
+	GameReplicationInfo.RemainingMinute = RemainingTime;
+	
+	// Spawning Players
+	Super(GameInfo).StartMatch();
+	
+	bTemp = bMustJoinBeforeStart;
+    bMustJoinBeforeStart = False;
+	while ( NeedPlayers() && Num < MaxHumanPlayers )  {
+		if ( AddBot() )
+			--RemainingBots;
+		++Num;
+    }
+	bMustJoinBeforeStart = bTemp;
+    log("START MATCH");
 }
 
 function ResetSlowMoInstigator()

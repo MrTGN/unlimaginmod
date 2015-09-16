@@ -415,13 +415,10 @@ event InitGame( string Options, out string Error )
 	}
 
 	InitialWave = 0;
-	
-	if ( InvasionPreset != None )  {
+	if ( InvasionPreset != None )
 		FinalWave = InvasionPreset.default.GameWaves.Length;
-	}
-	else  {
-		
-	}
+	else
+		FinalWave = GameWaves.Length;
 	
 	LoadUpMonsterList();
 	
@@ -644,38 +641,9 @@ function UpdateCurrentMapName()
 // Start the game - inform all actors that the match is starting, and spawn player pawns
 function StartMatch()
 {
-	local	bool	bTemp;
-	local	int		Num;
-	local	PlayerReplicationInfo	PRI;
-	
 	WaveNum = 0;
 	NextWaveNum = 0;
-	
-	ForEach DynamicActors(class'PlayerReplicationInfo',PRI)
-		PRI.StartTime = 0;
-	
-	ElapsedTime = 0;
-	StartupStage = 5;
-	PlayStartupMessage();
-	StartupStage = 6;
-	
-	if ( Level.NetMode == NM_Standalone )
-        RemainingBots = InitialBots;
-    else
-        RemainingBots = 0;
-	GameReplicationInfo.RemainingMinute = RemainingTime;
-	
-	Super(GameInfo).StartMatch();
-	
-	bTemp = bMustJoinBeforeStart;
-    bMustJoinBeforeStart = False;
-	while ( NeedPlayers() && Num < MaxHumanPlayers )  {
-		if ( AddBot() )
-			--RemainingBots;
-		++Num;
-    }
-	bMustJoinBeforeStart = bTemp;
-    log("START MATCH");
+	Super.StartMatch();
 	
 	GotoState('BeginNewWave');
 }
@@ -988,8 +956,8 @@ state Shopping
 		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 			++i;	// To prevent runaway loop
 			// Respawn Player
-			if ( PlayerController(C) != None && (C.Pawn == None || C.Pawn.Health < 1) && C.CanRestartPlayer() )
-				RespawnPlayer( PlayerController(C) );
+			if ( C.PlayerReplicationInfo != None && C.Pawn == None && C.CanRestartPlayer() )
+				RespawnPlayer( C );
 		}
 	}
 	
@@ -1264,10 +1232,7 @@ function DoWaveEnd()
 		
 		C.PlayerReplicationInfo.bOutOfLives = False;
 		C.PlayerReplicationInfo.NumLives = 0;
-		
-		if ( PlayerController(C) == None )
-			Continue; // skip this controller
-		
+	
 		if ( KFPlayerController(C) != None )  {
 			CheckSelectedVeterancy( KFPlayerController(C) );
 			if ( PlayerController(C).SteamStatsAndAchievements != None && KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements) != None )
@@ -1287,13 +1252,15 @@ function DoWaveEnd()
 		}
 		
 		// Survivor
-		if ( C.Pawn != None && C.Pawn.Health > 0 )  {
-			Survivor = PlayerController(C);
-			++SurvivorCount;
+		if ( C.Pawn != None )  {
+			if ( C.Pawn.Health > 0 && PlayerController(C) != None )  {
+				Survivor = PlayerController(C);
+				++SurvivorCount;
+			}
 		}
 		// Respawn Player
 		else if ( C.CanRestartPlayer() )
-			RespawnPlayer( PlayerController(C) );
+			RespawnPlayer( C );
 	}
 	
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 

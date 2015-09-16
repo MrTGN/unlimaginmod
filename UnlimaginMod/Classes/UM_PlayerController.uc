@@ -318,7 +318,7 @@ simulated event PostBeginPlay()
 
 function ServerReStartPlayer()
 {
-	if ( PlayerReplicationInfo.bOutOfLives )
+	if ( Role < ROLE_Authority || PlayerReplicationInfo.bOutOfLives )
 		Return; // No more main menu bug closing.
 
 	ClientCloseMenu(true, true);
@@ -329,9 +329,13 @@ function ServerReStartPlayer()
 		Level.Game.RestartPlayer(self);
 }
 
+// Server function only!
 function bool CanRestartPlayer()
 {
-	Return PlayerReplicationInfo != None && !PlayerReplicationInfo.bOnlySpectator && !bSpawnedThisWave && Level.Game.PlayerCanRestart(Self);
+	if ( Role < ROLE_Authority || PlayerReplicationInfo == None )
+		Return False;
+	
+	Return !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives && !bSpawnedThisWave && Level.Game.PlayerCanRestart(Self);
 }
 
 function ServerSpectate()
@@ -423,7 +427,7 @@ function BecomeActivePlayer()
 	}
 	
 	BroadcastLocalizedMessage(Level.Game.GameMessageClass, 1, PlayerReplicationInfo);
-	
+	bReadyToStart = True;
 	if ( Level.Game.bDelayedStart )
 		GotoState('PlayerWaiting');
 	// start match, or let player enter, immediately
@@ -441,20 +445,51 @@ function BecomeActivePlayer()
 
 auto state PlayerWaiting
 {
-	exec function Fire( optional float F )
+	// hax to open menu when player joins the game
+	simulated function BeginState()
 	{
-		LoadPlayers();
-		// Restart Player by press the Fire button
-        if ( !bForcePrecache && Level.TimeSeconds > 0.2 && bReadyToStart )
-			ServerReStartPlayer();
-	}
+		Super(PlayerController).BeginState();
 
+		bRequestedSteamData = False;
+		if ( Level.NetMode != NM_DedicatedServer && bPendingLobbyDisplay )  {
+			SetTimer(0.1, true);
+			Timer();
+		}
+	}
+	
 	function bool CanRestartPlayer()
 	{
-		if ( Level.Game.GameReplicationInfo.bMatchHasBegun )
-			Return False;
+		Return (bReadyToStart || (DeathMatch(Level.Game) != None && DeathMatch(Level.Game).bForceRespawn)) && Global.CanRestartPlayer();
+	}
+	
+	// Clean Out Parent class code
+	function ServerReStartPlayer()
+	{
+		if ( Level.NetMode == NM_Client || Level.TimeSeconds < WaitDelay )
+            Return;
 		
-		Return ( (bReadyToStart || (DeathMatch(Level.Game) != None && DeathMatch(Level.Game).bForceRespawn)) && Global.CanRestartPlayer() );
+		Global.ServerReStartPlayer();
+	}
+	
+	exec function Fire( optional float F )
+	{
+		if ( bFrozen )  {
+			if ( TimerRate <= 0.0 || TimerRate > 1.0 )
+				bFrozen = False;
+			Return;
+		}
+		
+		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
+			LoadPlayers();
+			if ( bMenuBeforeRespawn )  {
+				bMenuBeforeRespawn = False;
+				ShowMidGameMenu(False);
+			}
+			else
+				ServerReStartPlayer();
+		}
+		else
+			ServerSpectate();
 	}
 
 	simulated function Timer()
@@ -493,18 +528,6 @@ auto state PlayerWaiting
 
 		if ( Level.NetMode != NM_DedicatedServer )
 			SetupWebAPI();
-	}
-
-	// hax to open menu when player joins the game
-	simulated function BeginState()
-	{
-		Super(PlayerController).BeginState();
-
-		bRequestedSteamData = False;
-		if ( Level.NetMode != NM_DedicatedServer && bPendingLobbyDisplay )  {
-			SetTimer(0.1, true);
-			Timer();
-		}
 	}
 }
 
@@ -1119,6 +1142,33 @@ state Dead
 	function Timer()
 	{
 		Super(xPlayer).Timer();
+	}
+	
+	// Clean Out Parent class code
+	function ServerReStartPlayer()
+	{
+		Global.ServerReStartPlayer();
+	}
+	
+	exec function Fire( optional float F )
+	{
+		if ( bFrozen )  {
+			if ( TimerRate <= 0.0 || TimerRate > 1.0 )
+				bFrozen = False;
+			Return;
+		}
+		
+		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
+			LoadPlayers();
+			if ( bMenuBeforeRespawn )  {
+				bMenuBeforeRespawn = False;
+				ShowMidGameMenu(False);
+			}
+			else
+				ServerReStartPlayer();
+		}
+		else
+			ServerSpectate();
 	}
 
 	event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )

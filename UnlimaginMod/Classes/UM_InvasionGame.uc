@@ -809,8 +809,10 @@ state BeginNewWave
 			DecreaseWaveCountDown();
 		else if ( WaveNum < FinalWave )
 			GotoState('WaveInProgress');
-		else
+		else if ( bUseEndGameBoss )
 			GotoState('BossWaveInProgress');
+		else
+			EndGame(None,"TimeLimit");
 	}
 }
 //[end] BeginNewWave code
@@ -1321,6 +1323,7 @@ state WaveInProgress
 			bFinalStartup = True;
 			PlayStartupMessage();
 		}
+		
 		if ( NeedPlayers() && AddBot() && (RemainingBots > 0) )
 			RemainingBots--;
 		
@@ -1333,8 +1336,12 @@ state WaveInProgress
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime && CheckForJammedMonsters() )
 			RespawnJammedMonsters();
 		
-		if ( WaveRemainingTime < 1 )
-			GoToState('Shopping');
+		if ( WaveRemainingTime < 1 )  {
+			if ( NextWaveNum < FinalWave || bUseEndGameBoss )
+				GoToState('Shopping');
+			else
+				EndGame(None, "TimeLimit");
+		}
 		// Spawn New Monster Squad
 		else if ( Level.TimeSeconds >= NextMonsterSquadSpawnTime && WaveRemainingTime > GameWaves[WaveNum].SquadsSpawnEndTime && (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize )
 			SpawnNewMonsterSquad();

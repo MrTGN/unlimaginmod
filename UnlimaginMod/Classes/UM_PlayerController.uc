@@ -203,7 +203,6 @@ function Possess(Pawn aPawn)
 	if ( PlayerReplicationInfo.bOnlySpectator )
 		Return;
 
-	bSpawnedThisWave = True;
 	ResetFOV();
 	Pawn = aPawn;
 	aPawn.PossessedBy(self);
@@ -329,13 +328,12 @@ function ServerReStartPlayer()
 		Level.Game.RestartPlayer(self);
 }
 
-// Server function only!
 function bool CanRestartPlayer()
 {
-	if ( Role < ROLE_Authority || PlayerReplicationInfo == None )
+	if ( PlayerReplicationInfo == None || IsInState('GameEnded') || IsInState('RoundEnded') )
 		Return False;
 	
-	Return !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives && !bSpawnedThisWave && Level.Game.PlayerCanRestart(Self);
+	Return !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives;
 }
 
 function ServerSpectate()
@@ -459,7 +457,7 @@ auto state PlayerWaiting
 	
 	function bool CanRestartPlayer()
 	{
-		Return (bReadyToStart || (DeathMatch(Level.Game) != None && DeathMatch(Level.Game).bForceRespawn)) && Global.CanRestartPlayer();
+		Return bReadyToStart && Global.CanRestartPlayer();
 	}
 	
 	// Clean Out Parent class code

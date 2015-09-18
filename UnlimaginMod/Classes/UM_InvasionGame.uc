@@ -73,7 +73,7 @@ struct GameWaveData
 	var()	config	UM_BaseActor.IntRange	BreakTime;
 	var()	config	UM_BaseActor.IntRange	StartingCash;
 	var()	config	int						MinRespawnCash;
-	var()	config	float					RespawnCashModifier;
+	var()	config	float					DeathCashModifier;
 };
 var		array<GameWaveData>				GameWaves;
 
@@ -731,23 +731,23 @@ function UpdateStartingCash()
 		if ( WaveNum < FinalWave )  {
 			StartingCash = BaseActor.static.GetRandRangeInt( InvasionPreset.default.GameWaves[WaveNum].StartingCash );
 			MinRespawnCash = InvasionPreset.default.GameWaves[WaveNum].MinRespawnCash;
-			RespawnCashModifier = InvasionPreset.default.GameWaves[WaveNum].RespawnCashModifier;
+			DeathCashModifier = InvasionPreset.default.GameWaves[WaveNum].DeathCashModifier;
 		}
 		else  {
 			StartingCash = InvasionPreset.default.BossWaveStartingCash;
 			MinRespawnCash = InvasionPreset.default.BossWaveMinRespawnCash;
-			RespawnCashModifier = InvasionPreset.default.BossWaveRespawnCashModifier;
+			DeathCashModifier = InvasionPreset.default.BossWaveRespawnCashModifier;
 		}
 	}
 	else if ( WaveNum < FinalWave )  {
 		StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
 		MinRespawnCash = GameWaves[WaveNum].MinRespawnCash;
-		RespawnCashModifier = GameWaves[WaveNum].RespawnCashModifier;
+		DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
 	}
 	else  {
 		StartingCash = BossWaveStartingCash;
 		MinRespawnCash = BossWaveMinRespawnCash;
-		RespawnCashModifier = BossWaveRespawnCashModifier;
+		DeathCashModifier = BossWaveRespawnCashModifier;
 	}
 }
 
@@ -831,20 +831,6 @@ function bool BootShopPlayers()
 	}
 	
 	Return bResult;
-}
-
-function RespawnWaitingPlayers()
-{
-	local	Controller	C;
-	local	int			i;
-	
-	// ControllerList
-	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-		++i;	// To prevent runaway loop
-		// Respawn Player
-		if ( C.PlayerReplicationInfo != None && C.Pawn == None && C.CanRestartPlayer() )
-			RespawnPlayer( C );
-	}
 }
 
 state Shopping
@@ -991,7 +977,8 @@ state Shopping
 		}
 		else  {
 			// Respawn died players if more than 5 seconds left
-			RespawnWaitingPlayers();
+			if ( CanRespawnPlayers() )
+				RespawnWaitingPlayers();
 			// Have Trader tell players that they've got 10 seconds
 			if ( WaveCountDown == 10 )
 				PlayTenSecondsLeftMessage();
@@ -1225,6 +1212,7 @@ function DoWaveEnd()
 		if ( C.PlayerReplicationInfo == None )
 			Continue; // skip this controller
 		
+		// Reset Lives Limit
 		C.PlayerReplicationInfo.bOutOfLives = False;
 		C.PlayerReplicationInfo.NumLives = 0;
 	
@@ -1234,28 +1222,15 @@ function DoWaveEnd()
 				KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements).WaveEnded();
 
 			// Don't broadcast this message AFTER the final wave!
-			if ( NextWaveNum < FinalWave )  {
-				KFPlayerController(C).bSpawnedThisWave = False;
+			if ( NextWaveNum < FinalWave )
 				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 2);
-			}
-			// Next Wave will be a Final Wave
-			else if ( NextWaveNum == FinalWave )
-				KFPlayerController(C).bSpawnedThisWave = False;
-			// End of the game
-			else
-				KFPlayerController(C).bSpawnedThisWave = True;
 		}
 		
 		// Survivor
-		if ( C.Pawn != None )  {
-			if ( C.Pawn.Health > 0 && PlayerController(C) != None )  {
-				Survivor = PlayerController(C);
-				++SurvivorCount;
-			}
+		if ( C.Pawn != None && C.Pawn.Health > 0 && PlayerController(C) != None )  {
+			Survivor = PlayerController(C);
+			++SurvivorCount;
 		}
-		// Respawn Player
-		else if ( C.CanRestartPlayer() )
-			RespawnPlayer( C );
 	}
 	
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 

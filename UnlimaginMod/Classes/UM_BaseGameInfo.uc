@@ -63,7 +63,7 @@ var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
 
 // StartingCash lottery
 var		float							ExtraStartingCashChance, ExtraStartingCashModifier;
-var		float							RespawnCashModifier;
+var		float							DeathCashModifier;
 
 //[end] Varibles
 //====================================================================
@@ -167,6 +167,44 @@ function CheckStartingCash( Controller C )
 		C.PlayerReplicationInfo.Score = float(StartingCash);
 }
 
+function bool CanRespawnPlayers()
+{
+	if ( GameReplicationInfo == None || !GameReplicationInfo.bMatchHasBegun )
+		Return False;
+	
+	Return !bWaveInProgress && (!bWaveBossInProgress || (bRespawnOnBoss && !bHasSetViewYet));
+}
+
+function RespawnWaitingPlayers()
+{
+	local	Controller	C;
+	local	int			i;
+	
+	// ControllerList
+	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
+		++i;	// To prevent runaway loop
+		// Respawn Player
+		if ( C.PlayerReplicationInfo != None && (C.Pawn == None || C.Pawn.bDeleteMe) && C.CanRestartPlayer() )  {
+			// Player will be respawned after the death
+			if ( C.PlayerReplicationInfo.Deaths > 0 )
+				C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , C.PlayerReplicationInfo.Score );
+			// Spawn a new waiting player
+			else
+				CheckStartingCash( C );
+			
+			if ( PlayerController(C) != None )  {
+				PlayerController(C).GotoState('PlayerWaiting');
+				PlayerController(C).SetViewTarget(C);
+				PlayerController(C).ClientSetBehindView(False);
+				PlayerController(C).bBehindView = False;
+				PlayerController(C).ClientSetViewTarget(C.Pawn);
+			}
+			
+			C.ServerReStartPlayer();
+		}
+	}
+}
+
 function RespawnPlayer( Controller C )
 {
 	if ( C == None || C.PlayerReplicationInfo == None )
@@ -181,7 +219,7 @@ function RespawnPlayer( Controller C )
 	C.PlayerReplicationInfo.bOutOfLives = False;
 	// Respawn player after death
 	if ( C.PlayerReplicationInfo.Deaths > 0 )
-		C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , (C.PlayerReplicationInfo.Score * RespawnPenaltyCashModifier) );
+		C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , C.PlayerReplicationInfo.Score );
 	// Spawn a new waiting player
 	else
 		CheckStartingCash( C );
@@ -295,7 +333,7 @@ function RestartPlayer( Controller aPlayer )
 
 	if ( PlayerController(aPlayer) != None && bWaveInProgress )  {
 		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
-		aPlayer.PlayerReplicationInfo.NumLives = 1;
+		aPlayer.PlayerReplicationInfo.NumLives = MaxLives;
 		aPlayer.GoToState('Spectating');
 		Return;
 	}
@@ -499,7 +537,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
 			if ( C.PlayerReplicationInfo != None && C.PlayerReplicationInfo.bOutOfLives && !C.PlayerReplicationInfo.bOnlySpectator )  {
 				NewPlayer.PlayerReplicationInfo.bOutOfLives = True;
-				NewPlayer.PlayerReplicationInfo.NumLives = 1;
+				NewPlayer.PlayerReplicationInfo.NumLives = MaxLives;
 				Break;
 			}
 		}
@@ -625,23 +663,23 @@ function StartMatch()
 	StartupStage = 6;
 	
 	if ( Level.NetMode == NM_Standalone )
-        RemainingBots = InitialBots;
-    else
-        RemainingBots = 0;
+		RemainingBots = InitialBots;
+	else
+		RemainingBots = 0;
 	GameReplicationInfo.RemainingMinute = RemainingTime;
 	
 	// Spawning Players
 	Super(GameInfo).StartMatch();
 	
 	bTemp = bMustJoinBeforeStart;
-    bMustJoinBeforeStart = False;
+	bMustJoinBeforeStart = False;
 	while ( NeedPlayers() && Num < MaxHumanPlayers )  {
 		if ( AddBot() )
 			--RemainingBots;
 		++Num;
-    }
+	}
 	bMustJoinBeforeStart = bTemp;
-    log("START MATCH");
+	log("START MATCH");
 }
 
 function ResetSlowMoInstigator()
@@ -941,6 +979,162 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 		Return Damage;
 }
 
+function bool CheckMaxLives( PlayerReplicationInfo Scorer )
+{
+	local Controller C;
+	local PlayerController Living;
+	local byte AliveCount;
+
+	if ( MaxLives > 0 )  {
+		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
+			if ( C.PlayerReplicationInfo != None && C.bIsPlayer && !C.PlayerReplicationInfo.bOutOfLives && !C.PlayerReplicationInfo.bOnlySpectator )  {
+				++AliveCount;
+				if ( Living == None )
+					Living = PlayerController(C);
+			}
+		}
+		
+		if ( AliveCount == 0 )  {
+			EndGame(Scorer,"LastMan");
+			Return True;
+		}
+		else if ( !bNotifiedLastManStanding && AliveCount == 1 && Living != None )  {
+			bNotifiedLastManStanding = True;
+			Living.ReceiveLocalizedMessage(Class'KFLastManStandingMsg');
+		}
+	}
+	
+	Return False;
+}
+
+function ScoreKillAssists( float Score, Controller Victim, Controller Killer )
+{
+	local	int						i;
+	local	float					GrossDamage, ScoreMultiplier, KillScore;
+	local	KFMonsterController		MyVictim;
+	local	KFPlayerReplicationInfo	KFPRI;
+
+	MyVictim = KFMonsterController(Victim);
+	if ( MyVictim == None || MyVictim.KillAssistants.Length < 1 )
+		Return;
+
+	for ( i = 0; i < MyVictim.KillAssistants.Length; ++i )
+		GrossDamage += MyVictim.KillAssistants[i].Damage;
+
+	ScoreMultiplier = Score / GrossDamage;
+
+	for ( i = 0; i < MyVictim.KillAssistants.Length; ++i )  {
+		if ( MyVictim.KillAssistants[i].PC != None && MyVictim.KillAssistants[i].PC.PlayerReplicationInfo != None )  {
+			KillScore = ScoreMultiplier * MyVictim.KillAssistants[i].Damage;
+			MyVictim.KillAssistants[i].PC.PlayerReplicationInfo.Score += KillScore;
+
+			KFPRI = KFPlayerReplicationInfo(MyVictim.KillAssistants[i].PC.PlayerReplicationInfo);
+			if ( KFPRI != None )  {
+				if ( MyVictim.KillAssistants[i].PC != Killer )
+					++KFPRI.KillAssists;
+				KFPRI.ThreeSecondScore += KillScore;
+			}
+		}
+	}
+}
+
+function ScoreKill( Controller Killer, Controller Other )
+{
+	local	PlayerReplicationInfo	OtherPRI;
+	local	float					KillScore;
+	local	Controller				C;
+
+	OtherPRI = Other.PlayerReplicationInfo;
+	if ( OtherPRI != None )  {
+		++OtherPRI.NumLives;
+		
+		OtherPRI.Team.Score = FMax( (OtherPRI.Team.Score - (OtherPRI.Score - (OtherPRI.Score * DeathCashModifier))), 0.0 );
+		OtherPRI.Score = FMax( (OtherPRI.Score * DeathCashModifier), 0.0 );
+
+		OtherPRI.Team.NetUpdateTime = Level.TimeSeconds - 1.0;
+		if ( MaxLives > 0 )
+			OtherPRI.bOutOfLives = OtherPRI.NumLives >= MaxLives;
+		
+		if ( Killer != None && Killer.PlayerReplicationInfo != None && Killer.bIsPlayer )
+			BroadcastLocalizedMessage( class'KFInvasionMessage', 1, OtherPRI, Killer.PlayerReplicationInfo );
+		else if( Killer == None || Monster(Killer.Pawn) == None )
+			BroadcastLocalizedMessage( class'KFInvasionMessage', 1, OtherPRI );
+		else 
+			BroadcastLocalizedMessage( class'KFInvasionMessage', 1, OtherPRI,, Killer.Pawn.Class );
+		
+		CheckScore(None);
+	}
+
+	if ( GameRulesModifiers != None )
+		GameRulesModifiers.ScoreKill(Killer, Other);
+
+	if ( MonsterController(Killer) != None )
+		Return;
+
+	if ( (killer == Other || killer == None) && Other.PlayerReplicationInfo != None )  {
+		Other.PlayerReplicationInfo.Score -= 1;
+		Other.PlayerReplicationInfo.NetUpdateTime = Level.TimeSeconds - 1;
+		ScoreEvent(Other.PlayerReplicationInfo,-1,"self_frag");
+	}
+
+	if ( Killer == None || !Killer.bIsPlayer || Killer == Other )
+		Return;
+
+	if ( Other.bIsPlayer )  {
+		Killer.PlayerReplicationInfo.Score -= 5;
+		Killer.PlayerReplicationInfo.Team.Score -= 2;
+		Killer.PlayerReplicationInfo.NetUpdateTime = Level.TimeSeconds - 1;
+		Killer.PlayerReplicationInfo.Team.NetUpdateTime = Level.TimeSeconds - 1;
+		ScoreEvent(Killer.PlayerReplicationInfo, -5, "team_frag");
+		Return;
+	}
+	
+	if ( LastKilledMonsterClass == None )
+		KillScore = 1;
+	else if ( Killer.PlayerReplicationInfo != None )  {
+		KillScore = LastKilledMonsterClass.Default.ScoringValue;
+		// Scale killscore by difficulty
+		if ( GameDifficulty >= 5.0 ) // Suicidal and Hell on Earth
+			KillScore *= 0.65;
+		else if ( GameDifficulty >= 4.0 ) // Hard
+			KillScore *= 0.85;
+		else if ( GameDifficulty >= 2.0 ) // Normal
+			KillScore *= 1.0;
+		else //if ( GameDifficulty == 1.0 ) // Beginner
+			KillScore *= 2.0;
+
+		// Increase score in a short game, so the player can afford to buy cool stuff by the end
+		if( KFGameLength == GL_Short )
+			KillScore *= 1.75;
+
+		KillScore = Max(1,int(KillScore));
+		Killer.PlayerReplicationInfo.Kills++;
+
+		ScoreKillAssists(KillScore, Other, Killer);
+
+		Killer.PlayerReplicationInfo.Team.Score += KillScore;
+		Killer.PlayerReplicationInfo.NetUpdateTime = Level.TimeSeconds - 1;
+		Killer.PlayerReplicationInfo.Team.NetUpdateTime = Level.TimeSeconds - 1;
+		TeamScoreEvent(Killer.PlayerReplicationInfo.Team.TeamIndex, 1, "tdm_frag");
+	}
+
+	if ( Killer.PlayerReplicationInfo != None && Killer.PlayerReplicationInfo.Score < 0 )
+		Killer.PlayerReplicationInfo.Score = 0;
+
+
+	/* Begin Marco's Kill Messages */
+	if ( Class'HUDKillingFloor'.Default.MessageHealthLimit <= Other.Pawn.Default.Health
+		 || Class'HUDKillingFloor'.Default.MessageMassLimit <= Other.Pawn.Default.Mass )  {
+		for( C = Level.ControllerList; C != None; C = C.nextController )  {
+			if ( C.bIsPlayer && xPlayer(C) != None )
+				xPlayer(C).ReceiveLocalizedMessage( Class'KillsMessage', 1, Killer.PlayerReplicationInfo,, Other.Pawn.Class );
+		}
+	}
+	else if ( xPlayer(Killer) != None )
+		xPlayer(Killer).ReceiveLocalizedMessage( Class'KillsMessage',,,, Other.Pawn.Class );
+	/* End Marco's Kill Messages */
+}
+
 //[end] Functions
 //====================================================================
 
@@ -948,7 +1142,7 @@ defaultproperties
 {
 	 ExtraStartingCashChance=0.05
 	 ExtraStartingCashModifier=4.0
-	 RespawnCashModifier=0.95
+	 DeathCashModifier=0.9
 	 
 	 bSaveSpectatorScores=False
 	 BotAtHumanFriendlyFireScale=0.5

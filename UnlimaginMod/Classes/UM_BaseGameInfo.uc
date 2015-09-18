@@ -483,7 +483,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		UnrealPlayer(NewPlayer).bLatecomer = True;
 
 	if ( Level.NetMode == NM_Standalone )  {
-		if ( !NewPlayer.PlayerReplicationInfo.bOnlySpectator )  {
+		if ( !NewPlayer.PlayerReplicationInfo.bOnlySpectator )
 			StandalonePlayer = NewPlayer;
 		// Compensate for the space left for the player
 		else if ( !bCustomBots && (bAutoNumBots || (bTeamGame && (InitialBots%2 == 1))) )

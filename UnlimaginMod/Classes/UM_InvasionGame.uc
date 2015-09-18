@@ -113,11 +113,15 @@ var		Class<UM_ActorPool>				ActorPoolClass;
 
 var		class<KFMonstersCollection>		UM_MonsterCollection;
 
-var		int								NextWaveNum;
+var		int								InitialWaveNum;
+var		transient	int					NextWaveNum;
 
 var		ShopVolume						CurrentShop;
 var		float							ShopListUpdateDelay;
 var		transient	float				NextShopListUpdateTime;
+
+var		config		bool				bStartMatchWithShopping;
+var		UM_BaseActor.IntRange			StartShoppingTime;
 
 var		float							ZedSpawnListUpdateDelay;
 var		transient	float				NextZedSpawnListUpdateTime;
@@ -145,6 +149,9 @@ var		float							ZEDTimeKillSlowMoChargeBonus;
 var		transient	string				CurrentMapName;
 
 var		class<UM_BaseInvasionPreset>	InvasionPreset;
+
+var		config		bool				bRepairDoorsBeforeNewWave;
+var		config		bool				bRepairDoorsBeforeBossWave;
 
 //[end] Varibles
 //====================================================================
@@ -176,7 +183,7 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	
 	InvasionPreset = class<UM_BaseInvasionPreset>(GamePreset);
 	if ( InvasionPreset == None )
-		Return False;
+		Return False;	// Preset wasn't found
 	
 	// Monsters
 	default.Monsters.Length = InvasionPreset.default.Monsters.Length;
@@ -324,20 +331,17 @@ function UpdateZedSpawnList()
  its helper classes.
  Warning: this is called before actors' PreBeginPlay.
 */
-
-//ToDo: Переписать! Большую часть настроек вынести в LoadGamePreset и подфункции!
 event InitGame( string Options, out string Error )
 {
-//	local int i,j;
-	local KFLevelRules KFLRit;
-	local string InOpt;
-	//local int i;
+	local	KFLevelRules	KFLRit;
+	local	string			InOpt;
 
 	Super(xTeamGame).InitGame(Options, Error);
 	
 	InOpt = ParseOption(Options, "GamePresetClassName");
 	LoadGamePreset( InOpt );
 	
+	//ToDo: Issue #290
 	MaxLives = 1;
 	bForceRespawn = True;
 	
@@ -370,56 +374,27 @@ event InitGame( string Options, out string Error )
 		bNoBots = bool(InOpt);
 
 	log("Game length = "$KFGameLength);
-
-	// Set up the Unlimagin game type settings
-	bUseEndGameBoss = true;
-	bRespawnOnBoss = true;
-	MonsterClasses = UM_MonsterClasses;
-	MonsterSquad = UM_MonsterSquads;
-	MaxZombiesOnce = UM_MaxZombiesOnce;
-	bCustomGameLength = false;
-	EndGameBossClass = UM_EndGameBossClass;
-	MonsterCollection = UM_MonsterCollection;
-	UpdateGameLength();
-
-	// Set difficulty based values
-	if ( GameDifficulty >= 7.0 )  {
-		// Hell on Earth
-		TimeBetweenWaves = UM_TimeBetweenWaves;
-		StartingCash = StartingCashHell;
-		MinRespawnCash = MinRespawnCashHell;
-	}
-	else if ( GameDifficulty >= 5.0 )  {
-		// Suicidal
-		TimeBetweenWaves = UM_TimeBetweenWaves;
-		StartingCash = StartingCashSuicidal;
-		MinRespawnCash = MinRespawnCashSuicidal;
-	}
-	else if ( GameDifficulty >= 4.0 )  {
-		// Hard
-		TimeBetweenWaves = UM_TimeBetweenWaves;
-		StartingCash = StartingCashHard;
-		MinRespawnCash = MinRespawnCashHard;
-	}
-	else if ( GameDifficulty >= 2.0 )  {
-		// Normal
-		TimeBetweenWaves = UM_TimeBetweenWaves;
-		StartingCash = StartingCashNormal;
-		MinRespawnCash = MinRespawnCashNormal;
+	
+	if ( InvasionPreset != None )  {
+		InitialWave = InvasionPreset.default.InitialWaveNum;
+		FinalWave = InvasionPreset.default.GameWaves.Length;
 	}
 	else  {
-		// Beginner
-		TimeBetweenWaves = UM_TimeBetweenWaves;
-		StartingCash = StartingCashBeginner;
-		MinRespawnCash = MinRespawnCashBeginner;
-	}
-
-	InitialWave = 0;
-	if ( InvasionPreset != None )
-		FinalWave = InvasionPreset.default.GameWaves.Length;
-	else
+		InitialWave = InitialWaveNum;
 		FinalWave = GameWaves.Length;
+	}
+	WaveNum = InitialWave;
+	NextWaveNum = InitialWave;
+	UpdateStartingCash();
+	/*	ToDo: Важно! Тут должны быть вызыванны все остальные функции
+		для обновления каких-нибдуь моментальных переменных, зависящих от номера волны.
+		Списки монстров, деньги, время волны и т.д, 
+		но только если они не буду вызваны в state 'BeginNewWave'.
+	*/
 	
+	bCustomGameLength = True;	// We can't use Steam Stats with Unlimagin Mod
+	UpdateGameLength();
+
 	LoadUpMonsterList();
 	
 	//Spawning ActorPool
@@ -641,11 +616,16 @@ function UpdateCurrentMapName()
 // Start the game - inform all actors that the match is starting, and spawn player pawns
 function StartMatch()
 {
-	WaveNum = 0;
-	NextWaveNum = 0;
 	Super.StartMatch();
 	
-	GotoState('BeginNewWave');
+	if ( bStartMatchWithShopping )  {
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
+		SetupPickups();
+		GoToState('Shopping');
+	}
+	else
+		GotoState('BeginNewWave');
 }
 
 function EndMatch()
@@ -771,6 +751,16 @@ function UpdateStartingCash()
 	}
 }
 
+function RepairDoors()
+{
+	local	KFDoorMover		DoorMover;
+	
+	foreach DynamicActors(class'KFDoorMover', DoorMover)  {
+		if ( DoorMover != None )
+			DoorMover.RespawnDoor();
+	}
+}
+
 function DecreaseWaveCountDown()
 {
 	--WaveCountDown;
@@ -802,9 +792,13 @@ state BeginNewWave
 		if ( CurrentShop == None )
 			SelectNewShop();
 		
+		UpdateStartingCash();
 		NotifyNewWave();
 		SetupPickups();
-		UpdateStartingCash();
+		
+		// Repair Doors (Repair bool vars are config)
+		if ( (WaveNum < FinalWave && bRepairDoorsBeforeNewWave ) || (WaveNum == FinalWave && bRepairDoorsBeforeBossWave) )
+			RepairDoors();
 	}
 	
 	event Timer()
@@ -822,16 +816,6 @@ state BeginNewWave
 //[end] BeginNewWave code
 
 //[block] Shopping code
-function RespawnDoors()
-{
-	local	KFDoorMover		DoorMover;
-	
-	foreach DynamicActors(class'KFDoorMover', DoorMover)  {
-		if ( DoorMover != None )
-			DoorMover.RespawnDoor();
-	}
-}
-
 // Teleport Players from the shops
 function bool BootShopPlayers()
 {
@@ -845,6 +829,20 @@ function bool BootShopPlayers()
 	}
 	
 	Return bResult;
+}
+
+function RespawnWaitingPlayers()
+{
+	local	Controller	C;
+	local	int			i;
+	
+	// ControllerList
+	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
+		++i;	// To prevent runaway loop
+		// Respawn Player
+		if ( C.PlayerReplicationInfo != None && C.Pawn == None && C.CanRestartPlayer() )
+			RespawnPlayer( C );
+	}
 }
 
 state Shopping
@@ -891,12 +889,21 @@ state Shopping
 				}
 			}
 		}
+		
 		HintTime_1 = Level.TimeSeconds + 11.0;
 		
 		// Break Time
-		WaveCountDown = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].BreakTime );
-		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
-			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
+		if ( NextWaveNum > InitialWave )  {
+			if ( InvasionPreset != None )
+				WaveCountDown = BaseActor.static.GetRandRangeInt( InvasionPreset.default.GameWaves[WaveNum].BreakTime );
+			else
+				WaveCountDown = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].BreakTime );
+		}
+		// Start Match With Shopping
+		else if ( InvasionPreset != None )
+			WaveCountDown = BaseActor.static.GetRandRangeInt( InvasionPreset.default.StartShoppingTime );
+		else
+			WaveCountDown = BaseActor.static.GetRandRangeInt( StartShoppingTime );
 	}
 	
 	function PlaySecondHint()
@@ -947,33 +954,9 @@ state Shopping
 		}
 	}
 	
-	function CheckForDiedPlayers()
-	{
-		local	Controller	C;
-		local	int			i;
-		
-		// ControllerList
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			// Respawn Player
-			if ( C.PlayerReplicationInfo != None && C.Pawn == None && C.CanRestartPlayer() )
-				RespawnPlayer( C );
-		}
-	}
-	
 	event Timer()
 	{
 		Global.Timer();
-		
-		if ( bShowHint_2 && Level.TimeSeconds > HintTime_1 )  {
-			PlaySecondHint();
-			HintTime_2 = Level.TimeSeconds + 11.0;
-			bShowHint_2 = False;
-		}
-		else if ( bShowHint_3 && Level.TimeSeconds > HintTime_2 )  {
-			PlayThirdHint();
-			bShowHint_3 = False;
-		}
 		
 		// Out from the Shopping state
 		if ( WaveCountDown < 1 )  {
@@ -985,7 +968,19 @@ state Shopping
 			
 			Return;
 		}
-		else if ( WaveCountDown < 5 )  {
+		
+		if ( bShowHint_2 && Level.TimeSeconds > HintTime_1 )  {
+			bShowHint_2 = False;
+			PlaySecondHint();
+			HintTime_2 = Level.TimeSeconds + 11.0;
+		}
+		else if ( bShowHint_3 && Level.TimeSeconds > HintTime_2 )  {
+			bShowHint_3 = False;
+			PlayThirdHint();
+		}
+		
+		DecreaseWaveCountDown();
+		if ( WaveCountDown < 5 )  {
 			// Broadcast Localized Message about next wave
 			if ( NextWaveNum < FinalWave )
 				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 1);
@@ -994,7 +989,7 @@ state Shopping
 		}
 		else  {
 			// Respawn died players if more than 5 seconds left
-			CheckForDiedPlayers();
+			RespawnWaitingPlayers();
 			// Have Trader tell players that they've got 10 seconds
 			if ( WaveCountDown == 10 )
 				PlayTenSecondsLeftMessage();
@@ -1002,8 +997,6 @@ state Shopping
 			else if ( WaveCountDown == 30 )
 				PlayThirtySecondsLeftMessage();
 		}
-		
-		DecreaseWaveCountDown();
 	}
 	
 	// Close Shops
@@ -1350,7 +1343,6 @@ state WaveInProgress
 	event EndState()
 	{
 		DoWaveEnd();
-		RespawnDoors();
 	}
 }
 //[end] WaveInProgress Code
@@ -1447,7 +1439,13 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
+	 bUseEndGameBoss=True
+	 bRespawnOnBoss=True
+	 
 	 bSaveSpectatorScores=True
+	 
+	 bRepairDoorsBeforeNewWave=False
+	 bRepairDoorsBeforeBossWave=True
 	 
 	 MaxAliveMonsters=40
 	 NumPlayersModifier=1.0
@@ -1464,6 +1462,9 @@ defaultproperties
 
      MaxHumanPlayers=12
 	 
+	 bStartMatchWithShopping=True
+	 StartShoppingTime=(Min=120,Max=140)
+	 
 	 // Monsters
 	 Monsters(0)=(MonsterClassName="UnlimaginMod.UM_ZombieBloat",WaveMinLimits=(4,6,8,8,10,12,12),WaveMaxLimits=(40,60,80,80,100,120,120),WaveSpawnChances=(0.25,0.3,0.35,0.4,0.4,0.45,0.45),WaveSpawnDelays=(24.0,22.0,20.0,18.0,16.0,14.0,12.0))
 	 Monsters(1)=(MonsterClassName="UnlimaginMod.UM_ZombieClot")
@@ -1474,6 +1475,8 @@ defaultproperties
 	 Monsters(6)=(MonsterClassName="UnlimaginMod.UM_ZombieScrake",WaveLimits=(0,0,2,4,4,6,6),WaveSpawnChances=(0.0,0.0,0.1,0.15,0.2,0.25,0.25),WaveSpawnDelays=(0.0,0.0,300.0,240.0,180.0,120.0,90.0))
 	 Monsters(7)=(MonsterClassName="UnlimaginMod.UM_ZombieSiren",WaveLimits=(0,1,2,2,4,4,6),WaveSpawnChances=(0.0,0.15,0.15,0.2,0.2,0.25,0.25),WaveSpawnDelays=(0.0,240.0,210.0,180.0,120.0,90.0,60.0))
 	 Monsters(8)=(MonsterClassName="UnlimaginMod.UM_ZombieStalker",WaveLimits=(6,8,10,12,14,16,18),WaveSpawnChances=(0.45,0.45,0.5,0.55,0.55,0.5,0.5))
+	 
+	 InitialWaveNum=0
 	 // GameWaves - 7 waves
 	 GameWaves(0)=(NumMonsters=(Min=16,Max=20),MaxMonsters=270,MonstersAtOnce=(Min=16,Max=42),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=2.0,Max=4.0),SquadsSpawnEndTime=15,WaveDifficulty=0.7,WaveDuration=(Min=480,Max=2400),BreakTime=(Min=90,Max=100),StartingCash=(Min=240,Max=280),WaveDelay=10)
 	 GameWaves(1)=(NumMonsters=(Min=22,Max=26),MaxMonsters=360,MonstersAtOnce=(Min=18,Max=44),MonsterSquadSize=(Min=4,Max=6),SquadsSpawnPeriod=(Min=2.5,Max=4.5),SquadsSpawnEndTime=15,WaveDifficulty=0.8,WaveDuration=(Min=600,Max=3000),BreakTime=(Min=90,Max=110),StartingCash=(Min=260,Max=300))

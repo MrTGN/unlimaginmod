@@ -37,6 +37,10 @@ var		int											BossWaveMinRespawnCash;
 var		float										BossWaveRespawnCashModifier;
 var		int											BossWaveStartDelay;
 
+var		UM_BaseActor.IntRange						StartShoppingTime;
+
+var		int											InitialWaveNum;
+
 //[end] Varibles
 //====================================================================
 
@@ -48,7 +52,9 @@ var		int											BossWaveStartDelay;
 
 defaultproperties
 {
-     MaxHumanPlayers=12
+	 InitialWaveNum=0
+	 StartShoppingTime=(Min=120,Max=140)
+	 MaxHumanPlayers=12
 	 //
 	 NumPlayersModifiers(1)=1.0
 	 NumPlayersModifiers(2)=1.75

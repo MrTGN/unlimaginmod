@@ -32,12 +32,13 @@ var		array<UM_InvasionGame.BossWaveMonsterData>	BossMonsters;
 var		string										BossMonsterClassName;
 var		array<float>								NumPlayersModifiers;
 
-var		UM_BaseActor.IntRange						BossWaveStartingCash;
-var		int											BossWaveMinRespawnCash;
+var		IntRange									BossWaveStartingCash;
+var		IntRange									BossWaveMinRespawnCash;
 var		float										BossWaveRespawnCashModifier;
 var		int											BossWaveStartDelay;
+var		float										BossWaveDoorsRepairChance;
 
-var		UM_BaseActor.IntRange						StartShoppingTime;
+var		IntRange									StartShoppingTime;
 
 var		int											InitialWaveNum;
 

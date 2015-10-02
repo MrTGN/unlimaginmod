@@ -45,11 +45,11 @@ var		float							BotAtHumanFriendlyFireScale;
 
 // Will be config string at release version
 var		string							GamePresetClassName;
-var		class<UM_BaseGamePreset>		GamePreset;
+var		UM_BaseGamePreset				GamePreset;
 
 var		transient	float				DefaultGameSpeed;	// Sets in the InitGame event
 
-var		int								MaxHumanPlayers;
+var		int								MinHumanPlayers, MaxHumanPlayers;
 
 var		UM_HumanPawn					SlowMoInstigator;
 var		transient	float				SlowMoDeltaTime;
@@ -61,7 +61,7 @@ var		transient	bool				bSlowMoStartedByHuman;
 
 var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
 
-// StartingCash lottery
+// Starting Cash lottery
 var		float							ExtraStartingCashChance, ExtraStartingCashModifier;
 var		float							DeathCashModifier;
 
@@ -113,44 +113,45 @@ function bool AllowGameSpeedChange()
 protected function bool LoadGamePreset( optional string NewPresetName )
 {
 	local	int		i;
+	local	Class<UM_BaseGamePreset>	GamePresetClass;
 	
 	// If NewPresetName not specified will be loaded default GamePreset
 	if ( NewPresetName != "" )
 		GamePresetClassName = NewPresetName;
 	
-	if ( GamePresetClassName != "" )
-		GamePreset = Class<UM_BaseGamePreset>( BaseActor.static.LoadClass(GamePresetClassName) );
-	else  {
+	if ( GamePresetClassName == "" )  {
 		Warn("GamePresetClassName not specified!", Class.Outer.Name);
 		GamePresetClassName = "UnlimaginMod.UM_BaseGamePreset";
-		GamePreset = Class<UM_BaseGamePreset>( BaseActor.static.LoadClass(GamePresetClassName) );
 	}
+	GamePresetClass = Class<UM_BaseGamePreset>( BaseActor.static.LoadClass(GamePresetClassName) );
 	
-	if ( GamePreset == None )  {
+	if ( GamePresetClass == None )  {
 		Warn("GamePreset wasn't found!", Class.Outer.Name);
 		Return False;
 	}
 	
+	GamePreset = new(self) GamePresetClass;
+	
 	// MaxHumanPlayers
-	default.MaxHumanPlayers = GamePreset.default.MaxHumanPlayers;
+	default.MaxHumanPlayers = GamePreset.MaxHumanPlayers;
 	MaxHumanPlayers = default.MaxHumanPlayers;
 	
 	// DramaticKills
-	default.DramaticKills.Length = GamePreset.default.DramaticKills.Length;
+	default.DramaticKills.Length = GamePreset.DramaticKills.Length;
 	DramaticKills.Length = default.DramaticKills.Length;
-	for ( i = 0; i < GamePreset.default.DramaticKills.Length; ++i )  {
+	for ( i = 0; i < GamePreset.DramaticKills.Length; ++i )  {
 		// MinKilled
-		default.DramaticKills[i].MinKilled = GamePreset.default.DramaticKills[i].MinKilled;
+		default.DramaticKills[i].MinKilled = GamePreset.DramaticKills[i].MinKilled;
 		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
 		// EventChance
-		default.DramaticKills[i].EventChance = GamePreset.default.DramaticKills[i].EventChance;
+		default.DramaticKills[i].EventChance = GamePreset.DramaticKills[i].EventChance;
 		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
 		// EventDuration
-		default.DramaticKills[i].EventDuration = GamePreset.default.DramaticKills[i].EventDuration;
+		default.DramaticKills[i].EventDuration = GamePreset.DramaticKills[i].EventDuration;
 		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
 	}
 	
-	Log("GamePreset" @string(GamePreset.default.Name) @"loaded", Class.Outer.Name);
+	Log("GamePreset" @string(GamePreset.Name) @"loaded", Class.Outer.Name);
 	
 	Return True;
 }
@@ -1151,6 +1152,9 @@ defaultproperties
 	 
 	 DelayBetweenSlowMoToggle=0.25
 	 MinToggleSlowMoCharge=2.0
+	 
+	 MinHumanPlayers=1
+	 MaxHumanPlayers=10
 	 
 	 // Kills for DramaticEvent
 	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=3.0)

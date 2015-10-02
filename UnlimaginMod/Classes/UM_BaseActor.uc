@@ -15,6 +15,7 @@
 //	Comments:		 UnlimaginMod base Actor class
 //================================================================================
 class UM_BaseActor extends Actor
+	DependsOn(UM_BaseObject)
 	Abstract;
 
 
@@ -48,13 +49,6 @@ struct	SoundData
 	var	bool		bUse3D;	// Use (Ture) or not (False) 3D sound positioning in the world from the actor location
 };
 
-// Int Range
-struct IntRange
-{
-	var()	config	int		Min;
-	var()	config	int		Max;
-};
-
 //[end] Varibles
 //====================================================================
 
@@ -72,7 +66,7 @@ simulated static final function int GetRandInt( int MinI, int MaxI )
 	Return	MinI + Round(float(MaxI - MinI) * FRand());
 }
 
-simulated static final function int GetRandRangeInt( IntRange IR )
+simulated static final function int GetRandRangeInt( UM_BaseObject.IntRange IR )
 {
 	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
 }
@@ -82,7 +76,7 @@ simulated static final function float GetRandFloat( float MinF, float MaxF )
 	Return	MinF + (MaxF - MinF) * FRand();
 }
 
-simulated static final function float GetRandRangeFloat( range FR )
+simulated static final function float GetRandRangeFloat( Range FR )
 {
 	Return	FR.Min + (FR.Max - FR.Min) * FRand();
 }

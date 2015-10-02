@@ -14,10 +14,69 @@
 ----------------------------------------------------------------------------------
 	GitHub:			 github.com/unlimagin/unlimaginmod
 ----------------------------------------------------------------------------------
-	Comment:		 
+	Comment:		 Base object class
 ==================================================================================*/
 class UM_BaseObject extends Object
 	Abstract;
+
+//========================================================================
+//[block] Variables
+
+// Int Range
+struct IntRange
+{
+	var()	config	int		Min;
+	var()	config	int		Max;
+};
+
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Functions
+
+simulated static final function int GetRandInt( int MinI, int MaxI )
+{
+	Return	MinI + Round(float(MaxI - MinI) * FRand());
+}
+
+simulated static final function int GetRandRangeInt( IntRange IR )
+{
+	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
+}
+
+simulated static final function float GetRandFloat( float MinF, float MaxF )
+{
+	Return	MinF + (MaxF - MinF) * FRand();
+}
+
+simulated static final function float GetRandRangeFloat( range FR )
+{
+	Return	FR.Min + (FR.Max - FR.Min) * FRand();
+}
+
+simulated static final function float GetExtraRandRangeFloat( 
+	range 	FR, 
+	float	ExtraRangeChance,
+	range	EFR )
+{
+	if ( FRand() > ExtraRangeChance )
+		Return	FR.Min + (FR.Max - FR.Min) * FRand();	// Not Extra Range
+	else
+		Return	EFR.Min + (EFR.Max - EFR.Min) * FRand();	// Extra Range
+}
+
+// DynamicLoad Class specified in the Ref string
+simulated static final function Class LoadClass( string Ref, optional bool bMayFail )
+{
+	if ( Ref != "" )
+		Return Class(DynamicLoadObject(Ref, Class'Class', bMayFail));
+	
+	Return None;
+}
+
+//[end] Functions
+//====================================================================
 
 
 defaultproperties

@@ -208,6 +208,11 @@ function InitGameReplicationInfo()
 	GameReplicationInfo = Spawn( GameReplicationInfoClass, self );
 	Level.GRI = GameReplicationInfo;
 
+	// Clamping GameDifficulty wich was read from the config file
+	SetGameDifficulty( GameDifficulty );
+	// Clamping FriendlyFireScale wich was read from the config file
+	SetFriendlyFireScale( FriendlyFireScale );
+	
 	//[block] From Invasion.uc class
 	// WaveNumbers sets in the InitGame() function
 	if ( InvasionGameReplicationInfo(GameReplicationInfo) != None )  {
@@ -237,18 +242,6 @@ event PreBeginPlay()
 	InitVoiceReplicationInfo();
 	// Create stat logging actor.
     InitLogging();
-
-	// Clamping GameDifficulty wich was read from the config file
-	SetGameDifficulty( GameDifficulty );
-	// Clamping FriendlyFireScale wich was read from the config file
-	SetFriendlyFireScale( FriendlyFireScale );
-
-	//ToDo: это что за ерунда? #295
-	HintTime_1 = 99999999.00;
-	HintTime_2 = 99999999.00;
-
-	bShowHint_2 = true;
-	bShowHint_3 = true;
 }
 
 function CheckStartingCash( Controller C )

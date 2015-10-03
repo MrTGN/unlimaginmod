@@ -354,6 +354,8 @@ event InitGame( string Options, out string Error )
 		для обновления каких-нибдуь моментальных переменных, зависящих от номера волны.
 		Списки монстров, деньги, время волны и т.д, 
 		но только если они не буду вызваны в state 'BeginNewWave'.
+		Так же не стоит забывать, что тут еще не существует GameReplicationInfo.
+		Он спавнится позже в PreBeginPlay().
 	*/
 	
 	bCustomGameLength = True;	// We can't use Steam Stats with Unlimagin Mod
@@ -856,13 +858,17 @@ state Shopping
 					else
 						KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, none, 'TRADER', 3);
 				
-					//Hints
+					//Hint_1
 					KFPlayerController(C).CheckForHint(31);
 				}
 			}
 		}
 		
-		HintTime_1 = Level.TimeSeconds + 11.0;
+		// Next Hints time
+		if ( bShowHint_2 || bShowHint_3 )  {
+			HintTime_1 = Level.TimeSeconds + 11.0;
+			HintTime_2 = HintTime_1 + 11.0;
+		}
 		
 		// Break Time
 		if ( NextWaveNum > InitialWave )  {
@@ -883,6 +889,8 @@ state Shopping
 		local	Controller	C;
 		local	int			i;
 		
+		bShowHint_2 = False; // Turn off this hint
+		
 		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 			++i;	// To prevent runaway loop
 			if ( C.Pawn != None && C.Pawn.Health > 0 )
@@ -894,6 +902,8 @@ state Shopping
 	{
 		local	Controller	C;
 		local	int			i;
+		
+		bShowHint_3 = False; // Turn off this hint
 		
 		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 			++i;	// To prevent runaway loop
@@ -941,15 +951,10 @@ state Shopping
 			Return;
 		}
 		
-		if ( bShowHint_2 && Level.TimeSeconds > HintTime_1 )  {
-			bShowHint_2 = False;
+		if ( bShowHint_2 && Level.TimeSeconds > HintTime_1 )
 			PlaySecondHint();
-			HintTime_2 = Level.TimeSeconds + 11.0;
-		}
-		else if ( bShowHint_3 && Level.TimeSeconds > HintTime_2 )  {
-			bShowHint_3 = False;
+		else if ( bShowHint_3 && Level.TimeSeconds > HintTime_2 )
 			PlayThirdHint();
-		}
 		
 		DecreaseWaveCountDown();
 		if ( WaveCountDown < 5 )  {
@@ -1391,6 +1396,9 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 
 defaultproperties
 {
+	 bShowHint_2=True
+	 bShowHint_3=True
+	 
 	 bUseEndGameBoss=True
 	 bRespawnOnBoss=True
 	 

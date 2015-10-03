@@ -162,6 +162,8 @@ var		transient	float			SurvivedAfterScreamTime;
 
 var		class<PlayerDeathMark>		PlayerDeathMarkClass;
 
+var		class<CashPickup>			CashPickupClass;
+
 // BallisticCollision
 struct BallisticCollisionData
 {
@@ -909,7 +911,7 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		TraceEnd = LastCameraLocation + LastCameraDirection * f;
 		
 		// adjust aim based on FOV
-        if ( Controller != None )  {
+		if ( Controller != None )  {
 			BestAim = 0.90;
 			LastAimTarget = Controller.PickTarget( BestAim, TargetDist, LastCameraDirection, LastCameraLocation, f );
 		}
@@ -1108,18 +1110,18 @@ function bool DoDirectionalJump( bool bUpdating, vector Direction )
 function bool DoJump( bool bUpdating )
 {
 	// This extra jump allows a jumping or dodging pawn to jump again mid-air
-    // (via thrusters). The pawn must be within +/- 100 velocity units of the
-    // apex of the jump to do this special move.
+	// (via thrusters). The pawn must be within +/- 100 velocity units of the
+	// apex of the jump to do this special move.
 	/*
-    if ( !bUpdating && CanDoubleJump() && Abs(Velocity.Z) < 100 && IsLocallyControlled() )  {
+	if ( !bUpdating && CanDoubleJump() && Abs(Velocity.Z) < 100 && IsLocallyControlled() )  {
 		if ( PlayerController(Controller) != None )
 			PlayerController(Controller).bDoubleJump = True;
-        
+		
 		DoDoubleJump(bUpdating);
-        MultiJumpRemaining -= 1;
-        
+		MultiJumpRemaining -= 1;
+		
 		Return True;
-    } */
+	} */
 	// Do not allow to jump if somebody has grabbed this Pawn
 	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
 		// Used in DoBounce
@@ -1160,7 +1162,7 @@ function bool DoJump( bool bUpdating )
 		}
 		UpdateJumpZ();
 	}
-    
+	
 	Return False;
 }
 
@@ -1177,46 +1179,46 @@ function name GetWeaponBoneFor( Inventory I )
 // Play the pawn firing animations
 simulated function StartFiringX(bool bAltFire, bool bRapid)
 {
-    local	name	FireAnim;
+	local	name	FireAnim;
 	local	float	FireAnimRate;
-    local	int		AnimIndex;
+	local	int		AnimIndex;
 
-    if ( HasUDamage() && (Level.TimeSeconds - LastUDamageSoundTime) > 0.25 )  {
-        LastUDamageSoundTime = Level.TimeSeconds;
-        PlaySound(UDamageSound, SLOT_None, (1.5 * TransientSoundVolume),, 700);
-    }
+	if ( HasUDamage() && (Level.TimeSeconds - LastUDamageSoundTime) > 0.25 )  {
+		LastUDamageSoundTime = Level.TimeSeconds;
+		PlaySound(UDamageSound, SLOT_None, (1.5 * TransientSoundVolume),, 700);
+	}
 
-    if ( Physics == PHYS_Swimming )
-        Return;
+	if ( Physics == PHYS_Swimming )
+		Return;
 
-    AnimIndex = Rand(4);
-    if ( bAltFire )  {
-        if ( bIsCrouched )
-            FireAnim = FireCrouchAltAnims[AnimIndex];
-        else
-            FireAnim = FireAltAnims[AnimIndex];
-    }
-    else  {
-        if ( bIsCrouched )
-            FireAnim = FireCrouchAnims[AnimIndex];
-        else
-            FireAnim = FireAnims[AnimIndex];
-    }
+	AnimIndex = Rand(4);
+	if ( bAltFire )  {
+		if ( bIsCrouched )
+			FireAnim = FireCrouchAltAnims[AnimIndex];
+		else
+			FireAnim = FireAltAnims[AnimIndex];
+	}
+	else  {
+		if ( bIsCrouched )
+			FireAnim = FireCrouchAnims[AnimIndex];
+		else
+			FireAnim = FireAnims[AnimIndex];
+	}
 
-    AnimBlendParams(1, 1.0, 0.0, 0.2, FireRootBone);
+	AnimBlendParams(1, 1.0, 0.0, 0.2, FireRootBone);
 	FireAnimRate = 1.0 * FireSpeedModif;
-    if ( bRapid )  {
-        if ( FireState != FS_Looping )  {
-            LoopAnim(FireAnim, FireAnimRate, 0.0, 1);
-            FireState = FS_Looping;
-        }
-    }
-    else  {
-        PlayAnim(FireAnim, FireAnimRate, 0.0, 1);
-        FireState = FS_PlayOnce;
-    }
+	if ( bRapid )  {
+		if ( FireState != FS_Looping )  {
+			LoopAnim(FireAnim, FireAnimRate, 0.0, 1);
+			FireState = FS_Looping;
+		}
+	}
+	else  {
+		PlayAnim(FireAnim, FireAnimRate, 0.0, 1);
+		FireState = FS_PlayOnce;
+	}
 
-    IdleTime = Level.TimeSeconds;
+	IdleTime = Level.TimeSeconds;
 }
 
 function bool CanCarry( float Weight )
@@ -1345,7 +1347,7 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 // Returns true if this pawn is able to hold a weapon of the supplied type
 simulated function bool AllowHoldWeapon( Weapon InWeapon )
 {
-    if ( UM_PlayerRepInfo != None )
+	if ( UM_PlayerRepInfo != None )
 		Return UM_PlayerRepInfo.CanUseThisWeapon( InWeapon );
 	
 	Return True;
@@ -1597,8 +1599,8 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 		KFWeapon(I).SellValue = Price * 0.75;
 		I.GiveTo(self);
 		PlayerReplicationInfo.Score -= Price;
-        ClientForceChangeWeapon(I);
-    }
+		ClientForceChangeWeapon(I);
+	}
 	else ClientMessage("Error: Weapon failed to spawn.");
 
 	SetTraderUpdate();
@@ -1856,9 +1858,9 @@ function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<Dam
 function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType )
 {
 	local	Vector	HitNormal, HitRay;
-    local	Name	HitBone;
-    local	float	HitBoneDist;
-    local	bool	bRecentHit, bShowEffects;
+	local	Name	HitBone;
+	local	float	HitBoneDist;
+	local	bool	bRecentHit, bShowEffects;
 
 	if ( DamageType == None || Damage < 1 )
 		Return;
@@ -2533,17 +2535,17 @@ simulated function StartBurnFX()
 
 simulated function RemoveFlamingEffects()
 {
-    local	int		i;
+	local	int		i;
 
-    if ( Level.NetMode == NM_DedicatedServer )
-        Return;
+	if ( Level.NetMode == NM_DedicatedServer )
+		Return;
 
-    for ( i = 0; i < Attached.Length; ++i )  {
-        if ( xEmitter(Attached[i]) != None && BloodJet(Attached[i]) == None )
+	for ( i = 0; i < Attached.Length; ++i )  {
+		if ( xEmitter(Attached[i]) != None && BloodJet(Attached[i]) == None )
 			xEmitter(Attached[i]).mRegen = False;
 		else if ( KFMonsterFlame(Attached[i]) != None )
 			Attached[i].LifeSpan = 0.1;
-    }
+	}
 }
 
 simulated function StopBurnFX()
@@ -2551,7 +2553,7 @@ simulated function StopBurnFX()
 	RemoveFlamingEffects();
 	if ( ItBUURRNNNS != None )
 		ItBUURRNNNS.Kill();
-    
+	
 	bBurnApplied = False;
 }
 
@@ -2727,9 +2729,9 @@ event Landed( vector HitNormal )
 	}
 	
 	LastHitBy = None;
-    //MultiJumpRemaining = MaxMultiJump;
-    if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
-        PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
+	//MultiJumpRemaining = MaxMultiJump;
+	if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
+		PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
 }
 
 event FellOutOfWorld( eKillZType KillType )
@@ -2776,8 +2778,8 @@ event Timer()
 // Don't let this pawn move for a certain amount of time
 function DisableMovement( float DisableDuration )
 {
-    StopDisabledTime = Level.TimeSeconds + DisableDuration;
-    bMovementDisabled = True;
+	StopDisabledTime = Level.TimeSeconds + DisableDuration;
+	bMovementDisabled = True;
 	NetUpdateTime = Level.TimeSeconds - 1.0;
 }
 
@@ -2822,7 +2824,7 @@ function StartToThrowGrenade()
 // Left this for the old code from the KFWeapon
 function WeaponDown()
 {
-    StartToThrowGrenade();
+	StartToThrowGrenade();
 }
 
 function ThrowGrenadeFinished()
@@ -2835,10 +2837,52 @@ function ThrowGrenadeFinished()
 
 exec function SwitchToLastWeapon()
 {
-    if ( Weapon != None && Weapon.OldWeapon != None )  {
-        PendingWeapon = Weapon.OldWeapon;
-        Weapon.PutDown();
-    }
+	if ( Weapon != None && Weapon.OldWeapon != None )  {
+		PendingWeapon = Weapon.OldWeapon;
+		Weapon.PutDown();
+	}
+}
+
+// toss some of your cash away. (to help a cash-strapped ally or perhaps just to party like its 1994)
+exec function TossCash( int Amount )
+{
+	local	Vector		X, Y, Z;
+	local	CashPickup	CashPickup;
+	local	Vector		TossVel;
+	local	Actor		A;
+
+	// Call by pressed on binded key
+	if ( Amount == 0 )
+		Amount = 50;
+	
+	if ( CashPickupClass == None || int(Controller.PlayerReplicationInfo.Score) < 1 || Amount < 1 )
+		Return;
+	
+	Amount = Min( Amount, int(Controller.PlayerReplicationInfo.Score) );
+
+	GetAxes( Rotation, X, Y, Z );
+	TossVel = Vector(GetViewRotation());
+	TossVel = TossVel * ((Velocity Dot TossVel) + 500) + Vect(0,0,200);
+
+	CashPickup = Spawn( CashPickupClass, self,, (Location + 0.8 * CollisionRadius * X - 0.5 * CollisionRadius * Y) );
+	if ( CashPickup != None )  {
+		CashPickup.CashAmount = Amount;
+		CashPickup.bDroppedCash = True;
+		CashPickup.RespawnTime = 0;   // Dropped cash doesnt respawn. For obvious reasons.
+		CashPickup.Velocity = TossVel;
+		CashPickup.DroppedBy = Controller;
+		CashPickup.InitDroppedPickupFor(None);
+		Controller.PlayerReplicationInfo.Score -= float(Amount);
+
+		if ( Level.Game.NumPlayers > 1 && Level.TimeSeconds - LastDropCashMessageTime > DropCashMessageDelay )
+			PlayerController(Controller).Speech('AUTO', 4, "");
+
+		// Hack to get Slot machines to accept dosh that's thrown inside their collision cylinder.
+		foreach CashPickup.TouchingActors( class 'Actor', A )  {
+			if ( A.IsA('KF_Slot_Machine') )
+				A.Touch(CashPickup);
+		}
+	}
 }
 
 /*
@@ -2853,6 +2897,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
 	 DelayBetweenSlowMoToggle=0.25
 	 SlowMoChargeRegenRate=0.02
 	 SlowMoChargeUpdateAmount=0.1
@@ -2869,8 +2914,8 @@ defaultproperties
 	 VeterancyOverhealPotency=1.0
 	 VeterancySyringeChargeModifier=1.0
 	 GroundSpeed=200.000000
-     WaterSpeed=180.000000
-     AirSpeed=230.000000
+	 WaterSpeed=180.000000
+	 AirSpeed=230.000000
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
 	 // DyingCameraEffect
@@ -2886,7 +2931,7 @@ defaultproperties
 	 // Drowning
 	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
 	 DrowningDamageFrequency=1.0
-     DrowningDamageType=Class'Drowned'
+	 DrowningDamageType=Class'Drowned'
 	 // Burning
 	 BurnDamageRandRange=(Min=4.0,Max=6.0)
 	 BurningFrequency=0.5
@@ -2932,12 +2977,12 @@ defaultproperties
 	 LowGravBounceMomentumScale=2.000000
 	 BounceDelay=0.200000
 	 LeftHandWeaponBone="WeaponL_Bone"
-     RightHandWeaponBone="WeaponR_Bone"
+	 RightHandWeaponBone="WeaponR_Bone"
 	 RequiredEquipment(0)="KFMod.Knife"
-     RequiredEquipment(1)="KFMod.Single"
-     RequiredEquipment(2)="UnlimaginMod.UM_Weapon_HandGrenade"
-     RequiredEquipment(3)="UnlimaginMod.UM_Syringe"
-     RequiredEquipment(4)="KFMod.Welder"
+	 RequiredEquipment(1)="KFMod.Single"
+	 RequiredEquipment(2)="UnlimaginMod.UM_Weapon_HandGrenade"
+	 RequiredEquipment(3)="UnlimaginMod.UM_Syringe"
+	 RequiredEquipment(4)="KFMod.Welder"
 	 bNetNotify=False
 	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'
 	 JumpZ=330.000000

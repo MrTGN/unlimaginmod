@@ -206,8 +206,12 @@ function InitGameReplicationInfo()
 	}
 	
 	GameReplicationInfo = Spawn( GameReplicationInfoClass, self );
+	if ( GameReplicationInfo == None )  {
+		Warn("GameReplicationInfo has not created!!!");
+		Return;
+	}
+	
 	Level.GRI = GameReplicationInfo;
-
 	// Clamping GameDifficulty wich was read from the config file
 	SetGameDifficulty( GameDifficulty );
 	// Clamping FriendlyFireScale wich was read from the config file
@@ -228,7 +232,7 @@ function InitGameReplicationInfo()
 	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 		KFGameReplicationInfo(GameReplicationInfo).bNoBots = bNoBots;
 		KFGameReplicationInfo(GameReplicationInfo).PendingBots = 0;
-		KFGameReplicationInfo(GameReplicationInfo).GameDiff = GameDifficulty;
+		KFGameReplicationInfo(GameReplicationInfo).GameDiff = GameDifficulty;	// Left this var for compatibility with the old code
 		KFGameReplicationInfo(GameReplicationInfo).bEnemyHealthBars = bEnemyHealthBars;
 	}
 }
@@ -243,6 +247,9 @@ event PreBeginPlay()
 	// Create stat logging actor.
     InitLogging();
 }
+
+// Clear the old code
+event PostNetBeginPlay() { }
 
 function CheckStartingCash( Controller C )
 {

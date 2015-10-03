@@ -313,52 +313,8 @@ function UpdateZedSpawnList()
 	}
 }
 
-/* Initialize the game.
- The GameInfo's InitGame() function is called before any other scripts (including
- PreBeginPlay() ), and is used by the GameInfo to initialize parameters and spawn
- its helper classes.
- Warning: this is called before actors' PreBeginPlay.
-*/
-event InitGame( string Options, out string Error )
+function SetupWaveNumbers()
 {
-	local	KFLevelRules	KFLRit;
-	local	string			InOpt;
-
-	Super(xTeamGame).InitGame(Options, Error);
-	
-	InOpt = ParseOption(Options, "GamePresetClassName");
-	LoadGamePreset( InOpt );
-	
-	DefaultGameSpeed = default.GameSpeed;
-	MaxPlayers = Clamp( MaxHumanPlayers, 1, 32);
-	
-	FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0);
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
-		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-	
-	// LevelRules
-	foreach DynamicActors( class'KFLevelRules', KFLRit)  {
-		if ( KFLRules == None )
-			KFLRules = KFLRit;
-		else 
-			Warn("MULTIPLE KFLEVELRULES FOUND!!!!!");
-	}
-	
-	UpdateShopList();
-	UpdateZedSpawnList();
-
-	//provide default rules if mapper did not need custom one
-	if ( KFLRules == None )
-		KFLRules = Spawn(DefaultLevelRulesClass);
-
-	log("KFLRules = "$KFLRules);
-
-	InOpt = ParseOption(Options, "UseBots");
-	if ( InOpt != "" )
-		bNoBots = bool(InOpt);
-
-	log("Game length = "$KFGameLength);
-	
 	if ( InvasionPreset != None )  {
 		InitialWave = InvasionPreset.InitialWaveNum;
 		FinalWave = InvasionPreset.GameWaves.Length;
@@ -369,6 +325,30 @@ event InitGame( string Options, out string Error )
 	}
 	WaveNum = InitialWave;
 	NextWaveNum = InitialWave;
+}
+
+/* Initialize the game.
+ The GameInfo's InitGame() function is called before any other scripts (including
+ PreBeginPlay() ), and is used by the GameInfo to initialize parameters and spawn
+ its helper classes.
+ Warning: this is called before actors' PreBeginPlay.
+*/
+event InitGame( string Options, out string Error )
+{
+	local	string			InOpt;
+
+	Super.InitGame(Options, Error);
+	
+	UpdateShopList();
+	UpdateZedSpawnList();
+
+	InOpt = ParseOption(Options, "UseBots");
+	if ( InOpt != "" )
+		bNoBots = bool(InOpt);
+
+	log("Game length = "$KFGameLength);
+	
+	SetupWaveNumbers();
 	UpdateStartingCash();
 	/*	ToDo: Важно! Тут должны быть вызыванны все остальные функции
 		для обновления каких-нибдуь моментальных переменных, зависящих от номера волны.

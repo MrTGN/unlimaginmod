@@ -35,35 +35,39 @@ struct DramaticKillData
 	var()	config	float	EventChance;
 	var()	config	float	EventDuration;
 };
-var		array<DramaticKillData>			DramaticKills;
+var					array<DramaticKillData>	DramaticKills;
 
-var		Class<KFLevelRules>				DefaultLevelRulesClass;
-var		string							LoginMenuClassName;
+var					string					GameReplicationInfoClassName;
 
-var		float							ExitZedTime;
-var		float							BotAtHumanFriendlyFireScale;
+var					Class<KFLevelRules>		DefaultLevelRulesClass;
+var					string					LoginMenuClassName;
+
+var					float					ExitZedTime;
+var					float					BotAtHumanFriendlyFireScale;
 
 // Will be config string at release version
-var		string							GamePresetClassName;
-var		UM_BaseGamePreset				GamePreset;
+var					string					GamePresetClassName;
+var					UM_BaseGamePreset		GamePreset;
 
-var		transient	float				DefaultGameSpeed;	// Sets in the InitGame event
+var		transient	float					DefaultGameSpeed;	// Sets in the InitGame event
 
-var		int								MinHumanPlayers, MaxHumanPlayers;
+var					float					MinGameDifficulty, MaxGameDifficulty;
+var					int						MinHumanPlayers, MaxHumanPlayers;
+var					float					MaxFriendlyFireScale;	// Min FriendlyFireScale = 0.0
 
-var		UM_HumanPawn					SlowMoInstigator;
-var		transient	float				SlowMoDeltaTime;
-var		const		float				DelayBetweenSlowMoToggle;
-var		transient	float				NextSlowMoToggleTime;
-var		float							MinToggleSlowMoCharge;
+var					UM_HumanPawn			SlowMoInstigator;
+var		transient	float					SlowMoDeltaTime;
+var		const		float					DelayBetweenSlowMoToggle;
+var		transient	float					NextSlowMoToggleTime;
+var					float					MinToggleSlowMoCharge;
 
-var		transient	bool				bSlowMoStartedByHuman;
+var		transient	bool					bSlowMoStartedByHuman;
 
-var		bool							bSaveSpectatorScores, bSaveSpectatorTeam;
+var					bool					bSaveSpectatorScores, bSaveSpectatorTeam;
 
 // Starting Cash lottery
-var		float							ExtraStartingCashChance, ExtraStartingCashModifier;
-var		float							DeathCashModifier;
+var					float					ExtraStartingCashChance, ExtraStartingCashModifier;
+var					float					DeathCashModifier;
 
 //[end] Varibles
 //====================================================================
@@ -71,20 +75,13 @@ var		float							DeathCashModifier;
 //========================================================================
 //[block] Functions
 
-event PreBeginPlay()
+exec function SetGameDifficulty( float NewGameDifficulty )
 {
-	Super(Invasion).PreBeginPlay();
-
-	KFGameReplicationInfo(GameReplicationInfo).bNoBots = bNoBots;
-	KFGameReplicationInfo(GameReplicationInfo).PendingBots = 0;
-	KFGameReplicationInfo(GameReplicationInfo).GameDiff = GameDifficulty;
-	KFGameReplicationInfo(GameReplicationInfo).bEnemyHealthBars = bEnemyHealthBars;
-
-	HintTime_1 = 99999999.00;
-	HintTime_2 = 99999999.00;
-
-	bShowHint_2 = true;
-	bShowHint_3 = true;
+	GameDifficulty = FClamp( NewGameDifficulty, MinGameDifficulty, MaxGameDifficulty );
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
+		UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
+		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
 }
 
 // For the GUI buy menu
@@ -95,7 +92,7 @@ simulated function float GetDifficulty()
 
 exec function SetFriendlyFireScale( float NewFriendlyFireScale )
 {
-	FriendlyFireScale = FClamp(NewFriendlyFireScale, 0.0, 1.0);
+	FriendlyFireScale = FClamp( NewFriendlyFireScale, 0.0, MaxFriendlyFireScale );
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
 		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
 		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
@@ -154,6 +151,104 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	Log("GamePreset" @string(GamePreset.Name) @"loaded", Class.Outer.Name);
 	
 	Return True;
+}
+
+function SetupLevelRules()
+{
+	local	KFLevelRules	KFLR;
+	
+	// LevelRules
+	foreach DynamicActors( class'KFLevelRules', KFLR )  {
+		if ( KFLRules == None )
+			KFLRules = KFLR;
+		else 
+			Warn("MULTIPLE KFLEVELRULES FOUND!!!!!");
+	}
+	
+	// Provide default rules if mapper did not need custom one
+	if ( KFLRules == None )
+		KFLRules = Spawn(DefaultLevelRulesClass);
+	
+	Log("KFLRules = "$KFLRules, Name);
+}
+
+/* Initialize the game.
+ The GameInfo's InitGame() function is called before any other scripts (including
+ PreBeginPlay() ), and is used by the GameInfo to initialize parameters and spawn
+ its helper classes.
+ Warning: this is called before actors' PreBeginPlay.
+*/
+event InitGame( string Options, out string Error )
+{
+	local	string			InOpt;
+	
+	Super(xTeamGame).InitGame(Options, Error);
+	
+	InOpt = ParseOption(Options, "GamePresetClassName");
+	LoadGamePreset( InOpt );
+	
+	SetupLevelRules();
+	
+	DefaultGameSpeed = default.GameSpeed;
+	// Clamping MaxPlayers
+	MaxPlayers = Clamp( MaxHumanPlayers, MinHumanPlayers, 32);
+}
+
+// Spawn GameReplicationInfo and setup replicated variables
+function InitGameReplicationInfo()
+{
+	if ( GameReplicationInfoClass == None )
+		GameReplicationInfoClass = class<GameReplicationInfo>( BaseActor.static.LoadClass(GameReplicationInfoClassName) );
+	
+	if ( GameReplicationInfoClass == None )  {
+		Warn("GameReplicationInfoClass wasn't found!!!");
+		Return;
+	}
+	
+	GameReplicationInfo = Spawn( GameReplicationInfoClass, self );
+	Level.GRI = GameReplicationInfo;
+
+	//[block] From Invasion.uc class
+	// WaveNumbers sets in the InitGame() function
+	if ( InvasionGameReplicationInfo(GameReplicationInfo) != None )  {
+		InvasionGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
+		InvasionGameReplicationInfo(GameReplicationInfo).BaseDifficulty = int(GameDifficulty);
+		InvasionGameReplicationInfo(GameReplicationInfo).FinalWave = FinalWave;
+	}
+	GameReplicationInfo.bNoTeamSkins = True;
+	GameReplicationInfo.bForceNoPlayerLights = True;
+	GameReplicationInfo.bNoTeamChanges = True;
+	//[end]
+	
+	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
+		KFGameReplicationInfo(GameReplicationInfo).bNoBots = bNoBots;
+		KFGameReplicationInfo(GameReplicationInfo).PendingBots = 0;
+		KFGameReplicationInfo(GameReplicationInfo).GameDiff = GameDifficulty;
+		KFGameReplicationInfo(GameReplicationInfo).bEnemyHealthBars = bEnemyHealthBars;
+	}
+}
+
+// Called immediately before gameplay begins but after the InitGame() function
+event PreBeginPlay()
+{
+	StartTime = 0;
+	// Create GameReplicationInfo actor.
+	InitGameReplicationInfo();
+	InitVoiceReplicationInfo();
+	// Create stat logging actor.
+    InitLogging();
+
+	// Clamping GameDifficulty wich was read from the config file
+	SetGameDifficulty( GameDifficulty );
+	// Clamping FriendlyFireScale wich was read from the config file
+	SetFriendlyFireScale( FriendlyFireScale );
+
+	//ToDo: это что за ерунда? #295
+	HintTime_1 = 99999999.00;
+	HintTime_2 = 99999999.00;
+
+	bShowHint_2 = true;
+	bShowHint_3 = true;
 }
 
 function CheckStartingCash( Controller C )
@@ -731,17 +826,13 @@ event Tick( float DeltaTime )
 	local	Controller	C;
 	
 	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
-		// FriendlyFireScale Replication
-		if ( UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )  {
-			FriendlyFireScale = FClamp(FriendlyFireScale, 0.0, 1.0); // FClamp FriendlyFireScale
-			UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-		}
-		// GameDifficulty Replication
-		if ( UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty != GameDifficulty )  {
-			UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
-			UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-		}
+		// Checking FriendlyFireScale for the unauthorized changes (not from the SetFriendlyFireScale() function)
+		if ( UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )
+			SetFriendlyFireScale( FriendlyFireScale );
+		
+		// Checking GameDifficulty for the unauthorized changes (not from the SetGameDifficulty() function)
+		if ( UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty != GameDifficulty )
+			SetGameDifficulty( GameDifficulty );
 	}
 	
 	if ( bZEDTimeActive )  {
@@ -1141,6 +1232,11 @@ function ScoreKill( Controller Killer, Controller Other )
 
 defaultproperties
 {
+	 MaxFriendlyFireScale=1.0
+	 
+	 MinGameDifficulty=1.0
+	 MaxGameDifficulty=8.0
+	 
 	 ExtraStartingCashChance=0.05
 	 ExtraStartingCashModifier=4.0
 	 DeathCashModifier=0.9

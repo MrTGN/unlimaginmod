@@ -37,14 +37,16 @@ function PostBeginPlay()
 
 	bStatsReadyNow = !MutatorOwner.bUseRemoteDatabase;
 	OwnerController = UM_PlayerController(Owner);
-	MyStatsObject = MutatorOwner.GetStatsForPlayer(OwnerController);
-	KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill = None;
-	
-	if ( !bStatsReadyNow )  {
+		
+	if ( !bStatsReadyNow || OwnerController == None )  {
 		Timer();
 		SetTimer((1.0 + FRand()), True);
 		Return;
 	}
+	
+	MyStatsObject = MutatorOwner.GetStatsForPlayer(OwnerController);
+	if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo) != None )
+		KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill = None;
 	
 	bSwitchIsOKNow = True;
 	
@@ -62,10 +64,10 @@ function PostBeginPlay()
 		CheckPerks(True);
 		ServerSelectPerkName(MyStatsObject.GetSelectedPerk());
 	}
-	else 
+	else
 		CheckPerks(True);
 	
-	if ( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
+	if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
 		ServerSelectPerk(Rep.PickRandomPerk());
 	
 	bSwitchIsOKNow = False;
@@ -127,7 +129,7 @@ final function GetData( string D )
 	ServerSelectPerkName(MyStatsObject.GetSelectedPerk());
 	Rep.SendClientPerks();
 	
-	if ( MutatorOwner.bForceGivePerk && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
+	if ( KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(OwnerController.PlayerReplicationInfo).ClientVeteranSkill == None )
 		ServerSelectPerk(Rep.PickRandomPerk());
 	
 	bHadSwitchedVet = False;

@@ -43,28 +43,28 @@ var()	globalconfig	float					RequirementScaling;
 var()	globalconfig	string					RemoteDatabaseURL, RemotePassword;
 var()	globalconfig	array< ChatIconType >	SmileyTags;
 
-var		array< byte >									LoadInvCategory;
-var		array< class<UM_SRVeterancyTypes> >				LoadPerks;
-var		array< class<Pickup> >							LoadInventory;
-var		array< UM_PlayerController >					PendingPlayers;
-var		array<UM_StatsObject>							ActiveStats;
-var		localized		string							ServerPerksGroup;
-var		transient		UM_DatabaseUdpLink				Link;
-var		array<UM_ServerStats>							PendingData;
-var						KFGameType						KFGT;
-var						int								LastSavedWave, WaveCounter;
-var		array<UM_HUD.SmileyMessageType>	SmileyMsgs;
+var		array< byte >							LoadInvCategory;
+var		array< class<UM_SRVeterancyTypes> >		LoadPerks;
+var		array< class<Pickup> >					LoadInventory;
+var		array< UM_PlayerController >			PendingPlayers;
+var		array<UM_StatsObject>					ActiveStats;
+var		localized		string					ServerPerksGroup;
+var		transient		UM_DatabaseUdpLink		Link;
+var		array<UM_ServerStats>					PendingData;
+var						KFGameType				KFGT;
+var						int						LastSavedWave, WaveCounter;
+var		array<UM_HUD.SmileyMessageType>			SmileyMsgs;
 
-var()	globalconfig	bool	bForceGivePerk, bNoSavingProgress, bUseRemoteDatabase, 
-								bUsePlayerNameAsID, bMessageAnyPlayerLevelUp, bUseLowestRequirements,
-								bBWZEDTime, bUseEnhancedScoreboard, bOverrideUnusedCustomStats, 
-								bAllowAlwaysPerkChanges, bForceCustomChars, bEnableChatIcons, bEnhancedShoulderView;
+var()	globalconfig	bool					bNoSavingProgress, bUseRemoteDatabase, bUsePlayerNameAsID;
+var()	globalconfig	bool					bMessageAnyPlayerLevelUp, bUseLowestRequirements, bBWZEDTime;
+var()	globalconfig	bool					bUseEnhancedScoreboard, bOverrideUnusedCustomStats, bAllowAlwaysPerkChanges;
+var()	globalconfig	bool					bForceCustomChars, bEnableChatIcons, bEnhancedShoulderView;
 
-var						bool	bEnabledEmoIcons;
+var						bool					bEnabledEmoIcons;
 
-var		array< string >			ModServerPackages;
+var		array< string >							ModServerPackages;
 
-var		array< ReplacedPickupData >	ReplacedPickups;
+var		array< ReplacedPickupData >				ReplacedPickups;
 
 //[end] Varibles
 //====================================================================
@@ -272,7 +272,7 @@ function bool CheckReplacement( Actor Other, out byte bSuperRelevant )
 		}
 	}
 	// Finding a new joined players
-	/*  // Moved to the UM_PlayerController
+	/*  # Moved to the UM_PlayerController
 	else if ( UM_PlayerController(Other) != None )
 		AddPlayerToPendingPlayers( UM_PlayerController(Other) );	*/
 	// Finding a new stats objects
@@ -546,7 +546,6 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.ServerPerksGroup,"MinPerksLevel","Min Perk Level",1,0, "Text", "4;-1:254",,,True);
 	PlayInfo.AddSetting(default.ServerPerksGroup,"MaxPerksLevel","Max Perk Level",1,0, "Text", "4;0:254",,,True);
 	PlayInfo.AddSetting(default.ServerPerksGroup,"RequirementScaling","Req Scaling",1,0, "Text", "6;0.01:4.00",,,True);
-	PlayInfo.AddSetting(default.ServerPerksGroup,"bForceGivePerk","Force perks",1,0, "Check");
 	PlayInfo.AddSetting(default.ServerPerksGroup,"bNoSavingProgress","No saving",1,0, "Check");
 	PlayInfo.AddSetting(default.ServerPerksGroup,"bAllowAlwaysPerkChanges","Unlimited perk changes",1,0, "Check");
 	PlayInfo.AddSetting(default.ServerPerksGroup,"bUseRemoteDatabase","Use remote database",1,0, "Check");
@@ -574,7 +573,6 @@ static event string GetDescriptionText(string PropName)
 		case "MinPerksLevel":		return "Minimum perk level players can have.";
 		case "MaxPerksLevel":		return "Maximum perk level players can have.";
 		case "RequirementScaling":	return "Perk requirements scaling.";
-		case "bForceGivePerk":		return "Force all players to get at least a random perk if they have none selected.";
 		case "bNoSavingProgress":	return "Server shouldn't save perk progression.";
 		case "bUseRemoteDatabase":	return "Instead of storing perk data locally on server, use remote data storeage server.";
 		case "RemoteDatabaseURL":	return "URL of the remote database.";

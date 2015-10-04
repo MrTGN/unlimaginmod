@@ -245,11 +245,29 @@ event PreBeginPlay()
 	InitGameReplicationInfo();
 	InitVoiceReplicationInfo();
 	// Create stat logging actor.
-    InitLogging();
+	InitLogging();
 }
 
 // Clear the old code
 event PostNetBeginPlay() { }
+
+// Play The Warning Sound at the Beginning of the Match
+function WarningTimer()
+{
+    //ToDo: WTF is this?
+	if ( bWaveInProgress && Level.TimeSeconds >= float(Time) )
+        Time += 90;
+}
+
+event Timer()
+{
+	Super(Invasion).Timer();
+	
+	if ( ElapsedTime % 10 == 0 )
+		UpdateSteamUserData();
+
+	//WarningTimer();
+}
 
 function CheckStartingCash( Controller C )
 {

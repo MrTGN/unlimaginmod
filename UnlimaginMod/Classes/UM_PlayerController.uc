@@ -21,18 +21,13 @@ function bool SpawnStatObject()
 	if ( Level.NetMode == NM_Client || SteamStatsAndAchievementsClassName == "" )
 		Return False;
 	
-	if ( SteamStatsAndAchievements != None )
-		Return True;
-	
-	SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( BaseActor.static.LoadClass(SteamStatsAndAchievementsClassName) );
 	if ( SteamStatsAndAchievementsClass == None )
-		Return False;
+		SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( BaseActor.static.LoadClass(SteamStatsAndAchievementsClassName) );
 	
-	SteamStatsAndAchievements = Spawn(SteamStatsAndAchievementsClass, self);
-	if ( SteamStatsAndAchievements == None )
-		Return False;
+	if ( SteamStatsAndAchievementsClass != None )
+		SteamStatsAndAchievements = Spawn(SteamStatsAndAchievementsClass, self);
 	
-	Return True;
+	Return SteamStatsAndAchievements != None;
 }
 
 function DestroyStatObject()
@@ -413,6 +408,7 @@ function BecomeActivePlayer()
 
 	if ( UM_BaseGameInfo(Level.Game) != None )
 		UM_BaseGameInfo(Level.Game).BecomeActivePlayer(self);
+	// Left this for the old code from the others GameInfo
 	else  {
 		--Level.Game.NumSpectators;
 		++Level.Game.NumPlayers;

@@ -128,14 +128,18 @@ var					float				JammedMonstersCheckDelay;
 var		float							SpawningVolumeUpdateDelay;
 var		transient	float				NextSpawningVolumeUpdateTime;
 
-var		float							NumPlayersModifier;
+var					float				LerpNumPlayersModifier;
+var					float				LerpGameDifficultyModifier;
+
+//ToDo: delete this var?
+var					float				NumPlayersModifier;
 
 var		transient	array<UM_HumanPawn>	HumanList;
 var		transient	array<UM_Monster>	MonsterList;
 
 var		transient	array< KFMonster >	JammedMonsters;
 
-var		float							ZEDTimeKillSlowMoChargeBonus;
+var					float				ZEDTimeKillSlowMoChargeBonus;
 
 var		transient	string				CurrentMapName;
 
@@ -412,7 +416,6 @@ function ResetToDefaultMonsterList()
 	}
 }
 
-
 //[block] Monster Spawn List
 
 
@@ -471,6 +474,22 @@ function float GetNumPlayersModifier()
 	Return float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
 }
 
+function NotifyNumPlayersChanged()
+{
+	// Modifier for the Lerp function (0.0 - 1.0)
+	LerpNumPlayersModifier = float(NumPlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
+	
+	
+}
+
+function NotifyGameDifficultyChanged()
+{
+	// Modifier for the Lerp function (0.0 - 1.0)
+	LerpGameDifficultyModifier = (GameDifficulty - MinGameDifficulty) / (MaxGameDifficulty - MinGameDifficulty);
+	
+	
+}
+
 // Todo: #282
 function UpdateNumPlayersModifier()
 {
@@ -481,35 +500,10 @@ function UpdateNumPlayersModifier()
 }
 
 //Todo: #275
+
 function UpdateMaxAliveMonsters()
 {
-	if ( InvasionPreset != None )
-		MaxAliveMonsters = Min( Round(float(InvasionPreset.GameWaves[WaveNum].AliveMonsters.Min) * NumPlayersModifier), InvasionPreset.GameWaves[WaveNum].AliveMonsters.Max );
-}
-
-function ModifyMonsterListByDifficulty()
-{
-	local	int		i, j;
-	local	float	DifficultyMod;
-	
-	DifficultyMod = GetDifficultyModifier();
-	
-	// scale Monster WaveLimits by difficulty
-	for ( i = 0; i < Monsters.Length; ++i )  {
-		for ( j = 0; j < Monsters[i].WaveLimits.Length; ++j )
-			Monsters[i].WaveLimits[j] = Round( float(Monsters[i].WaveLimits[j]) * DifficultyMod );
-	}
-}
-
-function ModifyMonsterListByNumPlayers()
-{
-	local	int		i, j;
-	
-	// scale Monster WaveLimits by number of Players
-	for ( i = 0; i < Monsters.Length; ++i )  {
-		for ( j = 0; j < Monsters[i].WaveLimits.Length; ++j )
-			Monsters[i].WaveLimits[j] = Round( float(Monsters[i].WaveLimits[j]) * NumPlayersModifier );
-	}
+	MaxAliveMonsters = Min( Round(float(InvasionPreset.GameWaves[WaveNum].AliveMonsters.Min) * NumPlayersModifier), InvasionPreset.GameWaves[WaveNum].AliveMonsters.Max );
 }
 
 //[block] HumanList functions
@@ -1404,11 +1398,13 @@ defaultproperties
 	 
 	 bSaveSpectatorScores=True
 	 
-	 bRepairDoorsBeforeNewWave=False
-	 bRepairDoorsBeforeBossWave=True
+	 //[block] Set Modifiers to default values here
+	 LerpNumPlayersModifier=1.0
+	 LerpGameDifficultyModifier=1.0
+	 NumPlayersModifier=1.0
+	 //[end]
 	 
 	 MaxAliveMonsters=40
-	 NumPlayersModifier=1.0
 	 JammedMonstersCheckDelay=20
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0

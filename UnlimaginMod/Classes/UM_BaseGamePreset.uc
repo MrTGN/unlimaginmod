@@ -26,7 +26,8 @@ class UM_BaseGamePreset extends UM_BaseObject
 //========================================================================
 //[block] Variables
 
-var		int											MaxHumanPlayers;
+var					float							MinGameDifficulty, MaxGameDifficulty;
+var					int								MinHumanPlayers, MaxHumanPlayers;
 
 var		array<UM_BaseGameInfo.DramaticKillData>		DramaticKills;
 
@@ -41,4 +42,8 @@ var		array<UM_BaseGameInfo.DramaticKillData>		DramaticKills;
 
 defaultproperties
 {
+     MinGameDifficulty=1.0
+	 MaxGameDifficulty=7.0
+	 MinHumanPlayers=1
+	 MaxHumanPlayers=10
 }

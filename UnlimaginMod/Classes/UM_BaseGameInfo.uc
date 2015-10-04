@@ -37,6 +37,8 @@ struct DramaticKillData
 };
 var					array<DramaticKillData>	DramaticKills;
 
+var					class<Bot>				BotClass;
+
 var					string					GameReplicationInfoClassName;
 
 var					Class<KFLevelRules>		DefaultLevelRulesClass;
@@ -53,6 +55,7 @@ var		transient	float					DefaultGameSpeed;	// Sets in the InitGame event
 
 var					float					MinGameDifficulty, MaxGameDifficulty;
 var					int						MinHumanPlayers, MaxHumanPlayers;
+
 var					float					MaxFriendlyFireScale;	// Min FriendlyFireScale = 0.0
 
 var					UM_HumanPawn			SlowMoInstigator;
@@ -75,6 +78,9 @@ var					float					DeathCashModifier;
 //========================================================================
 //[block] Functions
 
+function NotifyNumPlayersChanged();
+function NotifyGameDifficultyChanged();
+
 exec function SetGameDifficulty( float NewGameDifficulty )
 {
 	GameDifficulty = FClamp( NewGameDifficulty, MinGameDifficulty, MaxGameDifficulty );
@@ -82,6 +88,7 @@ exec function SetGameDifficulty( float NewGameDifficulty )
 		UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
 		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
+	NotifyGameDifficultyChanged();
 }
 
 // For the GUI buy menu
@@ -129,10 +136,17 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	
 	GamePreset = new(self) GamePresetClass;
 	
-	// MaxHumanPlayers
-	default.MaxHumanPlayers = GamePreset.MaxHumanPlayers;
-	MaxHumanPlayers = default.MaxHumanPlayers;
+	if ( GamePreset == None )
+		Return False;
 	
+	// HumanPlayers Limit
+	MinHumanPlayers = GamePreset.MinHumanPlayers;
+	MaxHumanPlayers = GamePreset.MaxHumanPlayers;
+	// GameDifficulty Limit
+	MinGameDifficulty = GamePreset.MinGameDifficulty;
+	MaxGameDifficulty = GamePreset.MaxGameDifficulty;
+	
+	//ToDo: delete this!
 	// DramaticKills
 	default.DramaticKills.Length = GamePreset.DramaticKills.Length;
 	DramaticKills.Length = default.DramaticKills.Length;
@@ -254,9 +268,9 @@ event PostNetBeginPlay() { }
 // Play The Warning Sound at the Beginning of the Match
 function WarningTimer()
 {
-    //ToDo: WTF is this?
+	//ToDo: WTF is this?
 	if ( bWaveInProgress && Level.TimeSeconds >= float(Time) )
-        Time += 90;
+		Time += 90;
 }
 
 event Timer()
@@ -267,6 +281,73 @@ event Timer()
 		UpdateSteamUserData();
 
 	//WarningTimer();
+}
+
+function UnrealTeamInfo GetBotTeam( optional int TeamBots )
+{
+	if ( bPlayersVsBots && Level.NetMode != NM_Standalone )
+		Return Teams[0];
+	
+	// Human Team
+	Return Teams[1];
+}
+
+function Bot SpawnBot( optional string BotName )
+{
+    local	KFInvasionBot	NewBot;
+    local	RosterEntry		Chosen;
+    local	UnrealTeamInfo	BotTeam;
+
+    BotTeam = GetBotTeam();
+    Chosen = BotTeam.ChooseBotClass( BotName );
+
+    if ( Chosen.PawnClass == None )
+        Chosen.Init(); //amb
+    
+	NewBot = Spawn( BotClass );
+    if ( NewBot != None )
+        InitializeBot( NewBot, BotTeam, Chosen );
+
+    // Bot should be a veteran.
+    if ( LoadedSkills.Length > 0 && KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo) != None )
+        KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo).ClientVeteranSkill = LoadedSkills[Rand(LoadedSkills.Length)];
+    // StartingCash
+	CheckStartingCash( NewBot );
+
+    Return NewBot;
+}
+
+// Clear unused function
+function Bot MySpawnBot( optional string BotName ) { }
+
+function bool AddBot( optional string BotName )
+{
+	local	Bot		NewBot;
+	
+	if ( bNoBots )
+		Return False;
+	
+	NewBot = SpawnBot( BotName );
+	if ( NewBot == None )  {
+		Warn("Failed to spawn bot.");
+		Return False;
+	}
+
+	NewBot.PlayerReplicationInfo.PlayerID = CurrentID++;
+	NumBots++;
+	NotifyNumPlayersChanged();
+	
+	if ( Level.NetMode == NM_Standalone )
+		RestartPlayer(NewBot);
+	else
+		NewBot.GotoState('Dead','MPStart');
+	
+	Return True;
+}
+
+exec function MyForceAddBot()
+{
+	AddBot();
 }
 
 function CheckStartingCash( Controller C )
@@ -371,7 +452,8 @@ function bool BecomeSpectator( PlayerController P )
 	
 	++NumSpectators;
 	--NumPlayers;
-	
+	NotifyNumPlayersChanged();
+		
 	if ( !bKillBots )
 		++RemainingBots;
 	
@@ -406,6 +488,7 @@ function BecomeActivePlayer( PlayerController P )
 {
 	--NumSpectators;
 	++NumPlayers;
+	NotifyNumPlayersChanged();
 	
 	if ( !bSaveSpectatorScores )
 		P.PlayerReplicationInfo.Reset();
@@ -612,6 +695,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		AccessControl.AdminEntered(NewPlayer, InAdminName);
 
 	++NumPlayers;
+	NotifyNumPlayersChanged();
 	if ( NumPlayers > 20 )
 		bLargeGameVOIP = True;
 	
@@ -759,6 +843,74 @@ event PostLogin( PlayerController NewPlayer )
 		StartInitGameMusic(KFPlayerController(NewPlayer));
 	
 	log( "New Player" @NewPlayer.PlayerReplicationInfo.PlayerName @"id=" $NewPlayer.GetPlayerIDHash() );
+}
+
+function CheckForUndestroyedWeapon( Pawn P )
+{
+	local	Inventory	Inv;
+	local	int			i;
+	
+	if ( P == None )
+		Return;
+	
+	for ( Inv = P.Inventory; Inv != None && i < 1000; Inv = Inv.Inventory )  {
+		if ( Class<Weapon>(Inv.Class) != None )
+			WeaponDestroyed( Class<Weapon>(Inv.Class) );
+	}
+}
+
+function Logout( Controller Exiting )
+{
+	local	bool	bNoMessage;
+	
+	CheckForUndestroyedWeapon( Exiting.Pawn );
+	
+	// From DeathMatch class
+	if ( Bot(Exiting) != None )  {
+		--NumBots;
+		NotifyNumPlayersChanged();
+	}
+	//[block] From GameInfo class
+	else if ( PlayerController(Exiting) != None )  {
+		if ( AccessControl != None && AccessControl.AdminLogout(PlayerController(Exiting)) )
+			AccessControl.AdminExited( PlayerController(Exiting) );
+		
+		if ( Exiting.PlayerReplicationInfo.bOnlySpectator )  {
+			bNoMessage = True;
+			--NumSpectators;
+		}
+		else  {
+			--NumPlayers;
+			NotifyNumPlayersChanged();
+		}
+		
+		if ( PlayerController(Exiting).SteamStatsAndAchievements != None )
+			PlayerController(Exiting).SteamStatsAndAchievements.Destroy();
+	}
+	
+	if ( !bNoMessage && (Level.NetMode == NM_DedicatedServer || Level.NetMode == NM_ListenServer) )
+		BroadcastLocalizedMessage( GameMessageClass, 4, Exiting.PlayerReplicationInfo );
+	
+	if ( VotingHandler != None )
+		VotingHandler.PlayerExit( Exiting );
+	
+	if ( GameStats != None )
+		GameStats.DisconnectEvent(Exiting.PlayerReplicationInfo);
+	
+	//notify mutators that a player exited
+    NotifyLogout(Exiting);
+	//[end]
+	
+	// Next code from DeathMatch class
+	// Adding a bot request
+	if ( !bKillBots )
+		RemainingBots++;
+	// Removing bot request if no need or after add a Bot
+	if ( !NeedPlayers() || AddBot() )
+		--RemainingBots;
+	// Check for the game end
+	if ( MaxLives > 0 )
+		CheckMaxLives(None);
 }
 
 // Start the game - inform all actors that the match is starting, and spawn player pawns
@@ -1253,7 +1405,7 @@ defaultproperties
 	 MaxFriendlyFireScale=1.0
 	 
 	 MinGameDifficulty=1.0
-	 MaxGameDifficulty=8.0
+	 MaxGameDifficulty=7.0
 	 
 	 ExtraStartingCashChance=0.05
 	 ExtraStartingCashModifier=4.0

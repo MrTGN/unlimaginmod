@@ -25,6 +25,7 @@ class UM_BaseInvasionPreset extends UM_BaseGamePreset
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
+//var		UM_InvasionGame								InvasionGame;
 var		array<UM_InvasionGame.WaveMonsterData>		Monsters;
 var		array<UM_InvasionGame.GameWaveData>			GameWaves;
 
@@ -48,6 +49,11 @@ var		int											InitialWaveNum;
 //========================================================================
 //[block] Functions
 
+function GetMaxAliveMonsters()
+{
+	
+}
+
 //[end] Functions
 //====================================================================
 
@@ -55,6 +61,9 @@ defaultproperties
 {
 	 InitialWaveNum=0
 	 StartShoppingTime=(Min=120,Max=140)
+	 MinGameDifficulty=1.0
+	 MaxGameDifficulty=7.0
+	 MinHumanPlayers=1
 	 MaxHumanPlayers=12
 	 //
 	 NumPlayersModifiers(1)=1.0

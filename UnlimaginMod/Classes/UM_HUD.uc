@@ -270,7 +270,9 @@ simulated function DrawKFHUDTextElements(Canvas C)
 	CircleSize = FMin(128 * ResScale,128);
 	C.FontScaleX = FMin(ResScale,1.0);
 	C.FontScaleY = FMin(ResScale,1.0);
-
+	C.SetDrawColor(255, 255, 255, 255);
+	C.SetPos(C.ClipX - CircleSize, 2);
+	
 	// Wave is in progress now
 	if ( KFGRI.bWaveInProgress )  {
 		//Hints
@@ -282,12 +284,9 @@ simulated function DrawKFHUDTextElements(Canvas C)
 			}
 		}
 
-		C.SetDrawColor(255, 255, 255, 255);
-		C.SetPos(C.ClipX - CircleSize, 2);
-		C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
-
 		// Show monsters count if MaxMonsters is enabled
 		if ( KFGRI.MaxMonstersOn )  {
+			C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
 			S = string(KFGRI.MaxMonsters);
 			C.Font = LoadFont(1);
 			C.Strlen(S, XL, YL);
@@ -297,6 +296,7 @@ simulated function DrawKFHUDTextElements(Canvas C)
 		}
 		// Show time until the wave end
 		else  {
+			C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Clock_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
 			Mnt = KFGRI.TimeToNextWave / 60;
 			Sec = KFGRI.TimeToNextWave - Mnt * 60;
 			S = Eval( (Mnt > 9), string(Mnt), "0" $ string(Mnt) ) $ ":" $ Eval( (Sec > 9), string(Sec), "0" $ string(Sec) );
@@ -319,10 +319,7 @@ simulated function DrawKFHUDTextElements(Canvas C)
 	}
 	// Countdown Text
 	else  {
-		C.SetDrawColor(255, 255, 255, 255);
-		C.SetPos(C.ClipX - CircleSize, 2);
 		C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Clock_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
-
 		if ( KFGRI.TimeToNextWave <= 5 && bIsSecondDowntime )
 			KFPlayerController(PlayerOwner).CheckForHint(40);
 

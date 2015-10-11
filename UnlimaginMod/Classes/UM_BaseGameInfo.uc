@@ -71,6 +71,12 @@ var					bool					bSaveSpectatorScores, bSaveSpectatorTeam;
 // Starting Cash lottery
 var					float					ExtraStartingCashChance, ExtraStartingCashModifier;
 var					float					DeathCashModifier;
+var					bool					bAllowPlayerSpawn;
+
+// Controllers Lists
+var		transient	array<PlayerController>	PlayerList;
+var		transient	array<PlayerController>	SpectatorList;
+var		transient	array<Bot>				BotList;
 
 //[end] Varibles
 //====================================================================
@@ -78,8 +84,103 @@ var					float					DeathCashModifier;
 //========================================================================
 //[block] Functions
 
-function NotifyNumPlayersChanged();
 function NotifyGameDifficultyChanged();
+function NotifyNumPlayersIncreased();
+function NotifyNumPlayersDecreased();
+
+//[block] PlayerList
+protected function AddToPlayerList( PlayerController PC )
+{
+	local	int		i;
+	
+	if ( PC == None )
+		Return;
+	
+	PlayerList[PlayerList.Length] = PC;
+	// Check for broken reference
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i] == None )
+			PlayerList.Remove(i, 1);
+	}
+	NumPlayers = PlayerList.Length;
+	NotifyNumPlayersIncreased();
+}
+
+protected function RemoveFromPlayerList( PlayerController PC )
+{
+	local	int		i;
+	
+	// Check for broken reference and find PlayerController
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i] == None || PlayerList[i] == PC )
+			PlayerList.Remove(i, 1);
+	}
+	NumPlayers = PlayerList.Length;
+	NotifyNumPlayersDecreased();
+}
+//[end] PlayerList
+
+//[block] SpectatorList
+protected function AddToSpectatorList( PlayerController PC )
+{
+	local	int		i;
+	
+	if ( PC == None )
+		Return;
+	
+	SpectatorList[SpectatorList.Length] = PC;
+	// Check for broken reference
+	for ( i = 0; i < SpectatorList.Length; ++i )  {
+		if ( SpectatorList[i] == None )
+			SpectatorList.Remove(i, 1);
+	}
+	NumSpectators = SpectatorList.Length;
+}
+
+protected function RemoveFromSpectatorList( PlayerController PC )
+{
+	local	int		i;
+	
+	// Check for broken reference and find PlayerController
+	for ( i = 0; i < SpectatorList.Length; ++i )  {
+		if ( SpectatorList[i] == None || SpectatorList[i] == PC )
+			SpectatorList.Remove(i, 1);
+	}
+	NumSpectators = SpectatorList.Length;
+}
+//[end] SpectatorList
+
+//[block] BotList
+protected function AddToBotList( Bot B )
+{
+	local	int		i;
+	
+	if ( B == None )
+		Return;
+	
+	BotList[BotList.Length] = B;
+	// Check for broken reference
+	for ( i = 0; i < BotList.Length; ++i )  {
+		if ( BotList[i] == None )
+			BotList.Remove(i, 1);
+	}
+	NumBots = BotList.Length;
+	NotifyNumBotsChanged();
+}
+
+protected function RemoveFromBotList( Bot B )
+{
+	local	int		i;
+	
+	// Check for broken reference and find Bot
+	for ( i = 0; i < BotList.Length; ++i )  {
+		if ( BotList[i] == None || BotList[i] == B )
+			BotList.Remove(i, 1);
+	}
+	NumBots = BotList.Length;
+	NotifyNumBotsChanged();
+}
+//[end] BotList
 
 exec function SetGameDifficulty( float NewGameDifficulty )
 {
@@ -145,22 +246,6 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	// GameDifficulty Limit
 	MinGameDifficulty = GamePreset.MinGameDifficulty;
 	MaxGameDifficulty = GamePreset.MaxGameDifficulty;
-	
-	//ToDo: delete this!
-	// DramaticKills
-	default.DramaticKills.Length = GamePreset.DramaticKills.Length;
-	DramaticKills.Length = default.DramaticKills.Length;
-	for ( i = 0; i < GamePreset.DramaticKills.Length; ++i )  {
-		// MinKilled
-		default.DramaticKills[i].MinKilled = GamePreset.DramaticKills[i].MinKilled;
-		DramaticKills[i].MinKilled = default.DramaticKills[i].MinKilled;
-		// EventChance
-		default.DramaticKills[i].EventChance = GamePreset.DramaticKills[i].EventChance;
-		DramaticKills[i].EventChance = default.DramaticKills[i].EventChance;
-		// EventDuration
-		default.DramaticKills[i].EventDuration = GamePreset.DramaticKills[i].EventDuration;
-		DramaticKills[i].EventDuration = default.DramaticKills[i].EventDuration;
-	}
 	
 	Log("GamePreset" @string(GamePreset.Name) @"loaded", Class.Outer.Name);
 	
@@ -294,27 +379,27 @@ function UnrealTeamInfo GetBotTeam( optional int TeamBots )
 
 function Bot SpawnBot( optional string BotName )
 {
-    local	KFInvasionBot	NewBot;
-    local	RosterEntry		Chosen;
-    local	UnrealTeamInfo	BotTeam;
+	local	KFInvasionBot	NewBot;
+	local	RosterEntry		Chosen;
+	local	UnrealTeamInfo	BotTeam;
 
-    BotTeam = GetBotTeam();
-    Chosen = BotTeam.ChooseBotClass( BotName );
+	BotTeam = GetBotTeam();
+	Chosen = BotTeam.ChooseBotClass( BotName );
 
-    if ( Chosen.PawnClass == None )
-        Chosen.Init(); //amb
-    
+	if ( Chosen.PawnClass == None )
+		Chosen.Init(); //amb
+	
 	NewBot = Spawn( BotClass );
-    if ( NewBot != None )
-        InitializeBot( NewBot, BotTeam, Chosen );
+	if ( NewBot != None )
+		InitializeBot( NewBot, BotTeam, Chosen );
 
-    // Bot should be a veteran.
-    if ( LoadedSkills.Length > 0 && KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo) != None )
-        KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo).ClientVeteranSkill = LoadedSkills[Rand(LoadedSkills.Length)];
-    // StartingCash
+	// Bot should be a veteran.
+	if ( LoadedSkills.Length > 0 && KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo) != None )
+		KFPlayerReplicationInfo(NewBot.PlayerReplicationInfo).ClientVeteranSkill = LoadedSkills[Rand(LoadedSkills.Length)];
+	// StartingCash
 	CheckStartingCash( NewBot );
 
-    Return NewBot;
+	Return NewBot;
 }
 
 // Clear unused function
@@ -334,8 +419,7 @@ function bool AddBot( optional string BotName )
 	}
 
 	NewBot.PlayerReplicationInfo.PlayerID = CurrentID++;
-	NumBots++;
-	NotifyNumPlayersChanged();
+	AddToBotList( NewBot );
 	
 	if ( Level.NetMode == NM_Standalone )
 		RestartPlayer(NewBot);
@@ -362,72 +446,40 @@ function CheckStartingCash( Controller C )
 		C.PlayerReplicationInfo.Score = float(StartingCash);
 }
 
-function bool CanRespawnPlayers()
-{
-	if ( GameReplicationInfo == None || !GameReplicationInfo.bMatchHasBegun )
-		Return False;
-	
-	Return !bWaveInProgress && (!bWaveBossInProgress || (bRespawnOnBoss && !bHasSetViewYet));
-}
-
 function RespawnWaitingPlayers()
 {
-	local	Controller	C;
 	local	int			i;
 	
-	// ControllerList
-	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-		++i;	// To prevent runaway loop
-		// Respawn Player
-		if ( C.PlayerReplicationInfo != None && (C.Pawn == None || C.Pawn.bDeleteMe) && C.CanRestartPlayer() )  {
-			// Player will be respawned after the death
-			if ( C.PlayerReplicationInfo.Deaths > 0 )
-				C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , C.PlayerReplicationInfo.Score );
-			// Spawn a new waiting player
-			else
-				CheckStartingCash( C );
-			
-			if ( PlayerController(C) != None )  {
-				PlayerController(C).GotoState('PlayerWaiting');
-				PlayerController(C).SetViewTarget(C);
-				PlayerController(C).ClientSetBehindView(False);
-				PlayerController(C).bBehindView = False;
-				PlayerController(C).ClientSetViewTarget(C.Pawn);
-			}
-			
-			C.ServerReStartPlayer();
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		// Check for broken reference
+		if ( PlayerList[i] == None )  {
+			PlayerList.Remove(i, 1);
+			Continue; // Skip this player
 		}
-	}
-}
+		
+		if ( PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer()
+			 || (PlayerList[i].Pawn != None && !PlayerList[i].Pawn.bDeleteMe) )
+			Continue; // Skip this player
 
-function RespawnPlayer( Controller C )
-{
-	if ( C == None || C.PlayerReplicationInfo == None )
-		Return;
-	
-	if ( C.Pawn != None )  {
-		if ( !C.Pawn.bDeleteMe )
-			C.Pawn.Suicide();
-		C.Pawn = None;
+		// Player will be respawned after the death
+		if ( PlayerList[i].PlayerReplicationInfo.Deaths > 0 )
+			PlayerList[i].PlayerReplicationInfo.Score = FMax( float(MinRespawnCash), PlayerList[i].PlayerReplicationInfo.Score );
+		// Spawn a new waiting player
+		else
+			CheckStartingCash( PlayerList[i] );
+		
+		PlayerList[i].GotoState('PlayerWaiting');
+		PlayerList[i].SetViewTarget(PlayerList[i]);
+		PlayerList[i].ClientSetBehindView(False);
+		PlayerList[i].bBehindView = False;
+		PlayerList[i].ClientSetViewTarget(PlayerList[i].Pawn);
+		PlayerList[i].ServerReStartPlayer();
 	}
 	
-	C.PlayerReplicationInfo.bOutOfLives = False;
-	// Respawn player after death
-	if ( C.PlayerReplicationInfo.Deaths > 0 )
-		C.PlayerReplicationInfo.Score = FMax( float(MinRespawnCash) , C.PlayerReplicationInfo.Score );
-	// Spawn a new waiting player
-	else
-		CheckStartingCash( C );
-	
-	if ( PlayerController(C) != None )  {
-		PlayerController(C).GotoState('PlayerWaiting');
-		PlayerController(C).SetViewTarget(C);
-		PlayerController(C).ClientSetBehindView(False);
-		PlayerController(C).bBehindView = False;
-		PlayerController(C).ClientSetViewTarget(C.Pawn);
+	if ( PlayerList.Length < NumPlayers )  {
+		NumPlayers = PlayerList.Length;
+		NotifyNumPlayersDecreased();
 	}
-	
-	C.ServerReStartPlayer();
 }
 
 // Active player wants to become a spectator
@@ -450,9 +502,8 @@ function bool BecomeSpectator( PlayerController P )
 	if ( !bSaveSpectatorTeam )
 		P.PlayerReplicationInfo.Team = None;
 	
-	++NumSpectators;
-	--NumPlayers;
-	NotifyNumPlayersChanged();
+	AddToSpectatorList( P );
+	RemoveFromPlayerList( P );
 		
 	if ( !bKillBots )
 		++RemainingBots;
@@ -486,9 +537,8 @@ function bool AllowBecomeActivePlayer( PlayerController P )
 // Spectating player wants to become active and join the game
 function BecomeActivePlayer( PlayerController P )
 {
-	--NumSpectators;
-	++NumPlayers;
-	NotifyNumPlayersChanged();
+	AddToPlayerList( P );
+	RemoveFromSpectatorList( P );
 	
 	if ( !bSaveSpectatorScores )
 		P.PlayerReplicationInfo.Reset();
@@ -528,7 +578,7 @@ function RestartPlayer( Controller aPlayer )
 	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || (aPlayer.Pawn != None && !aPlayer.Pawn.bDeleteMe) )
 		Return;
 
-	if ( PlayerController(aPlayer) != None && bWaveInProgress )  {
+	if ( PlayerController(aPlayer) != None && !bAllowPlayerSpawn )  {
 		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
 		aPlayer.PlayerReplicationInfo.NumLives = MaxLives;
 		aPlayer.GoToState('Spectating');
@@ -683,7 +733,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		NewPlayer.PlayerReplicationInfo.bOnlySpectator = True;
 		NewPlayer.PlayerReplicationInfo.bIsSpectator = True;
 		NewPlayer.PlayerReplicationInfo.bOutOfLives = True;
-		++NumSpectators;
+		AddToSpectatorList( NewPlayer );
 
 		Return NewPlayer;
 	}
@@ -694,8 +744,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 	if ( AccessControl != None && AccessControl.AdminLogin(NewPlayer, InAdminName, InPassword) )
 		AccessControl.AdminEntered(NewPlayer, InAdminName);
 
-	++NumPlayers;
-	NotifyNumPlayersChanged();
+	AddToPlayerList( NewPlayer );
 	if ( NumPlayers > 20 )
 		bLargeGameVOIP = True;
 	
@@ -761,7 +810,6 @@ event PostLogin( PlayerController NewPlayer )
 		Return;
 	
 	NewPlayer.SetGRI(GameReplicationInfo);
-	NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
 	
 	if ( !bIsSaveGame )  {
 		// Log player's login.
@@ -834,8 +882,9 @@ event PostLogin( PlayerController NewPlayer )
 	if ( Level.NetMode == NM_ListenServer && Level.GetLocalPlayerController() == NewPlayer )
 		NewPlayer.InitializeVoiceChat();
 
-	if ( NewPlayer.PlayerReplicationInfo.bOnlySpectator ) // must not be a spectator
+	if ( NewPlayer.PlayerReplicationInfo.bOnlySpectator )
 		KFPlayerController(NewPlayer).JoinedAsSpectatorOnly();
+	// must not be a spectator
 	else
 		NewPlayer.GotoState('PlayerWaiting');
 
@@ -866,10 +915,8 @@ function Logout( Controller Exiting )
 	CheckForUndestroyedWeapon( Exiting.Pawn );
 	
 	// From DeathMatch class
-	if ( Bot(Exiting) != None )  {
-		--NumBots;
-		NotifyNumPlayersChanged();
-	}
+	if ( Bot(Exiting) != None )
+		RemoveFromBotList( Bot(Exiting) );
 	//[block] From GameInfo class
 	else if ( PlayerController(Exiting) != None )  {
 		if ( AccessControl != None && AccessControl.AdminLogout(PlayerController(Exiting)) )
@@ -877,12 +924,10 @@ function Logout( Controller Exiting )
 		
 		if ( Exiting.PlayerReplicationInfo.bOnlySpectator )  {
 			bNoMessage = True;
-			--NumSpectators;
+			RemoveFromSpectatorList( PlayerController(Exiting) );
 		}
-		else  {
-			--NumPlayers;
-			NotifyNumPlayersChanged();
-		}
+		else
+			RemoveFromPlayerList( PlayerController(Exiting) );
 		
 		if ( PlayerController(Exiting).SteamStatsAndAchievements != None )
 			PlayerController(Exiting).SteamStatsAndAchievements.Destroy();
@@ -898,7 +943,7 @@ function Logout( Controller Exiting )
 		GameStats.DisconnectEvent(Exiting.PlayerReplicationInfo);
 	
 	//notify mutators that a player exited
-    NotifyLogout(Exiting);
+	NotifyLogout(Exiting);
 	//[end]
 	
 	// Next code from DeathMatch class
@@ -920,6 +965,12 @@ function StartMatch()
 	local	int		Num;
 	local	PlayerReplicationInfo	PRI;
 	
+	// From GameInfo.uc
+	//if ( GameStats != None )
+		//GameStats.StartGame();
+	
+	//[block] From DeathMatch.uc
+	//[block] From BeginState() State'MatchInProgress'
 	ForEach DynamicActors(class'PlayerReplicationInfo',PRI)
 		PRI.StartTime = 0;
 	
@@ -927,14 +978,16 @@ function StartMatch()
 	StartupStage = 5;
 	PlayStartupMessage();
 	StartupStage = 6;
-	
+	//[end]
 	if ( Level.NetMode == NM_Standalone )
 		RemainingBots = InitialBots;
 	else
 		RemainingBots = 0;
 	GameReplicationInfo.RemainingMinute = RemainingTime;
 	
-	// Spawning Players
+	bAllowPlayerSpawn = True;
+	
+	// Spawning Players ToDo: перенести код сюда.
 	Super(GameInfo).StartMatch();
 	
 	bTemp = bMustJoinBeforeStart;
@@ -946,6 +999,10 @@ function StartMatch()
 	}
 	bMustJoinBeforeStart = bTemp;
 	log("START MATCH");
+	//[end]
+	
+	bAllowPlayerSpawn = False;
+	//GotoState('BeginNewWave');
 }
 
 function ResetSlowMoInstigator()
@@ -1402,6 +1459,7 @@ function ScoreKill( Controller Killer, Controller Other )
 
 defaultproperties
 {
+	 bDelayedStart=True
 	 MaxFriendlyFireScale=1.0
 	 
 	 MinGameDifficulty=1.0

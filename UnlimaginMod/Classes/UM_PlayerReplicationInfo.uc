@@ -319,10 +319,13 @@ function Reset()
 	Deaths = 0;
 	GoalsScored = 0;
 	Kills = 0;
-	
 	HasFlag = None;
 	bReadyToPlay = False;
-	if ( UM_BaseGameInfo(Level.Game) != None || KFGameType(Level.Game) != None )  {
+	if ( UM_BaseGameInfo(Level.Game) != None )  {
+		NumLives = Level.Game.MaxLives;
+		bOutOfLives = True;
+	}
+	else if ( KFGameType(Level.Game) != None )  {
 		NumLives = 1;
 		bOutOfLives = True;
 	}

@@ -39,8 +39,8 @@ function bool OnFooterClick(GUIComponent Sender)
 	else if ( Sender == b_Ready )  {
 		//Set Ready
 		if ( PC.Level.NetMode == NM_Standalone || !PC.PlayerReplicationInfo.bReadyToPlay )  {
-			PC.ServerRestartPlayer();
 			PC.PlayerReplicationInfo.bReadyToPlay = True;
+			PC.ServerRestartPlayer();
 			//Hide Menu - Match has begun
 			if ( PC.Level.GRI.bMatchHasBegun )
 				PC.ClientCloseMenu(true, false);
@@ -55,8 +55,8 @@ function bool OnFooterClick(GUIComponent Sender)
 			//Hide ViewMap button
 			b_ViewMap.Hide();
 			DisableComponent(b_ViewMap);
-			KFPlayerController(PC).ServerUnreadyPlayer();
 			PC.PlayerReplicationInfo.bReadyToPlay = False;
+			KFPlayerController(PC).ServerUnreadyPlayer();
 			b_Ready.Caption = ReadyString;
 		}
 	}

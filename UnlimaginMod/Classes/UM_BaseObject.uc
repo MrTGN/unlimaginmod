@@ -29,6 +29,22 @@ struct IntRange
 	var()	config	int		Max;
 };
 
+struct IntRandRange
+{
+	var()	config	int		Min;
+	var()	config	int		Max;
+	var()	config	float	RandMin;
+	var()	config	float	RandMax;
+};
+
+struct FloatRandRange
+{
+	var()	config	float	Min;
+	var()	config	float	Max;
+	var()	config	float	RandMin;
+	var()	config	float	RandMax;
+};
+
 //[end] Varibles
 //====================================================================
 

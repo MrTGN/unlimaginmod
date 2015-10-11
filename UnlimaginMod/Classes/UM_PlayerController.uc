@@ -315,7 +315,7 @@ function ServerReStartPlayer()
 	if ( Role < ROLE_Authority || PlayerReplicationInfo.bOutOfLives )
 		Return; // No more main menu bug closing.
 
-	ClientCloseMenu(true, true);
+	ClientCloseMenu(True, True);
 	
 	if ( Level.Game.bWaitingToStartMatch )
 		PlayerReplicationInfo.bReadyToPlay = True;
@@ -467,22 +467,8 @@ auto state PlayerWaiting
 	
 	exec function Fire( optional float F )
 	{
-		if ( bFrozen )  {
-			if ( TimerRate <= 0.0 || TimerRate > 1.0 )
-				bFrozen = False;
-			Return;
-		}
-		
-		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
-			LoadPlayers();
-			if ( bMenuBeforeRespawn )  {
-				bMenuBeforeRespawn = False;
-				ShowMidGameMenu(False);
-			}
-			else
-				ServerReStartPlayer();
-		}
-		else
+		LoadPlayers();
+		if ( !bForcePrecache && Level.TimeSeconds > 0.2 && bReadyToStart && Pawn == None )
 			ServerSpectate();
 	}
 
@@ -1133,6 +1119,24 @@ function ServerSpeech( name Type, int Index, string Callsign )
 
 state Dead
 {
+	simulated function BeginState()
+	{
+		// Unzoom if we were zoomed
+		TransitionFOV(DefaultFOV,0.0);
+
+		Super(UnrealPlayer).BeginState();
+		if ( HudKillingFloor(myHUD) != None )  {
+			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
+			HudKillingFloor(myHUD).GoalTarget = ViewTarget;
+		}
+	}
+	
+	// Disable Auto-Respawn after the death
+	function bool CanRestartPlayer()
+	{
+		Return False;
+	}
+	
 	function Timer()
 	{
 		Super(xPlayer).Timer();
@@ -1186,18 +1190,6 @@ state Dead
 		}
 		
 		Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
-	}
-
-	simulated function BeginState()
-	{
-		// Unzoom if we were zoomed
-		TransitionFOV(DefaultFOV,0.0);
-
-		Super(UnrealPlayer).BeginState();
-		if ( HudKillingFloor(myHUD) != None )  {
-			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
-			HudKillingFloor(myHUD).GoalTarget = ViewTarget;
-		}
 	}
 
 	simulated function EndState()

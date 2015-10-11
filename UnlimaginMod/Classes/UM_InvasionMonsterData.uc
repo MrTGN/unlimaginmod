@@ -23,7 +23,6 @@ class UM_InvasionMonsterData extends UM_BaseObject
 //========================================================================
 //[block] Variables
 
-var		transient	bool						bInitialized;		//
 var					bool						bDisabled;			//
 
 var					bool						bNoSpawnRestrictions;
@@ -33,7 +32,7 @@ var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
 var()				array<IntRange>				WaveLimits;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 var()				array<Range>				WaveSpawnChances;	// This wave spawn Chance (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 var()				array<IntRange>				WaveSquadLimits;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-ToDo:#LimitPerMinute	var()				array<Range>				WaveSquadDelays;	// Will delay next spawn if reached this wave Squad limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+//ToDo:#LimitPerMinute	var()				array<Range>				WaveSquadDelays;	// Will delay next spawn if reached this wave Squad limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 
 var		transient	UM_InvasionGame				InvasionGame;		//
 var		transient	LevelInfo					Level;
@@ -55,7 +54,7 @@ var		transient	float						CurrentSquadDelay;
 //========================================================================
 //[block] Functions
 
-function bool InitData( UM_InvasionGame IG )
+function bool InitDataFor( UM_InvasionGame IG )
 {
 	if ( IG == None || MonsterClassName == "" || bDisabled )
 		Return False;
@@ -66,25 +65,19 @@ function bool InitData( UM_InvasionGame IG )
 	
 	InvasionGame = IG;
 	Level = InvasionGame.Level;
-	
-	bInitialized = True;
 }
 
-//ToDo: доработать.
-function UpdateCurrentLimits()
+//ToDo: доработать. Перенести нужнные переменные еще и на работу со сложностью.
+function UpdateDynamicParameters()
 {
-	local	float	NumPlayersModifier;
-	
-	NumPlayersModifier = float(InvasionGame.NumPlayers + InvasionGame.NumBots - InvasionGame.MinHumanPlayers) / float(InvasionGame.MaxHumanPlayers - InvasionGame.MinHumanPlayers);
-	
 	// CurrentWaveLimit
-	CurrentWaveLimit = Round( Lerp(NumPlayersModifier, float(WaveLimits[InvasionGame.WaveNum].Min), float(WaveLimits[InvasionGame.WaveNum].Max) , True) );
+	CurrentWaveLimit = Round( Lerp(InvasionGame.LerpNumPlayersModifier, float(WaveLimits[InvasionGame.WaveNum].Min), float(WaveLimits[InvasionGame.WaveNum].Max) , True) );
 	// CurrentSpawnChance
-	CurrentSpawnChance = Lerp( NumPlayersModifier, WaveSpawnChances[InvasionGame.WaveNum].Min, WaveSpawnChances[InvasionGame.WaveNum].Max, True );
+	CurrentSpawnChance = Lerp( InvasionGame.LerpNumPlayersModifier, WaveSpawnChances[InvasionGame.WaveNum].Min, WaveSpawnChances[InvasionGame.WaveNum].Max, True );
 	// CurrentSquadLimit
-	CurrentSquadLimit = Round( Lerp(NumPlayersModifier, float(WaveSquadLimits[InvasionGame.WaveNum].Min), float(WaveSquadLimits[InvasionGame.WaveNum].Max) , True) );
+	CurrentSquadLimit = Round( Lerp(InvasionGame.LerpNumPlayersModifier, float(WaveSquadLimits[InvasionGame.WaveNum].Min), float(WaveSquadLimits[InvasionGame.WaveNum].Max) , True) );
 	// CurrentSquadDelay
-	CurrentSquadDelay = Lerp( NumPlayersModifier, WaveSquadDelays[InvasionGame.WaveNum].Min, WaveSquadDelays[InvasionGame.WaveNum].Max, True );
+	CurrentSquadDelay = Lerp( InvasionGame.LerpNumPlayersModifier, WaveSquadDelays[InvasionGame.WaveNum].Min, WaveSquadDelays[InvasionGame.WaveNum].Max, True );
 	
 	// Check CurrentSquadLimit
 	if ( Level.TimeSeconds < NextSquadSpawnTime )
@@ -127,9 +120,6 @@ function bool CheckCurrentSquadLimit()
 
 function bool CanSpawn()
 {
-	if ( bDisabled || !bInitialized )
-		Return False;
-	
 	if ( bNoSpawnRestrictions )
 		Return True;
 	

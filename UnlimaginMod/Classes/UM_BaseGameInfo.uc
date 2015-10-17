@@ -54,9 +54,11 @@ var					UM_BaseGamePreset		GamePreset;
 var		transient	float					DefaultGameSpeed;	// Sets in the InitGame event
 
 var					float					MinGameDifficulty, MaxGameDifficulty;
+var		transient	float					LastGameDifficulty;	// For the Unauthorized Changes Check
 var					int						MinHumanPlayers, MaxHumanPlayers;
 
 var					float					MaxFriendlyFireScale;	// Min FriendlyFireScale = 0.0
+var		transient	float					LastFriendlyFireScale;	// For the Unauthorized Changes Check
 
 var					UM_HumanPawn			SlowMoInstigator;
 var		transient	float					SlowMoDeltaTime;
@@ -74,9 +76,13 @@ var					float					DeathCashModifier;
 var					bool					bAllowPlayerSpawn;
 
 // Controllers Lists
-var		transient	array<PlayerController>	PlayerList;
-var		transient	array<PlayerController>	SpectatorList;
+var		transient	array<UM_PlayerController>	PlayerList;
+var		transient	array<UM_PlayerController>	SpectatorList;
 var		transient	array<Bot>				BotList;
+var		transient	int						NumActivePlayers;
+
+var					float					UnauthorizedChangesCheckDelay;
+var					float					NextUnauthorizedChangesCheckTime;
 
 //[end] Varibles
 //====================================================================
@@ -84,51 +90,62 @@ var		transient	array<Bot>				BotList;
 //========================================================================
 //[block] Functions
 
-function NotifyGameDifficultyChanged();
-function NotifyNumPlayersIncreased();
-function NotifyNumPlayersDecreased();
+function NotifyNumActivePlayersChanged();
+function NotifyNumBotsChanged();
 
 //[block] PlayerList
-protected function AddToPlayerList( PlayerController PC )
+protected function CheckPlayerList()
 {
-	local	int		i;
+	local	int		i, j;
 	
-	if ( PC == None )
-		Return;
-	
-	PlayerList[PlayerList.Length] = PC;
-	// Check for broken reference
 	for ( i = 0; i < PlayerList.Length; ++i )  {
+		// Check for broken reference
 		if ( PlayerList[i] == None )
 			PlayerList.Remove(i, 1);
+		else if ( PlayerList[i].bIsActivePlayer )
+			++j;
 	}
 	NumPlayers = PlayerList.Length;
-	NotifyNumPlayersIncreased();
+	// Check for changes
+	if ( NumActivePlayers != j )  {
+		NumActivePlayers = j;
+		NotifyNumActivePlayersChanged();
+	}
+}
+
+protected function AddToPlayerList( PlayerController PC )
+{
+	if ( UM_PlayerController(PC) == None )
+		Return;
+	
+	PlayerList[PlayerList.Length] = UM_PlayerController(PC);
+	// Check for broken reference
+	CheckPlayerList();
 }
 
 protected function RemoveFromPlayerList( PlayerController PC )
 {
 	local	int		i;
 	
-	// Check for broken reference and find PlayerController
-	for ( i = 0; i < PlayerList.Length; ++i )  {
-		if ( PlayerList[i] == None || PlayerList[i] == PC )
-			PlayerList.Remove(i, 1);
+	if ( PC != None )  {
+		// Find PlayerController
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i] == PC )  {
+				PlayerList.Remove(i, 1);
+				Break;
+			}
+		}
 	}
-	NumPlayers = PlayerList.Length;
-	NotifyNumPlayersDecreased();
+	// Check for broken reference
+	CheckPlayerList();
 }
 //[end] PlayerList
 
 //[block] SpectatorList
-protected function AddToSpectatorList( PlayerController PC )
+protected function CheckSpectatorList()
 {
 	local	int		i;
 	
-	if ( PC == None )
-		Return;
-	
-	SpectatorList[SpectatorList.Length] = PC;
 	// Check for broken reference
 	for ( i = 0; i < SpectatorList.Length; ++i )  {
 		if ( SpectatorList[i] == None )
@@ -137,20 +154,53 @@ protected function AddToSpectatorList( PlayerController PC )
 	NumSpectators = SpectatorList.Length;
 }
 
+protected function AddToSpectatorList( PlayerController PC )
+{
+	local	int		i;
+	
+	if ( UM_PlayerController(PC) == None )
+		Return;
+	
+	SpectatorList[SpectatorList.Length] = UM_PlayerController(PC);
+	// Check for broken reference
+	CheckSpectatorList();
+}
+
 protected function RemoveFromSpectatorList( PlayerController PC )
 {
 	local	int		i;
 	
-	// Check for broken reference and find PlayerController
-	for ( i = 0; i < SpectatorList.Length; ++i )  {
-		if ( SpectatorList[i] == None || SpectatorList[i] == PC )
-			SpectatorList.Remove(i, 1);
+	if ( PC != None )  {
+		// Find PlayerController
+		for ( i = 0; i < SpectatorList.Length; ++i )  {
+			if ( SpectatorList[i] == PC )  {
+				SpectatorList.Remove(i, 1);
+				Break;
+			}
+		}
 	}
-	NumSpectators = SpectatorList.Length;
+	// Check for broken reference
+	CheckSpectatorList();
 }
 //[end] SpectatorList
 
 //[block] BotList
+protected function CheckBotList()
+{
+	local	int		i;
+	
+	// Check for broken reference
+	for ( i = 0; i < BotList.Length; ++i )  {
+		if ( BotList[i] == None )
+			BotList.Remove(i, 1);
+	}
+	// Check for changes
+	if ( NumBots != BotList.Length )  {
+		NumBots = BotList.Length;
+		NotifyNumBotsChanged();
+	}
+}
+
 protected function AddToBotList( Bot B )
 {
 	local	int		i;
@@ -160,36 +210,39 @@ protected function AddToBotList( Bot B )
 	
 	BotList[BotList.Length] = B;
 	// Check for broken reference
-	for ( i = 0; i < BotList.Length; ++i )  {
-		if ( BotList[i] == None )
-			BotList.Remove(i, 1);
-	}
-	NumBots = BotList.Length;
-	NotifyNumBotsChanged();
+	CheckBotList();
 }
 
 protected function RemoveFromBotList( Bot B )
 {
 	local	int		i;
 	
-	// Check for broken reference and find Bot
-	for ( i = 0; i < BotList.Length; ++i )  {
-		if ( BotList[i] == None || BotList[i] == B )
-			BotList.Remove(i, 1);
+	if ( B != None )  {
+		// Find Bot
+		for ( i = 0; i < BotList.Length; ++i )  {
+			if ( BotList[i] == B )  {
+				BotList.Remove(i, 1);
+				Break;
+			}
+		}
 	}
-	NumBots = BotList.Length;
-	NotifyNumBotsChanged();
+	// Check for broken reference
+	CheckBotList();
 }
 //[end] BotList
+
+function NotifyGameDifficultyChanged();
 
 exec function SetGameDifficulty( float NewGameDifficulty )
 {
 	GameDifficulty = FClamp( NewGameDifficulty, MinGameDifficulty, MaxGameDifficulty );
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
 		UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty = GameDifficulty;
-		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
+	// Check for changes
+	if ( GameDifficulty != LastGameDifficulty )  {
+		LastGameDifficulty = GameDifficulty;
+		NotifyGameDifficultyChanged();
 	}
-	NotifyGameDifficultyChanged();
 }
 
 // For the GUI buy menu
@@ -201,10 +254,8 @@ simulated function float GetDifficulty()
 exec function SetFriendlyFireScale( float NewFriendlyFireScale )
 {
 	FriendlyFireScale = FClamp( NewFriendlyFireScale, 0.0, MaxFriendlyFireScale );
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
 		UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale = FriendlyFireScale;
-		UM_GameReplicationInfo(GameReplicationInfo).NetUpdateTime = Level.TimeSeconds - 1.0;
-	}
 }
 
 function bool AllowGameSpeedChange()
@@ -290,7 +341,7 @@ event InitGame( string Options, out string Error )
 	
 	DefaultGameSpeed = default.GameSpeed;
 	// Clamping MaxPlayers
-	MaxPlayers = Clamp( MaxHumanPlayers, MinHumanPlayers, 32);
+	MaxPlayers = Clamp( MaxHumanPlayers, MinHumanPlayers, 32 );
 }
 
 // Spawn GameReplicationInfo and setup replicated variables
@@ -451,13 +502,7 @@ function RespawnWaitingPlayers()
 	local	int			i;
 	
 	for ( i = 0; i < PlayerList.Length; ++i )  {
-		// Check for broken reference
-		if ( PlayerList[i] == None )  {
-			PlayerList.Remove(i, 1);
-			Continue; // Skip this player
-		}
-		
-		if ( PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer()
+		if ( PlayerList[i] == None || PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer()
 			 || (PlayerList[i].Pawn != None && !PlayerList[i].Pawn.bDeleteMe) )
 			Continue; // Skip this player
 
@@ -475,11 +520,7 @@ function RespawnWaitingPlayers()
 		PlayerList[i].ClientSetViewTarget(PlayerList[i].Pawn);
 		PlayerList[i].ServerReStartPlayer();
 	}
-	
-	if ( PlayerList.Length < NumPlayers )  {
-		NumPlayers = PlayerList.Length;
-		NotifyNumPlayersDecreased();
-	}
+	CheckPlayerList();
 }
 
 // Active player wants to become a spectator
@@ -534,7 +575,7 @@ function bool AllowBecomeActivePlayer( PlayerController P )
 	Return True;
 }
 
-// Spectating player wants to become active and join the game
+// Spectating player become active and join the game
 function BecomeActivePlayer( PlayerController P )
 {
 	AddToPlayerList( P );
@@ -587,6 +628,9 @@ function RestartPlayer( Controller aPlayer )
 
 	// Spawn Player
 	Super(GameInfo).RestartPlayer(aPlayer);
+	
+	if ( UM_PlayerController(aPlayer) != None && !UM_PlayerController(aPlayer).bIsActivePlayer )
+		UM_PlayerController(aPlayer).bIsActivePlayer = True;
 
 	// Notifying that the Veterancy info has changed
 	if ( UM_PlayerReplicationInfo(aPlayer.PlayerReplicationInfo) != None )
@@ -680,7 +724,9 @@ event PlayerController Login( string Portal, string Options, out string Error )
 	if ( PlayerControllerClass == None )
 		PlayerControllerClass = class<PlayerController>(DynamicLoadObject(PlayerControllerClassName, class'Class'));
 
-	NewPlayer = Spawn(PlayerControllerClass,,,StartSpot.Location,StartSpot.Rotation);
+	// Forcing to use only UnlimaginMod PlayerControllerClass and sub-classes
+	if ( Class<UM_PlayerController>(PlayerControllerClass) != None )
+		NewPlayer = Spawn(PlayerControllerClass,,,StartSpot.Location,StartSpot.Rotation);
 
 	// Handle spawn failure.
 	if ( NewPlayer == None )  {
@@ -696,7 +742,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 	// Apply security to this controller
 	MySecurityClass = class<Security>(DynamicLoadObject(SecurityClass,class'class'));
 	if ( MySecurityClass != None )  {
-		NewPlayer.PlayerSecurity = spawn(MySecurityClass,NewPlayer);
+		NewPlayer.PlayerSecurity = Spawn( MySecurityClass, NewPlayer );
 		if ( NewPlayer.PlayerSecurity == None )
 			log("Could not spawn security for player "$NewPlayer,'Security');
 	}
@@ -864,7 +910,7 @@ event PostLogin( PlayerController NewPlayer )
 	NewPlayer.ClientCapBandwidth( NewPlayer.Player.CurrentNetSpeed );
 	NotifyLogin( NewPlayer.PlayerReplicationInfo.PlayerID );
 	
-	if ( UM_PlayerController(NewPlayer) != None && UM_PlayerController(NewPlayer).SpawnStatObject() && !NewPlayer.SteamStatsAndAchievements.Initialize(NewPlayer) )
+	if ( UM_PlayerController(NewPlayer).SpawnStatObject() && !NewPlayer.SteamStatsAndAchievements.Initialize(NewPlayer) )
 		UM_PlayerController(NewPlayer).DestroyStatObject();
 	
 	if ( NewPlayer.PlayerReplicationInfo.Team != None )
@@ -888,8 +934,7 @@ event PostLogin( PlayerController NewPlayer )
 	else
 		NewPlayer.GotoState('PlayerWaiting');
 
-	if ( KFPlayerController(NewPlayer) != None )
-		StartInitGameMusic(KFPlayerController(NewPlayer));
+	StartInitGameMusic(KFPlayerController(NewPlayer));
 	
 	log( "New Player" @NewPlayer.PlayerReplicationInfo.PlayerName @"id=" $NewPlayer.GetPlayerIDHash() );
 }
@@ -970,8 +1015,8 @@ function StartMatch()
 		//GameStats.StartGame();
 	
 	//[block] From DeathMatch.uc
-	//[block] From BeginState() State'MatchInProgress'
-	ForEach DynamicActors(class'PlayerReplicationInfo',PRI)
+	//[block] From State'MatchInProgress' (BeginState() function)
+	ForEach DynamicActors( class'PlayerReplicationInfo', PRI )
 		PRI.StartTime = 0;
 	
 	ElapsedTime = 0;
@@ -1046,21 +1091,29 @@ function ExtendZEDTime( UM_HumanPawn Human )
 	DramaticEvent(1.0, ZEDTimeDuration);
 }
 
+function CheckForUnauthorizedChanges()
+{
+	NextUnauthorizedChangesCheckTime = Level.TimeSeconds + UnauthorizedChangesCheckDelay;
+	
+	if ( UM_GameReplicationInfo(GameReplicationInfo) == None )
+		Return;
+	
+	// Checking FriendlyFireScale for the unauthorized changes (not from the SetFriendlyFireScale() function)
+	if ( FriendlyFireScale != LastFriendlyFireScale )
+		SetFriendlyFireScale( FriendlyFireScale );
+	// Checking GameDifficulty for the unauthorized changes (not from the SetGameDifficulty() function)
+	if ( GameDifficulty != LastGameDifficulty )
+		SetGameDifficulty( GameDifficulty );
+}
+
 event Tick( float DeltaTime )
 {
 	local	float		TrueDeltaTime;
 	local	int			Count;
 	local	Controller	C;
 	
-	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )  {
-		// Checking FriendlyFireScale for the unauthorized changes (not from the SetFriendlyFireScale() function)
-		if ( UM_GameReplicationInfo(GameReplicationInfo).FriendlyFireScale != FriendlyFireScale )
-			SetFriendlyFireScale( FriendlyFireScale );
-		
-		// Checking GameDifficulty for the unauthorized changes (not from the SetGameDifficulty() function)
-		if ( UM_GameReplicationInfo(GameReplicationInfo).GameDifficulty != GameDifficulty )
-			SetGameDifficulty( GameDifficulty );
-	}
+	if ( Level.TimeSeconds >= NextUnauthorizedChangesCheckTime )
+		CheckForUnauthorizedChanges();
 	
 	if ( bZEDTimeActive )  {
 		TrueDeltaTime = DeltaTime * Level.default.TimeDilation / Level.TimeDilation;
@@ -1459,6 +1512,10 @@ function ScoreKill( Controller Killer, Controller Other )
 
 defaultproperties
 {
+	 UnauthorizedChangesCheckDelay=0.05
+	 // Do not check first 2 seconds
+	 NextUnauthorizedChangesCheckTime=2.0
+	 
 	 bDelayedStart=True
 	 MaxFriendlyFireScale=1.0
 	 

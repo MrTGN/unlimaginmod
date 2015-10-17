@@ -137,15 +137,14 @@ var					float				JammedMonstersCheckDelay;
 var		float							SpawningVolumeUpdateDelay;
 var		transient	float				NextSpawningVolumeUpdateTime;
 
-var		transient	int					NumActivePlayers;
 var					float				LerpNumPlayersModifier;
 var					float				LerpGameDifficultyModifier;
 
 //ToDo: delete this var?
 var					float				NumPlayersModifier;
 
-var		transient	array<UM_HumanPawn>	HumanList;
-var		transient	array<UM_Monster>	MonsterList;
+var		transient	array<UM_HumanPawn>	HumanList;	//ToDo: убрать за ненадобностью!
+var		transient	array<UM_Monster>	MonsterList;	//ToDo: убрать за ненадобностью!
 
 var		transient	array< KFMonster >	JammedMonsters;
 
@@ -403,43 +402,15 @@ function NotifyGameDifficultyChanged()
 	UpdateDynamicParameters();	
 }
 
+function NotifyNumActivePlayersChanged()
+{
+	// Modifier for the Lerp function (0.0 - 1.0)
+	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
+	UpdateDynamicParameters();
+}
+
 function NotifyNumBotsChanged()
 {
-	// Modifier for the Lerp function (0.0 - 1.0)
-	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
-	UpdateDynamicParameters();
-}
-
-function UpdateNumActivePlayers()
-{
-	local	int		i, j;
-	
-	for ( i = 0; i < PlayerList.Length; ++i )  {
-		if ( PlayerList[i] == None )  {
-			PlayerList.Remove(i, 1);
-			Continue;
-		}
-		if ( PlayerList[i].PlayerReplicationInfo.Deaths > 0 || PlayerList[i].Pawn != None )
-			++j;
-	}
-	NumActivePlayers = j;
-}
-
-function NotifyNumPlayersIncreased()
-{
-	// Change only if new player can spawn
-	if ( !bAllowPlayerSpawn )
-		Return;
-	
-	UpdateNumActivePlayers();
-	// Modifier for the Lerp function (0.0 - 1.0)
-	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
-	UpdateDynamicParameters();
-}
-
-function NotifyNumPlayersDecreased()
-{
-	UpdateNumActivePlayers();
 	// Modifier for the Lerp function (0.0 - 1.0)
 	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
 	UpdateDynamicParameters();
@@ -690,6 +661,7 @@ state BeginNewWave
 		if ( CurrentShop == None )
 			SelectNewShop();
 		
+		CheckPlayerList();
 		UpdateStartingCash();
 		NotifyNewWave();
 		SetupPickups();

@@ -19,8 +19,8 @@ class UM_PlayerReplicationInfo extends KFPlayerReplicationInfo;
 //========================================================================
 //[block] Variables
 
-var		byte				VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
-var		UM_HumanPawn		HumanOwner;
+var					byte				VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
+var					UM_HumanPawn		HumanOwner;
 
 //[end] Varibles
 //====================================================================

@@ -2,13 +2,14 @@ class UM_PlayerController extends KFPlayerController;
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-var				bool		bUseAdvBehindview;
-var transient	vector		CamPos;
-var transient	rotator		CamRot;
-var transient	Actor		CamActor;
+var					bool			bUseAdvBehindview;
+var		transient	vector			CamPos;
+var		transient	rotator			CamRot;
+var		transient	Actor			CamActor;
 
-var				string		SteamStatsAndAchievementsClassName;
-var				string		BuyMenuClassName, MidGameMenuClassName, InputClassName;
+var					string			SteamStatsAndAchievementsClassName;
+var					string			BuyMenuClassName, MidGameMenuClassName, InputClassName;
+var		transient	bool			bIsActivePlayer;	// This player participates in the game
 
 replication
 {

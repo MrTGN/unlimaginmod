@@ -102,12 +102,12 @@ simulated event PostNetBeginPlay()
 
 function SetImpactStrength( float NewImpactStrength )
 {
-	ImpactStrength = NewImpactStrength * BaseActor.static.GetRandRangeFloat( ImpactStrengthScaleRange );
+	ImpactStrength = NewImpactStrength * Lerp(FRand(), ImpactStrengthScaleRange.Min, ImpactStrengthScaleRange.Max);
 }
 
 function SetInitialHealth( float InitialHealth )
 {
-	HealthMax = Round( InitialHealth * BaseActor.static.GetRandRangeFloat(HealthScaleRange) );
+	HealthMax = Round( InitialHealth * Lerp(FRand(), HealthScaleRange.Min, HealthScaleRange.Max) );
 	Health = HealthMax;
 }
 

@@ -111,29 +111,25 @@ simulated function DoToggle()
 	local PlayerController Player;
 
 	Player = Level.GetLocalPlayerController();
-	if ( Player != None )
-	{
+	if ( Player != None )  {
 		if ( ModeSwitchSound.Snd != None )
-			PlayOwnedSoundData(ModeSwitchSound);
+			PlayOwnedSound(ModeSwitchSound.Snd, ModeSwitchSound.Slot, ModeSwitchSound.Vol, ModeSwitchSound.bNoOverride, ModeSwitchSound.Radius, BaseActor.static.GetRandPitch(ModeSwitchSound.PitchRange), ModeSwitchSound.bUse3D);
 		
 		if ( scopePortalFOVHigh == default.scopePortalFOVHigh || 
-			scopePortalFOV == default.scopePortalFOV )
-		{
+			scopePortalFOV == default.scopePortalFOV )  {
 			scopePortalFOVHigh = default.scopePortalFOVHigh / ZoomRatio;
 			scopePortalFOV = default.scopePortalFOV / ZoomRatio;
 			Player.ReceiveLocalizedMessage(class'UnlimaginMod.UM_ZoomSwitchMessage',3);
 			ItemName = default.ItemName $ " [4x Zoom]";
 		}
 		else if ( scopePortalFOVHigh == (default.scopePortalFOVHigh / ZoomRatio) ||
-				scopePortalFOV == (default.scopePortalFOV / ZoomRatio) )
-		{
+				scopePortalFOV == (default.scopePortalFOV / ZoomRatio) )  {
 			scopePortalFOVHigh = default.scopePortalFOVHigh / (ZoomRatio * ZoomRatio);
 			scopePortalFOV = default.scopePortalFOV / (ZoomRatio * ZoomRatio);
 			Player.ReceiveLocalizedMessage(class'UnlimaginMod.UM_ZoomSwitchMessage',5);
 			ItemName = default.ItemName $ " [8x Zoom]";
 		}
-		else
-		{
+		else  {
 			scopePortalFOVHigh = default.scopePortalFOVHigh;
 			scopePortalFOV = default.scopePortalFOV;
 			Player.ReceiveLocalizedMessage(class'UnlimaginMod.UM_ZoomSwitchMessage',1);
@@ -141,8 +137,7 @@ simulated function DoToggle()
 		}
 	}
 	ServerChangeScopePortalFOV(scopePortalFOVHigh, scopePortalFOV);
-	if ( bAimingRifle && Player != None )
-	{
+	if ( bAimingRifle && Player != None )  {
 		if ( scopePortalFOVHigh > 0 )
 			Player.SetSensitivity(OriginalMouseSensitivity * scopePortalFOVHigh / default.scopePortalFOVHigh);
 		else

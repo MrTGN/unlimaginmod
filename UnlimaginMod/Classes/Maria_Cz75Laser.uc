@@ -134,7 +134,7 @@ simulated function DoToggle()
 	if( Instigator.IsLocallyControlled() )
 	{
 		if ( ModeSwitchSound.Snd != None )
-			PlayOwnedSoundData(ModeSwitchSound);
+			PlayOwnedSound(ModeSwitchSound.Snd, ModeSwitchSound.Slot, ModeSwitchSound.Vol, ModeSwitchSound.bNoOverride, ModeSwitchSound.Radius, BaseActor.static.GetRandPitch(ModeSwitchSound.PitchRange), ModeSwitchSound.bUse3D);
 		
 		if ( Role < ROLE_Authority )
 			ServerSetLaserActive(!bLaserActive);

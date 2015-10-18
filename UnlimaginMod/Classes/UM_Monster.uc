@@ -115,13 +115,13 @@ function RandomizeMonsterSizes()
 	// DrawScale
 	SetDrawScale(default.DrawScale * RandomSizeMult);
 	
-	MeleeRange = default.MeleeRange * RandomSizeMult * BaseActor.static.GetRandRangeFloat( MeleeRangeScale );
+	MeleeRange = default.MeleeRange * RandomSizeMult * Lerp( FRand(), MeleeRangeScale.Min, MeleeRangeScale.Max );
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
 	SoundPitch = default.SoundPitch / RandomSizeMult * BaseActor.static.GetRandPitch( SoundsPitchRange );
 	// Sizes
-	Mass = default.Mass * RandomSizeMult * BaseActor.static.GetRandRangeFloat( MassScaleRange );
+	Mass = default.Mass * RandomSizeMult * Lerp( FRand(), MassScaleRange.Min, MassScaleRange.Max );
 	
 	// CollisionSize scaled by DrawScale
 	//PrePivot.Z = default.MeshTestCollisionHeight * DrawScale - default.CollisionHeight + default.PrePivot.Z + 12.0;
@@ -348,22 +348,22 @@ simulated event PostBeginPlay()
 			// HeadHealth
 			if ( RandMult > HealthScaleRange.Max )  {
 				bThisIsMiniBoss = True;
-				RandMult = BaseActor.static.GetRandRangeFloat( ExtraHeadHealthScaleRange );
+				RandMult = Lerp( FRand(), ExtraHeadHealthScaleRange.Min, ExtraHeadHealthScaleRange.Max );
 			}
 			else
-				RandMult = BaseActor.static.GetRandRangeFloat( HeadHealthScaleRange );
+				RandMult = Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
 
 			HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
 			//[end]
 				
 			//floats
-			RandMult = BaseActor.static.GetRandRangeFloat( DamageScaleRange );
+			//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
 			//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
 			//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-			JumpZ = default.JumpZ * BaseActor.static.GetRandRangeFloat( JumpZScaleRange );
+			JumpZ = default.JumpZ * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
 			//int
-			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
-			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * BaseActor.static.GetRandRangeFloat(DamageScaleRange)), 1 );
+			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 
 			
 			//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());

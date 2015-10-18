@@ -24,7 +24,7 @@ simulated event PostBeginPlay()
 {
 	// Randomizing RageDamageThreshold
 	if ( Level.Game != None && !bDiffAdjusted )
-		RageDamageThreshold *= BaseActor.static.GetRandFloat(0.9, 1.1);
+		RageDamageThreshold *= Lerp( FRand(), 0.9, 1.1 );
 		
 	Super.PostBeginPlay();
 }

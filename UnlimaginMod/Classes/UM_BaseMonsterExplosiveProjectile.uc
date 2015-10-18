@@ -40,14 +40,14 @@ simulated event PostBeginPlay()
 	
 	if ( UM_GameReplicationInfo(Level.GRI) != None )  {
 		if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 2.0 )
-			Damage = default.Damage * 0.75 * BaseActor.static.GetRandFloat(0.96, 1.04);
+			Damage = default.Damage * 0.75 * Lerp( FRand(), 0.95, 1.05 );
 		else if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 4.0 )
-			Damage = default.Damage * 1.0 * BaseActor.static.GetRandFloat(0.96, 1.04);
+			Damage = default.Damage * 1.0 * Lerp( FRand(), 0.95, 1.05 );
 		else if ( UM_GameReplicationInfo(Level.GRI).GameDifficulty < 5.0 )
-			Damage = default.Damage * 1.15 * BaseActor.static.GetRandFloat(0.96, 1.04);
+			Damage = default.Damage * 1.15 * Lerp( FRand(), 0.95, 1.05 );
 		// Hardest difficulty
 		else
-			Damage = default.Damage * 1.25 * BaseActor.static.GetRandFloat(0.96, 1.04);
+			Damage = default.Damage * 1.25 * Lerp( FRand(), 0.95, 1.05 );
 	}
 }
 

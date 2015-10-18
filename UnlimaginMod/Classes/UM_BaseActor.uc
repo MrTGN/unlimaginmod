@@ -61,97 +61,27 @@ struct	SoundData
 //========================================================================
 //[block] Functions
 
-simulated static final function int GetRandInt( int MinI, int MaxI )
-{
-	Return	MinI + Round(float(MaxI - MinI) * FRand());
-}
-
-simulated static final function int GetRandRangeInt( UM_BaseObject.IntRange IR )
-{
-	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
-}
-
-simulated static final function float GetRandFloat( float MinF, float MaxF )
-{
-	Return	MinF + (MaxF - MinF) * FRand();
-}
-
-simulated static final function float GetRandRangeFloat( Range FR )
-{
-	Return	FR.Min + (FR.Max - FR.Min) * FRand();
-}
-
 simulated static final function float GetExtraRandRangeFloat( 
 	range 	FR, 
 	float	ExtraRangeChance,
 	range	EFR )
 {
+	// Not Extra Range
 	if ( FRand() > ExtraRangeChance )
-		Return	FR.Min + (FR.Max - FR.Min) * FRand();	// Not Extra Range
+		Return Lerp( FRand(), FR.Min, FR.Max );
+	// Extra Range
 	else
-		Return	EFR.Min + (EFR.Max - EFR.Min) * FRand();	// Extra Range
+		Return Lerp( FRand(), EFR.Min, EFR.Max );
 }
 
 // RandPitch
 simulated static final function float GetRandPitch( range PitchRange )
 {
-	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )  {
-		if ( PitchRange.Min != PitchRange.Max )
-			Return PitchRange.Min + (PitchRange.Max - PitchRange.Min) * FRand();
-		else
-			Return PitchRange.Max;	// Just return Max Pitch
-	}
+	if ( PitchRange.Min > 0.0 || PitchRange.Max > 0.0 )
+		Return Lerp( FRand(), PitchRange.Min, PitchRange.Max );
 	else
-		Return 1.0;
+		Return 1.0; // Return default pitch
 }
-
-//[block] Sound functions
-// Play a sound effect from the SoundData struct with replication from the server to the clients.
-final function ServerPlaySoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-
-// Play a sound effect from the SoundData struct without server replication.
-simulated final function ClientPlaySoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-
-// play a sound effect, but don't propagate to a remote owner
-// (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlayOwnedSound
-	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-//[end]
 
 //[block] Animation functions
 // Play the animation once

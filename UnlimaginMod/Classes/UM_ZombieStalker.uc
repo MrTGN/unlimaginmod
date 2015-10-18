@@ -25,7 +25,7 @@ class UM_ZombieStalker extends UM_ZombieStalkerBase;
 simulated event PostBeginPlay()
 {
 	//Randomizing GrabChance
-	GrabChance = default.GrabChance * BaseActor.static.GetRandFloat(MinGrabChance, MaxGrabChance);
+	GrabChance = default.GrabChance * Lerp( FRand(), MinGrabChance, MaxGrabChance );
 	CloakStalker();
 	Super.PostBeginPlay();
 }
@@ -34,15 +34,12 @@ simulated event PostNetBeginPlay()
 {
     local PlayerController PC;
 
-	super.PostNetBeginPlay();
+	Super.PostNetBeginPlay();
 
-	if( Level.NetMode!=NM_DedicatedServer )
-	{
+	if ( Level.NetMode != NM_DedicatedServer )  {
         PC = Level.GetLocalPlayerController();
-        if( PC != none && PC.Pawn != none )
-        {
+        if ( PC != None && PC.Pawn != None )
             LocalKFHumanPawn = KFHumanPawn(PC.Pawn);
-        }
 	}
 }
 

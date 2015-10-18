@@ -122,9 +122,8 @@ simulated function DoToggle()
 	local	PlayerController	Player;
 
 	Player = Level.GetLocalPlayerController();
-		
 	if ( Player != None && ModeSwitchSound.Snd != None )
-		PlayOwnedSoundData(ModeSwitchSound);
+		PlayOwnedSound(ModeSwitchSound.Snd, ModeSwitchSound.Slot, ModeSwitchSound.Vol, ModeSwitchSound.bNoOverride, ModeSwitchSound.Radius, BaseActor.static.GetRandPitch(ModeSwitchSound.PitchRange), ModeSwitchSound.bUse3D);
 	
 	if ( Role < ROLE_Authority )
 		ExplodeRMCProjectiles();

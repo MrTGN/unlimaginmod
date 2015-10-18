@@ -583,7 +583,7 @@ function UpdateJumpZ()
 {
 	// JumpZ always replicated from the server to the client-owner
 	if ( Role == ROLE_Authority )  {
-		JumpZ = default.JumpZ * CarryWeightJumpModifier * VeterancyJumpBonus * BaseActor.static.GetRandRangeFloat( JumpRandRange );
+		JumpZ = default.JumpZ * CarryWeightJumpModifier * VeterancyJumpBonus * Lerp( FRand(), JumpRandRange.Min, JumpRandRange.Max );
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
 }
@@ -1062,7 +1062,7 @@ function DoBounce( bool bUpdating )
 	local	Vector		NewVel;
 	local	float		MX, JumpModif;
 	
-	NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
+	NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
 	--BounceRemaining;
 	if ( !bUpdating )
 		PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
@@ -1126,7 +1126,7 @@ function bool DoJump( bool bUpdating )
 	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
 		// Used in DoBounce
 		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
-			NextBounceTime = Level.TimeSeconds + BounceDelay * BaseActor.static.GetRandFloat(0.95, 1.05);
+			NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
 			
 			// Take you out of ironsights if you jump on a non-lowgrav map
 			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
@@ -2244,7 +2244,7 @@ function TakeBileDamage()
 	
 	NextBileTime = Level.TimeSeconds + BileFrequency;
 	// Rounding BileIntensity per delay
-	DeltaBileDamage = Round( FMin(BileIntensity, BaseActor.static.GetRandRangeFloat(BileDamageRandRange)) * (Level.TimeSeconds - LastBileTime) );
+	DeltaBileDamage = Round( FMin(BileIntensity, Lerp(FRand(), BileDamageRandRange.Min, BileDamageRandRange.Max)) * (Level.TimeSeconds - LastBileTime) );
 	if ( DeltaBileDamage > 0 )  {
 		// Decreasing BileIntensity
 		BileIntensity = FMax( (BileIntensity - float(DeltaBileDamage)), 0.0 );
@@ -2287,7 +2287,7 @@ function TakeBurnDamage()
 	
 	NextBurnTime = Level.TimeSeconds + BurningFrequency;
 	// Rounding BurningIntensity per delay
-	DeltaBurningDamage = Round( FMin(BurningIntensity, BaseActor.static.GetRandRangeFloat(BurnDamageRandRange)) * (Level.TimeSeconds - LastBurnTime) );
+	DeltaBurningDamage = Round( FMin(BurningIntensity, Lerp(FRand(), BurnDamageRandRange.Min, BurnDamageRandRange.Max)) * (Level.TimeSeconds - LastBurnTime) );
 	if ( DeltaBurningDamage > 0 )  {
 		// Decreasing BurningIntensity
 		BurningIntensity = FMax( (BurningIntensity - float(DeltaBurningDamage)), 0.0 );
@@ -2343,7 +2343,7 @@ function TakeFallingDamage()
 // Take a Drowning Damage (called from the BreathTimer)
 function TakeDrowningDamage()
 {
-	ProcessTakeDamage( Round(BaseActor.static.GetRandRangeFloat(DrowningDamageRandRange)), None, EyePosition(), vect(0.0, 0.0, 0.0), DrowningDamageType );
+	ProcessTakeDamage( Round(Lerp(FRand(), DrowningDamageRandRange.Min, DrowningDamageRandRange.Max)), None, EyePosition(), vect(0.0, 0.0, 0.0), DrowningDamageType );
 	if ( Health > 0 )
 		BreathTime = DrowningDamageFrequency;
 }

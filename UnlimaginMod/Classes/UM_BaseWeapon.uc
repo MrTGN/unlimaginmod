@@ -133,54 +133,6 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
-//[block] Sound functions
-// Play a sound effect from the SoundData struct with replication from the server to the clients.
-final function ServerPlaySoundData( UM_BaseActor.SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-
-// Play a sound effect from the SoundData struct without server replication.
-simulated final function ClientPlaySoundData( UM_BaseActor.SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlaySound
-	PlaySound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-
-// play a sound effect, but don't propagate to a remote owner
-// (he is playing the sound clientside)
-simulated final function PlayOwnedSoundData( UM_BaseActor.SoundData SD, optional float VolMult )
-{
-	// VolMult
-	if ( VolMult > 0.0 )
-		SD.Vol *= VolMult;
-	// PitchRange
-	if ( SD.PitchRange.Min > 0.0 && SD.PitchRange.Max > 0.0 )
-		SD.PitchRange.Max = SD.PitchRange.Min + (SD.PitchRange.Max - SD.PitchRange.Min) * FRand();
-	else
-		SD.PitchRange.Max = 1.0;
-	// PlayOwnedSound
-	PlayOwnedSound(SD.Snd, SD.Slot, SD.Vol, SD.bNoOverride, SD.Radius, SD.PitchRange.Max, SD.bUse3D);
-}
-//[end]
-
 //[block] Animation functions
 // Play the animation once
 simulated final function PlayAnimData( UM_BaseActor.AnimData AD, optional float RateMult )

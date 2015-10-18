@@ -43,8 +43,8 @@ simulated event PostBeginPlay()
             BurnDamageScale = default.BurnDamageScale * 0.5;
         }
 		//Randomizing
-		BurnDamageScale *= BaseActor.static.GetRandFloat(0.9, 1.1);
-		ProjectileFireInterval *= BaseActor.static.GetRandFloat(0.9, 1.1);
+		BurnDamageScale *= Lerp( FRand(), 0.9, 1.1 );
+		ProjectileFireInterval *= Lerp( FRand(), 0.9, 1.1 );
 	}
 
 	Super.PostBeginPlay();

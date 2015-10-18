@@ -24,7 +24,7 @@ simulated event PostBeginPlay()
 {
 	// Randomizing PounceSpeed
 	if ( Level.Game != None && !bDiffAdjusted )
-		PounceSpeed *= BaseActor.static.GetRandFloat(0.9, 1.1);
+		PounceSpeed *= Lerp( FRand(), 0.9, 1.1 );
 	
 	Super.PostBeginPlay();
 	
@@ -82,11 +82,11 @@ event Bump(actor Other)
 	// TODO: is there a better way
 	if ( bPouncing && KFHumanPawn(Other) != None )  {
 		if ( bPoisonous )
-			KFHumanPawn(Other).TakeDamage( BaseActor.static.GetRandRangeFloat(PoisonDamageRandRange), self, Location, Velocity, PoisonDamageType );
+			KFHumanPawn(Other).TakeDamage( Lerp(FRand(), PoisonDamageRandRange.Min, PoisonDamageRandRange.Max), self, Location, Velocity, PoisonDamageType );
 		else if ( CurrentDamtype != None )
-			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
 		else
-			KFHumanPawn(Other).TakeDamage( (MeleeDamage * BaseActor.static.GetRandFloat(0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(ArrayCount(ZombieDamType))] );
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(ArrayCount(ZombieDamType))] );
 		//TODO - move this to humanpawn.takedamage? Also see KFMonster.MeleeDamageTarget
 		if ( KFHumanPawn(Other).Health <= 0 )
 			KFHumanPawn(Other).SpawnGibs(Rotation, 1);

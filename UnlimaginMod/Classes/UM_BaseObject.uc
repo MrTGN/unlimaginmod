@@ -51,35 +51,17 @@ struct FloatRandRange
 //========================================================================
 //[block] Functions
 
-simulated static final function int GetRandInt( int MinI, int MaxI )
-{
-	Return	MinI + Round(float(MaxI - MinI) * FRand());
-}
-
-simulated static final function int GetRandRangeInt( IntRange IR )
-{
-	Return	IR.Min + Round(float(IR.Max - IR.Min) * FRand());
-}
-
-simulated static final function float GetRandFloat( float MinF, float MaxF )
-{
-	Return	MinF + (MaxF - MinF) * FRand();
-}
-
-simulated static final function float GetRandRangeFloat( range FR )
-{
-	Return	FR.Min + (FR.Max - FR.Min) * FRand();
-}
-
 simulated static final function float GetExtraRandRangeFloat( 
 	range 	FR, 
 	float	ExtraRangeChance,
 	range	EFR )
 {
+	// Not Extra Range
 	if ( FRand() > ExtraRangeChance )
-		Return	FR.Min + (FR.Max - FR.Min) * FRand();	// Not Extra Range
+		Return Lerp( FRand(), FR.Min, FR.Max );
+	// Extra Range
 	else
-		Return	EFR.Min + (EFR.Max - EFR.Min) * FRand();	// Extra Range
+		Return Lerp( FRand(), EFR.Min, EFR.Max );
 }
 
 // DynamicLoad Class specified in the Ref string

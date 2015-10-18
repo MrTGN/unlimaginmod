@@ -50,7 +50,7 @@ simulated function DoToggle()
 	if ( Player!=None )
 	{
 		if ( ModeSwitchSound.Snd != None )
-			PlayOwnedSoundData(ModeSwitchSound);
+			PlayOwnedSound(ModeSwitchSound.Snd, ModeSwitchSound.Slot, ModeSwitchSound.Vol, ModeSwitchSound.bNoOverride, ModeSwitchSound.Radius, BaseActor.static.GetRandPitch(ModeSwitchSound.PitchRange), ModeSwitchSound.bUse3D);
 		// Case - burst fire
 		if ( FireMode[0].bWaitForRelease && UM_L22A1Fire(FireMode[0]).bSetToBurst )
 		{

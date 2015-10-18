@@ -611,13 +611,13 @@ function SetupPickups()
 function UpdateStartingCash()
 {
 	if ( WaveNum < FinalWave )  {
-		StartingCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].StartingCash );
-		MinRespawnCash = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].MinRespawnCash );
+		StartingCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].StartingCash.Min), float(GameWaves[WaveNum].StartingCash.Max)) );
+		MinRespawnCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].MinRespawnCash.Min), float(GameWaves[WaveNum].MinRespawnCash.Max)) );
 		DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
 	}
 	else  {
-		StartingCash = BaseActor.static.GetRandRangeInt( BossWaveStartingCash );
-		MinRespawnCash = BaseActor.static.GetRandRangeInt( BossWaveMinRespawnCash );
+		StartingCash = Round( Lerp(FRand(), float(BossWaveStartingCash.Min), float(BossWaveStartingCash.Max)) );
+		MinRespawnCash = Round( Lerp(FRand(), float(BossWaveMinRespawnCash.Min), float(BossWaveMinRespawnCash.Max)) );
 		DeathCashModifier = BossWaveRespawnCashModifier;
 	}
 }
@@ -753,10 +753,10 @@ state Shopping
 		
 		// Break Time
 		if ( NextWaveNum > InitialWave )
-			WaveCountDown = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].BreakTime );
+			WaveCountDown = Round( Lerp(FRand(), float(GameWaves[WaveNum].BreakTime.Min), float(GameWaves[WaveNum].BreakTime.Max)) );
 		// Start Match With Shopping
 		else
-			WaveCountDown = BaseActor.static.GetRandRangeInt( StartShoppingTime );
+			WaveCountDown = Round( Lerp(FRand(), float(StartShoppingTime.Min), float(StartShoppingTime.Max)) );
 	}
 	
 	function PlaySecondHint()
@@ -896,7 +896,7 @@ state Shopping
 //[block] WaveInProgress Code
 function UpdateWaveRemainingTime()
 {
-	WaveRemainingTime = Round( GetRandRangeFloat( GameWaves[WaveNum].WaveDuration ) * 60.0 );
+	WaveRemainingTime = Round( Lerp(FRand(), GameWaves[WaveNum].WaveDuration.Min, GameWaves[WaveNum].WaveDuration.Max) * 60.0 );
 }
 
 function CheckSelectedVeterancy( KFPlayerController PC )
@@ -969,7 +969,7 @@ function BuildNextSquad()
 		}
 	}
 	// Next Monster Squad Size
-	NextMonsterSquadSize = BaseActor.static.GetRandRangeInt( GameWaves[WaveNum].MonsterSquadSize );
+	NextMonsterSquadSize = Round( Lerp(FRand(), float(GameWaves[WaveNum].MonsterSquadSize.Min), float(GameWaves[WaveNum].MonsterSquadSize.Max)) );
 }
 
 function SelectNewSpawningVolume( optional bool bForceSelection )
@@ -1104,6 +1104,7 @@ function DoWaveEnd()
 	bUpdateViewTargs = True;
 }
 
+//ToDo: Issue #312
 function CheckForGameEnd()
 {
 	UpdateHumanList();
@@ -1148,7 +1149,7 @@ state WaveInProgress
 			PlayStartupMessage();
 		}
 		
-		if ( NeedPlayers() && AddBot() && (RemainingBots > 0) )
+		if ( NeedPlayers() && AddBot() && RemainingBots > 0 )
 			RemainingBots--;
 		
 		ElapsedTime++;

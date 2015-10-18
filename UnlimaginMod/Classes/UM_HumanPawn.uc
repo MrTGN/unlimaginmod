@@ -194,8 +194,6 @@ var		transient		float			NextSlowMoToggleTime;
 var		transient		float			NextSlowMoChargeRegenTime;
 var		transient		bool			bSlowMoCharged;
 
-var		transient		bool			bAddedToTheHumanList;
-
 //[end] Varibles
 //====================================================================
 
@@ -453,10 +451,6 @@ simulated event PostBeginPlay()
 			AddDefaultInventory();
 		// BallisticCollision
 		BuildBallisticCollision();
-		if ( !bAddedToTheHumanList && UM_InvasionGame(Level.Game) != None )  {
-			UM_InvasionGame(Level.Game).AddNewHumanToTheList(self);
-			bAddedToTheHumanList = True;
-		}
 	}
 	AssignInitialPose();
 	

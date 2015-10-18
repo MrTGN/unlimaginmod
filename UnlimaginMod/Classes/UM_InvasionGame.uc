@@ -126,7 +126,7 @@ var		UM_BaseObject.IntRange			StartShoppingTime;
 var		float							ZedSpawnListUpdateDelay;
 var		transient	float				NextZedSpawnListUpdateTime;
 
-var		transient	int					WaveRemainingTime;
+var		transient	int					CurrentWaveDuration, WaveElapsedTime;
 var		int								MaxAliveMonsters;
 var		transient	float				NextMonsterSquadSpawnTime;
 var		transient	int					NextMonsterSquadSize;
@@ -143,8 +143,8 @@ var					float				LerpGameDifficultyModifier;
 //ToDo: delete this var?
 var					float				NumPlayersModifier;
 
-var		transient	array<UM_HumanPawn>	HumanList;	//ToDo: убрать за ненадобностью!
-var		transient	array<UM_Monster>	MonsterList;	//ToDo: убрать за ненадобностью!
+var		transient	array<UM_HumanPawn>	HumanList;
+var		transient	array<UM_Monster>	MonsterList;
 
 var		transient	array< KFMonster >	JammedMonsters;
 
@@ -339,7 +339,7 @@ function float GetDifficultyModifier()
 
 function float GetNumPlayersModifier()
 {
-	local	int		CurrentNumPlayers;
+	local	byte	CurrentNumPlayers;
 	
 	CurrentNumPlayers = Min( (NumPlayers + NumBots), MaxHumanPlayers );
 	switch ( CurrentNumPlayers )  {
@@ -425,32 +425,8 @@ function UpdateNumPlayersModifier()
 		NumPlayersModifier = GetNumPlayersModifier();
 }
 
-//[block] HumanList functions
-function UpdateHumanList()
-{
-	local	int		i;
-	
-	for ( i = 0; i < HumanList.Length; ++i )  {
-		if ( HumanList[i] == None || HumanList[i].bDeleteMe || HumanList[i].Health < 1 )
-			HumanList.Remove(i, 1);
-	}
-}
-
-// Called from the UM_HumanPawn in PostBeginPlay() function
-function AddNewHumanToTheList( UM_HumanPawn H )
-{
-	HumanList[HumanList.Length] = H;
-}
-
-function ClearHumanList()
-{
-	while( HumanList.Length > 0 )
-		Remove( (HumanList.Length - 1), 1 );
-}
-//[end] HumanList functions
-
 //[block] MonsterList functions
-function UpdateMonsterList()
+function CheckMonsterList()
 {
 	local	int		i;
 	
@@ -462,9 +438,13 @@ function UpdateMonsterList()
 }
 
 // Called from the UM_Monster in PostBeginPlay() function
-function AddNewMonsterToTheList( UM_Monster M )
+function bool AddToMonsterList( UM_Monster M )
 {
+	if ( M == None )
+		Return False;
+	
 	MonsterList[MonsterList.Length] = M;
+	Return True;
 }
 
 function ClearMonsterList()
@@ -635,6 +615,14 @@ function RepairDoors()
 	}
 }
 
+// Overal game ElapsedTime
+function IncreaseElapsedTime()
+{
+	++ElapsedTime;
+	if ( GameReplicationInfo != None )
+		GameReplicationInfo.ElapsedTime = ElapsedTime;
+}
+
 function DecreaseWaveCountDown()
 {
 	--WaveCountDown;
@@ -655,8 +643,10 @@ state BeginNewWave
 		else
 			WaveCountDown = BossWaveStartDelay;
 		
-		if ( InvasionGameReplicationInfo(GameReplicationInfo) != None )
-			InvasionGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
+			KFGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
+			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
+		}
 		
 		if ( CurrentShop == None )
 			SelectNewShop();
@@ -672,6 +662,8 @@ state BeginNewWave
 	{
 		Global.Timer();
 		
+		IncreaseElapsedTime();		
+		
 		if ( WaveCountDown > 0 )
 			DecreaseWaveCountDown();
 		else if ( WaveNum < FinalWave )
@@ -680,6 +672,12 @@ state BeginNewWave
 			GotoState('BossWaveInProgress');
 		else
 			EndGame(None,"TimeLimit");
+	}
+	
+	event EndState()
+	{
+		// Used in CheckMaxLives() function
+		bNotifiedLastManStanding = False;
 	}
 }
 //[end] BeginNewWave code
@@ -757,6 +755,9 @@ state Shopping
 		// Start Match With Shopping
 		else
 			WaveCountDown = Round( Lerp(FRand(), float(StartShoppingTime.Min), float(StartShoppingTime.Max)) );
+		
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 	}
 	
 	function PlaySecondHint()
@@ -815,14 +816,15 @@ state Shopping
 	{
 		Global.Timer();
 		
+		// Overal game ElapsedTime
+		IncreaseElapsedTime();
+		
 		// Out from the Shopping state
 		if ( WaveCountDown < 1 )  {
 			// Teleport players from the shops
-			if ( BootShopPlayers() )
-				WaveCountDown = 1;
-			else
+			if ( !BootShopPlayers() )
 				GotoState('BeginNewWave');
-			
+			// Exit from this Timer
 			Return;
 		}
 		
@@ -888,17 +890,13 @@ state Shopping
 			}
 		}
 		
+		CheckForPlayersDeficit();
 		SelectNewShop();
 	}
 }
 //[end] Shopping
 
 //[block] WaveInProgress Code
-function UpdateWaveRemainingTime()
-{
-	WaveRemainingTime = Round( Lerp(FRand(), GameWaves[WaveNum].WaveDuration.Min, GameWaves[WaveNum].WaveDuration.Max) * 60.0 );
-}
-
 function CheckSelectedVeterancy( KFPlayerController PC )
 {
 	if ( PC == None || KFPlayerReplicationInfo(PC.PlayerReplicationInfo) == None )
@@ -909,6 +907,29 @@ function CheckSelectedVeterancy( KFPlayerController PC )
 		PC.SendSelectedVeterancyToServer();
 }
 
+// Returns reference to the random player or bot controller
+function Controller GetRandomPlayerController()
+{
+	local	array<Controller>	AlivePlayers;
+	local	int					i;
+	
+	// PlayerList
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+			AlivePlayers[ AlivePlayers.Length ] = PlayerList[i];
+	}
+	// BotList
+	for ( i = 0; i < BotList.Length; ++i )  {
+		if ( BotList[i].Pawn != None && BotList[i].Pawn.Health > 0 )
+			AlivePlayers[ AlivePlayers.Length ] = BotList[i];
+	}
+	
+	if ( AlivePlayers.Length < 1 )
+		Return None; // No one alived. They're all dead!
+	
+	Return AlivePlayers[ Rand(AlivePlayers.Length) ];
+}
+
 function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, optional bool bBossSpawning )
 {
 	local	ZombieVolume		BestZ;
@@ -916,11 +937,7 @@ function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, 
 	local	int					i;
 	local	Controller			C;
 	
-	UpdateHumanList();
-	// First pass, pick a random player.
-	if ( HumanList.Length > 0 )
-		C = HumanList[ Rand(HumanList.Length) ].Controller;
-	
+	C = GetRandomPlayerController();	
 	if ( C == None )
 		Return None; // Shouldnt get to this case, but just to be sure...
 	
@@ -1004,7 +1021,6 @@ function SpawnNewMonsterSquad( optional bool bForceSpawn )
 	
 	if ( LastSpawningVolume.SpawnInHere( NextSpawnSquad,, NumSpawned, MaxMonsters, (MaxAliveMonsters - NumMonsters) ) )  {
 		MaxMonsters = default.MaxMonsters;
-		NumMonsters += NumSpawned;
 		WaveMonsters += NumSpawned;
 		NextSpawnSquad.Length = 0;
 	}
@@ -1019,7 +1035,7 @@ function bool CheckForJammedMonsters()
 	local	int			i;
 	local	Controller	C;
 	
-	NextJammedMonstersCheckTime = JammedMonstersCheckDelay + Level.TimeSeconds;
+	NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 	
 	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 		++i;	// To prevent runaway loop
@@ -1041,11 +1057,8 @@ function RespawnJammedMonsters()
 		JammedMonsters[i].Suicide();
 		JammedMonsters.Remove(i, 1);
 	}
-	
-	NumMonsters -= NextSpawnSquad.Length;
 	WaveMonster -= NextSpawnSquad.Length;
 	//MaxMonsters += NextSpawnSquad.Length;
-	
 	SpawnNewMonsterSquad(True);
 }
 
@@ -1064,7 +1077,6 @@ function DoWaveEnd()
 
 	bWaveInProgress = False;
 	bWaveBossInProgress = False;
-	bNotifiedLastManStanding = False;
 	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 		KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = False;
 		//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
@@ -1104,26 +1116,16 @@ function DoWaveEnd()
 	bUpdateViewTargs = True;
 }
 
-//ToDo: Issue #312
-function CheckForGameEnd()
-{
-	UpdateHumanList();
-	UpdateMonsterList();
-	
-	if ( HumanList.Length < 1 )
-		EndGame(None, "TimeLimit");
-}
-
 state WaveInProgress
 {
 	event BeginState()
 	{
 		rewardFlag = False;
+		WaveElapsedTime = 0;
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
 		NumMonsters = 0;
-		UpdateWaveRemainingTime();
-		
+		WaveCountDown = CurrentWaveDuration;
 		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 		AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
 		
@@ -1135,45 +1137,83 @@ state WaveInProgress
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
 			//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = True;
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;
+			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 		}
+	}
+	
+	function UpdateDynamicParameters()
+	{
+		Global.UpdateDynamicParameters();
+		WaveCountDown = Max( (CurrentWaveDuration - WaveElapsedTime), 0 );
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
+	}
+	
+	function bool CheckForAlivePlayers()
+	{
+		local	byte	i, AliveCount;
+		
+		// PlayerList
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+				++AliveCount;
+		}
+		// BotList
+		for ( i = 0; i < BotList.Length; ++i )  {
+			if ( BotList[i].Pawn != None && BotList[i].Pawn.Health > 0 )
+				++AliveCount;
+		}
+		
+		Return AliveCount > 0;
 	}
 	
 	event Timer()
 	{
 		Global.Timer();
 
-		--WaveRemainingTime;
-		
+		//ToDo: что это? Выяснить. Issue #313
 		if ( !bFinalStartup )  {
 			bFinalStartup = True;
 			PlayStartupMessage();
 		}
 		
-		if ( NeedPlayers() && AddBot() && RemainingBots > 0 )
-			RemainingBots--;
+		// Updating monster count (NumMonsters)
+		if ( CheckForAlivePlayers() )
+			CheckMonsterList();
+		// EndGame if no one alive.
+		else  {
+			EndGame(None, "TimeLimit");
+			Return;
+		}
 		
-		ElapsedTime++;
-		if ( GameReplicationInfo != None )
-			GameReplicationInfo.ElapsedTime = ElapsedTime;
-		
-		CheckForGameEnd();
-		
-		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime && CheckForJammedMonsters() )
-			RespawnJammedMonsters();
-		
-		if ( WaveRemainingTime < 1 )  {
+		// End Wave
+		if ( WaveCountDown < 1 )  {
 			if ( NextWaveNum < FinalWave || bUseEndGameBoss )
 				GoToState('Shopping');
 			else
 				EndGame(None, "TimeLimit");
+			// Exit from this Timer
+			Return;
 		}
-		// Spawn New Monster Squad
-		else if ( Level.TimeSeconds >= NextMonsterSquadSpawnTime && WaveRemainingTime > GameWaves[WaveNum].SquadsSpawnEndTime && (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize )
-			SpawnNewMonsterSquad();
+
+		DecreaseWaveCountDown();
+		++WaveElapsedTime;
+		// Overal game ElapsedTime
+		IncreaseElapsedTime();
+		
+		if ( WaveCountDown > GameWaves[WaveNum].SquadsSpawnEndTime )  {
+			// Respawn Jammed Monsters First
+			if ( Level.TimeSeconds >= NextJammedMonstersCheckTime && CheckForJammedMonsters() )
+				RespawnJammedMonsters();
+			// Spawn New Monster Squad
+			if ( Level.TimeSeconds >= NextMonsterSquadSpawnTime && (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize )
+				SpawnNewMonsterSquad();
+		}
 	}
 	
 	event EndState()
 	{
+		WaveElapsedTime = 0;
 		DoWaveEnd();
 	}
 }

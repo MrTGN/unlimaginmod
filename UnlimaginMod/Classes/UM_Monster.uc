@@ -74,7 +74,7 @@ var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Bal
 
 var		float							HeadShotSlowMoChargeBonus;
 
-var		transient		bool			bAddedToTheMonsterList;
+var		transient		bool			bAddedToMonsterList;
 
 //[end] Varibles
 //====================================================================
@@ -379,10 +379,8 @@ simulated event PostBeginPlay()
 			bDiffAdjusted = True;
 		}
 		
-		if ( !bAddedToTheMonsterList && UM_InvasionGame(Level.Game) != None )  {
-			UM_InvasionGame(Level.Game).AddNewMonsterToTheList(self);
-			bAddedToTheMonsterList = True;
-		}
+		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
+			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList(self);
 	}
 
 	if ( Level.NetMode != NM_DedicatedServer )  {

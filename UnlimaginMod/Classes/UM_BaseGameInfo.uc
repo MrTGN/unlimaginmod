@@ -96,7 +96,7 @@ function NotifyNumBotsChanged();
 //[block] PlayerList
 protected function CheckPlayerList()
 {
-	local	int		i, j;
+	local	byte	i, j;
 	
 	for ( i = 0; i < PlayerList.Length; ++i )  {
 		// Check for broken reference
@@ -125,7 +125,7 @@ protected function AddToPlayerList( PlayerController PC )
 
 protected function RemoveFromPlayerList( PlayerController PC )
 {
-	local	int		i;
+	local	byte	i;
 	
 	if ( PC != None )  {
 		// Find PlayerController
@@ -144,7 +144,7 @@ protected function RemoveFromPlayerList( PlayerController PC )
 //[block] SpectatorList
 protected function CheckSpectatorList()
 {
-	local	int		i;
+	local	byte	i;
 	
 	// Check for broken reference
 	for ( i = 0; i < SpectatorList.Length; ++i )  {
@@ -156,8 +156,6 @@ protected function CheckSpectatorList()
 
 protected function AddToSpectatorList( PlayerController PC )
 {
-	local	int		i;
-	
 	if ( UM_PlayerController(PC) == None )
 		Return;
 	
@@ -168,7 +166,7 @@ protected function AddToSpectatorList( PlayerController PC )
 
 protected function RemoveFromSpectatorList( PlayerController PC )
 {
-	local	int		i;
+	local	byte	i;
 	
 	if ( PC != None )  {
 		// Find PlayerController
@@ -187,7 +185,7 @@ protected function RemoveFromSpectatorList( PlayerController PC )
 //[block] BotList
 protected function CheckBotList()
 {
-	local	int		i;
+	local	byte	i;
 	
 	// Check for broken reference
 	for ( i = 0; i < BotList.Length; ++i )  {
@@ -203,8 +201,6 @@ protected function CheckBotList()
 
 protected function AddToBotList( Bot B )
 {
-	local	int		i;
-	
 	if ( B == None )
 		Return;
 	
@@ -215,7 +211,7 @@ protected function AddToBotList( Bot B )
 
 protected function RemoveFromBotList( Bot B )
 {
-	local	int		i;
+	local	byte	i;
 	
 	if ( B != None )  {
 		// Find Bot
@@ -419,6 +415,20 @@ event Timer()
 	//WarningTimer();
 }
 
+function bool NeedPlayers()
+{
+	if ( Level.NetMode == NM_Standalone )
+		Return RemainingBots > 0;
+		
+	if ( bMustJoinBeforeStart )
+		Return False;
+	
+	if ( bPlayersVsBots )
+		Return NumBots < Min((MaxPlayers / 2), (BotRatio * NumPlayers));
+	
+	Return (NumActivePlayers + NumBots) < MinPlayers;
+}
+
 function UnrealTeamInfo GetBotTeam( optional int TeamBots )
 {
 	if ( bPlayersVsBots && Level.NetMode != NM_Standalone )
@@ -499,7 +509,7 @@ function CheckStartingCash( Controller C )
 
 function RespawnWaitingPlayers()
 {
-	local	int			i;
+	local	byte	i;
 	
 	for ( i = 0; i < PlayerList.Length; ++i )  {
 		if ( PlayerList[i] == None || PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer()
@@ -1003,11 +1013,21 @@ function Logout( Controller Exiting )
 		CheckMaxLives(None);
 }
 
+function CheckForPlayersDeficit()
+{
+	local	byte	Num;
+	
+	Num = MaxPlayers / 2;
+	while ( NeedPlayers() && Num > 0 )  {
+		if ( AddBot() && RemainingBots > 0 )
+			--RemainingBots;
+		--Num;
+	}
+}
+
 // Start the game - inform all actors that the match is starting, and spawn player pawns
 function StartMatch()
 {
-	local	bool	bTemp;
-	local	int		Num;
 	local	PlayerReplicationInfo	PRI;
 	
 	// From GameInfo.uc
@@ -1035,14 +1055,9 @@ function StartMatch()
 	// Spawning Players ToDo: перенести код сюда.
 	Super(GameInfo).StartMatch();
 	
-	bTemp = bMustJoinBeforeStart;
 	bMustJoinBeforeStart = False;
-	while ( NeedPlayers() && Num < MaxHumanPlayers )  {
-		if ( AddBot() )
-			--RemainingBots;
-		++Num;
-	}
-	bMustJoinBeforeStart = bTemp;
+	CheckForPlayersDeficit();
+	bMustJoinBeforeStart = default.bMustJoinBeforeStart;
 	log("START MATCH");
 	//[end]
 	
@@ -1353,16 +1368,40 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 
 function bool CheckMaxLives( PlayerReplicationInfo Scorer )
 {
-	local Controller C;
-	local PlayerController Living;
-	local byte AliveCount;
+	local	PlayerController	Living;
+	local	byte				i, AliveCount;
 
 	if ( MaxLives > 0 )  {
-		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
-			if ( C.PlayerReplicationInfo != None && C.bIsPlayer && !C.PlayerReplicationInfo.bOutOfLives && !C.PlayerReplicationInfo.bOnlySpectator )  {
-				++AliveCount;
-				if ( Living == None )
-					Living = PlayerController(C);
+		// Respawn is allowed.
+		if ( bAllowPlayerSpawn )  {
+			// PlayerList
+			for ( i = 0; i < PlayerList.Length; ++i )  {
+				if ( PlayerList[i].PlayerReplicationInfo != None && !PlayerList[i].PlayerReplicationInfo.bOutOfLives )  {
+					++AliveCount;
+					if ( Living == None )
+						Living = PlayerList[i];
+				}
+			}
+			// BotList
+			for ( i = 0; i < BotList.Length; ++i )  {
+				if ( BotList[i].PlayerReplicationInfo != None && !BotList[i].PlayerReplicationInfo.bOutOfLives )
+					++AliveCount;
+			}
+		}
+		// Respawn is not allowed. Check only for alive Pawns.
+		else  {
+			// PlayerList
+			for ( i = 0; i < PlayerList.Length; ++i )  {
+				if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )  {
+					++AliveCount;
+					if ( Living == None )
+						Living = PlayerList[i];
+				}
+			}
+			// BotList
+			for ( i = 0; i < BotList.Length; ++i )  {
+				if ( BotList[i].Pawn != None && BotList[i].Pawn.Health > 0 )
+					++AliveCount;
 			}
 		}
 		
@@ -1377,6 +1416,25 @@ function bool CheckMaxLives( PlayerReplicationInfo Scorer )
 	}
 	
 	Return False;
+}
+
+// See if this score means the game ends
+function CheckScore(PlayerReplicationInfo Scorer)
+{
+	if ( CheckMaxLives(Scorer) )
+		Return;
+
+	if ( GameRulesModifiers != None && GameRulesModifiers.CheckScore(Scorer) )
+		Return;
+
+	if ( (!bOverTime && GoalScore == 0) || Scorer == None )
+		Return;
+	
+	if ( Scorer.Team != None && Scorer.Team.Score >= GoalScore )
+		EndGame(Scorer,"teamscorelimit");
+
+	if ( bOverTime )
+		EndGame(Scorer,"timelimit");
 }
 
 function ScoreKillAssists( float Score, Controller Victim, Controller Killer )

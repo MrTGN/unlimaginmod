@@ -1129,6 +1129,11 @@ state WaveInProgress
 		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 		AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
 		
+		if ( !bFinalStartup )  {
+			bFinalStartup = True;
+			PlayStartupMessage();
+		}
+		
 		if ( !MusicPlaying )
 			StartGameMusic( True );
 		
@@ -1170,12 +1175,6 @@ state WaveInProgress
 	event Timer()
 	{
 		Global.Timer();
-
-		//ToDo: что это? Выяснить. Issue #313
-		if ( !bFinalStartup )  {
-			bFinalStartup = True;
-			PlayStartupMessage();
-		}
 		
 		// Updating monster count (NumMonsters)
 		if ( CheckForAlivePlayers() )

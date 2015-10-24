@@ -56,36 +56,23 @@ class UM_InvasionGame extends UM_BaseGameInfo
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
-var		int								UM_TimeBetweenWaves;
-
-var		bool							bDefaultPropertiesCalculated;
-
-struct RandRangeTime
-{
-	var()	config	float	Min;
-	var()	config	float	Max;
-	var()	config	float	RandTime;
-};
-
 // GameWaves
 struct GameWaveData
 {
-	var()	config	UM_BaseObject.IntRange			AliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-	var()	config	UM_BaseObject.IntRange			MonsterSquadSize;	// Randomly selected value from Min to Max
-	var()	config	UM_BaseObject.FloatRandRange	SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty)
-	var()	config	float							SquadsSpawnEndTime;	// Spawn time out at the end of this wave in seconds
-	var()	config	float							WaveDifficulty;		// 
-	var()	config	int								WaveStartDelay;		// This wave start time out in seconds
-	var()	config	UM_BaseObject.FloatRandRange	WaveDuration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
-	var()	config	UM_BaseObject.IntRange			BreakTime;			// Shopping time after this wave in seconds
-	var()	config	range							DoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
-	var()	config	UM_BaseObject.IntRange			StartingCash;		// Random starting cash on this wave
-	var()	config	UM_BaseObject.IntRange			MinRespawnCash;		// Random min respawn cash on this wave
-	var()	config	range							DeathCashModifier;	// Death cash penalty on this wave (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+	var()	config	UM_BaseObject.IRange		AliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+	var()	config	UM_BaseObject.IRange		MonsterSquadSize;	// Randomly selected value from Min to Max
+	var()	config	UM_BaseObject.FRandRange	SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty)
+	var()	config	int							SquadsSpawnStopTime;	// Time when level will stop to spawn new squads at the end of this wave (in seconds)
+	var()	config	float						WaveDifficulty;		// Used for the Bot Difficulty
+	var()	config	int							WaveStartDelay;		// This wave start time out in seconds
+	var()	config	UM_BaseObject.FRandRange	WaveDuration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
+	var()	config	UM_BaseObject.IRange		BreakTime;			// Shopping time after this wave in seconds
+	var()	config	range						DoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+	var()	config	UM_BaseObject.IRange		StartingCash;		// Random starting cash on this wave
+	var()	config	UM_BaseObject.IRange		MinRespawnCash;		// Random min respawn cash on this wave
+	var()	config	range						DeathCashModifier;	// Death cash penalty on this wave (Min - MinGameDifficulty, Max - MaxGameDifficulty)
 };
-var		array<GameWaveData>				GameWaves;
-
-
+var		array<GameWaveData>					GameWaves;
 
 // Monsters
 var	export	array<UM_InvasionMonsterData>	Monsters;
@@ -98,61 +85,58 @@ struct BossWaveMonsterData
 	var()	config	int					WaveLimit;
 	var()	config	float				WaveSpawnChance;
 };
-var		array<BossWaveMonsterData>		BossMonsters;
+var			array<BossWaveMonsterData>		BossMonsters;
 // BossMonsterClass
-var		string							BossMonsterClassName;
-var		class<UM_Monster>				BossMonsterClass;
+var					string					BossMonsterClassName;
+var					class<UM_Monster>		BossMonsterClass;
 
-var		UM_BaseObject.IntRange			BossWaveStartingCash;
-var		UM_BaseObject.IntRange			BossWaveMinRespawnCash;
-var		float							BossWaveRespawnCashModifier;
-var		int								BossWaveStartDelay;
-var		float							BossWaveDoorsRepairChance;
+var					UM_BaseObject.IRange	BossWaveStartingCash;
+var					UM_BaseObject.IRange	BossWaveMinRespawnCash;
+var					float					BossWaveRespawnCashModifier;
+var					int						BossWaveStartDelay;
+var					float					BossWaveDoorsRepairChance;
 
-var		Class<UM_ActorPool>				ActorPoolClass;
+var					Class<UM_ActorPool>		ActorPoolClass;
 
-var		class<KFMonstersCollection>		UM_MonsterCollection;
+var					int						InitialWaveNum;
+var		transient	int						NextWaveNum;
 
-var		int								InitialWaveNum;
-var		transient	int					NextWaveNum;
+var		config		bool					bStartMatchWithShopping;
+var					UM_BaseObject.IRange	StartShoppingTime;
 
-var		ShopVolume						CurrentShop;
-var		float							ShopListUpdateDelay;
-var		transient	float				NextShopListUpdateTime;
+var					ShopVolume				CurrentShop;
+var					float					ShopListUpdateDelay;
+var		transient	float					NextShopListUpdateTime;
 
-var		config		bool				bStartMatchWithShopping;
-var		UM_BaseObject.IntRange			StartShoppingTime;
+// Dynamic Parameters	
+var		int									MaxAliveMonsters;
+var		transient	float					CurrentSquadsSpawnPeriod,  CurrentSquadsSpawnRandPeriod;
+var		transient	float					NextMonsterSquadSpawnTime;
+var		transient	int						NextMonsterSquadSize;
+var		transient	int						CurrentWaveDuration, WaveElapsedTime;
+var		transient	float					CurrentDoorsRepairChance;
+var		transient	float					CurrentDeathCashModifier;
 
-var		float							ZedSpawnListUpdateDelay;
-var		transient	float				NextZedSpawnListUpdateTime;
+//[block] ToDo: удалить это.
+var					float					ZedSpawnListUpdateDelay;
+var		transient	float					NextZedSpawnListUpdateTime;
+//[end]
 
-var		transient	int					CurrentWaveDuration, WaveElapsedTime;
-var		int								MaxAliveMonsters;
-var		transient	float				NextMonsterSquadSpawnTime;
-var		transient	int					NextMonsterSquadSize;
+var		transient	float					NextJammedMonstersCheckTime;
+var					float					JammedMonstersCheckDelay;
 
-var		transient	float				NextJammedMonstersCheckTime;
-var					float				JammedMonstersCheckDelay;
+var					float					SpawningVolumeUpdateDelay;
+var		transient	float					NextSpawningVolumeUpdateTime;
 
-var		float							SpawningVolumeUpdateDelay;
-var		transient	float				NextSpawningVolumeUpdateTime;
+var					float					LerpNumPlayersModifier;
+var					float					LerpGameDifficultyModifier;
 
-var					float				LerpNumPlayersModifier;
-var					float				LerpGameDifficultyModifier;
+var		transient	array<UM_Monster>		MonsterList;
+var		transient	array<KFMonster>		JammedMonsters;
 
-//ToDo: delete this var?
-var					float				NumPlayersModifier;
+var					float					ZEDTimeKillSlowMoChargeBonus;
 
-var		transient	array<UM_HumanPawn>	HumanList;
-var		transient	array<UM_Monster>	MonsterList;
-
-var		transient	array< KFMonster >	JammedMonsters;
-
-var					float				ZEDTimeKillSlowMoChargeBonus;
-
-var		transient	string				CurrentMapName;
-
-var		UM_BaseInvasionPreset			InvasionPreset;
+var		transient	string					CurrentMapName;
 
 //[end] Varibles
 //====================================================================
@@ -160,22 +144,11 @@ var		UM_BaseInvasionPreset			InvasionPreset;
 //========================================================================
 //[block] Functions
 
-simulated static function CalcDefaultProperties()
-{
-	default.bDefaultPropertiesCalculated = True;
-	
-	default.MonsterSpawnSafeRange *= Maths.static.GetMeterInUU();
-}
-
-simulated function ResetToDefaultProperties()
-{
-	MonsterSpawnSafeRange = default.MonsterSpawnSafeRange;
-}
-
 //ToDo: Issue #304
 protected function bool LoadGamePreset( optional string NewPresetName )
 {
-	local	int		i;
+	local	UM_BaseInvasionPreset	InvasionPreset;	
+	local	int						i;
 	
 	if ( !Super.LoadGamePreset( NewPresetName ) )
 		Return False;
@@ -399,7 +372,7 @@ function NotifyGameDifficultyChanged()
 	// Modifier for the Lerp function (0.0 - 1.0)
 	LerpGameDifficultyModifier = (GameDifficulty - MinGameDifficulty) / (MaxGameDifficulty - MinGameDifficulty);
 	AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
-	UpdateDynamicParameters();	
+	UpdateDynamicParameters();
 }
 
 function NotifyNumActivePlayersChanged()
@@ -414,15 +387,6 @@ function NotifyNumBotsChanged()
 	// Modifier for the Lerp function (0.0 - 1.0)
 	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
 	UpdateDynamicParameters();
-}
-
-// Todo: #282 Возможно уже не нужна.
-function UpdateNumPlayersModifier()
-{
-	if ( InvasionPreset != None )
-		NumPlayersModifier = InvasionPreset.NumPlayersModifiers[ Min((NumPlayers + NumBots), (InvasionPreset.NumPlayersModifiers.Length - 1)) ];
-	else
-		NumPlayersModifier = GetNumPlayersModifier();
 }
 
 //[block] MonsterList functions
@@ -587,7 +551,7 @@ function SetupPickups()
 	}
 }
 
-// Must be called before the new wave has begun
+// Random starting cash for the each wave. Must be called before the new wave has begun.
 function UpdateStartingCash()
 {
 	if ( WaveNum < FinalWave )  {
@@ -625,7 +589,7 @@ function IncreaseElapsedTime()
 
 function DecreaseWaveCountDown()
 {
-	--WaveCountDown;
+	WaveCountDown = Max( (WaveCountDown - 1), 0 );
 	if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 		KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 }
@@ -637,21 +601,20 @@ state BeginNewWave
 		WaveNum = NextWaveNum;
 		if ( WaveNum < FinalWave )  {
 			++NextWaveNum;
-			WaveCountDown = GameWaves[WaveNum].WaveStartDelay;
+			WaveCountDown = GameWaves[WaveNum].WaveStartDelay + Min( Round(TimerCounter), 1 );
 		}
-		// BossWave
 		else
-			WaveCountDown = BossWaveStartDelay;
-		
+			WaveCountDown = BossWaveStartDelay + Min( Round(TimerCounter), 1 );
+		// GameReplicationInfo
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 			KFGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
 			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 		}
-		
+		// Check CurrentShop
 		if ( CurrentShop == None )
 			SelectNewShop();
 		
-		CheckPlayerList();
+		UpdateDynamicParameters();
 		UpdateStartingCash();
 		NotifyNewWave();
 		SetupPickups();
@@ -661,12 +624,13 @@ state BeginNewWave
 	event Timer()
 	{
 		Global.Timer();
-		
-		IncreaseElapsedTime();		
-		
+		// Overal game ElapsedTime
+		IncreaseElapsedTime();
+		DecreaseWaveCountDown();
 		if ( WaveCountDown > 0 )
-			DecreaseWaveCountDown();
-		else if ( WaveNum < FinalWave )
+			Return;
+		
+		if ( WaveNum < FinalWave )
 			GotoState('WaveInProgress');
 		else if ( bUseEndGameBoss )
 			GotoState('BossWaveInProgress');
@@ -676,8 +640,7 @@ state BeginNewWave
 	
 	event EndState()
 	{
-		// Used in CheckMaxLives() function
-		bNotifiedLastManStanding = False;
+		bNotifiedLastManStanding = False; // Used in CheckMaxLives() function
 	}
 }
 //[end] BeginNewWave code
@@ -751,10 +714,10 @@ state Shopping
 		
 		// Break Time
 		if ( NextWaveNum > InitialWave )
-			WaveCountDown = Round( Lerp(FRand(), float(GameWaves[WaveNum].BreakTime.Min), float(GameWaves[WaveNum].BreakTime.Max)) );
+			WaveCountDown = Round( Lerp(FRand(), float(GameWaves[WaveNum].BreakTime.Min), float(GameWaves[WaveNum].BreakTime.Max)) + FMin(TimerCounter, 1.0) );
 		// Start Match With Shopping
 		else
-			WaveCountDown = Round( Lerp(FRand(), float(StartShoppingTime.Min), float(StartShoppingTime.Max)) );
+			WaveCountDown = Round( Lerp(FRand(), float(StartShoppingTime.Min), float(StartShoppingTime.Max)) + FMin(TimerCounter, 1.0) );
 		
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
@@ -815,10 +778,9 @@ state Shopping
 	event Timer()
 	{
 		Global.Timer();
-		
 		// Overal game ElapsedTime
 		IncreaseElapsedTime();
-		
+		DecreaseWaveCountDown();
 		// Out from the Shopping state
 		if ( WaveCountDown < 1 )  {
 			// Teleport players from the shops
@@ -837,7 +799,6 @@ state Shopping
 		else if ( bShowHint_3 && Level.TimeSeconds > HintTime_2 )
 			PlayThirdHint();
 		
-		DecreaseWaveCountDown();
 		if ( WaveCountDown < 5 )  {
 			// Broadcast Localized Message about next wave
 			if ( NextWaveNum < FinalWave )
@@ -937,7 +898,7 @@ function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, 
 	local	int					i;
 	local	Controller			C;
 	
-	C = GetRandomPlayerController();	
+	C = GetRandomPlayerController();
 	if ( C == None )
 		Return None; // Shouldnt get to this case, but just to be sure...
 	
@@ -962,9 +923,10 @@ function SetupWave() { }
 function AddSpecialSquad() { }
 function bool AddSquad() { }
 
+//ToDo: Переписать! Issue #293
 function BuildNextSquad()
 {
-	local	int				c, r,
+	local	int		c, r,
 	
 	NextSpawnSquad.Length = 0;
 	while ( NextSpawnSquad.Length < NextMonsterSquadSize && c < 250 )  {
@@ -998,12 +960,12 @@ function SelectNewSpawningVolume( optional bool bForceSelection )
 	LastSpawningVolume = FindSpawningVolume();
 }
 
-function SpawnNewMonsterSquad( optional bool bForceSpawn )
+function SpawnNextMonsterSquad( optional bool bRespawn )
 {
 	local	int		NumSpawned;
 	
 	// NextSpawnTime
-	if ( !bForceSpawn )
+	if ( !bRespawn )
 		NextMonsterSquadSpawnTime = Level.TimeSeconds + CurrentSquadsSpawnPeriod + CurrentSquadsSpawnRandPeriod * (2.0 * FRand() - 1.0);
 	
 	// NewMonsterSquad
@@ -1059,7 +1021,7 @@ function RespawnJammedMonsters()
 	}
 	WaveMonster -= NextSpawnSquad.Length;
 	//MaxMonsters += NextSpawnSquad.Length;
-	SpawnNewMonsterSquad(True);
+	SpawnNextMonsterSquad(True);
 }
 
 function DoWaveEnd()
@@ -1071,6 +1033,7 @@ function DoWaveEnd()
 	if ( !rewardFlag )
 		RewardSurvivingPlayers();
 	
+	WaveElapsedTime = 0;
 	// Clear Trader Message status
 	bDidTraderMovingMessage = False;
 	bDidMoveTowardTraderMessage = False;
@@ -1110,7 +1073,7 @@ function DoWaveEnd()
 	}
 	
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 
-		 && Survivor != None && KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements) != none )
+		 && Survivor != None && KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements) != None )
 		KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements).AddOnlySurvivorOfWave();
 
 	bUpdateViewTargs = True;
@@ -1120,23 +1083,24 @@ state WaveInProgress
 {
 	event BeginState()
 	{
+		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
+		// Reset wave parameters
 		rewardFlag = False;
-		WaveElapsedTime = 0;
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
 		NumMonsters = 0;
-		WaveCountDown = CurrentWaveDuration;
-		NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
+		// Setup wave parameters
+		WaveCountDown = CurrentWaveDuration + Min( Round(TimerCounter), 1 );
 		AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
-		
+		// First Startup Message
 		if ( !bFinalStartup )  {
 			bFinalStartup = True;
 			PlayStartupMessage();
 		}
-		
+		// GameMusic
 		if ( !MusicPlaying )
 			StartGameMusic( True );
-		
+		// Begin wave
 		bWaveInProgress = True;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
@@ -1150,8 +1114,6 @@ state WaveInProgress
 	{
 		Global.UpdateDynamicParameters();
 		WaveCountDown = Max( (CurrentWaveDuration - WaveElapsedTime), 0 );
-		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
-			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 	}
 	
 	function bool CheckForAlivePlayers()
@@ -1175,45 +1137,34 @@ state WaveInProgress
 	event Timer()
 	{
 		Global.Timer();
-		
-		// Updating monster count (NumMonsters)
+		// If some players are alive update monster count (NumMonsters)
 		if ( CheckForAlivePlayers() )
 			CheckMonsterList();
 		// EndGame if no one alive.
 		else  {
-			EndGame(None, "TimeLimit");
+			EndGame(None, "LastMan");
 			Return;
 		}
-		
+		// Overal game ElapsedTime
+		IncreaseElapsedTime();
+		++WaveElapsedTime;
+		DecreaseWaveCountDown();
 		// End Wave
 		if ( WaveCountDown < 1 )  {
+			DoWaveEnd();
 			if ( NextWaveNum < FinalWave || bUseEndGameBoss )
 				GoToState('Shopping');
 			else
 				EndGame(None, "TimeLimit");
-			// Exit from this Timer
-			Return;
 		}
-
-		DecreaseWaveCountDown();
-		++WaveElapsedTime;
-		// Overal game ElapsedTime
-		IncreaseElapsedTime();
-		
-		if ( WaveCountDown > GameWaves[WaveNum].SquadsSpawnEndTime )  {
+		else if ( WaveCountDown > GameWaves[WaveNum].SquadsSpawnStopTime )  {
 			// Respawn Jammed Monsters First
 			if ( Level.TimeSeconds >= NextJammedMonstersCheckTime && CheckForJammedMonsters() )
 				RespawnJammedMonsters();
 			// Spawn New Monster Squad
 			if ( Level.TimeSeconds >= NextMonsterSquadSpawnTime && (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize )
-				SpawnNewMonsterSquad();
+				SpawnNextMonsterSquad();
 		}
-	}
-	
-	event EndState()
-	{
-		WaveElapsedTime = 0;
-		DoWaveEnd();
 	}
 }
 //[end] WaveInProgress Code
@@ -1235,7 +1186,7 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 {
 	if ( MonsterController(Killed) != None || Monster(KilledPawn) != None )  {
 		--NumMonsters;
-		++ZombiesKilled;		
+		++ZombiesKilled;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = Max( (MaxMonsters + NumMonsters) , 0 );
 		
@@ -1321,7 +1272,6 @@ defaultproperties
 	 //[block] Set Modifiers to default values here
 	 LerpNumPlayersModifier=1.0
 	 LerpGameDifficultyModifier=1.0
-	 NumPlayersModifier=1.0
 	 //[end]
 	 
 	 MaxAliveMonsters=40
@@ -1344,13 +1294,13 @@ defaultproperties
 	 
 	 InitialWaveNum=0
 	 // GameWaves - 7 waves
-	 GameWaves(0)=(AliveMonsters=(Min=12,Max=46),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=4.5,Max=2.5,RandMin=0.5,RandMax=1.0),WaveDifficulty=0.7,WaveStartDelay=10,WaveDuration=(Min=3.0,Max=8.0,RandMin=0.4,RandMax=0.8),BreakTime=(Min=90,Max=100),DoorsRepairChance=(Min=1.0,Max=0.6),StartingCash=(Min=240,Max=280),MinRespawnCash=(Min=200,Max=220),DeathCashModifier=(Min=0.98,Max=0.86))
-	 GameWaves(1)=(AliveMonsters=(Min=14,Max=48),MonsterSquadSize=(Min=2,Max=8),SquadsSpawnPeriod=(Min=4.5,Max=2.5,RandMin=0.5,RandMax=1.0),WaveDifficulty=0.8,WaveStartDelay=8,WaveDuration=(Min=3.5,Max=9.0,RandMin=0.5,RandMax=1.0),BreakTime=(Min=90,Max=110),DoorsRepairChance=(Min=1.0,Max=0.55),StartingCash=(Min=260,Max=300),MinRespawnCash=(Min=220,Max=240),DeathCashModifier=(Min=0.97,Max=0.85))
-	 GameWaves(2)=(AliveMonsters=(Min=16,Max=48),MonsterSquadSize=(Min=3,Max=9),SquadsSpawnPeriod=(Min=4.0,Max=2.0,RandMin=0.5,RandMax=1.0),WaveDifficulty=0.9,WaveStartDelay=8,WaveDuration=(Min=4.0,Max=10.0,RandMin=0.6,RandMax=1.2),BreakTime=(Min=100,Max=110),DoorsRepairChance=(Min=1.0,Max=0.5),StartingCash=(Min=280,Max=320),MinRespawnCash=(Min=240,Max=260),DeathCashModifier=(Min=0.96,Max=0.84))
-	 GameWaves(3)=(AliveMonsters=(Min=18,Max=50),MonsterSquadSize=(Min=3,Max=9),SquadsSpawnPeriod=(Min=4.0,Max=2.0,RandMin=0.5,RandMax=1.0),WaveDifficulty=1.0,WaveStartDelay=8,WaveDuration=(Min=4.5,Max=11.0,RandMin=0.7,RandMax=1.4),BreakTime=(Min=100,Max=120),DoorsRepairChance=(Min=1.0,Max=0.45),StartingCash=(Min=300,Max=340),MinRespawnCash=(Min=260,Max=280),DeathCashModifier=(Min=0.95,Max=0.83))
-	 GameWaves(4)=(AliveMonsters=(Min=20,Max=50),MonsterSquadSize=(Min=4,Max=10),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),WaveDifficulty=1.1,WaveStartDelay=6,WaveDuration=(Min=5.0,Max=12.0,RandMin=0.8,RandMax=1.6),BreakTime=(Min=110,Max=120),DoorsRepairChance=(Min=1.0,Max=0.4),StartingCash=(Min=320,Max=360),MinRespawnCash=(Min=280,Max=300),DeathCashModifier=(Min=0.94,Max=0.82))
-	 GameWaves(5)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=5,Max=12),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),WaveDifficulty=1.2,WaveStartDelay=6,WaveDuration=(Min=5.5,Max=13.0,RandMin=0.9,RandMax=1.8),BreakTime=(Min=110,Max=130),DoorsRepairChance=(Min=1.0,Max=0.35),StartingCash=(Min=340,Max=380),MinRespawnCash=(Min=300,Max=320),DeathCashModifier=(Min=0.93,Max=0.81))
-	 GameWaves(6)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=5,Max=12),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),WaveDifficulty=1.3,WaveStartDelay=6,WaveDuration=(Min=6.0,Max=14.0,RandMin=1.0,RandMax=2.0),BreakTime=(Min=120,Max=130),DoorsRepairChance=(Min=1.0,Max=0.3),StartingCash=(Min=360,Max=400),MinRespawnCash=(Min=320,Max=340),DeathCashModifier=(Min=0.92,Max=0.8))
+	 GameWaves(0)=(AliveMonsters=(Min=12,Max=46),MonsterSquadSize=(Min=2,Max=6),SquadsSpawnPeriod=(Min=4.5,Max=2.5,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=20,WaveDifficulty=0.7,WaveStartDelay=10,WaveDuration=(Min=3.0,Max=8.0,RandMin=0.4,RandMax=0.8),BreakTime=(Min=90,Max=100),DoorsRepairChance=(Min=1.0,Max=0.6),StartingCash=(Min=240,Max=280),MinRespawnCash=(Min=200,Max=220),DeathCashModifier=(Min=0.98,Max=0.86))
+	 GameWaves(1)=(AliveMonsters=(Min=14,Max=48),MonsterSquadSize=(Min=2,Max=8),SquadsSpawnPeriod=(Min=4.5,Max=2.5,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=20,WaveDifficulty=0.8,WaveStartDelay=8,WaveDuration=(Min=3.5,Max=9.0,RandMin=0.5,RandMax=1.0),BreakTime=(Min=90,Max=110),DoorsRepairChance=(Min=1.0,Max=0.55),StartingCash=(Min=260,Max=300),MinRespawnCash=(Min=220,Max=240),DeathCashModifier=(Min=0.97,Max=0.85))
+	 GameWaves(2)=(AliveMonsters=(Min=16,Max=48),MonsterSquadSize=(Min=3,Max=9),SquadsSpawnPeriod=(Min=4.0,Max=2.0,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=19,WaveDifficulty=0.9,WaveStartDelay=8,WaveDuration=(Min=4.0,Max=10.0,RandMin=0.6,RandMax=1.2),BreakTime=(Min=100,Max=110),DoorsRepairChance=(Min=1.0,Max=0.5),StartingCash=(Min=280,Max=320),MinRespawnCash=(Min=240,Max=260),DeathCashModifier=(Min=0.96,Max=0.84))
+	 GameWaves(3)=(AliveMonsters=(Min=18,Max=50),MonsterSquadSize=(Min=3,Max=9),SquadsSpawnPeriod=(Min=4.0,Max=2.0,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=18,WaveDifficulty=1.0,WaveStartDelay=8,WaveDuration=(Min=4.5,Max=11.0,RandMin=0.7,RandMax=1.4),BreakTime=(Min=100,Max=120),DoorsRepairChance=(Min=1.0,Max=0.45),StartingCash=(Min=300,Max=340),MinRespawnCash=(Min=260,Max=280),DeathCashModifier=(Min=0.95,Max=0.83))
+	 GameWaves(4)=(AliveMonsters=(Min=20,Max=50),MonsterSquadSize=(Min=4,Max=10),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=17,WaveDifficulty=1.1,WaveStartDelay=6,WaveDuration=(Min=5.0,Max=12.0,RandMin=0.8,RandMax=1.6),BreakTime=(Min=110,Max=120),DoorsRepairChance=(Min=1.0,Max=0.4),StartingCash=(Min=320,Max=360),MinRespawnCash=(Min=280,Max=300),DeathCashModifier=(Min=0.94,Max=0.82))
+	 GameWaves(5)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=5,Max=12),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=16,WaveDifficulty=1.2,WaveStartDelay=6,WaveDuration=(Min=5.5,Max=13.0,RandMin=0.9,RandMax=1.8),BreakTime=(Min=110,Max=130),DoorsRepairChance=(Min=1.0,Max=0.35),StartingCash=(Min=340,Max=380),MinRespawnCash=(Min=300,Max=320),DeathCashModifier=(Min=0.93,Max=0.81))
+	 GameWaves(6)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=5,Max=12),SquadsSpawnPeriod=(Min=3.5,Max=1.5,RandMin=0.5,RandMax=1.0),SquadsSpawnStopTime=16,WaveDifficulty=1.3,WaveStartDelay=6,WaveDuration=(Min=6.0,Max=14.0,RandMin=1.0,RandMax=2.0),BreakTime=(Min=120,Max=130),DoorsRepairChance=(Min=1.0,Max=0.3),StartingCash=(Min=360,Max=400),MinRespawnCash=(Min=320,Max=340),DeathCashModifier=(Min=0.92,Max=0.8))
 	 
 	 // Monsters
 	 Monsters(2)=(MonsterClassName="UnlimaginMod.UM_ZombieCrawler",WaveMinLimits=(2,2,4,6,8,8,8),WaveMaxLimits=(16,18,36,48,54,54,54),WaveSpawnChances=(0.1,0.15,0.2,0.25,0.3,0.35,0.4),WaveSpawnDelays=(28.0,26.0,24.0,22.0,20.0,18.0,16.0))
@@ -1410,12 +1360,12 @@ defaultproperties
 	 Begin Object Class=UM_InvasionMonsterData Name=ZombieCrawlerData
 		 MonsterClassName="UnlimaginMod.UM_ZombieCrawler"
 		 // WaveLimits
-		 WaveLimits(0)=(Min=3,Max=21)
-		 WaveLimits(1)=(Min=4,Max=28)
-		 WaveLimits(2)=(Min=5,Max=36)
-		 WaveLimits(3)=(Min=6,Max=42)
-		 WaveLimits(4)=(Min=6,Max=42)
-		 WaveLimits(5)=(Min=7,Max=49)
+		 WaveLimits(0)=(Min=2,Max=20)
+		 WaveLimits(1)=(Min=3,Max=26)
+		 WaveLimits(2)=(Min=4,Max=32)
+		 WaveLimits(3)=(Min=5,Max=38)
+		 WaveLimits(4)=(Min=6,Max=44)
+		 WaveLimits(5)=(Min=7,Max=50)
 		 WaveLimits(6)=(Min=8,Max=56)
 		 // WaveSpawnChances
 		 WaveSpawnChances(0)=(Min=0.1,Max=0.2)
@@ -1452,8 +1402,8 @@ defaultproperties
 		 WaveLimits(1)=(Min=0,Max=2)
 		 WaveLimits(2)=(Min=0,Max=4)
 		 WaveLimits(3)=(Min=0,Max=6)
-		 WaveLimits(4)=(Min=2,Max=8)
-		 WaveLimits(5)=(Min=3,Max=10)
+		 WaveLimits(4)=(Min=1,Max=8)
+		 WaveLimits(5)=(Min=2,Max=10)
 		 WaveLimits(6)=(Min=3,Max=12)
 		 // WaveSpawnChances
 		 WaveSpawnChances(0)=(Min=0.0,Max=0.0)
@@ -1461,8 +1411,8 @@ defaultproperties
 		 WaveSpawnChances(2)=(Min=0.0,Max=0.1)
 		 WaveSpawnChances(3)=(Min=0.0,Max=0.15)
 		 WaveSpawnChances(4)=(Min=0.1,Max=0.2)
-		 WaveSpawnChances(5)=(Min=0.15,Max=0.25)
-		 WaveSpawnChances(6)=(Min=0.2,Max=0.3)
+		 WaveSpawnChances(5)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(6)=(Min=0.1,Max=0.2)
 		 // WaveSquadLimits
 		 WaveSquadLimits(0)=(Min=0,Max=0)
 		 WaveSquadLimits(1)=(Min=1,Max=2)
@@ -1502,25 +1452,175 @@ defaultproperties
 		 WaveSpawnChances(5)=(Min=0.45,Max=0.55)
 		 WaveSpawnChances(6)=(Min=0.45,Max=0.55)
 		 // WaveSquadLimits
-		 WaveSquadLimits(0)=(Min=3,Max=8)
+		 WaveSquadLimits(0)=(Min=2,Max=8)
 		 WaveSquadLimits(1)=(Min=3,Max=9)
-		 WaveSquadLimits(2)=(Min=4,Max=10)
+		 WaveSquadLimits(2)=(Min=3,Max=10)
 		 WaveSquadLimits(3)=(Min=4,Max=11)
-		 WaveSquadLimits(4)=(Min=5,Max=11)
-		 WaveSquadLimits(5)=(Min=6,Max=12)
-		 WaveSquadLimits(6)=(Min=6,Max=12)
+		 WaveSquadLimits(4)=(Min=4,Max=11)
+		 WaveSquadLimits(5)=(Min=5,Max=12)
+		 WaveSquadLimits(6)=(Min=5,Max=12)
 		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=32.0,Max=30.0)
-		 WaveSquadDelays(1)=(Min=31.0,Max=29.0)
-		 WaveSquadDelays(2)=(Min=30.0,Max=28.0)
-		 WaveSquadDelays(3)=(Min=29.0,Max=27.0)
-		 WaveSquadDelays(4)=(Min=28.0,Max=26.0)
-		 WaveSquadDelays(5)=(Min=27.0,Max=25.0)
-		 WaveSquadDelays(6)=(Min=26.0,Max=24.0)
+		 WaveSquadDelays(0)=(Min=34.0,Max=30.0)
+		 WaveSquadDelays(1)=(Min=33.0,Max=29.0)
+		 WaveSquadDelays(2)=(Min=32.0,Max=28.0)
+		 WaveSquadDelays(3)=(Min=31.0,Max=27.0)
+		 WaveSquadDelays(4)=(Min=30.0,Max=26.0)
+		 WaveSquadDelays(5)=(Min=29.0,Max=25.0)
+		 WaveSquadDelays(6)=(Min=28.0,Max=24.0)
 	 End Object
 	 Monsters(4)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieGoreFastData'
 	 
-	 // UM_ZombieHusk ToDO: #Дописать!!!!
+	 // UM_ZombieHusk
+	 Begin Object Class=UM_InvasionMonsterData Name=ZombieHuskData
+		 MonsterClassName="UnlimaginMod.UM_ZombieHusk"
+		 // WaveLimits
+		 WaveLimits(0)=(Min=0,Max=6)
+		 WaveLimits(1)=(Min=1,Max=10)
+		 WaveLimits(2)=(Min=1,Max=12)
+		 WaveLimits(3)=(Min=2,Max=14)
+		 WaveLimits(4)=(Min=2,Max=16)
+		 WaveLimits(5)=(Min=3,Max=18)
+		 WaveLimits(6)=(Min=3,Max=20)
+		 // WaveSpawnChances
+		 WaveSpawnChances(0)=(Min=0.0,Max=0.1)
+		 WaveSpawnChances(1)=(Min=0.05,Max=0.15)
+		 WaveSpawnChances(2)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(3)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(4)=(Min=0.15,Max=0.25)
+		 WaveSpawnChances(5)=(Min=0.15,Max=0.25)
+		 WaveSpawnChances(6)=(Min=0.15,Max=0.25)
+		 // WaveSquadLimits
+		 WaveSquadLimits(0)=(Min=0,Max=2)
+		 WaveSquadLimits(1)=(Min=1,Max=2)
+		 WaveSquadLimits(2)=(Min=1,Max=4)
+		 WaveSquadLimits(3)=(Min=1,Max=4)
+		 WaveSquadLimits(4)=(Min=2,Max=6)
+		 WaveSquadLimits(5)=(Min=2,Max=6)
+		 WaveSquadLimits(6)=(Min=2,Max=6)
+		 // WaveSquadDelays
+		 WaveSquadDelays(0)=(Min=40.0,Max=36.0)
+		 WaveSquadDelays(1)=(Min=39.0,Max=35.0)
+		 WaveSquadDelays(2)=(Min=38.0,Max=34.0)
+		 WaveSquadDelays(3)=(Min=37.0,Max=33.0)
+		 WaveSquadDelays(4)=(Min=36.0,Max=32.0)
+		 WaveSquadDelays(5)=(Min=35.0,Max=31.0)
+		 WaveSquadDelays(6)=(Min=34.0,Max=30.0)
+	 End Object
+	 Monsters(5)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieHuskData'
+	 
+	 // UM_ZombieScrake
+	 Begin Object Class=UM_InvasionMonsterData Name=ZombieScrakeData
+		 MonsterClassName="UnlimaginMod.UM_ZombieScrake"
+		 // WaveLimits
+		 WaveLimits(0)=(Min=0,Max=2)
+		 WaveLimits(1)=(Min=0,Max=4)
+		 WaveLimits(2)=(Min=1,Max=6)
+		 WaveLimits(3)=(Min=1,Max=8)
+		 WaveLimits(4)=(Min=2,Max=10)
+		 WaveLimits(5)=(Min=2,Max=12)
+		 WaveLimits(6)=(Min=3,Max=14)
+		 // WaveSpawnChances
+		 WaveSpawnChances(0)=(Min=0.0,Max=0.05)
+		 WaveSpawnChances(1)=(Min=0.0,Max=0.1)
+		 WaveSpawnChances(2)=(Min=0.05,Max=0.15)
+		 WaveSpawnChances(3)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(4)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(5)=(Min=0.15,Max=0.25)
+		 WaveSpawnChances(6)=(Min=0.15,Max=0.25)
+		 // WaveSquadLimits
+		 WaveSquadLimits(0)=(Min=0,Max=2)
+		 WaveSquadLimits(1)=(Min=0,Max=2)
+		 WaveSquadLimits(2)=(Min=1,Max=2)
+		 WaveSquadLimits(3)=(Min=1,Max=2)
+		 WaveSquadLimits(4)=(Min=1,Max=2)
+		 WaveSquadLimits(5)=(Min=1,Max=3)
+		 WaveSquadLimits(6)=(Min=1,Max=3)
+		 // WaveSquadDelays
+		 WaveSquadDelays(0)=(Min=92.0,Max=72.0)
+		 WaveSquadDelays(1)=(Min=90.0,Max=70.0)
+		 WaveSquadDelays(2)=(Min=88.0,Max=68.0)
+		 WaveSquadDelays(3)=(Min=86.0,Max=66.0)
+		 WaveSquadDelays(4)=(Min=84.0,Max=64.0)
+		 WaveSquadDelays(5)=(Min=82.0,Max=62.0)
+		 WaveSquadDelays(6)=(Min=80.0,Max=60.0)
+	 End Object
+	 Monsters(6)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieScrakeData'
+	 
+	 // UM_ZombieSiren
+	 Begin Object Class=UM_InvasionMonsterData Name=ZombieSirenData
+		 MonsterClassName="UnlimaginMod.UM_ZombieSiren"
+		 // WaveLimits
+		 WaveLimits(0)=(Min=0,Max=8)
+		 WaveLimits(1)=(Min=1,Max=12)
+		 WaveLimits(2)=(Min=1,Max=14)
+		 WaveLimits(3)=(Min=2,Max=16)
+		 WaveLimits(4)=(Min=2,Max=18)
+		 WaveLimits(5)=(Min=4,Max=20)
+		 WaveLimits(6)=(Min=4,Max=22)
+		 // WaveSpawnChances
+		 WaveSpawnChances(0)=(Min=0.0,Max=0.1)
+		 WaveSpawnChances(1)=(Min=0.05,Max=0.15)
+		 WaveSpawnChances(2)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(3)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(4)=(Min=0.15,Max=0.25)
+		 WaveSpawnChances(5)=(Min=0.2,Max=0.3)
+		 WaveSpawnChances(6)=(Min=0.2,Max=0.3)
+		 // WaveSquadLimits
+		 WaveSquadLimits(0)=(Min=0,Max=2)
+		 WaveSquadLimits(1)=(Min=1,Max=2)
+		 WaveSquadLimits(2)=(Min=1,Max=4)
+		 WaveSquadLimits(3)=(Min=1,Max=4)
+		 WaveSquadLimits(4)=(Min=2,Max=6)
+		 WaveSquadLimits(5)=(Min=2,Max=6)
+		 WaveSquadLimits(6)=(Min=2,Max=6)
+		 // WaveSquadDelays
+		 WaveSquadDelays(0)=(Min=42.0,Max=38.0)
+		 WaveSquadDelays(1)=(Min=41.0,Max=37.0)
+		 WaveSquadDelays(2)=(Min=40.0,Max=36.0)
+		 WaveSquadDelays(3)=(Min=39.0,Max=35.0)
+		 WaveSquadDelays(4)=(Min=38.0,Max=34.0)
+		 WaveSquadDelays(5)=(Min=37.0,Max=33.0)
+		 WaveSquadDelays(6)=(Min=36.0,Max=32.0)
+	 End Object
+	 Monsters(7)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieSirenData'
+	 
+	 // UM_ZombieStalker
+	 Begin Object Class=UM_InvasionMonsterData Name=ZombieStalkerData
+		 MonsterClassName="UnlimaginMod.UM_ZombieStalker"
+		 // WaveLimits
+		 WaveLimits(0)=(Min=4,Max=32)
+		 WaveLimits(1)=(Min=5,Max=40)
+		 WaveLimits(2)=(Min=6,Max=48)
+		 WaveLimits(3)=(Min=7,Max=56)
+		 WaveLimits(4)=(Min=8,Max=64)
+		 WaveLimits(5)=(Min=9,Max=72)
+		 WaveLimits(6)=(Min=10,Max=80)
+		 // WaveSpawnChances
+		 WaveSpawnChances(0)=(Min=0.1,Max=0.2)
+		 WaveSpawnChances(1)=(Min=0.15,Max=0.25)
+		 WaveSpawnChances(2)=(Min=0.2,Max=0.3)
+		 WaveSpawnChances(3)=(Min=0.25,Max=0.35)
+		 WaveSpawnChances(4)=(Min=0.3,Max=0.4)
+		 WaveSpawnChances(5)=(Min=0.35,Max=0.45)
+		 WaveSpawnChances(6)=(Min=0.35,Max=0.45)
+		 // WaveSquadLimits
+		 WaveSquadLimits(0)=(Min=2,Max=6)
+		 WaveSquadLimits(1)=(Min=3,Max=8)
+		 WaveSquadLimits(2)=(Min=4,Max=8)
+		 WaveSquadLimits(3)=(Min=4,Max=10)
+		 WaveSquadLimits(4)=(Min=5,Max=10)
+		 WaveSquadLimits(5)=(Min=5,Max=12)
+		 WaveSquadLimits(6)=(Min=6,Max=12)
+		 // WaveSquadDelays
+		 WaveSquadDelays(0)=(Min=36.0,Max=32.0)
+		 WaveSquadDelays(1)=(Min=35.0,Max=31.0)
+		 WaveSquadDelays(2)=(Min=34.0,Max=30.0)
+		 WaveSquadDelays(3)=(Min=33.0,Max=29.0)
+		 WaveSquadDelays(4)=(Min=32.0,Max=28.0)
+		 WaveSquadDelays(5)=(Min=31.0,Max=27.0)
+		 WaveSquadDelays(6)=(Min=30.0,Max=26.0)
+	 End Object
+	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieStalkerData'
 	 
 	 // Boss
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"

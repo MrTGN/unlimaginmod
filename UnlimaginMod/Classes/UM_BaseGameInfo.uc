@@ -1029,10 +1029,16 @@ function CheckForPlayersDeficit()
 function StartMatch()
 {
 	local	PlayerReplicationInfo	PRI;
+	local	Controller				P;
+	local	Actor					A;
 	
 	// From GameInfo.uc
-	//if ( GameStats != None )
-		//GameStats.StartGame();
+	if ( GameStats != None )
+		GameStats.StartGame();
+	
+	// tell all actors the game is starting
+	ForEach AllActors(class'Actor', A)
+		A.MatchStarting();
 	
 	//[block] From DeathMatch.uc
 	//[block] From State'MatchInProgress' (BeginState() function)
@@ -1051,17 +1057,33 @@ function StartMatch()
 	GameReplicationInfo.RemainingMinute = RemainingTime;
 	
 	bAllowPlayerSpawn = True;
-	
-	// Spawning Players ToDo: перенести код сюда.
-	Super(GameInfo).StartMatch();
+	// start human players first
+	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
+		if ( P.IsA('PlayerController') && P.Pawn == None )  {
+			if ( bGameEnded )
+				Return; // telefrag ended the game with ridiculous frag limit
+			else if ( PlayerController(P).CanRestartPlayer()  )
+				RestartPlayer(P);
+		}
+	}
+	// start AI players
+	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
+		if ( P.bIsPlayer && !P.IsA('PlayerController') )  {
+			if ( Level.NetMode == NM_Standalone )
+				RestartPlayer(P);
+			else
+				P.GotoState('Dead','MPStart');
+		}
+	}
 	
 	bMustJoinBeforeStart = False;
 	CheckForPlayersDeficit();
 	bMustJoinBeforeStart = default.bMustJoinBeforeStart;
 	log("START MATCH");
 	//[end]
-	
 	bAllowPlayerSpawn = False;
+	bWaitingToStartMatch = False;
+    GameReplicationInfo.bMatchHasBegun = True;
 	//GotoState('BeginNewWave');
 }
 

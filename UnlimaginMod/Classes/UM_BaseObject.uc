@@ -23,13 +23,13 @@ class UM_BaseObject extends Object
 //[block] Variables
 
 // Int Range
-struct IntRange
+struct IRange
 {
 	var()	config	int		Min;
 	var()	config	int		Max;
 };
 
-struct IntRandRange
+struct IRandRange
 {
 	var()	config	int		Min;
 	var()	config	int		Max;
@@ -37,7 +37,7 @@ struct IntRandRange
 	var()	config	float	RandMax;
 };
 
-struct FloatRandRange
+struct FRandRange
 {
 	var()	config	float	Min;
 	var()	config	float	Max;

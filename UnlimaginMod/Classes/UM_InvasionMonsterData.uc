@@ -29,9 +29,9 @@ var					bool						bNoSpawnRestrictions;
 
 var()				string						MonsterClassName;	// Dynamic MonsterClass Load
 var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
-var()				array<IntRange>				WaveLimits;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+var()				array<IRange>				WaveLimits;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 var()				array<Range>				WaveSpawnChances;	// This wave spawn Chance (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<IntRange>				WaveSquadLimits;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+var()				array<IRange>				WaveSquadLimits;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 //ToDo:#LimitPerMinute	var()				array<Range>				WaveSquadDelays;	// Will delay next spawn if reached this wave Squad limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 
 var		transient	UM_InvasionGame				InvasionGame;		//

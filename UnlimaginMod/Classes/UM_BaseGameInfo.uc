@@ -1031,17 +1031,18 @@ function StartMatch()
 	local	PlayerReplicationInfo	PRI;
 	local	Controller				P;
 	local	Actor					A;
+	local	int						i;
 	
+	bWaitingToStartMatch = False;
 	// From GameInfo.uc
 	if ( GameStats != None )
 		GameStats.StartGame();
 	
 	// tell all actors the game is starting
-	ForEach AllActors(class'Actor', A)
+	ForEach AllActors( class'Actor', A )
 		A.MatchStarting();
 	
-	//[block] From DeathMatch.uc
-	//[block] From State'MatchInProgress' (BeginState() function)
+	//[block] From DeathMatch.uc State'MatchInProgress' (BeginState() function)
 	ForEach DynamicActors( class'PlayerReplicationInfo', PRI )
 		PRI.StartTime = 0;
 	
@@ -1058,33 +1059,143 @@ function StartMatch()
 	
 	bAllowPlayerSpawn = True;
 	// start human players first
-	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
-		if ( P.IsA('PlayerController') && P.Pawn == None )  {
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i] != None && PlayerList[i].Pawn == None )  {
 			if ( bGameEnded )
 				Return; // telefrag ended the game with ridiculous frag limit
-			else if ( PlayerController(P).CanRestartPlayer()  )
-				RestartPlayer(P);
+			else if ( PlayerList[i].CanRestartPlayer() )
+				RestartPlayer( PlayerList[i] );
 		}
 	}
 	// start AI players
 	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
 		if ( P.bIsPlayer && !P.IsA('PlayerController') )  {
 			if ( Level.NetMode == NM_Standalone )
-				RestartPlayer(P);
+				RestartPlayer( P );
 			else
 				P.GotoState('Dead','MPStart');
 		}
 	}
-	
 	bMustJoinBeforeStart = False;
 	CheckForPlayersDeficit();
 	bMustJoinBeforeStart = default.bMustJoinBeforeStart;
-	log("START MATCH");
-	//[end]
 	bAllowPlayerSpawn = False;
-	bWaitingToStartMatch = False;
-    GameReplicationInfo.bMatchHasBegun = True;
+	GameReplicationInfo.bMatchHasBegun = True;
+	log("START MATCH");
 	//GotoState('BeginNewWave');
+}
+
+auto state PendingMatch
+{
+	function bool AddBot(optional string botName)
+    {
+        if ( Level.NetMode == NM_Standalone )
+            ++InitialBots;
+        
+		if ( botName != "" )
+			PreLoadNamedBot(botName);
+		else
+			PreLoadBot();
+        
+		Return True;
+    }
+	
+	function RestartPlayer( Controller aPlayer )
+	{
+		if ( CountDown != 0 )
+			Return;
+		
+		Global.RestartPlayer(aPlayer);
+	}
+
+	function Timer()
+	{
+		local	Controller	P;
+		local	int			i, ReadyCount;
+
+		Global.Timer();
+
+		// Spectating only.
+		if ( Level.NetMode == NM_StandAlone && NumSpectators > 0 )  {
+			StartMatch();
+			PlayStartupMessage();
+			Return;
+		}
+
+		/* First check if there are enough net players, and enough time has elapsed 
+			to give people a chance to join */
+		if ( NumPlayers == 0 )
+			bWaitForNetPlayers = True;
+
+		if ( Level.NetMode != NM_Standalone )  {
+			// Check bWaitForNetPlayers
+			if ( bWaitForNetPlayers )  {
+				if ( NumPlayers >= MinNetPlayers )
+					++ElapsedTime;
+				else
+					ElapsedTime = 0;
+				if ( NumPlayers == MaxPlayers || ElapsedTime > NetWait )
+					bWaitForNetPlayers = False;
+			}
+			// PlayStartupMessage
+			if ( bWaitForNetPlayers || (bTournament && NumPlayers < MaxPlayers) )  {
+				PlayStartupMessage();
+				Return;
+			}
+		}
+		
+		// check if players are ready
+		StartupStage = 1;
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i] == None )
+				PlayerList.Remove(i, 1);
+			// Count Ready players
+			else if ( PlayerList[i].PlayerReplicationInfo != None && PlayerList[i].PlayerReplicationInfo.bReadyToPlay )
+				++ReadyCount;
+		}
+		NumPlayers = PlayerList.Length;
+		if ( NumPlayers < 1 || ReadyCount < 1 )
+			Return;
+		
+		// Lobby Timeout
+		if ( CountDown > 0 && NumPlayers > 1 )  {
+			++ElapsedTime;
+			// Start Count Down if 65% of players are ready or after 2 minutes
+			if ( ReadyCount >= (NumPlayers * 0.65) || ElapsedTime > 120 )  {
+				CountDown = Max( (CountDown - 1), 0 );
+				KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = CountDown;
+			}
+		}
+		// StartMatch
+		if ( CountDown == 0 || (ReadyCount >= NumPlayers && !bReviewingJumpspots) )  {
+			CountDown = 0;
+			StartMatch();
+			PlayStartupMessage();
+		}
+	}
+
+	function BeginState()
+	{
+		bWaitingToStartMatch = True;
+		StartupStage = 0;
+		NetWait = Max(NetWait, 0);
+		if ( LobbyTimeout > 0 )
+			CountDown = LobbyTimeout;
+		else
+			CountDown = -1;	// No lobby timeout
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
+	}
+
+	function EndState()
+	{
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
+	}
+
+Begin:
+	if ( bQuickStart )
+		StartMatch();
 }
 
 function ResetSlowMoInstigator()
@@ -1178,12 +1289,8 @@ event Tick( float DeltaTime )
 			if ( CurrentZEDTimeDuration < ExitZedTime )  {
 				if ( !bSpeedingBackUp )  {
 					bSpeedingBackUp = True;
-					for ( C = Level.ControllerList; C != None && Count < NumPlayers; C = C.NextController )  {
-						if ( KFPlayerController(C) != None )  {
-							KFPlayerController(C).ClientExitZedTime();
-							++Count;
-						}
-					}
+					for ( i = 0; i < PlayerList.Length; ++i )
+						PlayerList[i].ClientExitZedTime();
 				}
 				SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
 			}
@@ -1494,7 +1601,7 @@ function ScoreKill( Controller Killer, Controller Other )
 {
 	local	PlayerReplicationInfo	OtherPRI;
 	local	float					KillScore;
-	local	Controller				C;
+	local	int						i;
 
 	OtherPRI = Other.PlayerReplicationInfo;
 	if ( OtherPRI != None )  {
@@ -1559,7 +1666,7 @@ function ScoreKill( Controller Killer, Controller Other )
 		if( KFGameLength == GL_Short )
 			KillScore *= 1.75;
 
-		KillScore = Max(1,int(KillScore));
+		KillScore = Max( 1, int(KillScore) );
 		Killer.PlayerReplicationInfo.Kills++;
 
 		ScoreKillAssists(KillScore, Other, Killer);
@@ -1573,18 +1680,17 @@ function ScoreKill( Controller Killer, Controller Other )
 	if ( Killer.PlayerReplicationInfo != None && Killer.PlayerReplicationInfo.Score < 0 )
 		Killer.PlayerReplicationInfo.Score = 0;
 
-
-	/* Begin Marco's Kill Messages */
+	//[block] Marco's Kill Messages
 	if ( Class'HUDKillingFloor'.Default.MessageHealthLimit <= Other.Pawn.Default.Health
 		 || Class'HUDKillingFloor'.Default.MessageMassLimit <= Other.Pawn.Default.Mass )  {
-		for( C = Level.ControllerList; C != None; C = C.nextController )  {
-			if ( C.bIsPlayer && xPlayer(C) != None )
-				xPlayer(C).ReceiveLocalizedMessage( Class'KillsMessage', 1, Killer.PlayerReplicationInfo,, Other.Pawn.Class );
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i] != None )
+				PlayerList[i].ReceiveLocalizedMessage( Class'KillsMessage', 1, Killer.PlayerReplicationInfo,, Other.Pawn.Class );
 		}
 	}
 	else if ( xPlayer(Killer) != None )
 		xPlayer(Killer).ReceiveLocalizedMessage( Class'KillsMessage',,,, Other.Pawn.Class );
-	/* End Marco's Kill Messages */
+	//[end] Marco's Kill Messages
 }
 
 //[end] Functions

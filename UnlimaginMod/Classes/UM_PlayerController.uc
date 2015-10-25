@@ -311,25 +311,21 @@ simulated event PostBeginPlay()
 	UpdateHintManagement(bShowHints);
 }
 
-function ServerReStartPlayer()
-{
-	if ( Role < ROLE_Authority || PlayerReplicationInfo.bOutOfLives )
-		Return; // No more main menu bug closing.
-
-	ClientCloseMenu(True, True);
-	
-	if ( Level.Game.bWaitingToStartMatch )
-		PlayerReplicationInfo.bReadyToPlay = True;
-	else
-		Level.Game.RestartPlayer(self);
-}
-
 function bool CanRestartPlayer()
 {
 	if ( PlayerReplicationInfo == None || IsInState('GameEnded') || IsInState('RoundEnded') )
 		Return False;
 	
-	Return !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives;
+	Return PlayerReplicationInfo.bReadyToPlay && !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives;
+}
+
+function ServerReStartPlayer()
+{
+	if ( Role < ROLE_Authority || Level.Game.bWaitingToStartMatch || PlayerReplicationInfo == None || PlayerReplicationInfo.bOutOfLives )
+		Return; // No more main menu bug closing.
+
+	ClientCloseMenu(True, True);
+	Level.Game.RestartPlayer(self);
 }
 
 function ServerSpectate()
@@ -627,7 +623,7 @@ function ShowMidGameMenu(bool bPause)
 
 simulated function ShowLoginMenu()
 {
-	if ( Pawn != None && (Pawn.Health > 0 || (Pawn.PlayerReplicationInfo != None && Pawn.PlayerReplicationInfo.bReadyToPlay)) )
+	if ( Pawn != None && Pawn.Health > 0 )
 		Return;
 	
 	if ( LobbyMenuClassString != "" && GameReplicationInfo != None )

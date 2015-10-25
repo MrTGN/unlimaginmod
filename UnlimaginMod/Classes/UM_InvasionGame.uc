@@ -109,7 +109,7 @@ var					float					ShopListUpdateDelay;
 var		transient	float					NextShopListUpdateTime;
 
 // Dynamic Parameters	
-var		int									MaxAliveMonsters;
+var					int						MaxAliveMonsters;
 var		transient	float					CurrentSquadsSpawnPeriod,  CurrentSquadsSpawnRandPeriod;
 var		transient	float					NextMonsterSquadSpawnTime;
 var		transient	int						NextMonsterSquadSize;
@@ -1020,7 +1020,6 @@ function RespawnJammedMonsters()
 		JammedMonsters.Remove(i, 1);
 	}
 	WaveMonster -= NextSpawnSquad.Length;
-	//MaxMonsters += NextSpawnSquad.Length;
 	SpawnNextMonsterSquad(True);
 }
 
@@ -1188,7 +1187,8 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 		--NumMonsters;
 		++ZombiesKilled;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
-			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = Max( (MaxMonsters + NumMonsters) , 0 );
+			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = NumMonsters;
+			//KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = Max( (MaxMonsters + NumMonsters) , 0 );
 		
 		if ( PlayerController(Killer) != None )  {
 			if ( !bDidTraderMovingMessage )  {
@@ -1274,6 +1274,7 @@ defaultproperties
 	 LerpGameDifficultyModifier=1.0
 	 //[end]
 	 
+	 MaxMonsters=1000
 	 MaxAliveMonsters=40
 	 JammedMonstersCheckDelay=20
 	 ShopListUpdateDelay=1.0

@@ -39,7 +39,7 @@ var		float										BossWaveRespawnCashModifier;
 var		int											BossWaveStartDelay;
 var		float										BossWaveDoorsRepairChance;
 
-var		IRange										StartShoppingTime;
+var		IRange										InitialShoppingTime;
 
 var		int											InitialWaveNum;
 
@@ -60,7 +60,7 @@ function GetMaxAliveMonsters()
 defaultproperties
 {
 	 InitialWaveNum=0
-	 StartShoppingTime=(Min=120,Max=140)
+	 InitialShoppingTime=(Min=120,Max=140)
 	 MinGameDifficulty=1.0
 	 MaxGameDifficulty=7.0
 	 MinHumanPlayers=1

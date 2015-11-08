@@ -84,6 +84,8 @@ var		transient	int						NumActivePlayers;
 var					float					UnauthorizedChangesCheckDelay;
 var					float					NextUnauthorizedChangesCheckTime;
 
+var					name					MatchStateName;
+
 //[end] Varibles
 //====================================================================
 
@@ -334,7 +336,6 @@ event InitGame( string Options, out string Error )
 	LoadGamePreset( InOpt );
 	
 	SetupLevelRules();
-	
 	DefaultGameSpeed = default.GameSpeed;
 	// Clamping MaxPlayers
 	MaxPlayers = Clamp( MaxHumanPlayers, MinHumanPlayers, 32 );
@@ -1013,81 +1014,28 @@ function Logout( Controller Exiting )
 		CheckMaxLives(None);
 }
 
-function CheckForPlayersDeficit()
-{
-	local	byte	Num;
-	
-	Num = MaxPlayers / 2;
-	while ( NeedPlayers() && Num > 0 )  {
-		if ( AddBot() && RemainingBots > 0 )
-			--RemainingBots;
-		--Num;
-	}
-}
-
-// Start the game - inform all actors that the match is starting, and spawn player pawns
 function StartMatch()
 {
-	local	PlayerReplicationInfo	PRI;
-	local	Controller				P;
-	local	Actor					A;
-	local	int						i;
-	
-	bWaitingToStartMatch = False;
-	// From GameInfo.uc
-	if ( GameStats != None )
-		GameStats.StartGame();
-	
-	// tell all actors the game is starting
-	ForEach AllActors( class'Actor', A )
-		A.MatchStarting();
-	
-	//[block] From DeathMatch.uc State'MatchInProgress' (BeginState() function)
-	ForEach DynamicActors( class'PlayerReplicationInfo', PRI )
-		PRI.StartTime = 0;
-	
-	ElapsedTime = 0;
-	StartupStage = 5;
-	PlayStartupMessage();
-	StartupStage = 6;
-	//[end]
-	if ( Level.NetMode == NM_Standalone )
-		RemainingBots = InitialBots;
-	else
-		RemainingBots = 0;
-	GameReplicationInfo.RemainingMinute = RemainingTime;
-	
-	bAllowPlayerSpawn = True;
-	// start human players first
-	for ( i = 0; i < PlayerList.Length; ++i )  {
-		if ( PlayerList[i] != None && PlayerList[i].Pawn == None )  {
-			if ( bGameEnded )
-				Return; // telefrag ended the game with ridiculous frag limit
-			else if ( PlayerList[i].CanRestartPlayer() )
-				RestartPlayer( PlayerList[i] );
-		}
-	}
-	// start AI players
-	for ( P = Level.ControllerList; P != None; P = P.nextController )  {
-		if ( P.bIsPlayer && !P.IsA('PlayerController') )  {
-			if ( Level.NetMode == NM_Standalone )
-				RestartPlayer( P );
-			else
-				P.GotoState('Dead','MPStart');
-		}
-	}
-	bMustJoinBeforeStart = False;
-	CheckForPlayersDeficit();
-	bMustJoinBeforeStart = default.bMustJoinBeforeStart;
-	bAllowPlayerSpawn = False;
-	GameReplicationInfo.bMatchHasBegun = True;
-	log("START MATCH");
-	//GotoState('BeginNewWave');
+	if ( IsInState('PendingMatch') )
+		GotoState('StartingMatch');
 }
 
 auto state PendingMatch
 {
-	function bool AddBot(optional string botName)
+	function BeginState()
+	{
+		bWaitingToStartMatch = True;
+		StartupStage = 0;
+		NetWait = Max(NetWait, 0);
+		if ( LobbyTimeout > 0 )
+			CountDown = LobbyTimeout;
+		else
+			CountDown = -1;	// No lobby timeout
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
+	}
+	
+	function bool AddBot( optional string botName )
     {
         if ( Level.NetMode == NM_Standalone )
             ++InitialBots;
@@ -1102,10 +1050,7 @@ auto state PendingMatch
 	
 	function RestartPlayer( Controller aPlayer )
 	{
-		if ( CountDown != 0 )
-			Return;
-		
-		Global.RestartPlayer(aPlayer);
+		Return;
 	}
 
 	function Timer()
@@ -1118,7 +1063,6 @@ auto state PendingMatch
 		// Spectating only.
 		if ( Level.NetMode == NM_StandAlone && NumSpectators > 0 )  {
 			StartMatch();
-			PlayStartupMessage();
 			Return;
 		}
 
@@ -1170,21 +1114,7 @@ auto state PendingMatch
 		if ( CountDown == 0 || (ReadyCount >= NumPlayers && !bReviewingJumpspots) )  {
 			CountDown = 0;
 			StartMatch();
-			PlayStartupMessage();
 		}
-	}
-
-	function BeginState()
-	{
-		bWaitingToStartMatch = True;
-		StartupStage = 0;
-		NetWait = Max(NetWait, 0);
-		if ( LobbyTimeout > 0 )
-			CountDown = LobbyTimeout;
-		else
-			CountDown = -1;	// No lobby timeout
-		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
-			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
 	}
 
 	function EndState()
@@ -1196,6 +1126,93 @@ auto state PendingMatch
 Begin:
 	if ( bQuickStart )
 		StartMatch();
+}
+
+function CheckForPlayersDeficit()
+{
+	local	byte	Num;
+	
+	Num = MaxPlayers / 2;
+	while ( NeedPlayers() && Num > 0 )  {
+		if ( AddBot() && RemainingBots > 0 )
+			--RemainingBots;
+		--Num;
+	}
+}
+
+// Start the game - inform all actors that the match is starting, and spawn player pawns
+state StartingMatch
+{
+	function SpawnPlayers()
+	{
+		local	Controller	P;
+		local	int			i;
+		
+		// Allowing to spawn Players
+		bAllowPlayerSpawn = True;
+		// start human players first
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i] != None && PlayerList[i].Pawn == None )  {
+				if ( bGameEnded )
+					Return; // telefrag ended the game with ridiculous frag limit
+				else if ( PlayerList[i].CanRestartPlayer() )
+					RestartPlayer( PlayerList[i] );
+			}
+		}
+		// start AI players
+		for ( P = Level.ControllerList; P != None; P = P.nextController )  {
+			if ( P.bIsPlayer && !P.IsA('PlayerController') )  {
+				if ( Level.NetMode == NM_Standalone )
+					RestartPlayer( P );
+				else
+					P.GotoState('Dead','MPStart');
+			}
+		}
+		bMustJoinBeforeStart = False;
+		CheckForPlayersDeficit();
+		bMustJoinBeforeStart = default.bMustJoinBeforeStart;
+		// Disallowing to spawn Players
+		bAllowPlayerSpawn = False;
+	}
+	
+	function BeginMatch()
+	{
+		GotoState(MatchStateName);
+	}
+	
+	event BeginState()
+	{
+		local	PlayerReplicationInfo	PRI;
+		local	Actor					A;
+		
+		bWaitingToStartMatch = False;
+		// From GameInfo.uc
+		if ( GameStats != None )
+			GameStats.StartGame();
+		
+		// tell all actors the game is starting
+		ForEach AllActors( class'Actor', A )
+			A.MatchStarting();
+		
+		//[block] From DeathMatch.uc State'MatchInProgress' (BeginState() function)
+		ForEach DynamicActors( class'PlayerReplicationInfo', PRI )
+			PRI.StartTime = 0;
+		
+		ElapsedTime = 0;
+		StartupStage = 5;
+		PlayStartupMessage();
+		StartupStage = 6;
+		//[end]
+		if ( Level.NetMode == NM_Standalone )
+			RemainingBots = InitialBots;
+		else
+			RemainingBots = 0;
+		GameReplicationInfo.RemainingMinute = RemainingTime;
+		SpawnPlayers();
+		log("START MATCH");
+		GameReplicationInfo.bMatchHasBegun = True;
+		BeginMatch();
+	}
 }
 
 function ResetSlowMoInstigator()

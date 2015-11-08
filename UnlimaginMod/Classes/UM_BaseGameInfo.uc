@@ -1148,7 +1148,7 @@ state StartingMatch
 		local	Controller	P;
 		local	int			i;
 		
-		// Allowing to spawn Players
+		// Allow to spawn Players
 		bAllowPlayerSpawn = True;
 		// start human players first
 		for ( i = 0; i < PlayerList.Length; ++i )  {
@@ -1171,7 +1171,7 @@ state StartingMatch
 		bMustJoinBeforeStart = False;
 		CheckForPlayersDeficit();
 		bMustJoinBeforeStart = default.bMustJoinBeforeStart;
-		// Disallowing to spawn Players
+		// Disallow to spawn Players
 		bAllowPlayerSpawn = False;
 	}
 	
@@ -1203,10 +1203,12 @@ state StartingMatch
 		PlayStartupMessage();
 		StartupStage = 6;
 		//[end]
+		
 		if ( Level.NetMode == NM_Standalone )
 			RemainingBots = InitialBots;
 		else
 			RemainingBots = 0;
+		
 		GameReplicationInfo.RemainingMinute = RemainingTime;
 		SpawnPlayers();
 		log("START MATCH");
@@ -1271,6 +1273,29 @@ function CheckForUnauthorizedChanges()
 		SetGameDifficulty( GameDifficulty );
 }
 
+// Set gameplay speed.
+function SetGameSpeed( float T )
+{
+	local	float	OldSpeed;
+
+	if ( AllowGameSpeedChange() )  {
+		OldSpeed = GameSpeed;
+		GameSpeed = FMax(T, 0.1);
+		Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
+		if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
+			default.GameSpeed = GameSpeed;
+			class'GameInfo'.static.StaticSaveConfig();
+		}
+	}
+	else  {
+		Level.TimeDilation = Level.default.TimeDilation;
+		GameSpeed = 1.0;
+		default.GameSpeed = GameSpeed;
+	}
+	
+	SetTimer((Level.TimeDilation / GameSpeed), True);
+}
+
 event Tick( float DeltaTime )
 {
 	local	float		TrueDeltaTime;
@@ -1320,29 +1345,6 @@ event Tick( float DeltaTime )
 			bSpeedingBackUp = False;
 		}
 	}
-}
-
-// Set gameplay speed.
-function SetGameSpeed( float T )
-{
-	local	float	OldSpeed;
-
-	if ( AllowGameSpeedChange() )  {
-		OldSpeed = GameSpeed;
-		GameSpeed = FMax(T, 0.1);
-		Level.TimeDilation = Level.default.TimeDilation * GameSpeed;
-		if ( !bZEDTimeActive && GameSpeed != OldSpeed )  {
-			default.GameSpeed = GameSpeed;
-			class'GameInfo'.static.StaticSaveConfig();
-		}
-	}
-	else  {
-		Level.TimeDilation = Level.default.TimeDilation;
-		GameSpeed = 1.0;
-		default.GameSpeed = GameSpeed;
-	}
-	
-	SetTimer((Level.TimeDilation / GameSpeed), True);
 }
 
 // Called when a dramatic event happens that might cause slomo

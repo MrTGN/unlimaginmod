@@ -29,10 +29,12 @@ var					bool						bNoSpawnRestrictions;
 
 var()				string						MonsterClassName;	// Dynamic MonsterClass Load
 var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
-var()				array<IRange>				WaveLimits;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<Range>				WaveSpawnChances;	// This wave spawn Chance (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<IRange>				WaveSquadLimits;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+
+var()				array<IRange>				WaveLimit;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+var()				array<Range>				WaveSpawnChance;	// This wave spawn Chance (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+var()				array<IRange>				WaveSquadLimit;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
 //ToDo:#LimitPerMinute	var()				array<Range>				WaveSquadDelays;	// Will delay next spawn if reached this wave Squad limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
+var()				array<Range>				WaveLimitPerMinute;		// Limit Per Minute
 
 var		transient	UM_InvasionGame				InvasionGame;		//
 var		transient	LevelInfo					Level;
@@ -46,7 +48,9 @@ var		transient	int							NumSpawnedLastSquad;
 var		transient	int							CurrentWaveLimit;
 var		transient	float						CurrentSpawnChance;
 var		transient	int							CurrentSquadLimit;
-var		transient	float						CurrentSquadDelay;
+var		transient	int							CurrentDeltaLimit;
+var		transient	float						CurrentDeltaDuration;
+var		transient	float						NextDeltaLimitResetTime;
 
 //[end] Varibles
 //====================================================================
@@ -70,14 +74,35 @@ function bool InitDataFor( UM_InvasionGame IG )
 //ToDo: доработать. ѕеренести нужнные переменные еще и на работу со сложностью.
 function UpdateDynamicParameters()
 {
-	// CurrentWaveLimit
-	CurrentWaveLimit = Round( Lerp(InvasionGame.LerpNumPlayersModifier, float(WaveLimits[InvasionGame.WaveNum].Min), float(WaveLimits[InvasionGame.WaveNum].Max) , True) );
-	// CurrentSpawnChance
-	CurrentSpawnChance = Lerp( InvasionGame.LerpNumPlayersModifier, WaveSpawnChances[InvasionGame.WaveNum].Min, WaveSpawnChances[InvasionGame.WaveNum].Max, True );
-	// CurrentSquadLimit
-	CurrentSquadLimit = Round( Lerp(InvasionGame.LerpNumPlayersModifier, float(WaveSquadLimits[InvasionGame.WaveNum].Min), float(WaveSquadLimits[InvasionGame.WaveNum].Max) , True) );
-	// CurrentSquadDelay
-	CurrentSquadDelay = Lerp( InvasionGame.LerpNumPlayersModifier, WaveSquadDelays[InvasionGame.WaveNum].Min, WaveSquadDelays[InvasionGame.WaveNum].Max, True );
+	local	float	GameModif;
+	
+	GameModif = (InvasionGame.LerpNumPlayersModifier + InvasionGame.LerpGameDifficultyModifier) * 0.5;
+	
+	if ( InvasionGame.WaveNum < InvasionGame.FinalWave )  {
+		// CurrentWaveLimit
+		// «ависит от сложности и количества игроков
+		CurrentWaveLimit = Round( Lerp(GameModif, float(WaveLimit[InvasionGame.WaveNum].Min), float(WaveLimit[InvasionGame.WaveNum].Max) ) );
+		
+		// CurrentSpawnChance
+		// «ависит от сложности и количества игроков
+		CurrentSpawnChance = Lerp( GameModif, WaveSpawnChance[InvasionGame.WaveNum].Min, WaveSpawnChance[InvasionGame.WaveNum].Max );
+		
+		// CurrentSquadLimit
+		// «ависит от сложности и количества игроков
+		CurrentSquadLimit = Round( Lerp(GameModif, float(WaveSquadLimit[InvasionGame.WaveNum].Min), float(WaveSquadLimit[InvasionGame.WaveNum].Max) ) );
+		
+		// CurrentSquadDelay
+		// «ависит от сложности и количества игроков
+		CurrentLimitPerMinute = Lerp( GameModif, WaveLimitPerMinute[InvasionGame.WaveNum].Min, WaveLimitPerMinute[InvasionGame.WaveNum].Max );
+		if ( CurrentLimitPerMinute < 1.0 )  {
+			CurrentDeltaLimit = 1;
+			CurrentDeltaDuration = 60.0 / CurrentLimitPerMinute;
+		}
+		else  {
+			CurrentDeltaLimit = int(CurrentLimitPerMinute);
+			CurrentDeltaDuration = 60.0 * (float(CurrentDeltaLimit) / CurrentLimitPerMinute);
+		}
+	}
 	
 	// Check CurrentSquadLimit
 	if ( Level.TimeSeconds < NextSquadSpawnTime )

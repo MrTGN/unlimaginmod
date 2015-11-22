@@ -92,8 +92,7 @@ var					name					MatchStateName;
 //========================================================================
 //[block] Functions
 
-function NotifyNumActivePlayersChanged();
-function NotifyNumBotsChanged();
+function NotifyNumPlayersChanged();
 
 //[block] PlayerList
 protected function CheckPlayerList()
@@ -102,8 +101,10 @@ protected function CheckPlayerList()
 	
 	for ( i = 0; i < PlayerList.Length; ++i )  {
 		// Check for broken reference
-		if ( PlayerList[i] == None )
+		if ( PlayerList[i] == None )  {
 			PlayerList.Remove(i, 1);
+			--i;
+		}
 		else if ( PlayerList[i].bIsActivePlayer )
 			++j;
 	}
@@ -111,7 +112,7 @@ protected function CheckPlayerList()
 	// Check for changes
 	if ( NumActivePlayers != j )  {
 		NumActivePlayers = j;
-		NotifyNumActivePlayersChanged();
+		NotifyNumPlayersChanged();
 	}
 }
 
@@ -150,8 +151,10 @@ protected function CheckSpectatorList()
 	
 	// Check for broken reference
 	for ( i = 0; i < SpectatorList.Length; ++i )  {
-		if ( SpectatorList[i] == None )
+		if ( SpectatorList[i] == None )  {
 			SpectatorList.Remove(i, 1);
+			--i;
+		}
 	}
 	NumSpectators = SpectatorList.Length;
 }
@@ -191,13 +194,15 @@ protected function CheckBotList()
 	
 	// Check for broken reference
 	for ( i = 0; i < BotList.Length; ++i )  {
-		if ( BotList[i] == None )
+		if ( BotList[i] == None )  {
 			BotList.Remove(i, 1);
+			--i;
+		}
 	}
 	// Check for changes
 	if ( NumBots != BotList.Length )  {
 		NumBots = BotList.Length;
-		NotifyNumBotsChanged();
+		NotifyNumPlayersChanged();
 	}
 }
 
@@ -1091,14 +1096,17 @@ auto state PendingMatch
 		// check if players are ready
 		StartupStage = 1;
 		for ( i = 0; i < PlayerList.Length; ++i )  {
-			if ( PlayerList[i] == None )
+			if ( PlayerList[i] == None )  {
 				PlayerList.Remove(i, 1);
+				--i;
+			}
 			// Count Ready players
 			else if ( PlayerList[i].PlayerReplicationInfo != None && PlayerList[i].PlayerReplicationInfo.bReadyToPlay )
 				++ReadyCount;
 		}
 		NumPlayers = PlayerList.Length;
-		if ( NumPlayers < 1 || ReadyCount < 1 )
+		// Do not start the game if players is not enough
+		if ( NumPlayers < MinHumanPlayers || ReadyCount < MinHumanPlayers )
 			Return;
 		
 		// Lobby Timeout
@@ -1152,7 +1160,11 @@ state StartingMatch
 		bAllowPlayerSpawn = True;
 		// start human players first
 		for ( i = 0; i < PlayerList.Length; ++i )  {
-			if ( PlayerList[i] != None && PlayerList[i].Pawn == None )  {
+			if ( PlayerList[i] == None )  {
+				PlayerList.Remove(i, 1);
+				--i;
+			}
+			else if ( PlayerList[i].Pawn == None )  {
 				if ( bGameEnded )
 					Return; // telefrag ended the game with ridiculous frag limit
 				else if ( PlayerList[i].CanRestartPlayer() )

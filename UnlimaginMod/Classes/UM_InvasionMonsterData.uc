@@ -30,26 +30,24 @@ var					bool						bNoSpawnRestrictions;
 var()				string						MonsterClassName;	// Dynamic MonsterClass Load
 var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
 
-var()				array<IRange>				WaveLimit;			// This wave overal spawn limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<Range>				WaveSpawnChance;	// This wave spawn Chance (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<IRange>				WaveSquadLimit;	// This wave limit of the current monster in squad (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-//ToDo:#LimitPerMinute	var()				array<Range>				WaveSquadDelays;	// Will delay next spawn if reached this wave Squad limit (Min - 1 HumanPlayer, Max - MaxHumanPlayers)
-var()				array<Range>				WaveLimitPerMinute;		// Limit Per Minute
+var()				array<IRange>				WaveLimit;			// This wave overal spawn limit (Min - , Max - )
+var()				array<Range>				WaveSpawnChance;	// This wave spawn Chance (Min - , Max - )
+var()				array<IRange>				WaveSquadLimit;	// This wave limit per squad (Min - , Max - )
+var()				array<IRange>				WaveDeltaLimit;		// Limit per DeltaTime
+var()				array<float>				WaveDeltaTime;		// DeltaLimit Time in seconds
 
 var		transient	UM_InvasionGame				InvasionGame;		//
 var		transient	LevelInfo					Level;
 
-var		transient	float						LastSquadSpawnTime;	//
-var		transient	float						NextSquadSpawnTime;	// Freezing spawn up to this time
-
 var		transient	int							NumSpawnedThisWave;
-var		transient	int							NumSpawnedLastSquad;
+var		transient	int							NumInCurrentSquad;
+var		transient	int							DeltaCounter;
 
 var		transient	int							CurrentWaveLimit;
 var		transient	float						CurrentSpawnChance;
 var		transient	int							CurrentSquadLimit;
 var		transient	int							CurrentDeltaLimit;
-var		transient	float						CurrentDeltaDuration;
+var		transient	float						CurrentDeltaTime;
 var		transient	float						NextDeltaLimitResetTime;
 
 //[end] Varibles
@@ -71,84 +69,80 @@ function bool InitDataFor( UM_InvasionGame IG )
 	Level = InvasionGame.Level;
 }
 
-//ToDo: доработать. Перенести нужнные переменные еще и на работу со сложностью.
+//ToDo: Дописать логику для волны босса.
 function UpdateDynamicParameters()
 {
 	local	float	GameModif;
 	
 	GameModif = (InvasionGame.LerpNumPlayersModifier + InvasionGame.LerpGameDifficultyModifier) * 0.5;
 	
+	// Normal Wave
 	if ( InvasionGame.WaveNum < InvasionGame.FinalWave )  {
 		// CurrentWaveLimit
-		// Зависит от сложности и количества игроков
 		CurrentWaveLimit = Round( Lerp(GameModif, float(WaveLimit[InvasionGame.WaveNum].Min), float(WaveLimit[InvasionGame.WaveNum].Max) ) );
 		
 		// CurrentSpawnChance
-		// Зависит от сложности и количества игроков
 		CurrentSpawnChance = Lerp( GameModif, WaveSpawnChance[InvasionGame.WaveNum].Min, WaveSpawnChance[InvasionGame.WaveNum].Max );
 		
 		// CurrentSquadLimit
-		// Зависит от сложности и количества игроков
 		CurrentSquadLimit = Round( Lerp(GameModif, float(WaveSquadLimit[InvasionGame.WaveNum].Min), float(WaveSquadLimit[InvasionGame.WaveNum].Max) ) );
 		
-		// CurrentSquadDelay
-		// Зависит от сложности и количества игроков
-		CurrentLimitPerMinute = Lerp( GameModif, WaveLimitPerMinute[InvasionGame.WaveNum].Min, WaveLimitPerMinute[InvasionGame.WaveNum].Max );
-		if ( CurrentLimitPerMinute < 1.0 )  {
-			CurrentDeltaLimit = 1;
-			CurrentDeltaDuration = 60.0 / CurrentLimitPerMinute;
-		}
-		else  {
-			CurrentDeltaLimit = int(CurrentLimitPerMinute);
-			CurrentDeltaDuration = 60.0 * (float(CurrentDeltaLimit) / CurrentLimitPerMinute);
-		}
+		// CurrentDeltaLimit
+		CurrentDeltaLimit = Round( Lerp(GameModif, float(WaveDeltaLimit[InvasionGame.WaveNum].Min), float(WaveDeltaLimit[InvasionGame.WaveNum].Max) ) );
+		
+		// CurrentDeltaTime
+		CurrentDeltaTime = WaveDeltaTime[InvasionGame.WaveNum];
 	}
-	
-	// Check CurrentSquadLimit
-	if ( Level.TimeSeconds < NextSquadSpawnTime )
-		NextSquadSpawnTime = LastSquadSpawnTime + CurrentSquadDelay;
+	// Boss Wave
+	else  {
+		
+	}
 }
 
+//[block] ToDo: вообще в этих функциях нет необходимости, ибо они состоят из одной строки.
+// Меньше лишних вызовов однострочных функций!
 function IncrementWaveSpawnCounter()
 {
 	++NumSpawnedThisWave;
 }
 
-function bool CheckCurrentWaveLimit()
+function ResetWaveSpawnCounter()
 {
-	Return CurrentWaveLimit < 0 || NumSpawnedThisWave < CurrentWaveLimit;
-}
-
-function bool CheckCurrentSpawnChance()
-{
-	Return CurrentSpawnChance > 0.0 && FRand() <= CurrentSpawnChance;
+	NumSpawnedThisWave = 0;
 }
 
 function IncrementSquadCounter()
 {
-	++NumSpawnedLastSquad;
-	if ( CurrentSquadLimit > 0 && NumSpawnedLastSquad >= CurrentSquadLimit )  {
-		LastSquadSpawnTime = Level.TimeSeconds;
-		NextSquadSpawnTime = LastSquadSpawnTime + CurrentSquadDelay;
-	}
+	++NumInCurrentSquad;
 }
 
-function ResetLastSquadCounter()
+function ResetSquadCounter()
 {
-	NumSpawnedLastSquad = 0;
+	NumInCurrentSquad = 0;
 }
+//[end]
 
-function bool CheckCurrentSquadLimit()
+function ResetDeltaCounter()
 {
-	Return CurrentSquadLimit < 0 || Level.TimeSeconds >= NextSquadSpawnTime;
+	DeltaCounter = 0;
+	NextDeltaCounterResetTime = Level.TimeSeconds + CurrentDeltaTime;
 }
 
 function bool CanSpawn()
 {
+	if ( bDisabled )
+		Return False;
+	
 	if ( bNoSpawnRestrictions )
 		Return True;
 	
-	Return CheckCurrentWaveLimit() && CheckCurrentSpawnChance() && CheckCurrentSquadLimit();
+	if ( CurrentSpawnChance <= 0.0 )
+		Return False;
+	
+	if ( Level.TimeSeconds >= NextDeltaCounterResetTime )
+		ResetDeltaCounter();
+	
+	Return NumSpawnedThisWave < CurrentWaveLimit && NumInCurrentSquad < CurrentSquadLimit && DeltaCounter < CurrentDeltaLimit && (CurrentSpawnChance >= 1.0 || FRand() <= CurrentSpawnChance);
 }
 
 //[end] Functions

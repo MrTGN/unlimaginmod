@@ -33,16 +33,19 @@ var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
 var()				array<IRange>				WaveLimit;			// This wave overal spawn limit (Min - , Max - )
 var()				array<Range>				WaveSpawnChance;	// This wave spawn Chance (Min - , Max - )
 var()				array<IRange>				WaveSquadLimit;	// This wave limit per squad (Min - , Max - )
+var()				float						WavesDeltaTime;		// DeltaLimit Time in seconds
 var()				array<IRange>				WaveDeltaLimit;		// Limit per DeltaTime
-var()				array<float>				WaveDeltaTime;		// DeltaLimit Time in seconds
+
 
 var		transient	UM_InvasionGame				InvasionGame;		//
 var		transient	LevelInfo					Level;
 
+// Spawn Counters
 var		transient	int							NumSpawnedThisWave;
 var		transient	int							NumInCurrentSquad;
 var		transient	int							DeltaCounter;
 
+// Temporary variables
 var		transient	int							CurrentWaveLimit;
 var		transient	float						CurrentSpawnChance;
 var		transient	int							CurrentSquadLimit;
@@ -67,6 +70,8 @@ function bool InitDataFor( UM_InvasionGame IG )
 	
 	InvasionGame = IG;
 	Level = InvasionGame.Level;
+	if ( InvasionGame == None || Level == None )
+		Return False;
 }
 
 //ToDo: Дописать логику для волны босса.
@@ -91,41 +96,12 @@ function UpdateDynamicParameters()
 		CurrentDeltaLimit = Round( Lerp(GameModif, float(WaveDeltaLimit[InvasionGame.WaveNum].Min), float(WaveDeltaLimit[InvasionGame.WaveNum].Max) ) );
 		
 		// CurrentDeltaTime
-		CurrentDeltaTime = WaveDeltaTime[InvasionGame.WaveNum];
+		CurrentDeltaTime = WavesDeltaTime;
 	}
 	// Boss Wave
 	else  {
 		
 	}
-}
-
-//[block] ToDo: вообще в этих функциях нет необходимости, ибо они состоят из одной строки.
-// Меньше лишних вызовов однострочных функций!
-function IncrementWaveSpawnCounter()
-{
-	++NumSpawnedThisWave;
-}
-
-function ResetWaveSpawnCounter()
-{
-	NumSpawnedThisWave = 0;
-}
-
-function IncrementSquadCounter()
-{
-	++NumInCurrentSquad;
-}
-
-function ResetSquadCounter()
-{
-	NumInCurrentSquad = 0;
-}
-//[end]
-
-function ResetDeltaCounter()
-{
-	DeltaCounter = 0;
-	NextDeltaCounterResetTime = Level.TimeSeconds + CurrentDeltaTime;
 }
 
 function bool CanSpawn()
@@ -139,8 +115,10 @@ function bool CanSpawn()
 	if ( CurrentSpawnChance <= 0.0 )
 		Return False;
 	
-	if ( Level.TimeSeconds >= NextDeltaCounterResetTime )
-		ResetDeltaCounter();
+	if ( Level.TimeSeconds >= NextDeltaCounterResetTime )  {
+		DeltaCounter = 0;
+		NextDeltaCounterResetTime = Level.TimeSeconds + CurrentDeltaTime;
+	}
 	
 	Return NumSpawnedThisWave < CurrentWaveLimit && NumInCurrentSquad < CurrentSquadLimit && DeltaCounter < CurrentDeltaLimit && (CurrentSpawnChance >= 1.0 || FRand() <= CurrentSpawnChance);
 }

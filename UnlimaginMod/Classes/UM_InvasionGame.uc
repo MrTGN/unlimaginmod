@@ -371,10 +371,8 @@ function UpdateDynamicParameters()
 	}
 	
 	// Monster DynamicParameters
-	for ( i = 0; i < Monsters.Length; ++i )  {
-		if ( Monsters[i] != None )
-			Monsters[i].UpdateDynamicParameters();
-	}
+	for ( i = 0; i < Monsters.Length; ++i )
+		Monsters[i].UpdateDynamicParameters();
 }
 
 function NotifyGameDifficultyChanged()
@@ -522,37 +520,47 @@ function SetupPickups()
 {
 	local	int		i, r, j;
 	
-	/*
-	// Reset all the of the WeaponPickups
-	for ( i = 0; i < WeaponPickups.Length; ++i )
-		WeaponPickups[i].DisableMe();
-		
-	// Reset all the of the AmmoPickups
-	for ( i = 0; i < AmmoPickups.Length; ++i )
-		AmmoPickups[i].GoToState('Sleeping', 'Begin');
-	*/
-	
+	// Find already spawned weapon
+	for ( i = 0; i < WeaponPickups.Length; ++i )  {
+		if ( WeaponPickups[i] == None )  {
+			WeaponPickups.Remove(i, 1);
+			--i;
+		}
+		else if ( WeaponPickups[i].bIsEnabledNow )
+			++j;
+	}
+	i = Min( Round(float(WeaponPickups.Length) * 0.5 / GetDifficultyModifier()), (WeaponPickups.Length - 1) ) - j;
 	// Ramdomly select which WeaponPickups to spawn
-	i = Min( Round(float(WeaponPickups.Length) * 0.5 / GetDifficultyModifier()), (WeaponPickups.Length - 1) );
 	j = 0;
 	while ( i > 0 && j < 10000 )  {
 		++j; // Prevents runaway loop
 		r = Rand( WeaponPickups.Length );
 		// Enable if it wasn't enabled
-		if ( !WeaponPickups[r].bIsEnabledNow )
+		if ( !WeaponPickups[r].bIsEnabledNow )  {
 			WeaponPickups[r].EnableMe();
-		--i;
+			--i;
+		}
 	}
 	
+	// Find already spawned ammo
+	for ( i = 0; i < AmmoPickups.Length; ++i )  {
+		if ( AmmoPickups[i] == None )  {
+			AmmoPickups.Remove(i, 1);
+			--i;
+		}
+		else if ( !AmmoPickups[i].bSleeping )
+			++j;
+	}
+	i = Min( Round(float(AmmoPickups.Length) * 0.6 / GetDifficultyModifier()), (AmmoPickups.Length - 1) ) - j;
 	// Ramdomly select which AmmoPickups to spawn
-	i = Min( Round(float(AmmoPickups.Length) * 0.6 / GetDifficultyModifier()), (AmmoPickups.Length - 1) );
 	j = 0;
 	while ( i > 0 && j < 10000 )  {
 		++j; // Prevents runaway loop
 		r = Rand( AmmoPickups.Length );
-		if ( AmmoPickups[r].bSleeping )
+		if ( AmmoPickups[r].bSleeping )  {
 			AmmoPickups[r].GoToState('Pickup');
-		--i;
+			--i;
+		}
 	}
 }
 
@@ -988,27 +996,27 @@ function bool AddSquad() { }
 //ToDo: Переписать! Issue #318
 function BuildNextSquad()
 {
-	local	int		c, r,
+	local	int		c, i;
 	
+	// Reset monster squad counters
 	NextSpawnSquad.Length = 0;
+	for ( i = 0; i < Monster.Length; ++i )
+		Monster[i].NumInCurrentSquad = 0;
+
+	// Building squad monster list
 	while ( NextSpawnSquad.Length < NextMonsterSquadSize && c < 250 )  {
 		++c;
-		r = Rand(Monsters.Length);
-		if ( Monsters[r].MonsterClass != None && (Monsters[r].WaveLimit.Length <= WaveNum || Monsters[r].WaveLimit[WaveNum] != 0) 
-			 && (Monsters[r].WaveSpawnChance.Length <= WaveNum || FRand() <= Monsters[r].WaveSpawnChance[WaveNum]) )  {
-			NextSpawnSquad[ NextSpawnSquad.Length ] = Monsters[r].MonsterClass;
-			// NextSpawnTime
-			if ( Monsters[r].WaveSpawnDelays.Length > WaveNum && Monsters[r].WaveSpawnDelays[WaveNum] > 0.0 )
-				Monsters[r].NextSpawnTime = Level.TimeSeconds + Monsters[r].WaveSpawnDelays[WaveNum];
-			// WavesLimit
-			if ( Monsters[r].WavesLimit.Length > WaveNum && Monsters[r].WavesLimit[WaveNum] > 0 )  {
-				--Monsters[r].WavesLimit[WaveNum];
-				// Remove this WaveMonster
-				if ( Monsters[r].WavesLimit[WaveNum] < 1 )
-					Monsters.Remove(r, 1);
-			}
+		i = Rand(Monsters.Length);
+		if ( Monsters[i].CanSpawn() )  {
+			// Increment spawn counters
+			++Monster[i].NumSpawnedThisWave;
+			++Monster[i].NumInCurrentSquad;
+			++Monster[i].DeltaCounter;
+			// Add to the monster list
+			NextSpawnSquad[NextSpawnSquad.Length] = Monster[i].MonsterClass;
 		}
 	}
+	
 	// Next Monster Squad Size
 	NextMonsterSquadSize = Round( Lerp(FRand(), float(GameWaves[WaveNum].MonsterSquadSize.Min), float(GameWaves[WaveNum].MonsterSquadSize.Max)) );
 }
@@ -1081,6 +1089,13 @@ function DoWaveEnd()
 		//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
 	}
 	
+	// Reset monster spawn counters
+	for ( i = 0; i < Monster.Length; ++i )  {
+		Monster[i].NumSpawnedThisWave = 0;
+		Monster[i].DeltaCounter = 0;
+		Monster[i].NumInCurrentSquad = 0;
+	}
+	
 	// ControllerList
 	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
 		++i;	// To prevent runaway loop
@@ -1145,6 +1160,12 @@ state WaveInProgress
 		rewardFlag = False;
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
+		// Reset monster spawn counters
+		for ( i = 0; i < Monster.Length; ++i )  {
+			Monster[i].NumSpawnedThisWave = 0;
+			Monster[i].DeltaCounter = 0;
+			Monster[i].NumInCurrentSquad = 0;
+		}
 		
 		// Setup wave parameters
 		WaveCountDown = CurrentWaveDuration + Min( Round(TimerCounter), 1 );

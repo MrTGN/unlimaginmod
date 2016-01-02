@@ -993,7 +993,6 @@ function SetupWave() { }
 function AddSpecialSquad() { }
 function bool AddSquad() { }
 
-//ToDo: Переписать! Issue #318
 function BuildNextSquad()
 {
 	local	int		c, i;
@@ -1270,6 +1269,8 @@ state BossWaveInProgress
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
 		
+		WaveCountDown = Round( CurrentSquadsSpawnPeriod + CurrentSquadsSpawnRandPeriod * (2.0 * FRand() - 1.0) );
+		
 		bWaveBossInProgress = True;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;
@@ -1471,14 +1472,22 @@ defaultproperties
 		 WaveSquadLimit(4)=(Min=5,Max=10)
 		 WaveSquadLimit(5)=(Min=5,Max=10)
 		 WaveSquadLimit(6)=(Min=5,Max=10)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=34.0,Max=32.0)
-		 WaveSquadDelays(1)=(Min=33.0,Max=31.0)
-		 WaveSquadDelays(2)=(Min=32.0,Max=30.0)
-		 WaveSquadDelays(3)=(Min=31.0,Max=29.0)
-		 WaveSquadDelays(4)=(Min=30.0,Max=28.0)
-		 WaveSquadDelays(5)=(Min=29.0,Max=27.0)
-		 WaveSquadDelays(6)=(Min=28.0,Max=26.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=6,Max=18)
+		 WaveDeltaLimit(1)=(Min=6,Max=20)
+		 WaveDeltaLimit(2)=(Min=8,Max=22)
+		 WaveDeltaLimit(3)=(Min=8,Max=22)
+		 WaveDeltaLimit(4)=(Min=10,Max=24)
+		 WaveDeltaLimit(5)=(Min=10,Max=24)
+		 WaveDeltaLimit(6)=(Min=10,Max=26)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=60.0,Max=30.0)
+		 WaveDeltaTime(1)=(Min=54.0,Max=32.0)
+		 WaveDeltaTime(2)=(Min=48.0,Max=34.0)
+		 WaveDeltaTime(3)=(Min=42.0,Max=32.0)
+		 WaveDeltaTime(4)=(Min=36.0,Max=32.0)
+		 WaveDeltaTime(5)=(Min=32.0,Max=30.0)
+		 WaveDeltaTime(6)=(Min=30.0,Max=30.0)
 	 End Object
 	 Monsters(0)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieBloatData'
 	 
@@ -1493,12 +1502,12 @@ defaultproperties
 	 Begin Object Class=UM_InvasionMonsterData Name=ZombieCrawlerData
 		 MonsterClassName="UnlimaginMod.UM_ZombieCrawler"
 		 // WaveLimit
-		 WaveLimit(0)=(Min=2,Max=20)
-		 WaveLimit(1)=(Min=3,Max=26)
-		 WaveLimit(2)=(Min=4,Max=32)
-		 WaveLimit(3)=(Min=5,Max=38)
-		 WaveLimit(4)=(Min=6,Max=44)
-		 WaveLimit(5)=(Min=7,Max=50)
+		 WaveLimit(0)=(Min=3,Max=20)
+		 WaveLimit(1)=(Min=4,Max=26)
+		 WaveLimit(2)=(Min=5,Max=32)
+		 WaveLimit(3)=(Min=6,Max=38)
+		 WaveLimit(4)=(Min=7,Max=44)
+		 WaveLimit(5)=(Min=8,Max=50)
 		 WaveLimit(6)=(Min=8,Max=56)
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.1,Max=0.2)
@@ -1516,14 +1525,22 @@ defaultproperties
 		 WaveSquadLimit(4)=(Min=3,Max=7)
 		 WaveSquadLimit(5)=(Min=4,Max=8)
 		 WaveSquadLimit(6)=(Min=4,Max=8)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=42.0,Max=38.0)
-		 WaveSquadDelays(1)=(Min=40.0,Max=36.0)
-		 WaveSquadDelays(2)=(Min=38.0,Max=34.0)
-		 WaveSquadDelays(3)=(Min=36.0,Max=32.0)
-		 WaveSquadDelays(4)=(Min=34.0,Max=30.0)
-		 WaveSquadDelays(5)=(Min=32.0,Max=28.0)
-		 WaveSquadDelays(6)=(Min=30.0,Max=26.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=2,Max=8)
+		 WaveDeltaLimit(1)=(Min=2,Max=8)
+		 WaveDeltaLimit(2)=(Min=4,Max=12)
+		 WaveDeltaLimit(3)=(Min=4,Max=12)
+		 WaveDeltaLimit(4)=(Min=6,Max=16)
+		 WaveDeltaLimit(5)=(Min=6,Max=16)
+		 WaveDeltaLimit(6)=(Min=6,Max=16)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=60.0,Max=30.0)
+		 WaveDeltaTime(1)=(Min=54.0,Max=26.0)
+		 WaveDeltaTime(2)=(Min=48.0,Max=30.0)
+		 WaveDeltaTime(3)=(Min=42.0,Max=26.0)
+		 WaveDeltaTime(4)=(Min=48.0,Max=32.0)
+		 WaveDeltaTime(5)=(Min=42.0,Max=30.0)
+		 WaveDeltaTime(6)=(Min=36.0,Max=28.0)
 	 End Object
 	 Monsters(2)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieCrawlerData'
 	 
@@ -1548,20 +1565,28 @@ defaultproperties
 		 WaveSpawnChance(6)=(Min=0.1,Max=0.2)
 		 // WaveSquadLimit
 		 WaveSquadLimit(0)=(Min=0,Max=0)
-		 WaveSquadLimit(1)=(Min=1,Max=2)
+		 WaveSquadLimit(1)=(Min=1,Max=1)
 		 WaveSquadLimit(2)=(Min=1,Max=2)
 		 WaveSquadLimit(3)=(Min=1,Max=3)
 		 WaveSquadLimit(4)=(Min=1,Max=3)
 		 WaveSquadLimit(5)=(Min=1,Max=4)
 		 WaveSquadLimit(6)=(Min=1,Max=4)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=120.0,Max=110.0)
-		 WaveSquadDelays(1)=(Min=120.0,Max=110.0)
-		 WaveSquadDelays(2)=(Min=110.0,Max=100.0)
-		 WaveSquadDelays(3)=(Min=105.0,Max=95.0)
-		 WaveSquadDelays(4)=(Min=100.0,Max=90.0)
-		 WaveSquadDelays(5)=(Min=95.0,Max=85.0)
-		 WaveSquadDelays(6)=(Min=90.0,Max=80.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=0,Max=0)
+		 WaveDeltaLimit(1)=(Min=0,Max=1)
+		 WaveDeltaLimit(2)=(Min=0,Max=2)
+		 WaveDeltaLimit(3)=(Min=0,Max=3)
+		 WaveDeltaLimit(4)=(Min=1,Max=3)
+		 WaveDeltaLimit(5)=(Min=1,Max=4)
+		 WaveDeltaLimit(6)=(Min=1,Max=4)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=120.0,Max=60.0)
+		 WaveDeltaTime(1)=(Min=120.0,Max=120.0)
+		 WaveDeltaTime(2)=(Min=120.0,Max=120.0)
+		 WaveDeltaTime(3)=(Min=120.0,Max=120.0)
+		 WaveDeltaTime(4)=(Min=120.0,Max=90.0)
+		 WaveDeltaTime(5)=(Min=90.0,Max=120.0)
+		 WaveDeltaTime(6)=(Min=60.0,Max=90.0)
 	 End Object
 	 Monsters(3)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieFleshPoundData'
 	 
@@ -1592,14 +1617,22 @@ defaultproperties
 		 WaveSquadLimit(4)=(Min=4,Max=11)
 		 WaveSquadLimit(5)=(Min=5,Max=12)
 		 WaveSquadLimit(6)=(Min=5,Max=12)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=34.0,Max=30.0)
-		 WaveSquadDelays(1)=(Min=33.0,Max=29.0)
-		 WaveSquadDelays(2)=(Min=32.0,Max=28.0)
-		 WaveSquadDelays(3)=(Min=31.0,Max=27.0)
-		 WaveSquadDelays(4)=(Min=30.0,Max=26.0)
-		 WaveSquadDelays(5)=(Min=29.0,Max=25.0)
-		 WaveSquadDelays(6)=(Min=28.0,Max=24.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=4,Max=16)
+		 WaveDeltaLimit(1)=(Min=6,Max=18)
+		 WaveDeltaLimit(2)=(Min=6,Max=18)
+		 WaveDeltaLimit(3)=(Min=8,Max=24)
+		 WaveDeltaLimit(4)=(Min=8,Max=24)
+		 WaveDeltaLimit(5)=(Min=10,Max=30)
+		 WaveDeltaLimit(6)=(Min=10,Max=30)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=30.0,Max=30.0)
+		 WaveDeltaTime(1)=(Min=30.0,Max=30.0)
+		 WaveDeltaTime(2)=(Min=24.0,Max=24.0)
+		 WaveDeltaTime(3)=(Min=30.0,Max=30.0)
+		 WaveDeltaTime(4)=(Min=24.0,Max=24.0)
+		 WaveDeltaTime(5)=(Min=30.0,Max=30.0)
+		 WaveDeltaTime(6)=(Min=24.0,Max=24.0)
 	 End Object
 	 Monsters(4)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieGoreFastData'
 	 
@@ -1627,17 +1660,25 @@ defaultproperties
 		 WaveSquadLimit(1)=(Min=1,Max=2)
 		 WaveSquadLimit(2)=(Min=1,Max=4)
 		 WaveSquadLimit(3)=(Min=1,Max=4)
-		 WaveSquadLimit(4)=(Min=2,Max=6)
-		 WaveSquadLimit(5)=(Min=2,Max=6)
-		 WaveSquadLimit(6)=(Min=2,Max=6)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=40.0,Max=36.0)
-		 WaveSquadDelays(1)=(Min=39.0,Max=35.0)
-		 WaveSquadDelays(2)=(Min=38.0,Max=34.0)
-		 WaveSquadDelays(3)=(Min=37.0,Max=33.0)
-		 WaveSquadDelays(4)=(Min=36.0,Max=32.0)
-		 WaveSquadDelays(5)=(Min=35.0,Max=31.0)
-		 WaveSquadDelays(6)=(Min=34.0,Max=30.0)
+		 WaveSquadLimit(4)=(Min=1,Max=6)
+		 WaveSquadLimit(5)=(Min=1,Max=6)
+		 WaveSquadLimit(6)=(Min=1,Max=6)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=0,Max=4)
+		 WaveDeltaLimit(1)=(Min=1,Max=4)
+		 WaveDeltaLimit(2)=(Min=1,Max=6)
+		 WaveDeltaLimit(3)=(Min=1,Max=8)
+		 WaveDeltaLimit(4)=(Min=1,Max=10)
+		 WaveDeltaLimit(5)=(Min=1,Max=12)
+		 WaveDeltaLimit(6)=(Min=1,Max=12)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=120.0,Max=90.0)
+		 WaveDeltaTime(1)=(Min=120.0,Max=90.0)
+		 WaveDeltaTime(2)=(Min=120.0,Max=90.0)
+		 WaveDeltaTime(3)=(Min=120.0,Max=120.0)
+		 WaveDeltaTime(4)=(Min=90.0,Max=120.0)
+		 WaveDeltaTime(5)=(Min=90.0,Max=120.0)
+		 WaveDeltaTime(6)=(Min=60.0,Max=120.0)
 	 End Object
 	 Monsters(5)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieHuskData'
 	 
@@ -1666,16 +1707,24 @@ defaultproperties
 		 WaveSquadLimit(2)=(Min=1,Max=2)
 		 WaveSquadLimit(3)=(Min=1,Max=2)
 		 WaveSquadLimit(4)=(Min=1,Max=2)
-		 WaveSquadLimit(5)=(Min=1,Max=3)
-		 WaveSquadLimit(6)=(Min=1,Max=3)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=92.0,Max=72.0)
-		 WaveSquadDelays(1)=(Min=90.0,Max=70.0)
-		 WaveSquadDelays(2)=(Min=88.0,Max=68.0)
-		 WaveSquadDelays(3)=(Min=86.0,Max=66.0)
-		 WaveSquadDelays(4)=(Min=84.0,Max=64.0)
-		 WaveSquadDelays(5)=(Min=82.0,Max=62.0)
-		 WaveSquadDelays(6)=(Min=80.0,Max=60.0)
+		 WaveSquadLimit(5)=(Min=2,Max=3)
+		 WaveSquadLimit(6)=(Min=2,Max=3)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=0,Max=2)
+		 WaveDeltaLimit(1)=(Min=0,Max=2)
+		 WaveDeltaLimit(2)=(Min=1,Max=3)
+		 WaveDeltaLimit(3)=(Min=1,Max=4)
+		 WaveDeltaLimit(4)=(Min=1,Max=4)
+		 WaveDeltaLimit(5)=(Min=1,Max=5)
+		 WaveDeltaLimit(6)=(Min=2,Max=6)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=240.0,Max=60.0)
+		 WaveDeltaTime(1)=(Min=240.0,Max=60.0)
+		 WaveDeltaTime(2)=(Min=240.0,Max=60.0)
+		 WaveDeltaTime(3)=(Min=180.0,Max=90.0)
+		 WaveDeltaTime(4)=(Min=120.0,Max=80.0)
+		 WaveDeltaTime(5)=(Min=90.0,Max=90.0)
+		 WaveDeltaTime(6)=(Min=90.0,Max=120.0)
 	 End Object
 	 Monsters(6)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieScrakeData'
 	 
@@ -1706,14 +1755,22 @@ defaultproperties
 		 WaveSquadLimit(4)=(Min=2,Max=6)
 		 WaveSquadLimit(5)=(Min=2,Max=6)
 		 WaveSquadLimit(6)=(Min=2,Max=6)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=44.0,Max=40.0)
-		 WaveSquadDelays(1)=(Min=43.0,Max=39.0)
-		 WaveSquadDelays(2)=(Min=42.0,Max=38.0)
-		 WaveSquadDelays(3)=(Min=41.0,Max=37.0)
-		 WaveSquadDelays(4)=(Min=40.0,Max=36.0)
-		 WaveSquadDelays(5)=(Min=39.0,Max=35.0)
-		 WaveSquadDelays(6)=(Min=38.0,Max=34.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=0,Max=2)
+		 WaveDeltaLimit(1)=(Min=1,Max=2)
+		 WaveDeltaLimit(2)=(Min=1,Max=4)
+		 WaveDeltaLimit(3)=(Min=1,Max=4)
+		 WaveDeltaLimit(4)=(Min=1,Max=6)
+		 WaveDeltaLimit(5)=(Min=2,Max=6)
+		 WaveDeltaLimit(6)=(Min=2,Max=6)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=240.0,Max=60.0)
+		 WaveDeltaTime(1)=(Min=240.0,Max=60.0)
+		 WaveDeltaTime(2)=(Min=180.0,Max=90.0)
+		 WaveDeltaTime(3)=(Min=180.0,Max=90.0)
+		 WaveDeltaTime(4)=(Min=120.0,Max=90.0)
+		 WaveDeltaTime(5)=(Min=120.0,Max=72.0)
+		 WaveDeltaTime(6)=(Min=90.0,Max=60.0)
 	 End Object
 	 Monsters(7)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieSirenData'
 	 
@@ -1722,12 +1779,12 @@ defaultproperties
 		 MonsterClassName="UnlimaginMod.UM_ZombieStalker"
 		 // WaveLimit
 		 WaveLimit(0)=(Min=4,Max=32)
-		 WaveLimit(1)=(Min=5,Max=40)
+		 WaveLimit(1)=(Min=6,Max=40)
 		 WaveLimit(2)=(Min=6,Max=48)
-		 WaveLimit(3)=(Min=7,Max=56)
+		 WaveLimit(3)=(Min=8,Max=56)
 		 WaveLimit(4)=(Min=8,Max=64)
-		 WaveLimit(5)=(Min=9,Max=72)
-		 WaveLimit(6)=(Min=10,Max=80)
+		 WaveLimit(5)=(Min=12,Max=72)
+		 WaveLimit(6)=(Min=12,Max=80)
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.1,Max=0.2)
 		 WaveSpawnChance(1)=(Min=0.15,Max=0.25)
@@ -1744,14 +1801,22 @@ defaultproperties
 		 WaveSquadLimit(4)=(Min=5,Max=10)
 		 WaveSquadLimit(5)=(Min=5,Max=12)
 		 WaveSquadLimit(6)=(Min=6,Max=12)
-		 // WaveSquadDelays
-		 WaveSquadDelays(0)=(Min=36.0,Max=32.0)
-		 WaveSquadDelays(1)=(Min=35.0,Max=31.0)
-		 WaveSquadDelays(2)=(Min=34.0,Max=30.0)
-		 WaveSquadDelays(3)=(Min=33.0,Max=29.0)
-		 WaveSquadDelays(4)=(Min=32.0,Max=28.0)
-		 WaveSquadDelays(5)=(Min=31.0,Max=27.0)
-		 WaveSquadDelays(6)=(Min=30.0,Max=26.0)
+		 // WaveDeltaLimit
+		 WaveDeltaLimit(0)=(Min=4,Max=18)
+		 WaveDeltaLimit(1)=(Min=6,Max=24)
+		 WaveDeltaLimit(2)=(Min=8,Max=24)
+		 WaveDeltaLimit(3)=(Min=8,Max=30)
+		 WaveDeltaLimit(4)=(Min=10,Max=30)
+		 WaveDeltaLimit(5)=(Min=10,Max=36)
+		 WaveDeltaLimit(6)=(Min=12,Max=36)
+		 // WaveDeltaTime
+		 WaveDeltaTime(0)=(Min=60.0,Max=30.0)
+		 WaveDeltaTime(1)=(Min=60.0,Max=42.0)
+		 WaveDeltaTime(2)=(Min=60.0,Max=36.0)
+		 WaveDeltaTime(3)=(Min=56.0,Max=42.0)
+		 WaveDeltaTime(4)=(Min=60.0,Max=36.0)
+		 WaveDeltaTime(5)=(Min=56.0,Max=42.0)
+		 WaveDeltaTime(6)=(Min=56.0,Max=36.0)
 	 End Object
 	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieStalkerData'
 	 

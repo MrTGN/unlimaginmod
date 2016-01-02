@@ -33,8 +33,9 @@ var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
 var()				array<IRange>				WaveLimit;			// This wave overal spawn limit (Min - , Max - )
 var()				array<Range>				WaveSpawnChance;	// This wave spawn Chance (Min - , Max - )
 var()				array<IRange>				WaveSquadLimit;	// This wave limit per squad (Min - , Max - )
-var()				float						WavesDeltaTime;		// DeltaLimit Time in seconds
+
 var()				array<IRange>				WaveDeltaLimit;		// Limit per DeltaTime
+var()				array<Range>				WaveDeltaTime;		// DeltaLimit Time in seconds
 
 
 var		transient	UM_InvasionGame				InvasionGame;		//
@@ -96,7 +97,7 @@ function UpdateDynamicParameters()
 		CurrentDeltaLimit = Round( Lerp(GameModif, float(WaveDeltaLimit[InvasionGame.WaveNum].Min), float(WaveDeltaLimit[InvasionGame.WaveNum].Max) ) );
 		
 		// CurrentDeltaTime
-		CurrentDeltaTime = WavesDeltaTime;
+		CurrentDeltaTime = Lerp( GameModif, WaveDeltaTime[InvasionGame.WaveNum].Min, WaveDeltaTime[InvasionGame.WaveNum].Max );
 	}
 	// Boss Wave
 	else  {

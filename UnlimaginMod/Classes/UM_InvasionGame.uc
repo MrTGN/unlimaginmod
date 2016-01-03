@@ -1498,10 +1498,10 @@ defaultproperties
 		 WaveDeltaLimit(5)=(Min=10,MinTime=32.0,Max=24,MaxTime=30.0)
 		 WaveDeltaLimit(6)=(Min=10,MinTime=30.0,Max=26,MaxTime=30.0)
 		 // BossWave
-		 BossWaveLimit=(Min=4,Max=32)
+		 BossWaveLimit=(Min=6,Max=48)
 		 BossWaveSpawnChance=(Min=0.25,Max=0.35)
 		 BossWaveSquadLimit=(Min=2,Max=8)
-		 BossWaveDeltaLimit=(Min=2,MinTime=60.0,Max=16,MaxTime=60.0)
+		 BossWaveDeltaLimit=(Min=2,MinTime=30.0,Max=16,MaxTime=60.0)
 	 End Object
 	 Monsters(0)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieBloatData'
 	 
@@ -1512,8 +1512,8 @@ defaultproperties
 		 // BossWave
 		 BossWaveLimit=(Min=32,Max=168)
 		 BossWaveSpawnChance=(Min=1.0,Max=1.0)
-		 BossWaveSquadLimit=(Min=,Max=)
-		 BossWaveDeltaLimit=(Min=,MinTime=,Max=,MaxTime=)
+		 BossWaveSquadLimit=(Min=12,Max=48)
+		 BossWaveDeltaLimit=(Min=12,MinTime=10.0,Max=48,MaxTime=20.0)
 	 End Object
 	 Monsters(1)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieClotData'
 	 
@@ -1545,27 +1545,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=4,Max=8)
 		 WaveSquadLimit(6)=(Min=4,Max=8)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=2,Max=8)
-		 WaveDeltaLimit(1)=(Min=2,Max=8)
-		 WaveDeltaLimit(2)=(Min=4,Max=12)
-		 WaveDeltaLimit(3)=(Min=4,Max=12)
-		 WaveDeltaLimit(4)=(Min=6,Max=16)
-		 WaveDeltaLimit(5)=(Min=6,Max=16)
-		 WaveDeltaLimit(6)=(Min=6,Max=16)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=60.0,Max=30.0)
-		 WaveDeltaTime(1)=(Min=54.0,Max=26.0)
-		 WaveDeltaTime(2)=(Min=48.0,Max=30.0)
-		 WaveDeltaTime(3)=(Min=42.0,Max=26.0)
-		 WaveDeltaTime(4)=(Min=48.0,Max=32.0)
-		 WaveDeltaTime(5)=(Min=42.0,Max=30.0)
-		 WaveDeltaTime(6)=(Min=36.0,Max=28.0)
+		 WaveDeltaLimit(0)=(Min=2,MinTime=60.0,Max=8,MaxTime=30.0)
+		 WaveDeltaLimit(1)=(Min=2,MinTime=54.0,Max=8,MaxTime=26.0)
+		 WaveDeltaLimit(2)=(Min=4,MinTime=48.0,Max=12,MaxTime=30.0)
+		 WaveDeltaLimit(3)=(Min=4,MinTime=42.0,Max=12,MaxTime=26.0)
+		 WaveDeltaLimit(4)=(Min=6,MinTime=48.0,Max=16,MaxTime=32.0)
+		 WaveDeltaLimit(5)=(Min=6,MinTime=42.0,Max=16,MaxTime=30.0)
+		 WaveDeltaLimit(6)=(Min=6,MinTime=36.0,Max=16,MaxTime=28.0)
 		 // BossWave
 		 BossWaveLimit=(Min=4,Max=24)
 		 BossWaveSpawnChance=(Min=0.15,Max=0.25)
 		 BossWaveSquadLimit=(Min=2,Max=6)
-		 BossWaveDeltaLimit=(Min=2,Max=6)
-		 BossWaveDeltaTime=(Min=30.0,Max=30.0)
+		 BossWaveDeltaLimit=(Min=2,MinTime=40.0,Max=6,MaxTime=30.0)
 	 End Object
 	 Monsters(2)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieCrawlerData'
 	 
@@ -1586,8 +1577,8 @@ defaultproperties
 		 WaveSpawnChance(2)=(Min=0.0,Max=0.1)
 		 WaveSpawnChance(3)=(Min=0.0,Max=0.15)
 		 WaveSpawnChance(4)=(Min=0.1,Max=0.2)
-		 WaveSpawnChance(5)=(Min=0.1,Max=0.2)
-		 WaveSpawnChance(6)=(Min=0.1,Max=0.2)
+		 WaveSpawnChance(5)=(Min=0.15,Max=0.25)
+		 WaveSpawnChance(6)=(Min=0.15,Max=0.25)
 		 // WaveSquadLimit
 		 WaveSquadLimit(0)=(Min=0,Max=0)
 		 WaveSquadLimit(1)=(Min=1,Max=1)
@@ -1597,27 +1588,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=1,Max=4)
 		 WaveSquadLimit(6)=(Min=1,Max=4)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=0,Max=0)
-		 WaveDeltaLimit(1)=(Min=0,Max=1)
-		 WaveDeltaLimit(2)=(Min=0,Max=2)
-		 WaveDeltaLimit(3)=(Min=0,Max=3)
-		 WaveDeltaLimit(4)=(Min=1,Max=3)
-		 WaveDeltaLimit(5)=(Min=1,Max=4)
-		 WaveDeltaLimit(6)=(Min=1,Max=4)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=120.0,Max=60.0)
-		 WaveDeltaTime(1)=(Min=120.0,Max=120.0)
-		 WaveDeltaTime(2)=(Min=120.0,Max=120.0)
-		 WaveDeltaTime(3)=(Min=120.0,Max=120.0)
-		 WaveDeltaTime(4)=(Min=120.0,Max=90.0)
-		 WaveDeltaTime(5)=(Min=90.0,Max=120.0)
-		 WaveDeltaTime(6)=(Min=60.0,Max=90.0)
+		 WaveDeltaLimit(0)=(Min=0,MinTime=120.0,Max=0,MaxTime=60.0)
+		 WaveDeltaLimit(1)=(Min=0,MinTime=120.0,Max=1,MaxTime=120.0)
+		 WaveDeltaLimit(2)=(Min=0,MinTime=120.0,Max=2,MaxTime=120.0)
+		 WaveDeltaLimit(3)=(Min=0,MinTime=120.0,Max=3,MaxTime=120.0)
+		 WaveDeltaLimit(4)=(Min=1,MinTime=120.0,Max=3,MaxTime=90.0)
+		 WaveDeltaLimit(5)=(Min=1,MinTime=90.0,Max=4,MaxTime=120.0)
+		 WaveDeltaLimit(6)=(Min=1,MinTime=60.0,Max=4,MaxTime=90.0)
 		 // BossWave
-		 BossWaveLimit=(Min=0,Max=2)
+		 BossWaveLimit=(Min=0,Max=3)
 		 BossWaveSpawnChance=(Min=0.0,Max=0.1)
 		 BossWaveSquadLimit=(Min=1,Max=1)
-		 BossWaveDeltaLimit=(Min=1,Max=1)
-		 BossWaveDeltaTime=(Min=120.0,Max=60.0)
+		 BossWaveDeltaLimit=(Min=1,MinTime=120.0,Max=1,MaxTime=60.0)
 	 End Object
 	 Monsters(3)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieFleshPoundData'
 	 
@@ -1633,10 +1615,10 @@ defaultproperties
 		 WaveLimit(5)=(Min=18,Max=144)
 		 WaveLimit(6)=(Min=20,Max=160)
 		 // WaveSpawnChance
-		 WaveSpawnChance(0)=(Min=0.2,Max=0.3)
-		 WaveSpawnChance(1)=(Min=0.25,Max=0.35)
+		 WaveSpawnChance(0)=(Min=0.25,Max=0.35)
+		 WaveSpawnChance(1)=(Min=0.3,Max=0.4)
 		 WaveSpawnChance(2)=(Min=0.3,Max=0.4)
-		 WaveSpawnChance(3)=(Min=0.35,Max=0.45)
+		 WaveSpawnChance(3)=(Min=0.4,Max=0.5)
 		 WaveSpawnChance(4)=(Min=0.4,Max=0.5)
 		 WaveSpawnChance(5)=(Min=0.45,Max=0.55)
 		 WaveSpawnChance(6)=(Min=0.45,Max=0.55)
@@ -1649,27 +1631,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=5,Max=12)
 		 WaveSquadLimit(6)=(Min=5,Max=12)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=4,Max=16)
-		 WaveDeltaLimit(1)=(Min=6,Max=18)
-		 WaveDeltaLimit(2)=(Min=6,Max=18)
-		 WaveDeltaLimit(3)=(Min=8,Max=24)
-		 WaveDeltaLimit(4)=(Min=8,Max=24)
-		 WaveDeltaLimit(5)=(Min=10,Max=30)
-		 WaveDeltaLimit(6)=(Min=10,Max=30)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=30.0,Max=30.0)
-		 WaveDeltaTime(1)=(Min=30.0,Max=30.0)
-		 WaveDeltaTime(2)=(Min=24.0,Max=24.0)
-		 WaveDeltaTime(3)=(Min=30.0,Max=30.0)
-		 WaveDeltaTime(4)=(Min=24.0,Max=24.0)
-		 WaveDeltaTime(5)=(Min=30.0,Max=30.0)
-		 WaveDeltaTime(6)=(Min=24.0,Max=24.0)
+		 WaveDeltaLimit(0)=(Min=4,MinTime=30.0,Max=16,MaxTime=30.0)
+		 WaveDeltaLimit(1)=(Min=6,MinTime=30.0,Max=18,MaxTime=30.0)
+		 WaveDeltaLimit(2)=(Min=6,MinTime=24.0,Max=18,MaxTime=24.0)
+		 WaveDeltaLimit(3)=(Min=8,MinTime=30.0,Max=24,MaxTime=30.0)
+		 WaveDeltaLimit(4)=(Min=8,MinTime=24.0,Max=24,MaxTime=24.0)
+		 WaveDeltaLimit(5)=(Min=10,MinTime=30.0,Max=30,MaxTime=30.0)
+		 WaveDeltaLimit(6)=(Min=10,MinTime=24.0,Max=30,MaxTime=24.0)
 		 // BossWave
-		 BossWaveLimit=(Min=8,Max=48)
-		 BossWaveSpawnChance=(Min=0.3,Max=0.4)
+		 BossWaveLimit=(Min=8,Max=64)
+		 BossWaveSpawnChance=(Min=0.35,Max=0.45)
 		 BossWaveSquadLimit=(Min=3,Max=10)
-		 BossWaveDeltaLimit=(Min=3,Max=12)
-		 BossWaveDeltaTime=(Min=30.0,Max=60.0)
+		 BossWaveDeltaLimit=(Min=3,MinTime=20.0,Max=20,MaxTime=30.0)
 	 End Object
 	 Monsters(4)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieGoreFastData'
 	 
@@ -1701,27 +1674,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=1,Max=6)
 		 WaveSquadLimit(6)=(Min=1,Max=6)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=0,Max=4)
-		 WaveDeltaLimit(1)=(Min=1,Max=4)
-		 WaveDeltaLimit(2)=(Min=1,Max=6)
-		 WaveDeltaLimit(3)=(Min=1,Max=8)
-		 WaveDeltaLimit(4)=(Min=1,Max=10)
-		 WaveDeltaLimit(5)=(Min=1,Max=12)
-		 WaveDeltaLimit(6)=(Min=1,Max=12)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=120.0,Max=90.0)
-		 WaveDeltaTime(1)=(Min=120.0,Max=90.0)
-		 WaveDeltaTime(2)=(Min=120.0,Max=90.0)
-		 WaveDeltaTime(3)=(Min=120.0,Max=120.0)
-		 WaveDeltaTime(4)=(Min=90.0,Max=120.0)
-		 WaveDeltaTime(5)=(Min=90.0,Max=120.0)
-		 WaveDeltaTime(6)=(Min=60.0,Max=120.0)
+		 WaveDeltaLimit(0)=(Min=0,MinTime=120.0,Max=4,MaxTime=90.0)
+		 WaveDeltaLimit(1)=(Min=1,MinTime=120.0,Max=4,MaxTime=90.0)
+		 WaveDeltaLimit(2)=(Min=1,MinTime=120.0,Max=6,MaxTime=90.0)
+		 WaveDeltaLimit(3)=(Min=1,MinTime=120.0,Max=8,MaxTime=120.0)
+		 WaveDeltaLimit(4)=(Min=1,MinTime=90.0,Max=10,MaxTime=120.0)
+		 WaveDeltaLimit(5)=(Min=1,MinTime=90.0,Max=12,MaxTime=120.0)
+		 WaveDeltaLimit(6)=(Min=1,MinTime=60.0,Max=12,MaxTime=120.0)
 		 // BossWave
 		 BossWaveLimit=(Min=0,Max=8)
 		 BossWaveSpawnChance=(Min=0.1,Max=0.2)
 		 BossWaveSquadLimit=(Min=1,Max=2)
-		 BossWaveDeltaLimit=(Min=1,Max=4)
-		 BossWaveDeltaTime=(Min=60.0,Max=60.0)
+		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=4,MaxTime=60.0)
 	 End Object
 	 Monsters(5)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieHuskData'
 	 
@@ -1753,27 +1717,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=2,Max=3)
 		 WaveSquadLimit(6)=(Min=2,Max=3)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=0,Max=2)
-		 WaveDeltaLimit(1)=(Min=0,Max=2)
-		 WaveDeltaLimit(2)=(Min=1,Max=3)
-		 WaveDeltaLimit(3)=(Min=1,Max=4)
-		 WaveDeltaLimit(4)=(Min=1,Max=4)
-		 WaveDeltaLimit(5)=(Min=1,Max=5)
-		 WaveDeltaLimit(6)=(Min=2,Max=6)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=240.0,Max=60.0)
-		 WaveDeltaTime(1)=(Min=240.0,Max=60.0)
-		 WaveDeltaTime(2)=(Min=240.0,Max=60.0)
-		 WaveDeltaTime(3)=(Min=180.0,Max=90.0)
-		 WaveDeltaTime(4)=(Min=120.0,Max=80.0)
-		 WaveDeltaTime(5)=(Min=90.0,Max=90.0)
-		 WaveDeltaTime(6)=(Min=90.0,Max=120.0)
+		 WaveDeltaLimit(0)=(Min=0,MinTime=240.0,Max=2,MaxTime=60.0)
+		 WaveDeltaLimit(1)=(Min=0,MinTime=240.0,Max=2,MaxTime=60.0)
+		 WaveDeltaLimit(2)=(Min=1,MinTime=240.0,Max=3,MaxTime=60.0)
+		 WaveDeltaLimit(3)=(Min=1,MinTime=180.0,Max=4,MaxTime=90.0)
+		 WaveDeltaLimit(4)=(Min=1,MinTime=120.0,Max=4,MaxTime=80.0)
+		 WaveDeltaLimit(5)=(Min=1,MinTime=90.0,Max=5,MaxTime=90.0)
+		 WaveDeltaLimit(6)=(Min=2,MinTime=90.0,Max=6,MaxTime=120.0)
 		 // BossWave
 		 BossWaveLimit=(Min=0,Max=4)
 		 BossWaveSpawnChance=(Min=0.0,Max=0.15)
 		 BossWaveSquadLimit=(Min=1,Max=2)
-		 BossWaveDeltaLimit=(Min=1,Max=2)
-		 BossWaveDeltaTime=(Min=60.0,Max=60.0)
+		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=2,MaxTime=60.0)
 	 End Object
 	 Monsters(6)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieScrakeData'
 	 
@@ -1805,27 +1760,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=2,Max=6)
 		 WaveSquadLimit(6)=(Min=2,Max=6)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=0,Max=2)
-		 WaveDeltaLimit(1)=(Min=1,Max=2)
-		 WaveDeltaLimit(2)=(Min=1,Max=4)
-		 WaveDeltaLimit(3)=(Min=1,Max=4)
-		 WaveDeltaLimit(4)=(Min=1,Max=6)
-		 WaveDeltaLimit(5)=(Min=2,Max=6)
-		 WaveDeltaLimit(6)=(Min=2,Max=6)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=240.0,Max=60.0)
-		 WaveDeltaTime(1)=(Min=240.0,Max=60.0)
-		 WaveDeltaTime(2)=(Min=180.0,Max=90.0)
-		 WaveDeltaTime(3)=(Min=180.0,Max=90.0)
-		 WaveDeltaTime(4)=(Min=120.0,Max=90.0)
-		 WaveDeltaTime(5)=(Min=120.0,Max=72.0)
-		 WaveDeltaTime(6)=(Min=90.0,Max=60.0)
+		 WaveDeltaLimit(0)=(Min=0,MinTime=240.0,Max=2,MaxTime=60.0)
+		 WaveDeltaLimit(1)=(Min=1,MinTime=240.0,Max=2,MaxTime=60.0)
+		 WaveDeltaLimit(2)=(Min=1,MinTime=180.0,Max=4,MaxTime=90.0)
+		 WaveDeltaLimit(3)=(Min=1,MinTime=180.0,Max=4,MaxTime=90.0)
+		 WaveDeltaLimit(4)=(Min=1,MinTime=120.0,Max=6,MaxTime=90.0)
+		 WaveDeltaLimit(5)=(Min=2,MinTime=120.0,Max=6,MaxTime=72.0)
+		 WaveDeltaLimit(6)=(Min=2,MinTime=90.0,Max=6,MaxTime=60.0)
 		 // BossWave
 		 BossWaveLimit=(Min=1,Max=12)
 		 BossWaveSpawnChance=(Min=0.1,Max=0.2)
-		 BossWaveSquadLimit=(Min=1,Max=2)
-		 BossWaveDeltaLimit=(Min=1,Max=2)
-		 BossWaveDeltaTime=(Min=60.0,Max=60.0)
+		 BossWaveSquadLimit=(Min=1,Max=3)
+		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=3,MaxTime=60.0)
 	 End Object
 	 Monsters(7)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieSirenData'
 	 
@@ -1857,27 +1803,18 @@ defaultproperties
 		 WaveSquadLimit(5)=(Min=5,Max=12)
 		 WaveSquadLimit(6)=(Min=6,Max=12)
 		 // WaveDeltaLimit
-		 WaveDeltaLimit(0)=(Min=4,Max=18)
-		 WaveDeltaLimit(1)=(Min=6,Max=24)
-		 WaveDeltaLimit(2)=(Min=8,Max=24)
-		 WaveDeltaLimit(3)=(Min=8,Max=30)
-		 WaveDeltaLimit(4)=(Min=10,Max=30)
-		 WaveDeltaLimit(5)=(Min=10,Max=36)
-		 WaveDeltaLimit(6)=(Min=12,Max=36)
-		 // WaveDeltaTime
-		 WaveDeltaTime(0)=(Min=60.0,Max=30.0)
-		 WaveDeltaTime(1)=(Min=60.0,Max=42.0)
-		 WaveDeltaTime(2)=(Min=60.0,Max=36.0)
-		 WaveDeltaTime(3)=(Min=56.0,Max=42.0)
-		 WaveDeltaTime(4)=(Min=60.0,Max=36.0)
-		 WaveDeltaTime(5)=(Min=56.0,Max=42.0)
-		 WaveDeltaTime(6)=(Min=56.0,Max=36.0)
+		 WaveDeltaLimit(0)=(Min=4,MinTime=60.0,Max=18,MaxTime=30.0)
+		 WaveDeltaLimit(1)=(Min=6,MinTime=60.0,Max=24,MaxTime=42.0)
+		 WaveDeltaLimit(2)=(Min=8,MinTime=60.0,Max=24,MaxTime=36.0)
+		 WaveDeltaLimit(3)=(Min=8,MinTime=56.0,Max=30,MaxTime=42.0)
+		 WaveDeltaLimit(4)=(Min=10,MinTime=60.0,Max=30,MaxTime=36.0)
+		 WaveDeltaLimit(5)=(Min=10,MinTime=56.0,Max=36,MaxTime=42.0)
+		 WaveDeltaLimit(6)=(Min=12,MinTime=56.0,Max=36,MaxTime=36.0)
 		 // BossWave
-		 BossWaveLimit=(Min=8,Max=60)
-		 BossWaveSpawnChance=(Min=0.25,Max=0.35)
+		 BossWaveLimit=(Min=8,Max=64)
+		 BossWaveSpawnChance=(Min=0.3,Max=0.4)
 		 BossWaveSquadLimit=(Min=3,Max=8)
-		 BossWaveDeltaLimit=(Min=6,Max=16)
-		 BossWaveDeltaTime=(Min=60.0,Max=30.0)
+		 BossWaveDeltaLimit=(Min=6,MinTime=60.0,Max=12,MaxTime=30.0)
 	 End Object
 	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieStalkerData'
  

@@ -32,16 +32,16 @@ struct IRange
 struct IRandRange
 {
 	var()	config	int		Min;
-	var()	config	int		Max;
 	var()	config	float	RandMin;
+	var()	config	int		Max;
 	var()	config	float	RandMax;
 };
 
 struct FRandRange
 {
 	var()	config	float	Min;
-	var()	config	float	Max;
 	var()	config	float	RandMin;
+	var()	config	float	Max;
 	var()	config	float	RandMax;
 };
 

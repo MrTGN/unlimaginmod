@@ -79,7 +79,7 @@ function bool InitDataFor( UM_InvasionGame IG )
 	if ( IG == None || MonsterClassName == "" || bDisabled )
 		Return False;
 	
-	MonsterClass = Class<UM_Monster>( LoadClass( MonsterClassName ) );
+	MonsterClass = Class<UM_Monster>( DynamicLoadObject(MonsterClassName, Class'Class') );
 	if ( MonsterClass == None )
 		Return False;
 	

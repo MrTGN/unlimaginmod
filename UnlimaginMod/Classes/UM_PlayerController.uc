@@ -23,7 +23,7 @@ function bool SpawnStatObject()
 		Return False;
 	
 	if ( SteamStatsAndAchievementsClass == None )
-		SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( BaseActor.static.LoadClass(SteamStatsAndAchievementsClassName) );
+		SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( DynamicLoadObject(SteamStatsAndAchievementsClassName, Class'Class') );
 	
 	if ( SteamStatsAndAchievementsClass != None )
 		SteamStatsAndAchievements = Spawn(SteamStatsAndAchievementsClass, self);

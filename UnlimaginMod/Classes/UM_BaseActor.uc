@@ -115,15 +115,6 @@ simulated final function LoopAnimData( AnimData AD, optional float RateMult )
 //[end]
 
 //[block] DynamicLoad functions
-// DynamicLoad Class specified in the Ref string
-simulated static final function Class LoadClass( string Ref, optional bool bMayFail )
-{
-	if ( Ref != "" )
-		Return Class(DynamicLoadObject(Ref, Class'Class', bMayFail));
-	
-	Return None;
-}
-
 // DynamicLoad Combiner specified in the Ref string
 simulated static final function Combiner LoadCombiner( string Ref, optional bool bMayFail )
 {

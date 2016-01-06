@@ -64,15 +64,6 @@ simulated static final function float GetExtraRandRangeFloat(
 		Return Lerp( FRand(), EFR.Min, EFR.Max );
 }
 
-// DynamicLoad Class specified in the Ref string
-simulated static final function Class LoadClass( string Ref, optional bool bMayFail )
-{
-	if ( Ref != "" )
-		Return Class(DynamicLoadObject(Ref, Class'Class', bMayFail));
-	
-	Return None;
-}
-
 //[end] Functions
 //====================================================================
 

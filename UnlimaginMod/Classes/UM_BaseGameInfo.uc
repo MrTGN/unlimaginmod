@@ -269,26 +269,23 @@ function bool AllowGameSpeedChange()
 	Return bAllowMPGameSpeed;
 }
 
-protected function bool LoadGamePreset( optional string NewPresetName )
+protected function bool LoadGamePreset( string NewPresetName )
 {
 	local	int		i;
 	local	Class<UM_BaseGamePreset>	GamePresetClass;
 	
-	// If NewPresetName not specified will be loaded default GamePreset
-	if ( NewPresetName != "" )
-		GamePresetClassName = NewPresetName;
-	
-	if ( GamePresetClassName == "" )  {
-		Warn("GamePresetClassName not specified!", Class.Outer.Name);
-		GamePresetClassName = "UnlimaginMod.UM_BaseGamePreset";
-	}
-	GamePresetClass = Class<UM_BaseGamePreset>( BaseActor.static.LoadClass(GamePresetClassName) );
-	
-	if ( GamePresetClass == None )  {
-		Warn("GamePreset wasn't found!", Class.Outer.Name);
+	if ( NewPresetName == "" )  {
+		Log( "Can't load new GamePreset. NewPresetName is not specified!", Class.Outer.Name );
 		Return False;
 	}
 	
+	GamePresetClass = Class<UM_BaseGamePreset>( DynamicLoadObject(NewPresetName, Class'Class') );
+	if ( GamePresetClass == None )  {
+		Warn( "GamePreset wasn't found!", Class.Outer.Name );
+		Return False;
+	}
+	
+	GamePresetClassName = NewPresetName;
 	GamePreset = new(self) GamePresetClass;
 	
 	if ( GamePreset == None )
@@ -338,7 +335,12 @@ event InitGame( string Options, out string Error )
 	Super(xTeamGame).InitGame(Options, Error);
 	
 	InOpt = ParseOption(Options, "GamePresetClassName");
-	LoadGamePreset( InOpt );
+	// Try to load GamePresetClassName from command option first
+	if ( InOpt != "" )
+		LoadGamePreset( InOpt );
+	// Load default GamePresetClassName if specified
+	else if ( GamePresetClassName != "" )
+		LoadGamePreset( GamePresetClassName );
 	
 	SetupLevelRules();
 	DefaultGameSpeed = default.GameSpeed;
@@ -350,7 +352,7 @@ event InitGame( string Options, out string Error )
 function InitGameReplicationInfo()
 {
 	if ( GameReplicationInfoClass == None )
-		GameReplicationInfoClass = class<GameReplicationInfo>( BaseActor.static.LoadClass(GameReplicationInfoClassName) );
+		GameReplicationInfoClass = Class<GameReplicationInfo>( DynamicLoadObject(GameReplicationInfoClassName, Class'Class') );
 	
 	if ( GameReplicationInfoClass == None )  {
 		Warn("GameReplicationInfoClass wasn't found!!!");
@@ -895,7 +897,7 @@ event PostLogin( PlayerController NewPlayer )
 	if ( HUDType == "" )
 		log( "No HUDType specified in GameInfo", 'Log' );
 	else  {
-		HUDClass = Class<HUD>( BaseActor.static.LoadClass(HUDType) );
+		HUDClass = Class<HUD>( DynamicLoadObject(HUDType, Class'Class') );
 		if ( HUDClass == None )
 			log( "Can't find HUD class "$HUDType, 'Error' );
 	}
@@ -903,7 +905,7 @@ event PostLogin( PlayerController NewPlayer )
 	if ( ScoreBoardType == "" )
 		log( "No ScoreboardClass specified in GameInfo", 'Log' );
 	else  {
-		ScoreboardClass = Class<Scoreboard>( BaseActor.static.LoadClass(ScoreBoardType) );
+		ScoreboardClass = Class<Scoreboard>( DynamicLoadObject(ScoreBoardType, Class'Class') );
 		if ( ScoreboardClass == None )
 			log( "Can't find ScoreBoard class "$ScoreBoardType, 'Error' );
 	}

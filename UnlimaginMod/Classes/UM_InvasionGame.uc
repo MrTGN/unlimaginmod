@@ -98,6 +98,8 @@ var()				class<UM_Monster>		BossMonsterClass;
 
 var					Class<UM_ActorPool>		ActorPoolClass;
 
+var					int						BulidSquadIterationLimit;
+
 var		transient	int						NextWaveNum;
 
 var					ShopVolume				CurrentShop;
@@ -145,7 +147,7 @@ var		transient	string					CurrentMapName;
 //[block] Functions
 
 //ToDo: Issue #304
-protected function bool LoadGamePreset( optional string NewPresetName )
+protected function bool LoadGamePreset( string NewPresetName )
 {
 	local	UM_BaseInvasionPreset	InvasionPreset;	
 	local	int						i;
@@ -161,8 +163,7 @@ protected function bool LoadGamePreset( optional string NewPresetName )
 	InitialShoppingTime = InvasionPreset.InitialShoppingTime;
 	
 	// GameWaves
-	InitialWave = InvasionPreset.InitialWaveNum;
-	FinalWave = InvasionPreset.GameWaves.Length;
+	InitialWaveNum = InvasionPreset.InitialWaveNum;
 	GameWaves.Length = InvasionPreset.GameWaves.Length;
 	for ( i = 0; i < InvasionPreset.GameWaves.Length; ++i )
 		GameWaves[i] = InvasionPreset.GameWaves[i];
@@ -207,19 +208,48 @@ function UpdateZedSpawnList()
 	}
 }
 
+// Random starting cash for the each wave. Must be called before the new wave has begun.
+function UpdateStartingCash()
+{
+	// Normal wave
+	if ( WaveNum < FinalWave )  {
+		StartingCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].StartingCash.Min), float(GameWaves[WaveNum].StartingCash.Max)) );
+		MinRespawnCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].MinRespawnCash.Min), float(GameWaves[WaveNum].MinRespawnCash.Max)) );
+		DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
+	}
+	// Boss Wave
+	else  {
+		StartingCash = Round( Lerp(FRand(), float(BossWaveStartingCash.Min), float(BossWaveStartingCash.Max)) );
+		MinRespawnCash = Round( Lerp(FRand(), float(BossWaveMinRespawnCash.Min), float(BossWaveMinRespawnCash.Max)) );
+	}
+}
+
 function UpdateGameLength()
 {
-	local Controller C;
-
-	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
-		if ( PlayerController(C) != None && PlayerController(C).SteamStatsAndAchievements != None )
-			PlayerController(C).SteamStatsAndAchievements.bUsedCheats = PlayerController(C).SteamStatsAndAchievements.bUsedCheats || bCustomGameLength;
+	local	byte	i;
+	
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i].SteamStatsAndAchievements != None )
+			PlayerList[i].SteamStatsAndAchievements.bUsedCheats = bCustomGameLength || PlayerList[i].SteamStatsAndAchievements.bUsedCheats;
+	}
+	
+	CheckSpectatorList();
+	for ( i = 0; i < SpectatorList.Length; ++i )  {
+		if ( SpectatorList[i].SteamStatsAndAchievements != None )
+			SpectatorList[i].SteamStatsAndAchievements.bUsedCheats = bCustomGameLength || SpectatorList[i].SteamStatsAndAchievements.bUsedCheats;
 	}
 }
 
 function LoadUpMonsterList() 
 {
 	local	int		i;
+	
+	if ( BossMonsterClassName != "" )
+		BossMonsterClass = class<UM_Monster>( DynamicLoadObject(BossMonsterClassName, class'class') );
+	
+	if ( BossMonsterClass == None )
+		Log( "BossMonsterClass not specified!", Name );
 	
 	for ( i = 0; i < Monsters.Length; ++i )  {
 		// Check out and init monsters data objects
@@ -228,16 +258,9 @@ function LoadUpMonsterList()
 			--i;
 		}
 	}
-}
-
-// Random starting cash for the each wave. Must be called before the new wave has begun.
-function UpdateStartingCash()
-{
-	if ( WaveNum < FinalWave )  {
-		StartingCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].StartingCash.Min), float(GameWaves[WaveNum].StartingCash.Max)) );
-		MinRespawnCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].MinRespawnCash.Min), float(GameWaves[WaveNum].MinRespawnCash.Max)) );
-		DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
-	}
+	
+	if ( Monsters.Length < 1 )
+		Warn( "No Monsters to load!", Name );
 }
 
 /* Initialize the game.
@@ -248,7 +271,7 @@ function UpdateStartingCash()
 */
 event InitGame( string Options, out string Error )
 {
-	local	string			InOpt;
+	local	string	InOpt;
 
 	// LoadGamePreset() call in the parent class
 	Super.InitGame(Options, Error);
@@ -260,15 +283,12 @@ event InitGame( string Options, out string Error )
 	if ( InOpt != "" )
 		bNoBots = bool(InOpt);
 
-	log("Game length = "$KFGameLength);
-	
 	// #SetupWaveNumbers
 	InitialWave = InitialWaveNum;
 	FinalWave = GameWaves.Length;
-	WaveNum = InitialWave;
 	NextWaveNum = InitialWave;
+	WaveNum = NextWaveNum;
 	UpdateStartingCash();
-
 	bCustomGameLength = True;	// We can't use Steam Stats with Unlimagin Mod
 	UpdateGameLength();
 	LoadUpMonsterList();
@@ -282,11 +302,6 @@ event InitGame( string Options, out string Error )
 
 simulated function PrepareSpecialSquadsFromCollection() { }
 simulated function PrepareSpecialSquads() { }
-
-//[block] Monster Spawn List
-
-
-//[end]
 
 function float GetDifficultyModifier()
 {
@@ -615,14 +630,10 @@ state BeginNewWave
 		if ( WaveNum < FinalWave )  {
 			++NextWaveNum;
 			WaveCountDown = GameWaves[WaveNum].StartDelay + Min( Round(TimerCounter), 1 );
-			// AdjustedDifficulty
-			AdjustedDifficulty = GameDifficulty * GameWaves[WaveNum].WaveDifficulty;
 		}
-		else  {
+		else
 			WaveCountDown = BossWaveStartDelay + Min( Round(TimerCounter), 1 );
-			// AdjustedDifficulty
-			AdjustedDifficulty = GameDifficulty * BossWaveDifficulty;
-		}
+		
 		// GameReplicationInfo
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 			KFGameReplicationInfo(GameReplicationInfo).WaveNumber = WaveNum;
@@ -637,6 +648,14 @@ state BeginNewWave
 		NotifyNewWave();
 		SetupPickups();
 		RepairDoors();
+		
+		WaveElapsedTime = 0;
+		// Reset monster spawn counters
+		for ( i = 0; i < Monster.Length; ++i )  {
+			Monster[i].NumSpawnedThisWave = 0;
+			Monster[i].DeltaCounter = 0;
+			Monster[i].NumInCurrentSquad = 0;
+		}
 	}
 	
 	event Timer()
@@ -1010,24 +1029,24 @@ function bool AddSquad() { }
 
 function BuildNextSquad()
 {
-	local	int		c, i;
+	local	int		i, r;
 	
 	// Reset monster squad counters
 	NextSpawnSquad.Length = 0;
 	for ( i = 0; i < Monster.Length; ++i )
 		Monster[i].NumInCurrentSquad = 0;
-
+	
 	// Building squad monster list
-	while ( NextSpawnSquad.Length < NextMonsterSquadSize && c < 250 )  {
-		++c;
-		i = Rand(Monsters.Length);
-		if ( Monsters[i].CanSpawn() )  {
+	// i limit of tries to fill the squad slots
+	for ( i = 0; NextSpawnSquad.Length < NextMonsterSquadSize && i < BulidSquadIterationLimit; ++i )  {
+		r = Rand(Monsters.Length);
+		if ( Monsters[r].CanSpawn() )  {
 			// Increment spawn counters
-			++Monster[i].NumSpawnedThisWave;
-			++Monster[i].NumInCurrentSquad;
-			++Monster[i].DeltaCounter;
+			++Monster[r].NumSpawnedThisWave;
+			++Monster[r].NumInCurrentSquad;
+			++Monster[r].DeltaCounter;
 			// Add to the monster list
-			NextSpawnSquad[NextSpawnSquad.Length] = Monster[i].MonsterClass;
+			NextSpawnSquad[NextSpawnSquad.Length] = Monster[r].MonsterClass;
 		}
 	}
 	
@@ -1084,9 +1103,8 @@ function CheckForJammedMonsters()
 
 function DoWaveEnd()
 {
-	local	Controller			C;
 	local	PlayerController	Survivor;
-	local	int					i, SurvivorCount;
+	local	byte				i, SurvivorCount;
 	
 	if ( !rewardFlag )
 		RewardSurvivingPlayers();
@@ -1103,40 +1121,30 @@ function DoWaveEnd()
 		//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
 	}
 	
-	// Reset monster spawn counters
-	for ( i = 0; i < Monster.Length; ++i )  {
-		Monster[i].NumSpawnedThisWave = 0;
-		Monster[i].DeltaCounter = 0;
-		Monster[i].NumInCurrentSquad = 0;
-	}
-	
-	// ControllerList
-	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-		++i;	// To prevent runaway loop
-		if ( C.PlayerReplicationInfo == None )
-			Continue; // skip this controller
-		
+	// PlayerList
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i].PlayerReplicationInfo == None )
+			Return; // skip this controller
 		// Reset Lives Limit
-		C.PlayerReplicationInfo.bOutOfLives = False;
-		C.PlayerReplicationInfo.NumLives = 0;
-	
-		if ( KFPlayerController(C) != None )  {
-			CheckSelectedVeterancy( KFPlayerController(C) );
-			if ( PlayerController(C).SteamStatsAndAchievements != None && KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements) != None )
-				KFSteamStatsAndAchievements(PlayerController(C).SteamStatsAndAchievements).WaveEnded();
-
-			// Don't broadcast this message AFTER the final wave!
-			if ( NextWaveNum < FinalWave )
-				BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 2);
-		}
-		
-		// Survivor
-		if ( C.Pawn != None && C.Pawn.Health > 0 && PlayerController(C) != None )  {
-			Survivor = PlayerController(C);
+		PlayerList[i].PlayerReplicationInfo.NumLives = 0;
+		PlayerList[i].PlayerReplicationInfo.bOutOfLives = False;
+		CheckSelectedVeterancy( PlayerList[i] );
+		// Wave End event
+		if ( KFSteamStatsAndAchievements(PlayerList[i].SteamStatsAndAchievements) != None )
+			KFSteamStatsAndAchievements(PlayerList[i].SteamStatsAndAchievements).WaveEnded();
+		// Count survivors
+		if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )  {
+			Survivor = PlayerList[i];
 			++SurvivorCount;
 		}
 	}
 	
+	// Don't broadcast this message AFTER the final wave!
+	if ( NextWaveNum < FinalWave && SurvivorCount > 0 )
+		BroadcastLocalizedMessage(class'KFMod.WaitingMessage', 2);
+	
+	// One Survivor Achievement
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 
 		 && Survivor != None && KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements) != None )
 		KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements).AddOnlySurvivorOfWave();
@@ -1174,13 +1182,7 @@ state WaveInProgress
 		rewardFlag = False;
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
-		// Reset monster spawn counters
-		for ( i = 0; i < Monster.Length; ++i )  {
-			Monster[i].NumSpawnedThisWave = 0;
-			Monster[i].DeltaCounter = 0;
-			Monster[i].NumInCurrentSquad = 0;
-		}
-		
+			
 		// Setup wave parameters
 		WaveCountDown = CurrentWaveDuration + Min( Round(TimerCounter), 1 );
 		// First Startup Message
@@ -1191,7 +1193,7 @@ state WaveInProgress
 		// GameMusic
 		if ( !MusicPlaying )
 			StartGameMusic(True);
-		// Begin wave
+		// Begin Normal Wave
 		bWaveInProgress = True;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
@@ -1274,6 +1276,42 @@ state WaveInProgress
 
 
 //[block] BossWaveInProgress Code
+// Force slomo for a longer period of time when the boss dies
+function DoBossDeath()
+{
+    local Controller C;
+    local Controller nextC;
+    local int num;
+
+    bZEDTimeActive =  true;
+    bSpeedingBackUp = false;
+    LastZedTimeEvent = Level.TimeSeconds;
+    CurrentZEDTimeDuration = ZEDTimeDuration*2;
+    SetGameSpeed(ZedTimeSlomoScale);
+
+    num = NumMonsters;
+
+    c = Level.ControllerList;
+
+    // turn off all the other zeds so they don't attack the player
+    while (c != none && num > 0)
+    {
+        nextC = c.NextController;
+        if (KFMonsterController(C)!=None)
+        {
+            C.GotoState('GameEnded');
+            --num;
+        }
+        c = nextC;
+    }
+
+}
+
+function SpawnBoss()
+{
+	
+}
+
 state BossWaveInProgress
 {
 	event BeginState()
@@ -1283,17 +1321,25 @@ state BossWaveInProgress
 		rewardFlag = False;
 		ZombiesKilled = 0;
 		WaveMonsters = 0;
-		
+		// Time to spawn next squad
 		WaveCountDown = Round( CurrentSquadsSpawnPeriod + Lerp(FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod) );
-		
+		// GameMusic
+		if ( !MusicPlaying )
+			StartGameMusic(True);
+		// Begin Boss Wave
 		bWaveBossInProgress = True;
-		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
+		if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
+			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = MaxMonsters;
+			//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = True;
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;
+			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
+		}
 	}
 	
-	function BuildNextSquad()
+	// ToDo: issue #280(281) дописать!
+	function AddBoss()
 	{
-		//ToDo: Дописать!!!
+		
 	}
 	
 	function bool CanSpawnNextMonsterSquad()
@@ -1430,6 +1476,8 @@ defaultproperties
 	 LerpNumPlayersModifier=1.0
 	 LerpGameDifficultyModifier=1.0
 	 //[end]
+	 
+	 BulidSquadIterationLimit=250
 	 MinSquadSpawnCheckDelay=0.1
 	 MaxMonsters=1000
 	 MaxAliveMonsters=40
@@ -1437,7 +1485,7 @@ defaultproperties
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=10.0
-	 GamePresetClassName="UnlimaginMod.UM_DefaultInvasionPreset"
+	 //GamePresetClassName="UnlimaginMod.UM_DefaultInvasionPreset"
 	 
 	 ZEDTimeKillSlowMoChargeBonus=0.4
 	 

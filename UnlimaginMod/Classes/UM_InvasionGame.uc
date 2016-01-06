@@ -60,8 +60,8 @@ const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 struct GameWaveData
 {
 	var()	config	UM_BaseObject.IRange		AliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-	var()	config	UM_BaseObject.IRandRange	MonsterSquadSize;	// Randomly selected value from Min to Max
-	var()	config	UM_BaseObject.FRandRange	SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty)
+	var()	config	UM_BaseObject.IRandRange	MonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+	var()	config	UM_BaseObject.FRandRange	SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
 	var()	config	int							SquadsSpawnEndTime;	// Time when level will stop to spawn new squads at the end of this wave (in seconds)
 	var()	config	float						WaveDifficulty;		// Used for the Bot Difficulty
 	var()	config	int							StartDelay;		// This wave start time out in seconds
@@ -74,71 +74,73 @@ struct GameWaveData
 };
 
 // Begin Match With Shopping
-var		config		bool					bBeginMatchWithShopping;
-var					UM_BaseObject.IRange	InitialShoppingTime;
+var		config		bool						bBeginMatchWithShopping;
+var					UM_BaseObject.IRange		InitialShoppingTime;
 
 // Normal Wave Data
-var					array<GameWaveData>		GameWaves;
-var					int						InitialWaveNum;
+var					int							InitialWaveNum;
+var					array<GameWaveData>			GameWaves;
 
 // Boss Wave Data
 var					UM_BaseObject.IRange		BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-var					UM_BaseObject.IRandRange	BossWaveMonsterSquadSize;	// Randomly selected value from Min to Max
-var					UM_BaseObject.FRandRange	BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty)
+var					UM_BaseObject.IRandRange	BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+var					UM_BaseObject.FRandRange	BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
 var					float						BossWaveDifficulty;		// Used for the Bot Difficulty
 var					int							BossWaveStartDelay;		// This wave start time out in seconds
 var					range						BossWaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+var					UM_BaseObject.IRange		BossWaveStartingCash;		// Random starting cash on this wave
+var					UM_BaseObject.IRange		BossWaveMinRespawnCash;		// Random min respawn cash on this wave
 
 // Monsters
-var	export	array<UM_InvasionMonsterData>	Monsters;
+var		export	array<UM_InvasionMonsterData>	Monsters;
 // BossMonsterClass
-var()				string					BossMonsterClassName;
-var()				class<UM_Monster>		BossMonsterClass;
+var()				string						BossMonsterClassName;
+var()				class<UM_Monster>			BossMonsterClass;
 
 
-var					Class<UM_ActorPool>		ActorPoolClass;
+var					int							BulidSquadIterationLimit;
 
-var					int						BulidSquadIterationLimit;
+var					Class<UM_ActorPool>			ActorPoolClass;
 
-var		transient	int						NextWaveNum;
+var		transient	int							NextWaveNum;
 
-var					ShopVolume				CurrentShop;
-var					float					ShopListUpdateDelay;
-var		transient	float					NextShopListUpdateTime;
+var					ShopVolume					CurrentShop;
+var					float						ShopListUpdateDelay;
+var		transient	float						NextShopListUpdateTime;
 
 // Dynamic Parameters	
-var					int						MaxAliveMonsters;
-var					float					MinSquadSpawnCheckDelay;
-var		transient	int						CurrentMonsterSquadSize;
-var		transient	float					CurrentMonsterSquadRandSize;
-var		transient	float					CurrentSquadsSpawnPeriod,  CurrentSquadsSpawnRandPeriod;
-var		transient	float					NextMonsterSquadSpawnTime;
-var		transient	int						NextMonsterSquadSize;
-var		transient	int						CurrentWaveDuration, WaveElapsedTime;
-var		transient	float					CurrentDoorsRepairChance;
+var					int							MaxAliveMonsters;
+var					float						MinSquadSpawnCheckDelay;
+var		transient	int							CurrentMonsterSquadSize;
+var		transient	float						CurrentMonsterSquadRandSize;
+var		transient	float						CurrentSquadsSpawnPeriod,  CurrentSquadsSpawnRandPeriod;
+var		transient	float						NextMonsterSquadSpawnTime;
+var		transient	int							NextMonsterSquadSize;
+var		transient	int							CurrentWaveDuration, WaveElapsedTime;
+var		transient	float						CurrentDoorsRepairChance;
 
 // ZedSpawnListUpdate
-var					float					ZedSpawnListUpdateDelay;
-var		transient	float					NextZedSpawnListUpdateTime;
+var					float						ZedSpawnListUpdateDelay;
+var		transient	float						NextZedSpawnListUpdateTime;
 
 // JammedMonstersCheck
-var		transient	float					NextJammedMonstersCheckTime;
-var					float					JammedMonstersCheckDelay;
+var		transient	float						NextJammedMonstersCheckTime;
+var					float						JammedMonstersCheckDelay;
 
 // SpawningVolumeUpdate
-var					float					SpawningVolumeUpdateDelay;
-var		transient	float					NextSpawningVolumeUpdateTime;
+var					float						SpawningVolumeUpdateDelay;
+var		transient	float						NextSpawningVolumeUpdateTime;
 
 // Lerp Modifiers
-var					float					LerpNumPlayersModifier;
-var					float					LerpGameDifficultyModifier;
+var					float						LerpNumPlayersModifier;
+var					float						LerpGameDifficultyModifier;
 
 // Spawned monster list
-var		transient	array<UM_Monster>		MonsterList;
+var		transient	array<UM_Monster>			MonsterList;
 
-var					float					ZEDTimeKillSlowMoChargeBonus;
+var					float						ZEDTimeKillSlowMoChargeBonus;
 
-var		transient	string					CurrentMapName;
+var		transient	string						CurrentMapName;
 
 //[end] Varibles
 //====================================================================
@@ -146,7 +148,6 @@ var		transient	string					CurrentMapName;
 //========================================================================
 //[block] Functions
 
-//ToDo: Issue #304
 protected function bool LoadGamePreset( string NewPresetName )
 {
 	local	UM_BaseInvasionPreset	InvasionPreset;	
@@ -162,16 +163,31 @@ protected function bool LoadGamePreset( string NewPresetName )
 	// InitialShoppingTime
 	InitialShoppingTime = InvasionPreset.InitialShoppingTime;
 	
-	// GameWaves
+	// Normal GameWaves settings
 	InitialWaveNum = InvasionPreset.InitialWaveNum;
 	GameWaves.Length = InvasionPreset.GameWaves.Length;
 	for ( i = 0; i < InvasionPreset.GameWaves.Length; ++i )
 		GameWaves[i] = InvasionPreset.GameWaves[i];
 	
+	// Boss Wave settings
+	BossWaveAliveMonsters = InvasionPreset.BossWaveAliveMonsters;
+	BossWaveMonsterSquadSize = InvasionPreset.BossWaveMonsterSquadSize;
+	BossWaveSquadsSpawnPeriod = InvasionPreset.BossWaveSquadsSpawnPeriod;
+	BossWaveDifficulty = InvasionPreset.BossWaveDifficulty;
+	BossWaveStartDelay = InvasionPreset.BossWaveStartDelay;
+	BossWaveDoorsRepairChance = InvasionPreset.BossWaveDoorsRepairChance;
+	BossWaveStartingCash = InvasionPreset.BossWaveStartingCash;
+	BossWaveMinRespawnCash = InvasionPreset.BossWaveMinRespawnCash;
+		
 	// Monsters
 	Monsters.Length = InvasionPreset.Monsters.Length;
 	for ( i = 0; i < InvasionPreset.Monsters.Length; ++i )
 		Monsters[i] = InvasionPreset.Monsters[i];
+	
+	// BossMonsterClassName
+	BossMonsterClassName = InvasionPreset.BossMonsterClassName;
+	
+	BulidSquadIterationLimit = InvasionPreset.BulidSquadIterationLimit;
 	
 	Return True;
 }
@@ -1477,7 +1493,7 @@ defaultproperties
 	 LerpGameDifficultyModifier=1.0
 	 //[end]
 	 
-	 BulidSquadIterationLimit=250
+	 BulidSquadIterationLimit=500
 	 MinSquadSpawnCheckDelay=0.1
 	 MaxMonsters=1000
 	 MaxAliveMonsters=40

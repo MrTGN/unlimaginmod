@@ -25,59 +25,39 @@ class UM_BaseInvasionPreset extends UM_BaseGamePreset
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-//var		UM_InvasionGame								InvasionGame;
-var		array<UM_InvasionGame.WaveMonsterData>		Monsters;
+var					IRange							InitialShoppingTime; // Begin Match With Shopping
+
+var					int								InitialWaveNum;
 var		array<UM_InvasionGame.GameWaveData>			GameWaves;
 
-var		array<UM_InvasionGame.BossWaveMonsterData>	BossMonsters;
-var		string										BossMonsterClassName;
-var		array<float>								NumPlayersModifiers;
+// Boss Wave Data
+var					IRange							BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+var					IRandRange						BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+var					FRandRange						BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
+var					float							BossWaveDifficulty;		// Used for the Bot Difficulty
+var					int								BossWaveStartDelay;		// This wave start time out in seconds
+var					range							BossWaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+var					IRange							BossWaveStartingCash;		// Random starting cash on this wave
+var					IRange							BossWaveMinRespawnCash;		// Random min respawn cash on this wave
 
-var		IRange										BossWaveStartingCash;
-var		IRange										BossWaveMinRespawnCash;
-var		float										BossWaveRespawnCashModifier;
-var		int											BossWaveStartDelay;
-var		float										BossWaveDoorsRepairChance;
+// Monsters
+var		export		array<UM_InvasionMonsterData>	Monsters;
+var					string							BossMonsterClassName;
 
-var		IRange										InitialShoppingTime;
-
-var		int											InitialWaveNum;
+var					int								BulidSquadIterationLimit;
 
 //[end] Varibles
 //====================================================================
 
-//========================================================================
-//[block] Functions
-
-function GetMaxAliveMonsters()
-{
-	
-}
-
-//[end] Functions
-//====================================================================
-
 defaultproperties
 {
+	 BulidSquadIterationLimit=500
 	 InitialWaveNum=0
 	 InitialShoppingTime=(Min=120,Max=140)
 	 MinGameDifficulty=1.0
 	 MaxGameDifficulty=7.0
 	 MinHumanPlayers=1
 	 MaxHumanPlayers=12
-	 //
-	 NumPlayersModifiers(1)=1.0
-	 NumPlayersModifiers(2)=1.75
-	 NumPlayersModifiers(3)=2.5
-	 NumPlayersModifiers(4)=3.25
-	 NumPlayersModifiers(5)=4.0
-	 NumPlayersModifiers(6)=4.75
-	 NumPlayersModifiers(7)=5.5
-	 NumPlayersModifiers(8)=6
-	 NumPlayersModifiers(9)=6.5
-	 NumPlayersModifiers(10)=7
-	 NumPlayersModifiers(11)=7.5
-	 NumPlayersModifiers(12)=8
 	 // Kills for DramaticEvent
 	 DramaticKills(0)=(MinKilled=2,EventChance=0.03,EventDuration=2.5)
 	 DramaticKills(1)=(MinKilled=5,EventChance=0.05,EventDuration=3.0)

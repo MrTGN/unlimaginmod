@@ -136,11 +136,13 @@ var					float						LerpNumPlayersModifier;
 var					float						LerpGameDifficultyModifier;
 
 // Spawned monster list
-var		transient	array<UM_Monster>			MonsterList;
+var		transient	array<UM_Monster>			AliveMonsterList;
 
 var					float						ZEDTimeKillSlowMoChargeBonus;
 
 var		transient	string						CurrentMapName;
+
+var		transient	bool						bNeedToSpawnBoss;
 
 //[end] Varibles
 //====================================================================
@@ -435,18 +437,18 @@ function NotifyNumPlayersChanged()
 	UpdateDynamicParameters();
 }
 
-//[block] MonsterList functions
-function CheckMonsterList()
+//[block] AliveMonsterList functions
+function CheckAliveMonsterList()
 {
 	local	int		i;
 	
-	for ( i = 0; i < MonsterList.Length; ++i )  {
-		if ( MonsterList[i] == None || MonsterList[i].bDeleteMe || MonsterList[i].Health < 1 )  {
-			MonsterList.Remove(i, 1);
+	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
+		if ( AliveMonsterList[i] == None || AliveMonsterList[i].bDeleteMe || AliveMonsterList[i].Health < 1 )  {
+			AliveMonsterList.Remove(i, 1);
 			--i;
 		}
 	}
-	NumMonsters = MonsterList.Length;
+	NumMonsters = AliveMonsterList.Length;
 }
 
 // Called from the UM_Monster in PostBeginPlay() function
@@ -455,16 +457,16 @@ function bool AddToMonsterList( UM_Monster M )
 	if ( M == None )
 		Return False;
 	
-	MonsterList[MonsterList.Length] = M;
+	AliveMonsterList[AliveMonsterList.Length] = M;
 	Return True;
 }
 
 function ClearMonsterList()
 {
-	while( MonsterList.Length > 0 )
-		Remove( (MonsterList.Length - 1), 1 );
+	while( AliveMonsterList.Length > 0 )
+		Remove( (AliveMonsterList.Length - 1), 1 );
 }
-//[end] MonsterList functions
+//[end] AliveMonsterList functions
 
 function UpdateCurrentMapName()
 {
@@ -1102,13 +1104,13 @@ function CheckForJammedMonsters()
 	
 	NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
 	
-	CheckMonsterList();
+	CheckAliveMonsterList();
 	// Search for Jammed Monsters
-	for ( i = 0; i < MonsterList.Length; ++i )  {
-		if ( UM_MonsterController(MonsterList[i].Controller) != None && UM_MonsterController(MonsterList[i].Controller).CanKillMeYet() )  {
-			NextSpawnSquad[NextSpawnSquad.Length] = Class<KFMonster>(MonsterList[i].Class);
-			MonsterList[i].Suicide();
-			MonsterList.Remove(i, 1);
+	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
+		if ( UM_MonsterController(AliveMonsterList[i].Controller) != None && UM_MonsterController(AliveMonsterList[i].Controller).CanKillMeYet() )  {
+			NextSpawnSquad[NextSpawnSquad.Length] = Class<KFMonster>(AliveMonsterList[i].Class);
+			AliveMonsterList[i].Suicide();
+			AliveMonsterList.Remove(i, 1);
 			--WaveMonster;
 			--i;
 		}
@@ -1230,7 +1232,7 @@ state WaveInProgress
 		if ( Level.TimeSeconds < NextMonsterSquadSpawnTime )
 			Return False;
 		
-		CheckMonsterList(); // update monster count (NumMonsters)
+		CheckAliveMonsterList(); // update monster count (NumMonsters)
 		// Add next squad spawn check delay. Prevents from checks at every tick.
 		if ( (MaxAliveMonsters - NumMonsters) < NextMonsterSquadSize )  {
 			NextMonsterSquadSpawnTime = Level.TimeSeconds + MinSquadSpawnCheckDelay;
@@ -1292,41 +1294,9 @@ state WaveInProgress
 
 
 //[block] BossWaveInProgress Code
-// Force slomo for a longer period of time when the boss dies
-function DoBossDeath()
-{
-    local Controller C;
-    local Controller nextC;
-    local int num;
-
-    bZEDTimeActive =  true;
-    bSpeedingBackUp = false;
-    LastZedTimeEvent = Level.TimeSeconds;
-    CurrentZEDTimeDuration = ZEDTimeDuration*2;
-    SetGameSpeed(ZedTimeSlomoScale);
-
-    num = NumMonsters;
-
-    c = Level.ControllerList;
-
-    // turn off all the other zeds so they don't attack the player
-    while (c != none && num > 0)
-    {
-        nextC = c.NextController;
-        if (KFMonsterController(C)!=None)
-        {
-            C.GotoState('GameEnded');
-            --num;
-        }
-        c = nextC;
-    }
-
-}
-
-function SpawnBoss()
-{
-	
-}
+function DoBossDeath() { }
+function AddBoss() { }
+function AddBossBuddySquad() { }
 
 state BossWaveInProgress
 {
@@ -1350,12 +1320,55 @@ state BossWaveInProgress
 			KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = True;
 			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
 		}
+		bNeedToSpawnBoss = True;
 	}
 	
-	// ToDo: issue #280(281) дописать!
 	function AddBoss()
 	{
+		local	ZombieVolume	BossSpawningVolume;
+		local	int				Num;
 		
+		NextSpawnSquad.Length = 1;
+		NextSpawnSquad[0] = BossMonsterClass;
+		BossSpawningVolume = FindSpawningVolume( False, True );
+		
+		if ( BossSpawningVolume == None )  {
+			// Force to try up to 5 times to find another BossSpawningVolume
+			for ( Num = 0; BossSpawningVolume == None && Num < 5; ++Num )
+				BossSpawningVolume = FindSpawningVolume( True, True );
+			// Filed to find another BossSpawningVolume
+			if ( BossSpawningVolume == None )
+				Return;
+			// Reset Num
+			Num = 0;
+		}
+		
+		if ( BossSpawningVolume.SpawnInHere( NextSpawnSquad,, Num, MaxMonsters, (MaxAliveMonsters - NumMonsters) ) )  {
+			MaxMonsters = default.MaxMonsters;
+			WaveMonsters += Num;
+			NextSpawnSquad.Length = 0;
+			bNeedToSpawnBoss = False;
+		}
+	}
+	
+	function AddBossBuddySquad()
+	{
+		local	int		HelpSquadSize;
+		
+		if ( WaveCountDown < 1 )
+			Return;
+		
+		CheckAliveMonsterList(); // update monster count (NumMonsters)
+		HelpSquadSize = MaxAliveMonsters - NumMonsters;
+		if ( HelpSquadSize < 2 )
+			Return;
+		
+		NextMonsterSquadSize = HelpSquadSize;
+		// NextSpawnTime
+		WaveCountDown = Round( CurrentSquadsSpawnPeriod + Lerp(FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod) );
+		// NewMonsterSquad
+		BuildNextSquad();
+		Global.SpawnNextMonsterSquad();
 	}
 	
 	function bool CanSpawnNextMonsterSquad()
@@ -1363,7 +1376,7 @@ state BossWaveInProgress
 		if ( WaveCountDown > 0 )
 			Return False;
 		
-		CheckMonsterList(); // update monster count (NumMonsters)
+		CheckAliveMonsterList(); // update monster count (NumMonsters)
 		Return (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize;
 	}
 	
@@ -1380,6 +1393,9 @@ state BossWaveInProgress
 	
 	event Timer()
 	{
+		if ( bNeedToSpawnBoss )
+			AddBoss();
+		
 		Global.Timer();
 		// EndGame if no one alive.
 		if ( !CheckForAlivePlayers() )  {
@@ -1396,6 +1412,25 @@ state BossWaveInProgress
 		// Spawn New Monster Squad
 		if ( CanSpawnNextMonsterSquad() )
 			SpawnNextMonsterSquad();
+	}
+	
+	// Force slomo for a longer period of time when the boss dies
+	function DoBossDeath()
+	{
+		local	int		i;
+
+		bZEDTimeActive = True;
+		bSpeedingBackUp = False;
+		LastZedTimeEvent = Level.TimeSeconds;
+		CurrentZEDTimeDuration = ZEDTimeDuration * 2.0;
+		SetGameSpeed( ZedTimeSlomoScale );
+
+		CheckAliveMonsterList();
+		// Kill all alive monsters
+		for ( i = 0; i < AliveMonsterList.Length; ++i )
+			AliveMonsterList[i].Suicide();
+		
+		DoWaveEnd();
 	}
 }
 //[end] BossWaveInProgress code

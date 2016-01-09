@@ -287,20 +287,6 @@ simulated function int GetInstigatorTeamNum()
 	Return InstigatorTeamNum;
 }
 
-// Set new Instigator
-simulated function SetInstigator( Pawn NewInstigator )
-{
-	if ( Instigator != NewInstigator )
-		Instigator = NewInstigator;
-	
-	// InstigatorController
-	if ( Instigator != None )
-		InstigatorController = Instigator.Controller;
-	
-	UpdateInstigatorTeamNum();
-	UpdateBonuses();
-}
-
 // Veterancy Penetration and Bounce bonuses
 simulated function UpdateBonuses()
 {
@@ -320,6 +306,20 @@ simulated function UpdateBonuses()
 		PenetrationBonus = default.PenetrationBonus / ExpansionCoefficient;
 		BounceBonus = default.BounceBonus / ExpansionCoefficient;
 	}
+}
+
+// Set new Instigator
+simulated function SetInstigator( Pawn NewInstigator )
+{
+	if ( Instigator != NewInstigator )
+		Instigator = NewInstigator;
+	
+	// InstigatorController
+	if ( Instigator != None )
+		InstigatorController = Instigator.Controller;
+	
+	UpdateInstigatorTeamNum();
+	UpdateBonuses();
 }
 
 simulated event PreBeginPlay()

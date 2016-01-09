@@ -330,6 +330,9 @@ function bool MakeGrandEntry()
 	SetAnimAction('Entrance');
 	HandleWaitForAnim('Entrance');
 	GotoState('MakingEntrance');
+	
+	if ( UM_InvasionGame(Level.Game) != None )
+		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self );
 
 	Return True;
 }
@@ -1034,9 +1037,7 @@ Begin:
     	CloakBoss();
     	PlaySound(sound'KF_EnemiesFinalSnd.Patriarch.Kev_SaveMe', SLOT_Misc, 2.0,,500.0);
     	
-		if ( UM_InvasionGame(Level.Game) != None && UM_InvasionGame(Level.Game).FinalSquadNum == SyringeCount )
-			UM_InvasionGame(Level.Game).AddBossBuddySquad();
-		else if( KFGameType(Level.Game) != None && KFGameType(Level.Game).FinalSquadNum == SyringeCount )
+		if( KFGameType(Level.Game) != None )
     	   KFGameType(Level.Game).AddBossBuddySquad();
 
         GotoState('Escaping');
@@ -1539,16 +1540,13 @@ function bool SetBossLaught()
 	HandleWaitForAnim('VictoryLaugh');
 	bIsBossView = True;
 	bSpecialCalcView = True;
-	for( C=Level.ControllerList; C!=None; C=C.NextController )  {
-		if ( PlayerController(C) != None )  {
-			PlayerController(C).SetViewTarget(Self);
-			PlayerController(C).ClientSetViewTarget(Self);
-			PlayerController(C).ClientSetBehindView(True);
-		}
-	}
+	
+	if ( UM_InvasionGame(Level.Game) != None )
+		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self );
 	
 	Return True;
 }
+
 simulated function bool SpectatorSpecialCalcView(PlayerController Viewer, out Actor ViewActor, out vector CameraLocation, out rotator CameraRotation)
 {
 	Viewer.bBehindView = True;
@@ -1571,14 +1569,8 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	if ( KFGameType(Level.Game) != None )
 		KFGameType(Level.Game).DoBossDeath();
 
-	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
-		if ( PlayerController(C) != None )  {
-			PlayerController(C).SetViewTarget(Self);
-			PlayerController(C).ClientSetViewTarget(Self);
-			PlayerController(C).bBehindView = true;
-			PlayerController(C).ClientSetBehindView(True);
-		}
-	}
+	if ( UM_InvasionGame(Level.Game) != None )
+		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self, 10.0 );
 }
 
 function ClawDamageTarget()

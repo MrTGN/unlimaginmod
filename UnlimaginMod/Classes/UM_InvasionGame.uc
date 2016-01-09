@@ -66,7 +66,7 @@ struct GameWaveData
 	var()	config	float						WaveDifficulty;		// Used for the Bot Difficulty
 	var()	config	int							StartDelay;		// This wave start time out in seconds
 	var()	config	UM_BaseObject.FRandRange	Duration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
-	var()	config	UM_BaseObject.IRange		BreakTime;			// Shopping time after this wave in seconds
+	var()	config	range						BreakTime;			// Shopping time after this wave in seconds
 	var()	config	range						DoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
 	var()	config	UM_BaseObject.IRange		StartingCash;		// Random starting cash on this wave
 	var()	config	UM_BaseObject.IRange		MinRespawnCash;		// Random min respawn cash on this wave
@@ -75,7 +75,7 @@ struct GameWaveData
 
 // Begin Match With Shopping
 var		config		bool						bBeginMatchWithShopping;
-var					UM_BaseObject.IRange		InitialShoppingTime;
+var					range						InitialShoppingTime;
 
 // Normal Wave Data
 var					int							InitialWaveNum;
@@ -143,6 +143,7 @@ var					float						ZEDTimeKillSlowMoChargeBonus;
 var		transient	string						CurrentMapName;
 
 var		transient	bool						bNeedToSpawnBoss;
+var		transient	bool						bBossKilled;
 
 //[end] Varibles
 //====================================================================
@@ -242,23 +243,6 @@ function UpdateStartingCash()
 	}
 }
 
-function UpdateGameLength()
-{
-	local	byte	i;
-	
-	CheckPlayerList();
-	for ( i = 0; i < PlayerList.Length; ++i )  {
-		if ( PlayerList[i].SteamStatsAndAchievements != None )
-			PlayerList[i].SteamStatsAndAchievements.bUsedCheats = bCustomGameLength || PlayerList[i].SteamStatsAndAchievements.bUsedCheats;
-	}
-	
-	CheckSpectatorList();
-	for ( i = 0; i < SpectatorList.Length; ++i )  {
-		if ( SpectatorList[i].SteamStatsAndAchievements != None )
-			SpectatorList[i].SteamStatsAndAchievements.bUsedCheats = bCustomGameLength || SpectatorList[i].SteamStatsAndAchievements.bUsedCheats;
-	}
-}
-
 function LoadUpMonsterList() 
 {
 	local	int		i;
@@ -307,8 +291,8 @@ event InitGame( string Options, out string Error )
 	NextWaveNum = InitialWave;
 	WaveNum = NextWaveNum;
 	UpdateStartingCash();
-	bCustomGameLength = True;	// We can't use Steam Stats with Unlimagin Mod
-	UpdateGameLength();
+	bCustomGameLength = True; // Can't use Steam Stats in Mod
+	UseCheats( True ); // Can't use Steam Stats in Mod
 	LoadUpMonsterList();
 
 	//Spawning ActorPool
@@ -317,9 +301,6 @@ event InitGame( string Options, out string Error )
 		Spawn(ActorPoolClass);
 	}
 }
-
-simulated function PrepareSpecialSquadsFromCollection() { }
-simulated function PrepareSpecialSquads() { }
 
 function float GetDifficultyModifier()
 {
@@ -346,34 +327,6 @@ function float GetDifficultyModifier()
 	
 	Return f;
 }
-
-function float GetNumPlayersModifier()
-{
-	local	byte	CurrentNumPlayers;
-	
-	CurrentNumPlayers = Min( (NumPlayers + NumBots), MaxHumanPlayers );
-	switch ( CurrentNumPlayers )  {
-		case 1:
-		case 2:
-			Return float(CurrentNumPlayers);
-			Break;
-		
-		case 3:
-			Return 2.75;
-			Break;
-		
-		case 4:
-			Return 3.5;
-			Break;
-		
-		case 5:
-			Return 4.0;
-			Break;
-	}
-	
-	Return float(CurrentNumPlayers) - float(CurrentNumPlayers) * 0.25;
-}
-
 
 function UpdateDynamicParameters()
 {
@@ -466,6 +419,17 @@ function ClearMonsterList()
 	while( AliveMonsterList.Length > 0 )
 		Remove( (AliveMonsterList.Length - 1), 1 );
 }
+
+exec function KillZeds()
+{
+	local	int		i;
+	
+	UseCheats( True );	
+	CheckAliveMonsterList();
+	for ( i = 0; i < AliveMonsterList.Length; ++i )
+		AliveMonsterList[i].Suicide();
+	ClearMonsterList();
+}
 //[end] AliveMonsterList functions
 
 function UpdateCurrentMapName()
@@ -506,26 +470,23 @@ state StartingMatch
 	}
 }
 
-function EndMatch()
+function EndGame( PlayerReplicationInfo Winner, string Reason )
 {
-	local	Controller	C;
-	local	int			i;
-	
-	// Tell all players to stop showing the path to the trader
-	for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-		++i;	// To prevent runaway loop
-		// Find the Pawn of this controller
-		if ( C.Pawn != None && C.Pawn.Health > 0 )  {
-			// Enable pawn collision
-			C.Pawn.bBlockActors = C.Pawn.default.bBlockActors;
-			// Trader Hints
-			if ( KFPlayerController(C) != None )  {
-				KFPlayerController(C).SetShowPathToTrader(False);
-				KFPlayerController(C).ClientForceCollectGarbage();
-			}
+	if ( Reason ~= "triggered" || Reason ~= "LastMan" || Reason ~= "TimeLimit" ||
+		 Reason ~= "FragLimit" || Reason ~= "TeamScoreLimit" )  {
+		// don't end game if not really ready
+		if ( !CheckEndGame(Winner, Reason) )  {
+			bOverTime = True;
+			Return;
 		}
+
+		bGameEnded = True;
+		TriggerEvent('EndGame', self, None);
+		EndLogging(Reason);
+		GotoState('MatchOver');
 	}
 }
+
 
 //[block] BeginNewWave code
 function SelectNewShop()
@@ -679,7 +640,7 @@ state BeginNewWave
 	event Timer()
 	{
 		Global.Timer();
-		// Overal game ElapsedTime
+
 		IncreaseElapsedTime();
 		DecreaseWaveCountDown();
 		if ( WaveCountDown > 0 )
@@ -766,8 +727,7 @@ state Shopping
 	// Open Shops
 	event BeginState()
 	{
-		local	int			i;
-		local	Controller	C;
+		local	int		i;
 		
 		// Allow to spawn Players
 		bAllowPlayerSpawn = True;
@@ -784,24 +744,23 @@ state Shopping
 				ShopList[i].OpenShop();
 		}
 		
+		CheckPlayerList()
 		// Tell all players to start showing the path to the trader
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			// Find the Pawn
-			if ( C.bIsPlayer && C.Pawn != None )  {
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None )  {
 				// Disable pawn collision during trader time
-				C.Pawn.bBlockActors = False;
-				// Trader Hints
-				if ( KFPlayerController(C) != None && C.Pawn.Health > 0 )  {
-					KFPlayerController(C).SetShowPathToTrader(True);
+				PlayerList[i].Pawn.bBlockActors = False;
+				if ( PlayerList[i].Pawn.Health > 0 )  {
+					PlayerList[i].SetShowPathToTrader(True);
 					// Have Trader tell players that the Shop's Open
 					if ( NextWaveNum < FinalWave )
-						KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, None, 'TRADER', 2);
+						PlayerList[i].ClientLocationalVoiceMessage(PlayerList[i].PlayerReplicationInfo, None, 'TRADER', 2);
 					// Boss Wave Next
 					else
-						KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, none, 'TRADER', 3);
+						PlayerList[i].ClientLocationalVoiceMessage(PlayerList[i].PlayerReplicationInfo, none, 'TRADER', 3);
+					
 					//Hint_1
-					KFPlayerController(C).CheckForHint(31);
+					PlayerList[i].CheckForHint(31);
 				}
 			}
 		}
@@ -814,10 +773,10 @@ state Shopping
 		
 		// Break Time
 		if ( NextWaveNum > InitialWave )
-			WaveCountDown = Round( Lerp(FRand(), float(GameWaves[WaveNum].BreakTime.Min), float(GameWaves[WaveNum].BreakTime.Max)) + FMin(TimerCounter, 1.0) );
+			WaveCountDown = Round( Lerp(FRand(), GameWaves[WaveNum].BreakTime.Min, GameWaves[WaveNum].BreakTime.Max) + FMin(TimerCounter, 1.0) );
 		// Begin Match With Shopping
 		else
-			WaveCountDown = Round( Lerp(FRand(), float(InitialShoppingTime.Min), float(InitialShoppingTime.Max)) + FMin(TimerCounter, 1.0) );
+			WaveCountDown = Round( Lerp(FRand(), InitialShoppingTime.Min, InitialShoppingTime.Max) + FMin(TimerCounter, 1.0) );
 		
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).TimeToNextWave = WaveCountDown;
@@ -898,7 +857,6 @@ state Shopping
 		if ( !bTradingDoorsOpen )
 			Return;
 		
-		// Overal game ElapsedTime
 		IncreaseElapsedTime();
 		DecreaseWaveCountDown();
 		// Out from the Shopping state
@@ -937,8 +895,7 @@ state Shopping
 	// Close Shops
 	event EndState()
 	{
-		local	int			i;
-		local	Controller	C;
+		local	int		i;
 		
 		bTradingDoorsOpen = False;
 		
@@ -953,20 +910,17 @@ state Shopping
 				ShopList[i].CloseShop();
 		}
 		
+		CheckPlayerList()
 		// Tell all players to stop showing the path to the trader
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			// Find the Pawn of this controller
-			if ( C.bIsPlayer && C.Pawn != None )  {
-				// Enable pawn collision
-				C.Pawn.bBlockActors = C.Pawn.default.bBlockActors;
-				// Trader Hints
-				if ( KFPlayerController(C) != None && C.Pawn.Health > 0 )  {
-					KFPlayerController(C).SetShowPathToTrader(False);
-					KFPlayerController(C).ClientForceCollectGarbage();
-					// Have Trader tell players that the Shop's Closed
-					if ( WaveNum < FinalWave )
-						KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, None, 'TRADER', 2);
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None )  {
+				// Disable pawn collision during trader time
+				PlayerList[i].Pawn.bBlockActors = PlayerList[i].Pawn.default.bBlockActors;
+				PlayerList[i].SetShowPathToTrader(False);
+				PlayerList[i].ClientForceCollectGarbage();
+				// Have Trader tell players that the Shop's Open
+				if ( PlayerList[i].Pawn.Health > 0 && NextWaveNum < FinalWave )  {
+					PlayerList[i].ClientLocationalVoiceMessage(PlayerList[i].PlayerReplicationInfo, None, 'TRADER', 2);
 				}
 			}
 		}
@@ -1040,11 +994,6 @@ function ZombieVolume FindSpawningVolume( optional bool bIgnoreFailedSpawnTime, 
 	Return BestZ;
 }
 
-// Clear old functions
-function SetupWave() { }
-function AddSpecialSquad() { }
-function bool AddSquad() { }
-
 function BuildNextSquad()
 {
 	local	int		i, r;
@@ -1092,7 +1041,7 @@ function SpawnNextMonsterSquad()
 	}
 	// Spawn has failed
 	else  {
-		NextMonsterSquadSpawnTime = Level.TimeSeconds + 1.0;
+		NextMonsterSquadSpawnTime = Level.TimeSeconds + 0.5;
 		NextSpawningVolumeUpdateTime = Level.TimeSeconds + SpawningVolumeUpdateDelay;
 		LastSpawningVolume = FindSpawningVolume();
 	}
@@ -1166,8 +1115,6 @@ function DoWaveEnd()
 	if ( Level.NetMode != NM_StandAlone && NumPlayers > 1 && SurvivorCount == 1 
 		 && Survivor != None && KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements) != None )
 		KFSteamStatsAndAchievements(Survivor.SteamStatsAndAchievements).AddOnlySurvivorOfWave();
-
-	bUpdateViewTargs = True;
 }
 
 function bool CheckForAlivePlayers()
@@ -1242,17 +1189,6 @@ state WaveInProgress
 		Return True;
 	}
 	
-	function SpawnNextMonsterSquad()
-	{
-		if ( NextSpawnSquad.Length < 1 )  {
-			// NextSpawnTime
-			NextMonsterSquadSpawnTime = Level.TimeSeconds + CurrentSquadsSpawnPeriod + Lerp( FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod );
-			// NewMonsterSquad
-			BuildNextSquad();
-		}
-		Global.SpawnNextMonsterSquad();
-	}
-	
 	event Tick( float DeltaTime )
 	{
 		Global.Tick( DeltaTime );
@@ -1264,8 +1200,13 @@ state WaveInProgress
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
 			CheckForJammedMonsters();
 		// Spawn New Monster Squad
-		if ( CanSpawnNextMonsterSquad() )
+		if ( CanSpawnNextMonsterSquad() )  {
+			// NextSpawnTime
+			NextMonsterSquadSpawnTime = Level.TimeSeconds + CurrentSquadsSpawnPeriod + Lerp( FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod );
+			// NewMonsterSquad
+			BuildNextSquad();
 			SpawnNextMonsterSquad();
+		}
 	}
 	
 	event Timer()
@@ -1276,7 +1217,7 @@ state WaveInProgress
 			EndGame(None, "LastMan");
 			Return;
 		}
-		// Overal game ElapsedTime
+		
 		IncreaseElapsedTime();
 		++WaveElapsedTime;
 		DecreaseWaveCountDown();
@@ -1292,11 +1233,16 @@ state WaveInProgress
 }
 //[end] WaveInProgress Code
 
-
 //[block] BossWaveInProgress Code
-function DoBossDeath() { }
-function AddBoss() { }
-function AddBossBuddySquad() { }
+function ShowPawnToPlayers( Pawn P, optional float ShowingTime )
+{
+	if ( P == None )
+		Return;
+	
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )
+		PlayerList[i].ShowActor( P , ShowingTime );
+}
 
 state BossWaveInProgress
 {
@@ -1331,7 +1277,7 @@ state BossWaveInProgress
 		NextSpawnSquad.Length = 1;
 		NextSpawnSquad[0] = BossMonsterClass;
 		BossSpawningVolume = FindSpawningVolume( False, True );
-		
+		// if FindSpawningVolume has failed
 		if ( BossSpawningVolume == None )  {
 			// Force to try up to 5 times to find another BossSpawningVolume
 			for ( Num = 0; BossSpawningVolume == None && Num < 5; ++Num )
@@ -1343,11 +1289,12 @@ state BossWaveInProgress
 			Num = 0;
 		}
 		
-		if ( BossSpawningVolume.SpawnInHere( NextSpawnSquad,, Num, MaxMonsters, (MaxAliveMonsters - NumMonsters) ) )  {
+		if ( BossSpawningVolume.SpawnInHere(NextSpawnSquad,, Num, MaxMonsters, (MaxAliveMonsters - NumMonsters)) )  {
 			MaxMonsters = default.MaxMonsters;
 			WaveMonsters += Num;
 			NextSpawnSquad.Length = 0;
 			bNeedToSpawnBoss = False;
+			MakeGrandEntry();
 		}
 	}
 	
@@ -1368,7 +1315,7 @@ state BossWaveInProgress
 		WaveCountDown = Round( CurrentSquadsSpawnPeriod + Lerp(FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod) );
 		// NewMonsterSquad
 		BuildNextSquad();
-		Global.SpawnNextMonsterSquad();
+		SpawnNextMonsterSquad();
 	}
 	
 	function bool CanSpawnNextMonsterSquad()
@@ -1380,38 +1327,38 @@ state BossWaveInProgress
 		Return (MaxAliveMonsters - NumMonsters) >= NextMonsterSquadSize;
 	}
 	
-	function SpawnNextMonsterSquad()
-	{
-		if ( NextSpawnSquad.Length < 1 )  {
-			// NextSpawnTime
-			WaveCountDown = Round( CurrentSquadsSpawnPeriod + Lerp(FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod) );
-			// NewMonsterSquad
-			BuildNextSquad();
-		}
-		Global.SpawnNextMonsterSquad();
-	}
-	
 	event Timer()
 	{
-		if ( bNeedToSpawnBoss )
-			AddBoss();
-		
 		Global.Timer();
 		// EndGame if no one alive.
 		if ( !CheckForAlivePlayers() )  {
 			EndGame(None, "LastMan");
 			Return;
 		}
-		// Overal game ElapsedTime
+
 		IncreaseElapsedTime();
 		++WaveElapsedTime;
 		DecreaseWaveCountDown();
+		
+		// SpawnBoss Check
+		if ( bNeedToSpawnBoss )
+			AddBoss();
+		else if ( bBossKilled )  {
+			EndGame(None,"TimeLimit");
+			Return;
+		}
+		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
 			CheckForJammedMonsters();
 		// Spawn New Monster Squad
-		if ( CanSpawnNextMonsterSquad() )
+		if ( CanSpawnNextMonsterSquad() )  {
+			// NextSpawnTime
+			WaveCountDown = Round( CurrentSquadsSpawnPeriod + Lerp(FRand(), -CurrentSquadsSpawnRandPeriod, CurrentSquadsSpawnRandPeriod) );
+			// NewMonsterSquad
+			BuildNextSquad();
 			SpawnNextMonsterSquad();
+		}
 	}
 	
 	// Force slomo for a longer period of time when the boss dies
@@ -1431,6 +1378,7 @@ state BossWaveInProgress
 			AliveMonsterList[i].Suicide();
 		
 		DoWaveEnd();
+		bBossKilled = True;
 	}
 }
 //[end] BossWaveInProgress code
@@ -1547,23 +1495,23 @@ defaultproperties
 	 MaxHumanPlayers=12
 	 
 	 bBeginMatchWithShopping=True
-	 InitialShoppingTime=(Min=120,Max=140)
+	 InitialShoppingTime=(Min=120.0,Max=140.0)
 	 
 	 InitialWaveNum=0
 	 // GameWaves - 7 waves
-	 GameWaves(0)=(AliveMonsters=(Min=12,Max=46),MonsterSquadSize=(Min=4,RandMin=2,Max=12,RandMax=6),SquadsSpawnPeriod=(Min=5.0,RandMin=1.0,Max=4.0,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.7,StartDelay=10,Duration=(Min=3.0,RandMin=0.4,Max=8.0,RandMax=0.8),BreakTime=(Min=90,Max=100),DoorsRepairChance=(Min=1.0,Max=0.6),StartingCash=(Min=240,Max=280),MinRespawnCash=(Min=200,Max=220),DeathCashModifier=(Min=0.98,Max=0.86))
-	 GameWaves(1)=(AliveMonsters=(Min=14,Max=48),MonsterSquadSize=(Min=4,RandMin=2,Max=14,RandMax=7),SquadsSpawnPeriod=(Min=4.5,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.8,StartDelay=8,Duration=(Min=3.5,RandMin=0.5,Max=9.0,RandMax=1.0),BreakTime=(Min=90,Max=110),DoorsRepairChance=(Min=1.0,Max=0.55),StartingCash=(Min=260,Max=300),MinRespawnCash=(Min=220,Max=240),DeathCashModifier=(Min=0.97,Max=0.85))
-	 GameWaves(2)=(AliveMonsters=(Min=16,Max=48),MonsterSquadSize=(Min=5,RandMin=2,Max=14,RandMax=8),SquadsSpawnPeriod=(Min=4.0,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=19,WaveDifficulty=0.9,StartDelay=8,Duration=(Min=4.0,RandMin=0.6,Max=10.0,RandMax=1.2),BreakTime=(Min=100,Max=110),DoorsRepairChance=(Min=1.0,Max=0.5),StartingCash=(Min=280,Max=320),MinRespawnCash=(Min=240,Max=260),DeathCashModifier=(Min=0.96,Max=0.84))
-	 GameWaves(3)=(AliveMonsters=(Min=18,Max=50),MonsterSquadSize=(Min=5,RandMin=3,Max=16,RandMax=8),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=18,WaveDifficulty=1.0,StartDelay=8,Duration=(Min=4.5,RandMin=0.7,Max=11.0,RandMax=1.4),BreakTime=(Min=100,Max=120),DoorsRepairChance=(Min=1.0,Max=0.45),StartingCash=(Min=300,Max=340),MinRespawnCash=(Min=260,Max=280),DeathCashModifier=(Min=0.95,Max=0.83))
-	 GameWaves(4)=(AliveMonsters=(Min=20,Max=50),MonsterSquadSize=(Min=6,RandMin=3,Max=16,RandMax=10),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=17,WaveDifficulty=1.1,StartDelay=6,Duration=(Min=5.0,RandMin=0.8,Max=12.0,RandMax=1.6),BreakTime=(Min=110,Max=120),DoorsRepairChance=(Min=1.0,Max=0.4),StartingCash=(Min=320,Max=360),MinRespawnCash=(Min=280,Max=300),DeathCashModifier=(Min=0.94,Max=0.82))
-	 GameWaves(5)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=6,RandMin=3,Max=18,RandMax=10),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.5,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.2,StartDelay=6,Duration=(Min=5.5,RandMin=0.9,Max=13.0,RandMax=1.8),BreakTime=(Min=110,Max=130),DoorsRepairChance=(Min=1.0,Max=0.35),StartingCash=(Min=340,Max=380),MinRespawnCash=(Min=300,Max=320),DeathCashModifier=(Min=0.93,Max=0.81))
-	 GameWaves(6)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=7,RandMin=3,Max=18,RandMax=12),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.0,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.3,StartDelay=6,Duration=(Min=6.0,RandMin=1.0,Max=14.0,RandMax=2.0),BreakTime=(Min=120,Max=130),DoorsRepairChance=(Min=1.0,Max=0.3),StartingCash=(Min=360,Max=400),MinRespawnCash=(Min=320,Max=340),DeathCashModifier=(Min=0.92,Max=0.8))
+	 GameWaves(0)=(AliveMonsters=(Min=12,Max=46),MonsterSquadSize=(Min=4,RandMin=2,Max=12,RandMax=6),SquadsSpawnPeriod=(Min=5.0,RandMin=1.0,Max=4.0,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.7,StartDelay=10,Duration=(Min=3.0,RandMin=0.4,Max=8.0,RandMax=0.8),BreakTime=(Min=90.0,Max=100.0),DoorsRepairChance=(Min=1.0,Max=0.6),StartingCash=(Min=240,Max=280),MinRespawnCash=(Min=200,Max=220),DeathCashModifier=(Min=0.98,Max=0.86))
+	 GameWaves(1)=(AliveMonsters=(Min=14,Max=48),MonsterSquadSize=(Min=4,RandMin=2,Max=14,RandMax=7),SquadsSpawnPeriod=(Min=4.5,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.8,StartDelay=8,Duration=(Min=3.5,RandMin=0.5,Max=9.0,RandMax=1.0),BreakTime=(Min=90.0,Max=110.0),DoorsRepairChance=(Min=1.0,Max=0.55),StartingCash=(Min=260,Max=300),MinRespawnCash=(Min=220,Max=240),DeathCashModifier=(Min=0.97,Max=0.85))
+	 GameWaves(2)=(AliveMonsters=(Min=16,Max=48),MonsterSquadSize=(Min=5,RandMin=2,Max=14,RandMax=8),SquadsSpawnPeriod=(Min=4.0,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=19,WaveDifficulty=0.9,StartDelay=8,Duration=(Min=4.0,RandMin=0.6,Max=10.0,RandMax=1.2),BreakTime=(Min=100.0,Max=110.0),DoorsRepairChance=(Min=1.0,Max=0.5),StartingCash=(Min=280,Max=320),MinRespawnCash=(Min=240,Max=260),DeathCashModifier=(Min=0.96,Max=0.84))
+	 GameWaves(3)=(AliveMonsters=(Min=18,Max=50),MonsterSquadSize=(Min=5,RandMin=3,Max=16,RandMax=8),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=18,WaveDifficulty=1.0,StartDelay=8,Duration=(Min=4.5,RandMin=0.7,Max=11.0,RandMax=1.4),BreakTime=(Min=100.0,Max=120.0),DoorsRepairChance=(Min=1.0,Max=0.45),StartingCash=(Min=300,Max=340),MinRespawnCash=(Min=260,Max=280),DeathCashModifier=(Min=0.95,Max=0.83))
+	 GameWaves(4)=(AliveMonsters=(Min=20,Max=50),MonsterSquadSize=(Min=6,RandMin=3,Max=16,RandMax=10),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=17,WaveDifficulty=1.1,StartDelay=6,Duration=(Min=5.0,RandMin=0.8,Max=12.0,RandMax=1.6),BreakTime=(Min=110.0,Max=120.0),DoorsRepairChance=(Min=1.0,Max=0.4),StartingCash=(Min=320,Max=360),MinRespawnCash=(Min=280,Max=300),DeathCashModifier=(Min=0.94,Max=0.82))
+	 GameWaves(5)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=6,RandMin=3,Max=18,RandMax=10),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.5,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.2,StartDelay=6,Duration=(Min=5.5,RandMin=0.9,Max=13.0,RandMax=1.8),BreakTime=(Min=110.0,Max=130.0),DoorsRepairChance=(Min=1.0,Max=0.35),StartingCash=(Min=340,Max=380),MinRespawnCash=(Min=300,Max=320),DeathCashModifier=(Min=0.93,Max=0.81))
+	 GameWaves(6)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=7,RandMin=3,Max=18,RandMax=12),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.0,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.3,StartDelay=6,Duration=(Min=6.0,RandMin=1.0,Max=14.0,RandMax=2.0),BreakTime=(Min=120.0,Max=130.0),DoorsRepairChance=(Min=1.0,Max=0.3),StartingCash=(Min=360,Max=400),MinRespawnCash=(Min=320,Max=340),DeathCashModifier=(Min=0.92,Max=0.8))
 	 
 	 // BossWave
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"
 	 BossWaveAliveMonsters=(Min=16,Max=48)
 	 BossWaveMonsterSquadSize=(Min=12,RandMin=4,Max=36,RandMax=12)
-	 BossWaveSquadsSpawnPeriod=(Min=25.0,RandMin=5.0,Max=25.0,RandMax=10.0)
+	 BossWaveSquadsSpawnPeriod=(Min=40.0,RandMin=5.0,Max=40.0,RandMax=10.0)
 	 BossWaveDifficulty=1.4
 	 BossWaveStartDelay=5
 	 BossWaveDoorsRepairChance=(Min=1.0,Max=0.2)
@@ -1926,8 +1874,8 @@ defaultproperties
 	 End Object
 	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieStalkerData'
  
-	 ZEDTimeDuration=3.000000
-	 ExitZedTime=0.500000
+	 ZEDTimeDuration=3.0
+	 ExitZedTime=0.5
 	  
 	 MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 

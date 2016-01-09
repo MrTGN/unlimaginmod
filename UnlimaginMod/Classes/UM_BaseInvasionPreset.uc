@@ -25,7 +25,7 @@ class UM_BaseInvasionPreset extends UM_BaseGamePreset
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-var					IRange							InitialShoppingTime; // Begin Match With Shopping
+var					range							InitialShoppingTime; // Begin Match With Shopping
 
 var					int								InitialWaveNum;
 var		array<UM_InvasionGame.GameWaveData>			GameWaves;
@@ -53,7 +53,7 @@ defaultproperties
 {
 	 BulidSquadIterationLimit=500
 	 InitialWaveNum=0
-	 InitialShoppingTime=(Min=120,Max=140)
+	 InitialShoppingTime=(Min=120.0,Max=140.0)
 	 MinGameDifficulty=1.0
 	 MaxGameDifficulty=7.0
 	 MinHumanPlayers=1

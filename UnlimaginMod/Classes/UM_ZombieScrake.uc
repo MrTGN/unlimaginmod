@@ -161,6 +161,14 @@ function RangedAttack(Actor A)
 	}
 }
 
+function RemoveHead()
+{
+	Super.RemoveHead();
+	
+	if ( ShowHeadShotTo != None )
+		ShowHeadShotTo.ShowActor( Self );
+}
+
 state RunningState
 {
     // Set the zed to the zapped behavior
@@ -202,8 +210,8 @@ state RunningState
 
 	function RemoveHead()
 	{
-		GoToState('');
 		Global.RemoveHead();
+		GoToState('');
 	}
 
     function RangedAttack(Actor A)

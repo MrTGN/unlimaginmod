@@ -11,6 +11,13 @@ var					string			SteamStatsAndAchievementsClassName;
 var					string			BuyMenuClassName, MidGameMenuClassName, InputClassName;
 var		transient	bool			bIsActivePlayer;	// This player participates in the game
 
+var 				float			ShowActorTime;
+var		transient	name			PrevStateName;
+
+var		transient	Pawn			PawnKiller;
+var		transient	bool			bViewPawnKiller;
+
+
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetOwner )
@@ -188,6 +195,149 @@ simulated function UpdateHintManagement(bool bUseHints)
 	}
 }
 
+function ServerVerifyViewTarget()
+{
+	if ( ViewTarget == None || ViewTarget == self )
+		Return;
+
+	ClientSetViewTarget( ViewTarget );
+}
+
+event ClientSetViewTarget( Actor A )
+{
+	local	bool	bNewViewTarget;
+
+	if ( A != None )  {
+		bNewViewTarget = ViewTarget != A;
+		SetViewTarget( A );
+		if ( bNewViewTarget )
+			A.POVChanged(self, false);
+	}
+	else {
+		if ( ViewTarget != self )
+			SetLocation( CalcViewLocation );
+		ServerVerifyViewTarget();
+	}
+}
+
+function ResetViewTarget()
+{
+	bBehindView = False;
+	ClientSetBehindView( False );
+	// Re-attach the controller to the pawn
+	if ( Pawn != None )  {
+		SetViewTarget( Pawn );
+		ClientSetViewTarget( Pawn );
+	}
+	else  {
+		SetViewTarget( Self );
+		ClientSetViewTarget( Self );
+	}
+}
+
+// Temporary show Actor to this player
+function ShowActor( Actor A, optional float NewShowActorTime )
+{
+	// Do not show actor if Pawn have small amount of Health
+	// or if actor is already close enough (4 meters) and visible.
+	if ( A == None || A == Self || Pawn == None || Pawn.Health < 10 
+		 || (VSizeSquared(A.Location - Pawn.Location) < 60000.0 && FastTrace(A.Location, Pawn.Location)) )
+		Return;
+	
+	if ( NewShowActorTime > 0.0 )
+		ShowActorTime = NewShowActorTime;
+	else
+		ShowActorTime = default.ShowActorTime;
+	
+	SetViewTarget( A );
+	ClientSetViewTarget( A );
+	bBehindView = True;
+	ClientSetBehindView( True );
+	
+	PrevStateName = GetStateName();
+	GoToState('ShowingActor');
+}
+
+// Showing Actor to this player
+state ShowingActor extends BaseSpectating
+{
+	event BeginState()
+	{
+		SetTimer( ShowActorTime, False );
+	}
+	
+	function bool IsSpectating()
+	{
+		Return True;
+	}
+	
+	function ShowActor( Actor A, optional float NewShowActorTime ) { }
+	
+	event Timer()
+	{
+		GotoState('PrevStateName');
+	}
+	
+	exec function Fire( optional float F )
+	{
+		GotoState('PrevStateName');
+	}
+
+	exec function AltFire( optional float F )
+	{
+		GotoState('PrevStateName');
+	}
+	
+	event EndState()
+	{
+		SetTimer(0.0, False);
+		ResetViewTarget();
+	}
+}
+
+// Optimized PostBeginPlay() version
+simulated event PostBeginPlay()
+{
+	MaxTimeMargin = Level.MaxTimeMargin;
+	MaxResponseTime = default.MaxResponseTime * Level.TimeDilation;
+	
+	if ( Level.NetMode != NM_Client )
+		InitPlayerReplicationInfo();
+	else
+		SpawnDefaultHUD();
+	
+	FixFOV();
+	SetViewDistance();
+	SetViewTarget(self);  // MUST have a view target!
+	LastActiveTime = Level.TimeSeconds;
+	
+	if ( Level.LevelEnterText != "" )
+		ClientMessage(Level.LevelEnterText);
+	
+	if ( Level.NetMode == NM_Standalone )
+		AddCheats();
+	
+	// Precache
+	bForcePrecache = Role < ROLE_Authority;
+	ForcePrecacheTime = Level.TimeSeconds + 1.2;
+	
+	if ( Level.Game != None )
+		MapHandler = Level.Game.MaplistHandler;
+	
+	if ( Role == ROLE_Authority )
+		InitChatManager();
+	
+	if ( Level.NetMode != NM_DedicatedServer )
+		InitVoiceAnnouncers();
+	
+	LoadComboList();
+	FillCameraList();
+	LastKillTime = -5.0;
+	
+	// Spawn hint manager (if needed)
+	UpdateHintManagement(bShowHints);
+}
+
 // Possess a pawn
 function Possess(Pawn aPawn)
 {
@@ -261,54 +411,11 @@ function UnPossess()
 		Pawn.RemoteRole = ROLE_SimulatedProxy;
 		Pawn.UnPossessed();
 		CleanOutSavedMoves();  // don't replay moves previous to unpossession
-		if ( Viewtarget == Pawn )
-			SetViewTarget(self);
+		if ( ViewTarget == Pawn )
+			SetViewTarget( self );
 	}
 	Pawn = None;
 	GotoState('Spectating');
-}
-
-// Optimized PostBeginPlay() version
-simulated event PostBeginPlay()
-{
-	MaxTimeMargin = Level.MaxTimeMargin;
-	MaxResponseTime = default.MaxResponseTime * Level.TimeDilation;
-	
-	if ( Level.NetMode != NM_Client )
-		InitPlayerReplicationInfo();
-	else
-		SpawnDefaultHUD();
-	
-	FixFOV();
-	SetViewDistance();
-	SetViewTarget(self);  // MUST have a view target!
-	LastActiveTime = Level.TimeSeconds;
-	
-	if ( Level.LevelEnterText != "" )
-		ClientMessage(Level.LevelEnterText);
-	
-	if ( Level.NetMode == NM_Standalone )
-		AddCheats();
-	
-	// Precache
-	bForcePrecache = Role < ROLE_Authority;
-	ForcePrecacheTime = Level.TimeSeconds + 1.2;
-	
-	if ( Level.Game != None )
-		MapHandler = Level.Game.MaplistHandler;
-	
-	if ( Role == ROLE_Authority )
-		InitChatManager();
-	
-	if ( Level.NetMode != NM_DedicatedServer )
-		InitVoiceAnnouncers();
-	
-	LoadComboList();
-	FillCameraList();
-	LastKillTime = -5.0;
-	
-	// Spawn hint manager (if needed)
-	UpdateHintManagement(bShowHints);
 }
 
 function bool CanRestartPlayer()
@@ -457,7 +564,7 @@ auto state PlayerWaiting
 	function ServerReStartPlayer()
 	{
 		if ( Level.NetMode == NM_Client || Level.TimeSeconds < WaitDelay )
-            Return;
+			Return;
 		
 		Global.ServerReStartPlayer();
 	}
@@ -815,11 +922,11 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 
 	if ( ViewTarget == None || ViewTarget.bDeleteMe )  {
 		if ( Pawn != None && !Pawn.bDeleteMe )
-			SetViewTarget(Pawn);
+			SetViewTarget( Pawn );
 		else if ( RealViewTarget != None )
-			SetViewTarget(RealViewTarget);
+			SetViewTarget( RealViewTarget );
 		else
-			SetViewTarget(self);
+			SetViewTarget( self );
 	}
 
 	ViewActor = ViewTarget;
@@ -1114,14 +1221,25 @@ function ServerSpeech( name Type, int Index, string Callsign )
 		Super.ServerSpeech(Type,Index,Callsign);
 }
 
+function WasKilledBy( Controller Killer )
+{
+	if ( Killer == None || Killer.Pawn == None )
+		Return;
+	
+	PawnKiller = Killer.Pawn;
+	bViewPawnKiller = True;
+}
+
 state Dead
 {
 	simulated function BeginState()
 	{
 		// Unzoom if we were zoomed
 		TransitionFOV(DefaultFOV,0.0);
-
-		Super(UnrealPlayer).BeginState();
+		
+		if ( Role == ROLE_Authority )
+			Super(UnrealPlayer).BeginState();
+		
 		if ( HudKillingFloor(myHUD) != None )  {
 			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
 			HudKillingFloor(myHUD).GoalTarget = ViewTarget;
@@ -1147,12 +1265,25 @@ state Dead
 	
 	exec function Fire( optional float F )
 	{
+		if ( bViewPawnKiller )  {
+			bViewPawnKiller = False;
+			if ( PawnKiller != None )  {
+				SetViewTarget( PawnKiller );
+				ClientSetViewTarget( PawnKiller );
+				bBehindView = True;
+				ClientSetBehindView( True );
+				PawnKiller = None;
+				Return;
+			}
+		}
+		
 		if ( bFrozen )  {
 			if ( TimerRate <= 0.0 || TimerRate > 1.0 )
 				bFrozen = False;
 			Return;
 		}
 		
+		ResetViewTarget();
 		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
 			LoadPlayers();
 			if ( bMenuBeforeRespawn )  {
@@ -1165,7 +1296,12 @@ state Dead
 		else
 			ServerSpectate();
 	}
-
+	
+	exec function AltFire( optional float F )
+	{
+		Fire( F );
+	}
+	
 	event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator CameraRotation )
 	{
 		if ( Level.NetMode == NM_DedicatedServer )  {
@@ -1191,15 +1327,17 @@ state Dead
 
 	simulated function EndState()
 	{
-		Super(UnrealPlayer).EndState();
+		if ( Role == ROLE_Authority )
+			Super(UnrealPlayer).EndState();
+		
 		if ( HudKillingFloor(myHUD) != None )
 			HUDKillingFloor(myHud).StopFadeEffect();
 	}
 }
 
-
 defaultproperties
 {
+	ShowActorTime=4.0
 	PlayerReplicationInfoClass="UnlimaginMod.UM_PlayerReplicationInfo"
 	InputClass=None
 	InputClassName="UnlimaginMod.UM_PlayerInput"

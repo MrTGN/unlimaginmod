@@ -69,12 +69,14 @@ struct BallisticCollisionData
 	var	bool							bArmoredArea;	// This area can be covered with armor
 };
 
-var	array<BallisticCollisionData>		BallisticCollision;
+var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
 var		float							HeadShotSlowMoChargeBonus;
 
-var		transient		bool			bAddedToMonsterList;
+var		transient	bool				bAddedToMonsterList;
+
+var		transient	UM_PlayerController	ShowHeadShotTo;
 
 //[end] Varibles
 //====================================================================
@@ -1097,6 +1099,7 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 				PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
 				HeadHealth -= LastDamageAmount;
 				if ( HeadHealth <= 0 || Damage > Health )  {
+					ShowHeadShotTo = UM_PlayerController(instigatedBy.Controller);
 					RemoveHead();
 					if ( UM_HumanPawn(instigatedBy) != None )
 						UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );

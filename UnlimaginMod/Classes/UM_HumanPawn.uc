@@ -93,7 +93,7 @@ var		float						InventoryMovementModifier;
 var		float						VeterancyMovementModifier;
 
 // Healing
-var		transient	bool			bPreventHealthChanging;	// Prevents from changing Health by several functions at the same time
+var		transient	bool			bAllowHealthChanging;	// Prevents from changing Health by several functions at the same time
 var		float						HealDelay; 
 var		transient	float			NextHealTime;
 var		float						HealIntensity;		// How much health to heal at once
@@ -451,6 +451,7 @@ simulated event PostBeginPlay()
 			AddDefaultInventory();
 		// BallisticCollision
 		BuildBallisticCollision();
+		bAllowHealthChanging = True;
 	}
 	AssignInitialPose();
 	
@@ -1760,7 +1761,7 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	}
 	
 	bCanBeDamaged = False;
-	bPreventHealthChanging = True;
+	bAllowHealthChanging = False;
 	bIsHealing = False;
 	bIsTakingPoisonDamage = False;
 	bIsTakingBileDamage = False;
@@ -1981,7 +1982,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( Damage < 1 )
 		Return 0;
 	
-	bPreventHealthChanging = True;
+	bAllowHealthChanging = False;
 	// Achievements Helper
 	if ( KFMonster(InstigatedBy) != None )
 		KFMonster(InstigatedBy).bDamagedAPlayer = True;
@@ -2022,7 +2023,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 			// Tell everyone we're dying
 			KFPC.Speech('AUTO', 6, "");
 		}
-		bPreventHealthChanging = False;
+		bAllowHealthChanging = True;
 	}
 	MakeNoise(1.0);
 		
@@ -2362,7 +2363,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {
 		// Burnified if the burn damage was significant enough
 		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
+			bAllowHealthChanging = False;
 			// Damage Info
 			BurnInstigator = InstigatedBy;
 			BurningIntensity = FMin( (BurningIntensity + float(Damage)), float(OverhealedHealthMax) );
@@ -2378,7 +2379,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 				NextBurnTime = LastBurnTime + BurningFrequency;
 			}
 			// Allow operations with Health
-			bPreventHealthChanging = Health < 1;
+			bAllowHealthChanging = Health > 0;
 			Return;
 		}
 	}
@@ -2387,7 +2388,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 			Damage = ShieldAbsorb( Damage );
 		// Start to taking a PoisonDamage if damage was significant enough
 		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
+			bAllowHealthChanging = False;
 			// Damage Info
 			LastPoisonDamageType = DamageType;
 			PoisonInstigator = InstigatedBy;
@@ -2404,14 +2405,14 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 				NextPoisonTime = LastPoisonTime + PoisonFrequency;
 			}
 			// Allow operations with Health
-			bPreventHealthChanging = Health < 1;
+			bAllowHealthChanging = Health > 0;
 			Return;
 		}
 	}
 	else if ( Class<DamTypeVomit>(DamageType) != None )  {
 		// Start to taking a BileDamage if damage was significant enough
 		if ( Damage > 2 )  {
-			bPreventHealthChanging = True;
+			bAllowHealthChanging = False;
 			// Damage Info
 			LastBileDamageType = DamageType;
 			BileInstigator = InstigatedBy;
@@ -2428,7 +2429,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 				NextBileTime = LastBileTime + BileFrequency;
 			}
 			// Allow operations with Health
-			bPreventHealthChanging = Health < 1;
+			bAllowHealthChanging = Health > 0;
 			Return;
 		}
 	}	
@@ -2589,7 +2590,7 @@ simulated event Tick( float DeltaTime )
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		}
 		// Operations with Pawn Health
-		if ( !bPreventHealthChanging )  {
+		if ( bAllowHealthChanging )  {
 			// Overheal Reduction
 			if ( Health > int(HealthMax) && Level.TimeSeconds >= NextOverhealReductionTime )
 				ReduceOverheal();

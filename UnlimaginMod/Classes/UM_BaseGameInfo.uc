@@ -90,6 +90,54 @@ var					name					MatchStateName;
 //====================================================================
 
 //========================================================================
+//[block] Cleanup old functions
+
+function Bot MySpawnBot( optional string BotName );
+event PostNetBeginPlay();
+function StartMatch();
+simulated function PrepareSpecialSquadsFromCollection();
+simulated function PrepareSpecialSquads();
+function SetupWave();
+function AddSpecialSquad();
+function bool AddSquad();
+function DoBossDeath();
+function AddBoss();
+function AddBossBuddySquad();
+exec function KillZeds();
+function DoBossDeath();
+function array<IMClassList> LoadUpMonsterListFromGameType();
+function array<IMClassList> LoadUpMonsterListFromCollection();
+function LoadUpMonsterList();
+simulated function PrepareSpecialSquadsFromGameType();
+simulated function PrepareSpecialSquadsFromCollection();
+simulated function PrepareSpecialSquads();
+function UpdateGameLength();
+function AddMonster();
+function SetupWaveBot(Inventory BotsInv);
+function WarningTimer();
+function UpdateViews();
+state MatchInProgress
+{
+	event BeginState();
+	function bool UpdateMonsterCount();
+	function bool BootShopPlayers();
+	function SelectShop();
+	function OpenShops();
+	function CloseShops();
+	function Timer();
+	function float CalcNextSquadSpawnTime();
+	function DoWaveEnd();
+	function InitMapWaveCfg();
+	function StartWaveBoss();
+	function UpdateViews();
+	function SetupPickups();
+	event EndState();
+}
+
+//[end] Cleanup old functions
+//====================================================================
+
+//========================================================================
 //[block] Functions
 
 function NotifyNumPlayersChanged();
@@ -233,6 +281,25 @@ protected function RemoveFromBotList( Bot B )
 	CheckBotList();
 }
 //[end] BotList
+
+function UseCheats( bool bUseCheats )
+{
+	local	byte	i;
+	
+	// PlayerList
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )  {
+		if ( PlayerList[i].SteamStatsAndAchievements != None )
+			PlayerList[i].SteamStatsAndAchievements.bUsedCheats = bUseCheats;
+	}
+	
+	// SpectatorList
+	CheckSpectatorList();
+	for ( i = 0; i < SpectatorList.Length; ++i )  {
+		if ( SpectatorList[i].SteamStatsAndAchievements != None )
+			SpectatorList[i].SteamStatsAndAchievements.bUsedCheats = bUseCheats;
+	}
+}
 
 function NotifyGameDifficultyChanged();
 
@@ -402,25 +469,12 @@ event PreBeginPlay()
 	InitLogging();
 }
 
-// Clear the old code
-event PostNetBeginPlay() { }
-
-// Play The Warning Sound at the Beginning of the Match
-function WarningTimer()
-{
-	//ToDo: WTF is this?
-	if ( bWaveInProgress && Level.TimeSeconds >= float(Time) )
-		Time += 90;
-}
-
 event Timer()
 {
 	Super(Invasion).Timer();
 	
 	if ( ElapsedTime % 10 == 0 )
 		UpdateSteamUserData();
-
-	//WarningTimer();
 }
 
 function bool NeedPlayers()
@@ -471,9 +525,6 @@ function Bot SpawnBot( optional string BotName )
 	Return NewBot;
 }
 
-// Clear unused function
-function Bot MySpawnBot( optional string BotName ) { }
-
 function bool AddBot( optional string BotName )
 {
 	local	Bot		NewBot;
@@ -501,6 +552,28 @@ function bool AddBot( optional string BotName )
 exec function MyForceAddBot()
 {
 	AddBot();
+}
+
+exec function AddNamedBot( string BotName )
+{
+	UseCheats( True );
+
+	if ( Level.NetMode != NM_Standalone )
+		MinPlayers = Max( (MinPlayers + 1), (NumPlayers + NumBots + 1 ) );
+	
+	AddBot( BotName );
+}
+
+exec function AddBots( int num )
+{
+	UseCheats( True );
+
+	for ( num = Clamp(num, 0, (MaxPlayers - (NumPlayers + NumBots))); num > 0; --num )  {
+		if ( Level.NetMode != NM_Standalone )
+			MinPlayers = Max( (MinPlayers + 1), (NumPlayers + NumBots + 1 ) );
+		
+		AddBot();
+	}
 }
 
 function CheckStartingCash( Controller C )
@@ -532,11 +605,8 @@ function RespawnWaitingPlayers()
 			CheckStartingCash( PlayerList[i] );
 		
 		PlayerList[i].GotoState('PlayerWaiting');
-		PlayerList[i].SetViewTarget(PlayerList[i]);
-		PlayerList[i].ClientSetBehindView(False);
-		PlayerList[i].bBehindView = False;
-		PlayerList[i].ClientSetViewTarget(PlayerList[i].Pawn);
 		PlayerList[i].ServerReStartPlayer();
+		PlayerList[i].ResetViewTarget();
 	}
 	CheckPlayerList();
 }
@@ -1021,12 +1091,6 @@ function Logout( Controller Exiting )
 		CheckMaxLives(None);
 }
 
-function StartMatch()
-{
-	if ( IsInState('PendingMatch') )
-		GotoState('StartingMatch');
-}
-
 auto state PendingMatch
 {
 	function BeginState()
@@ -1043,21 +1107,26 @@ auto state PendingMatch
 	}
 	
 	function bool AddBot( optional string botName )
-    {
-        if ( Level.NetMode == NM_Standalone )
-            ++InitialBots;
-        
+	{
+		if ( Level.NetMode == NM_Standalone )
+			++InitialBots;
+		
 		if ( botName != "" )
 			PreLoadNamedBot(botName);
 		else
 			PreLoadBot();
-        
+		
 		Return True;
-    }
+	}
 	
 	function RestartPlayer( Controller aPlayer )
 	{
 		Return;
+	}
+	
+	function StartMatch()
+	{
+		GotoState('StartingMatch');
 	}
 
 	function Timer()

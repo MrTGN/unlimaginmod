@@ -455,9 +455,13 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			}
 		}
 	}
-
+	
 	if ( UM_BaseGameInfo(Level.Game) != None )
 		UM_BaseGameInfo(Level.Game).CheckForDramaticKill( NumKilled );
+	
+	// Show Explosion to InstigatorController
+	if ( NumKilled > 7 && UM_PlayerController(InstigatorController) != None )
+		UM_PlayerController(InstigatorController).ShowActor( Self, 2.0 );
 	
 	bHurtEntry = False;
 }

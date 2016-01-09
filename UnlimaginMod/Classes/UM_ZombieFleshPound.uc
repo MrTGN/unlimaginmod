@@ -578,6 +578,14 @@ function bool SameSpeciesAs(Pawn P)
 	Return ( UM_ZombieFleshPound(P) != None );
 }
 
+function RemoveHead()
+{
+	Super.RemoveHead();
+	
+	if ( ShowHeadShotTo != None )
+		ShowHeadShotTo.ShowActor( Self );
+}
+
 simulated function Destroyed()
 {
 	if ( AvoidArea != None )

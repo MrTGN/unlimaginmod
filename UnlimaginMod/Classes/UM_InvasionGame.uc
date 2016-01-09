@@ -96,7 +96,14 @@ var		export	array<UM_InvasionMonsterData>	Monsters;
 // BossMonsterClass
 var()				string						BossMonsterClassName;
 var()				class<UM_Monster>			BossMonsterClass;
+var		transient	UM_Monster					BossMonster;
 
+var		transient	bool						bNeedToSpawnBoss;
+var		transient	bool						bShowBossGrandEntry;
+var		transient	bool						bBossKilled;
+
+// Spawned monster list
+var		transient	array<UM_Monster>			AliveMonsterList;
 
 var					int							BulidSquadIterationLimit;
 
@@ -135,15 +142,9 @@ var		transient	float						NextSpawningVolumeUpdateTime;
 var					float						LerpNumPlayersModifier;
 var					float						LerpGameDifficultyModifier;
 
-// Spawned monster list
-var		transient	array<UM_Monster>			AliveMonsterList;
-
 var					float						ZEDTimeKillSlowMoChargeBonus;
 
 var		transient	string						CurrentMapName;
-
-var		transient	bool						bNeedToSpawnBoss;
-var		transient	bool						bBossKilled;
 
 //[end] Varibles
 //====================================================================
@@ -468,6 +469,16 @@ state StartingMatch
 		else
 			GoToState('BeginNewWave');
 	}
+}
+
+function int GetCurrentWaveNum()
+{
+	Return KFGameReplicationInfo( GameReplicationInfo ).WaveNumber + 1;
+}
+
+function int GetFinalWaveNum()
+{
+	Return KFGameReplicationInfo( GameReplicationInfo ).FinalWave;
 }
 
 //[block] BeginNewWave code
@@ -1251,7 +1262,7 @@ state BossWaveInProgress
 		bNeedToSpawnBoss = True;
 	}
 	
-	function AddBoss()
+	function bool AddBoss()
 	{
 		local	ZombieVolume	BossSpawningVolume;
 		local	int				Num;
@@ -1266,7 +1277,7 @@ state BossWaveInProgress
 				BossSpawningVolume = FindSpawningVolume( True, True );
 			// Filed to find another BossSpawningVolume
 			if ( BossSpawningVolume == None )
-				Return;
+				Return False;
 			// Reset Num
 			Num = 0;
 		}
@@ -1276,8 +1287,10 @@ state BossWaveInProgress
 			WaveMonsters += Num;
 			NextSpawnSquad.Length = 0;
 			bNeedToSpawnBoss = False;
-			MakeGrandEntry();
+			Return True;
 		}
+		
+		Return False;
 	}
 	
 	function AddBossBuddySquad()
@@ -1329,6 +1342,10 @@ state BossWaveInProgress
 			EndGame(None,"TimeLimit");
 			Return;
 		}
+		else if ( bShowBossGrandEntry && BossMonster != None && BossMonster.MakeGrandEntry() )  {
+			bShowBossGrandEntry = False;
+			ShowPawnToPlayers( BossMonster );
+		}
 		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
@@ -1360,6 +1377,10 @@ state BossWaveInProgress
 			AliveMonsterList[i].Suicide();
 		
 		DoWaveEnd();
+		
+		if ( BossMonster != None )
+			ShowPawnToPlayers( BossMonster, 10.0 );
+		
 		bBossKilled = True;
 	}
 }
@@ -1483,19 +1504,29 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 	}
 }
 
-// Issue: ##329 Дописать!
 state MatchOver
 {
-	event BeginState()
+	event Timer()
 	{
-		local	Pawn	P;
-		
-		ForEach DynamicActors( class'Pawn', P )  {
-			if ( P.Role == ROLE_Authority )
-				P.RemoteRole = ROLE_DumbProxy;
-			P.TurnOff();
-        }
+		if ( !bBossHasSaidWord )  {
+			bBossHasSaidWord = True;
+			if ( BossMonster != None && BossMonster.SetBossLaught() )			
+				ShowPawnToPlayers( BossMonster, 5.0 );
+		}
+		Super.Timer();
 	}
+}
+
+function GetServerDetails( out ServerResponseLine ServerState )
+{
+    local	int		l;
+
+    Super().GetServerDetails( ServerState );
+	
+    l = ServerState.ServerInfo.Length;
+    ServerState.ServerInfo.Length = l + 1;
+    ServerState.ServerInfo[l].Key = "Max runtime zombies";
+    ServerState.ServerInfo[l].Value = string(MaxZombiesOnce);
 }
 
 //[end] Functions

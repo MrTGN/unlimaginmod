@@ -280,7 +280,7 @@ function SetZapped(float ZapAmount, Pawn Instigator)
 
 simulated event PostBeginPlay()
 {
-    super.PostBeginPlay();
+    Super.PostBeginPlay();
 
     if ( Role < ROLE_Authority )
         Return;
@@ -311,28 +311,40 @@ simulated event PostBeginPlay()
         }
 	}
 
-	HealingLevels[0] = Health/1.25; // Around 5600 HP
-	HealingLevels[1] = Health/2.f; // Around 3500 HP
-	HealingLevels[2] = Health/3.2; // Around 2187 HP
+	HealingLevels[0] = Health / 1.25; // Around 5600 HP
+	HealingLevels[1] = Health / 2.0; // Around 3500 HP
+	HealingLevels[2] = Health / 3.2; // Around 2187 HP
 //	log("Health = "$Health);
 //	log("HealingLevels[0] = "$HealingLevels[0]);
 //	log("HealingLevels[1] = "$HealingLevels[1]);
 //	log("HealingLevels[2] = "$HealingLevels[2]);
 
-	HealingAmount = Health/4; // 1750 HP
+	HealingAmount = Health / 4; // 1750 HP
 //	log("HealingAmount = "$HealingAmount);
+}
+
+simulated event PostNetBeginPlay()
+{
+	EnableChannelNotify ( 1,1);
+	AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
+	Super.PostNetBeginPlay();
+	TraceHitPos = vect(0,0,0);
+	bNetNotify = True;
+	
+	if ( Role == ROLE_Authority && UM_InvasionGame(Level.Game) != None )  {
+		UM_InvasionGame(Level.Game).BossMonster = Self;
+		UM_InvasionGame(Level.Game).bShowBossGrandEntry = True;
+	}
 }
 
 function bool MakeGrandEntry()
 {
+	bAlwaysRelevant = True;
 	bShotAnim = True;
 	Acceleration = vect(0,0,0);
 	SetAnimAction('Entrance');
 	HandleWaitForAnim('Entrance');
 	GotoState('MakingEntrance');
-	
-	if ( UM_InvasionGame(Level.Game) != None )
-		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self );
 
 	Return True;
 }
@@ -451,15 +463,6 @@ simulated function Destroyed()
 		mMuzzleFlash.Destroy();
 	
 	Super.Destroyed();
-}
-
-simulated event PostNetBeginPlay()
-{
-	EnableChannelNotify ( 1,1);
-	AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
-	Super.PostNetBeginPlay();
-	TraceHitPos = vect(0,0,0);
-	bNetNotify = True;
 }
 
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
@@ -1531,7 +1534,8 @@ function bool SameSpeciesAs(Pawn P)
 // Creapy endgame camera when the evil wins.
 function bool SetBossLaught()
 {
-	local Controller C;
+	if ( Health < 1 )
+		Return False;
 
 	GoToState('');
 	bShotAnim = True;
@@ -1540,9 +1544,6 @@ function bool SetBossLaught()
 	HandleWaitForAnim('VictoryLaugh');
 	bIsBossView = True;
 	bSpecialCalcView = True;
-	
-	if ( UM_InvasionGame(Level.Game) != None )
-		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self );
 	
 	Return True;
 }
@@ -1562,15 +1563,10 @@ simulated function bool SpectatorSpecialCalcView(PlayerController Viewer, out Ac
 // Overridden to do a cool slomo death view of the patriarch dying
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	local	Controller	C;
-
     Super.Died(Killer, DamageType, HitLocation);
 
 	if ( KFGameType(Level.Game) != None )
 		KFGameType(Level.Game).DoBossDeath();
-
-	if ( UM_InvasionGame(Level.Game) != None )
-		UM_InvasionGame(Level.Game).ShowPawnToPlayers( Self, 10.0 );
 }
 
 function ClawDamageTarget()

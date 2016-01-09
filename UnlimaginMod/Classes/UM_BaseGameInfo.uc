@@ -101,8 +101,7 @@ function SetupWave();
 function AddSpecialSquad();
 function bool AddSquad();
 function DoBossDeath();
-function AddBoss();
-function AddBossBuddySquad();
+
 exec function KillZeds();
 function DoBossDeath();
 function array<IMClassList> LoadUpMonsterListFromGameType();
@@ -133,6 +132,34 @@ state MatchInProgress
 	function SetupPickups();
 	event EndState();
 }
+function PlayEndOfMatchMessage();
+function PlayStartupMessage();
+function SetupWave();
+function BuildNextSquad();
+function AddSpecialSquadFromGameType();
+function AddSpecialSquadFromCollection();
+function AddSpecialSquad();
+function bool AddSquad();
+function bool AddBoss();
+function AddBossBuddySquad();
+function AddSpecialPatriarchSquadFromGameType();
+function AddSpecialPatriarchSquadFromCollection();
+function AddSpecialPatriarchSquad();
+function CheckHarchierAchievement();
+static event class<GameInfo> SetGameType( string MapName )
+{
+	Return Super(Invasion).SetGameType( MapName );
+}
+function string GetEventClotClassName();
+function string GetEventCrawlerClassName();
+function string GetEventGoreFastClassName();
+function string GetEventStalkerClassName();
+function string GetEventScrakeClassName();
+function string GetEventFleshpoundClassName();
+function string GetEventBloatClassName();
+function string GetEventSirenClassName();
+function string GetEventHuskClassName();
+exec function DumpZedSquads(int MyKFGameLength);
 
 //[end] Cleanup old functions
 //====================================================================
@@ -491,6 +518,27 @@ function bool NeedPlayers()
 	Return (NumActivePlayers + NumBots) < MinPlayers;
 }
 
+function bool ChangeTeam( Controller Other, int num, bool bNewTeam )
+{
+	if ( Other == None || Other.PlayerReplicationInfo == None )
+		Return False;
+	
+	if ( PlayerController(Other) != None && Other.PlayerReplicationInfo.bOnlySpectator )  {
+		Other.PlayerReplicationInfo.Team = None;
+		Return True;
+	}
+	
+	// check if already on this team
+	if ( Other.PlayerReplicationInfo.Team == Teams[0] )
+		Return False;
+	
+	Other.StartSpot = None;
+	if ( PlayerController(Other) != None && Teams[0].AddToTeam(Other) && bNewTeam )
+		GameEvent( "TeamChange", ""$num, Other.PlayerReplicationInfo );
+
+	Return True;
+}
+
 function UnrealTeamInfo GetBotTeam( optional int TeamBots )
 {
 	if ( bPlayersVsBots && Level.NetMode != NM_Standalone )
@@ -498,6 +546,21 @@ function UnrealTeamInfo GetBotTeam( optional int TeamBots )
 	
 	// Human Team
 	Return Teams[1];
+}
+
+static function string GetValidCharacter( string S )
+{
+	local	int		i;
+
+	l = Default.AvailableChars.Length;
+	if ( S != "" )  {
+		for( i = 0; i < Default.AvailableChars.Length; ++i )  {
+			if ( Default.AvailableChars[i] ~= S )
+				Return Default.AvailableChars[i];
+		}
+	}
+	
+	Return Default.AvailableChars[ Rand( Default.AvailableChars.Length ) ];
 }
 
 function Bot SpawnBot( optional string BotName )
@@ -693,6 +756,22 @@ function bool AtCapacity( bool bSpectator )
 		Return ( NumSpectators >= MaxSpectators && (Level.NetMode != NM_ListenServer || NumPlayers > 0) );
 	else
 		Return ( MaxPlayers > 0 && NumPlayers >= MaxPlayers );
+}
+
+function SendPlayer( PlayerController aPlayer, string URL )
+{
+	if ( bGameEnded || aPlayer == None || aPlayer.PlayerReplicationInfo )
+		Return;
+	
+	Broadcast( Self, aPlayer.PlayerReplicationInfo.PlayerName@"has ended the level." );
+	
+	if ( Left(URL, 4) ~= "NULL" )  {
+		WaveNum = FinalWave;
+		EndGame(None,"TimeLimit");
+		Return;
+	}
+	bGameEnded = True;
+	Level.ServerTravel(URL, False);
 }
 
 // Player Can be restarted
@@ -1090,6 +1169,64 @@ function Logout( Controller Exiting )
 	if ( MaxLives > 0 )
 		CheckMaxLives(None);
 }
+
+function GetServerDetails( out ServerResponseLine ServerState )
+{
+	local	int		l;
+
+	Super(Invasion).GetServerDetails( ServerState );
+	
+	l = ServerState.ServerInfo.Length;
+	ServerState.ServerInfo.Length = l + 1;
+	ServerState.ServerInfo[l].Key = "Starting cash";
+	ServerState.ServerInfo[l].Value = string(StartingCash);
+	
+	l = ServerState.ServerInfo.Length;
+	ServerState.ServerInfo.Length = l + 1;
+	ServerState.ServerInfo[l].Key = "Min Respawn cash";
+	ServerState.ServerInfo[l].Value = string(MinRespawnCash);
+}
+
+static function string GetCurrentMapName( LevelInfo TheLevel )
+{
+	local	string	Ret;
+	local	int		i, j;
+	
+	// Get the MapName out of the URL
+	Ret = TheLevel.GetLocalURL();
+
+	i = InStr(Ret, "/") + 1;
+	if ( i < 0 || i > 16 )
+		i = 0;
+
+	j = InStr(Ret, "?");
+	if ( j < 0 )
+		j = Len(Ret);
+
+	if ( Mid(Ret, (j - 3), 3) ~= "rom" )
+		j -= 4;
+
+	Ret = Mid(Ret, i, j - i);
+
+	Return Ret;
+}
+
+//[Block] ToDo: issue #317
+static function FillPlayInfo(PlayInfo PlayInfo)
+{
+	Super(Info).FillPlayInfo(PlayInfo);  // Always begin with calling parent
+}
+
+static event string GetDisplayText( string PropName )
+{
+	Return Super(Invasion).GetDisplayText( PropName );
+}
+
+static event string GetDescriptionText(string PropName)
+{
+	Return Super(Invasion).GetDisplayText( PropName );
+}
+//[End]
 
 auto state PendingMatch
 {
@@ -1793,6 +1930,191 @@ function ScoreKill( Controller Killer, Controller Other )
 	else if ( xPlayer(Killer) != None )
 		xPlayer(Killer).ReceiveLocalizedMessage( Class'KillsMessage',,,, Other.Pawn.Class );
 	//[end] Marco's Kill Messages
+}
+
+function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<DamageType> DamageType )
+{
+	Super(DeathMatch).Killed( Killer, Killed, KilledPawn, DamageType );
+}
+
+function bool CheckEndGame( PlayerReplicationInfo Winner, string Reason )
+{
+	local	Controller	C;
+
+	EndTime = Level.TimeSeconds + EndTimeDelay;
+	if ( WaveNum < FinalWave )
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 1;
+	else  {
+		GameReplicationInfo.Winner = Teams[0];
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 2;
+	}
+
+	if ( GameRulesModifiers != None && !GameRulesModifiers.CheckEndGame(Winner, Reason) ) {
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 0;
+		Return False;
+	}
+	
+	// Notify all controllers
+	for ( C = Level.ControllerList; C != None; C = C.nextController )  {
+		C.GameHasEnded();
+		C.ClientGameEnded();
+	}
+	
+	// From Invasion class
+	if ( CurrentGameProfile != None )
+		CurrentGameProfile.bWonMatch = GameReplicationInfo.Winner == Teams[0]; // Monsters were defeated
+
+	Return True;
+}
+
+function EndGame( PlayerReplicationInfo Winner, string Reason )
+{
+	if ( Reason ~= "triggered" || Reason ~= "LastMan" || Reason ~= "TimeLimit" ||
+		 Reason ~= "FragLimit" || Reason ~= "TeamScoreLimit" )  {
+		// don't end game if not really ready
+		if ( !CheckEndGame(Winner, Reason) )  {
+			bOverTime = True;
+			Return;
+		}
+
+		bGameEnded = True;
+		TriggerEvent('EndGame', self, None);
+		EndLogging(Reason);
+		GotoState('MatchOver');
+	}
+}
+
+function RestartGame()
+{
+	local	string		NextMap;
+	local	MapList		MyList;
+	
+	if ( bGameRestarted || (GameRulesModifiers != None && GameRulesModifiers.HandleRestartGame()) )
+		Return;
+	
+	bGameRestarted = True;
+	
+	if ( CurrentGameProfile != None )  {
+		CurrentGameProfile.ContinueSinglePlayerGame(Level);
+		Return;
+	}
+	
+	// still showing end screen or
+	// allow voting handler to stop travel to next map
+	if ( EndTime > Level.TimeSeconds || (VotingHandler != None && !VotingHandler.HandleRestartGame()) )
+		Return;
+	
+	// these server travels should all be relative to the current URL
+	if ( bChangeLevels && !bAlreadyChanged && MapListType != "" )  {
+		bAlreadyChanged = True;
+		// open a the nextmap actor for this game type and get the next map
+		MyList = GetMapList( MapListType );
+		if ( MyList != None )  {
+			NextMap = MyList.GetNextMap();
+			MyList.Destroy();
+		}
+		// Check NextMap
+		if ( NextMap == "" )
+			NextMap = GetMapName( MapPrefix, NextMap, 1 );
+		// Change map if NextMap is specified
+		if ( NextMap != "" )  {
+			Level.ServerTravel( NextMap, False );
+			Return;
+		}
+	}
+	
+	Level.ServerTravel( "?Restart", False );
+}
+
+state MatchOver
+{
+	event BeginState()
+	{
+		local	Pawn	P;
+		local	byte	i;
+		
+		ForEach DynamicActors( class'Pawn', P )  {
+			if ( P.Role == ROLE_Authority )
+				P.RemoteRole = ROLE_DumbProxy;
+			P.TurnOff();
+		}
+		
+		GameReplicationInfo.bStopCountDown = True;
+		if ( CurrentGameProfile != None ) {
+			EndTime = Level.TimeSeconds + SinglePlayerWait;
+			CheckPlayerList();
+			for ( i = 0; i < PlayerList.Length; ++i )
+				PlayerList[i].myHUD.bShowScoreboard = True;
+			
+			// Register last player in the list
+			CurrentGameProfile.RegisterGame( self, PlayerList[i].PlayerReplicationInfo );
+			SavePackage(CurrentGameProfile.PackageName);
+		}
+	}
+	
+	function BossLaughtIt(); // Cleanup old function
+	
+	function RestartGame()
+	{
+		Global.RestartGame();
+	}
+	
+	function PlayEndOfMatchMessage()
+	{
+		local	name	EndSound;
+		local	byte	i;
+
+		if ( WaveNum >= FinalWave )
+			EndSound = EndGameSoundName[0];
+		else if ( (WaveNum - InitialWave) == 0 )
+			EndSound = AltEndGameSoundName[1];
+		else
+			EndSound = InvasionEnd[ Min( ((WaveNum - InitialWave) / 3), 5 ) ];
+		
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )
+			PlayerList[i].PlayRewardAnnouncement( EndSound, 1, True );
+	}
+	
+	function ShowLocalStatsToPlayers()
+	{
+		local	byte	i;
+		
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )
+			PlayerList[i].myHUD.bShowLocalStats = True;
+	}
+	
+	event Timer()
+	{
+		Global.Timer();
+		
+		if ( !bGameRestarted && Level.TimeSeconds > (EndTime + RestartWait) )
+			RestartGame();
+		
+		// play end-of-match message for winner/losers (for single and muli-player)
+		++EndMessageCounter;
+		if ( EndMessageCounter == EndMessageWait )
+			PlayEndOfMatchMessage();
+		
+		if ( CurrentGameProfile != None && Level.TimeSeconds > (EndTime + RestartWait * 0.5) )
+			ShowLocalStatsToPlayers();
+	}
+	
+	function bool NeedPlayers()
+	{
+		Return False;
+	}
+	
+	function bool ChangeTeam( Controller Other, int num, bool bNewTeam )
+	{
+		// prevents DeathMatch.ChangeTeam from being called so that players aren't
+		// blocked from joining a server that is in this state
+		if ( Other.PlayerReplicationInfo != None && Other.PlayerReplicationInfo.Team == None )
+			Return Global.ChangeTeam( Other, num, bNewTeam );
+		else
+			Return Super(Invasion).ChangeTeam( Other, num, bNewTeam );
+	}
 }
 
 //[end] Functions

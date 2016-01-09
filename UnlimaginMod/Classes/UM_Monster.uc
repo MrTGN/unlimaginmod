@@ -382,7 +382,7 @@ simulated event PostBeginPlay()
 		}
 		
 		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
-			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList(self);
+			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList( self );
 	}
 
 	if ( Level.NetMode != NM_DedicatedServer )  {
@@ -418,6 +418,16 @@ simulated function PlayDyingAnimation( Class<DamageType> DamageType, Vector HitL
 {
 	Super.PlayDyingAnimation(DamageType, HitLoc );
 } */
+
+function bool MakeGrandEntry()
+{
+	Return False;
+}
+
+function bool SetBossLaught()
+{
+	Return False;
+}
 
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )

@@ -470,24 +470,6 @@ state StartingMatch
 	}
 }
 
-function EndGame( PlayerReplicationInfo Winner, string Reason )
-{
-	if ( Reason ~= "triggered" || Reason ~= "LastMan" || Reason ~= "TimeLimit" ||
-		 Reason ~= "FragLimit" || Reason ~= "TeamScoreLimit" )  {
-		// don't end game if not really ready
-		if ( !CheckEndGame(Winner, Reason) )  {
-			bOverTime = True;
-			Return;
-		}
-
-		bGameEnded = True;
-		TriggerEvent('EndGame', self, None);
-		EndLogging(Reason);
-		GotoState('MatchOver');
-	}
-}
-
-
 //[block] BeginNewWave code
 function SelectNewShop()
 {
@@ -1448,6 +1430,36 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 	Super(DeathMatch).Killed( Killer, Killed, KilledPawn, DamageType );
 }
 
+function bool CheckEndGame( PlayerReplicationInfo Winner, string Reason )
+{
+	local	Controller	C;
+
+	EndTime = Level.TimeSeconds + EndTimeDelay;
+	if ( WaveNum < FinalWave )
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 1;
+	else  {
+		GameReplicationInfo.Winner = Teams[0];
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 2;
+	}
+
+	if ( GameRulesModifiers != None && !GameRulesModifiers.CheckEndGame(Winner, Reason) ) {
+		KFGameReplicationInfo(GameReplicationInfo).EndGameType = 0;
+		Return False;
+	}
+	
+	// Notify all controllers
+	for ( C = Level.ControllerList; C != None; C = C.nextController )  {
+		C.GameHasEnded();
+		C.ClientGameEnded();
+	}
+	
+	// From Invasion class
+	if ( CurrentGameProfile != None )
+		CurrentGameProfile.bWonMatch = GameReplicationInfo.Winner == Teams[0]; // Monsters were defeated
+
+	Return True;
+}
+
 function EndGame( PlayerReplicationInfo Winner, string Reason )
 {
 	if ( Class'UM_GlobalData'.default.ActorPool != None )  {
@@ -1455,7 +1467,35 @@ function EndGame( PlayerReplicationInfo Winner, string Reason )
 		Class'UM_GlobalData'.default.ActorPool.Clear();
 		Class'UM_GlobalData'.default.ActorPool.Destroy();
 	}
-	Super.EndGame(Winner, Reason);
+	
+	if ( Reason ~= "triggered" || Reason ~= "LastMan" || Reason ~= "TimeLimit" ||
+		 Reason ~= "FragLimit" || Reason ~= "TeamScoreLimit" )  {
+		// don't end game if not really ready
+		if ( !CheckEndGame(Winner, Reason) )  {
+			bOverTime = True;
+			Return;
+		}
+
+		bGameEnded = True;
+		TriggerEvent('EndGame', self, None);
+		EndLogging(Reason);
+		GotoState('MatchOver');
+	}
+}
+
+// Issue: ##329 Дописать!
+state MatchOver
+{
+	event BeginState()
+	{
+		local	Pawn	P;
+		
+		ForEach DynamicActors( class'Pawn', P )  {
+			if ( P.Role == ROLE_Authority )
+				P.RemoteRole = ROLE_DumbProxy;
+			P.TurnOff();
+        }
+	}
 }
 
 //[end] Functions

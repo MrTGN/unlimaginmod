@@ -1335,6 +1335,74 @@ state Dead
 	}
 }
 
+// Server game end
+function GameHasEnded()
+{
+	if ( Pawn != None )
+		Pawn.bNoWeaponFiring = True;
+	
+	GotoState('GameEnded');
+}
+
+// Called by server on the client side
+function ClientGameEnded()
+{
+	local	int		i;
+	local	array<VoiceChatRoom>	Channels;
+
+	if ( bVoiceChatEnabled && PlayerReplicationInfo != None && VoiceReplicationInfo != None )  {
+		log(Name@PlayerReplicationInfo.PlayerName@"ClientGameEnded()",'VoiceChat');
+		Channels = VoiceReplicationInfo.GetChannels();
+
+		// Get a list of all channels currently a member of, and store them for the next match.
+		for ( i = 0; i < Channels.Length; ++i )  {
+			if ( Channels[i] != None && Channels[i].IsMember(PlayerReplicationInfo, True) )
+				RejoinChannels[RejoinChannels.Length] = Channels[i].GetTitle();
+		}
+
+		if ( ActiveRoom != None )
+			LastActiveChannel = ActiveRoom.GetTitle();
+	}
+
+	if ( RejoinChannels.Length > 0 || LastActiveChannel != "" )
+		SaveConfig();
+
+	GotoState('GameEnded');
+}
+
+state GameEnded
+{
+	exec function Fire( optional float F ) { }
+	exec function AltFire( optional float F ) { }
+	
+	function BeginState()
+	{
+		EndZoom();
+		StopForceFeedback();
+		CameraDist = Default.CameraDist;
+		FOVAngle = DesiredFOV;
+		bFire = 0;
+		bAltFire = 0;
+		if ( Pawn != None )  {
+			Pawn.StopWeaponFiring();
+			Pawn.bSpecialHUD = False;
+			Pawn.SimAnim.AnimRate = 0;
+			if ( Pawn.Weapon != None )  {
+				Pawn.Weapon.StopFire(0);
+				Pawn.Weapon.StopFire(1);
+				Pawn.Weapon.bEndOfRound = True;
+			}
+			if ( Pawn.Role == ROLE_Authority )
+				Pawn.RemoteRole = ROLE_DumbProxy;
+			Pawn.TurnOff();
+		}
+		bFrozen = True;
+		FindGoodView();
+		bBehindView = True;
+		SetTimer(5, false);
+	}
+}
+
 defaultproperties
 {
 	ShowActorTime=4.0

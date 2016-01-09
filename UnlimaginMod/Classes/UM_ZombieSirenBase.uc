@@ -114,12 +114,20 @@ defaultproperties
 	 Skins(0)=FinalBlend'KF_Specimens_Trip_T.siren_hair_fb'
      Skins(1)=Combiner'KF_Specimens_Trip_T.siren_cmb'
 	 Mesh=SkeletalMesh'UM_Siren_A.Siren_Mesh'
+	 
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=14.0
+	 
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 CollisionHeight=66.0
-	 CollisionRadius=19.0
+	 //CollisionHeight=66.0
+	 //CollisionRadius=19.0
+	 
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=52.5
+	 CollisionRadius=14.7
+	 
      BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=0.6,Y=-2.0,Z=0.0),AreaImpactStrength=5.6)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=34.8,AreaImpactStrength=6.9)

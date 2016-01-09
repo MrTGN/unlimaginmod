@@ -106,12 +106,20 @@ defaultproperties
 	 Skins(0)=Shader'KF_Specimens_Trip_T.scrake_FB'
      Skins(1)=TexPanner'KF_Specimens_Trip_T.scrake_saw_panner'
 	 Mesh=SkeletalMesh'UM_Scrake_A.Scrake_Mesh'
+	 
 	 MeshTestCollisionHeight=59.6
 	 MeshTestCollisionRadius=20.0
+	 
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 CollisionHeight=79.0
-	 CollisionRadius=27.0
+	 //CollisionHeight=79.0
+	 //CollisionRadius=27.0
+	 
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=62.58
+	 CollisionRadius=21.0
+	 
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.0,AreaHeight=7.6,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.4,Z=0.0),AreaImpactStrength=10.0)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=20.0,AreaHeight=44.4,AreaImpactStrength=14.4)

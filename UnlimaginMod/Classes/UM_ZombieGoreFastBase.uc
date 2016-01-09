@@ -80,12 +80,20 @@ defaultproperties
      
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.gorefast_cmb'
 	 Mesh=SkeletalMesh'UM_GoreFast_A.GoreFast_Mesh'
+	 
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=17.4
+	 
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 CollisionHeight=76.0
-	 CollisionRadius=27.0
+	 //CollisionHeight=76.0
+	 //CollisionRadius=27.0
+	 
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=60.0
+	 CollisionRadius=20.88
+	 
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.8,AreaHeight=6.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.8)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=17.4,AreaHeight=38.0,AreaImpactStrength=8.2)

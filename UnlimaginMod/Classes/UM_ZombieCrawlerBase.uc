@@ -137,12 +137,20 @@ defaultproperties
      
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
 	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
+	 
 	 MeshTestCollisionHeight=20.0
 	 MeshTestCollisionRadius=36.0
+	 
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 CollisionHeight=27.0
-	 CollisionRadius=52.0
+	 //CollisionHeight=27.0
+	 //CollisionRadius=52.0
+	 
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=22.0
+	 CollisionRadius=39.6
+	 
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.4,AreaHeight=7.5,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=20.0,AreaImpactStrength=6.6)

@@ -97,12 +97,20 @@ defaultproperties
 	 Skins(0)=Shader'KF_Specimens_Trip_T.stalker_invisible'
      Skins(1)=Shader'KF_Specimens_Trip_T.stalker_invisible'
 	 Mesh=SkeletalMesh'UM_Stalker_A.Stalker_Mesh'
+	 
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=14.0
+	 
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 CollisionHeight=69.0
-	 CollisionRadius=20.0
+	 //CollisionHeight=69.0
+	 //CollisionRadius=20.0
+	 
+	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=55.0
+	 CollisionRadius=15.4
+	 
      BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.2,AreaHeight=7.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-1.2,Z=0.0),AreaImpactStrength=5.2)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=36.0,AreaImpactStrength=7.0)

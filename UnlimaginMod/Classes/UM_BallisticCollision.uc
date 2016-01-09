@@ -149,6 +149,9 @@ simulated function bool CanBeDamaged()
 
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
+	if ( Role < ROLE_Authority )
+		Return;
+	
 	if ( Instigator != None )
 		Instigator.TakeDamage( Damage, EventInstigator, HitLocation, Momentum, DamageType, HitIndex );
 	else
@@ -194,9 +197,11 @@ defaultproperties
 	 bCanBeDamaged=True
      // Networking flags
 	 bNetTemporary=False
-	 bReplicateMovement=True
+	 //bReplicateMovement=True
+	 bReplicateMovement=False
 	 bReplicateInstigator=True
-	 bNetInitialRotation=True
+	 //bNetInitialRotation=True
+	 bNetInitialRotation=False
 	 //bUpdateSimulatedPosition=True
 	 RemoteRole=ROLE_SimulatedProxy
 	 // Display

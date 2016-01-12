@@ -312,12 +312,12 @@ static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWe
 }
 
 // Set number times Zed Time can be extended
-simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
+static function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
 	Return 5.0 + 2.0 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 25 Zed Time Extensions
 }
 
-simulated function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
+static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 )
 		Return 1.0 + 0.10 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 100% bonus

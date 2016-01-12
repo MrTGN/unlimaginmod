@@ -408,7 +408,7 @@ function RemoveHead()
 	Super.RemoveHead();
 }
 
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	// Bloats are volatile. They burn faster than other zeds.
 	if ( damageType == class 'DamTypeBurned' )

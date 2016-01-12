@@ -426,10 +426,9 @@ state RadialAttack
 		Controller.Target = OldTarget;
     	MeleeRange = Default.MeleeRange;
 
-    	if ( bDamagedSomeone )
-    	{
+    	if ( bDamagedSomeone )  {
     		// Maybe cause zedtime when the patriarch does his radial attack
-			if( KFGameType(Level.Game) != None )
+			if ( KFGameType(Level.Game) != None )
 				KFGameType(Level.Game).DramaticEvent(0.3);
             PlaySound(MeleeAttackHitSound, SLOT_Interact, 2.0);
     	}
@@ -670,7 +669,7 @@ state FireChaingun
         Return False;
     }
 
-    function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+    event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
     {
     	local float EnemyDistSq, DamagerDistSq;
 
@@ -1417,7 +1416,10 @@ function bool ShouldChargeFromDamage()
 		Return False;
 }
 
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+// No ImpressiveKill on BossMonster. Boss Already have a DoBossDeath function.
+function CheckForImpressiveKill( UM_PlayerController PC );
+
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	local float DamagerDistSq;
 	local float UsedPipeBombDamScale;

@@ -33,7 +33,9 @@ replication
 
 defaultproperties
 {
-     RunGroundSpeedScale=1.850000
+     ImpressiveKillChance=0.05
+	 
+	 RunGroundSpeedScale=1.850000
 	 MeleeAnims(0)="GoreAttack1"
      MeleeAnims(1)="GoreAttack2"
      MeleeAnims(2)="GoreAttack1"

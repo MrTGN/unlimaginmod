@@ -218,7 +218,7 @@ function RemoveHead()
 	Super.RemoveHead();
 }
 
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	// Reduced damage from fire
 	if ( DamageType == class 'DamTypeBurned' || DamageType == class 'DamTypeFlamethrower'

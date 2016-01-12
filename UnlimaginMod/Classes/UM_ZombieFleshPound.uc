@@ -105,7 +105,7 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 	PlaySound(HitSound[0], SLOT_Pain,1.25,,400);
 }
 
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	local int BlockSlip, OldHealth;
 	local float BlockChance;//, RageChance;
@@ -576,14 +576,6 @@ function bool FlipOver()
 function bool SameSpeciesAs(Pawn P)
 {
 	Return ( UM_ZombieFleshPound(P) != None );
-}
-
-function RemoveHead()
-{
-	Super.RemoveHead();
-	
-	if ( ShowHeadShotTo != None )
-		ShowHeadShotTo.ShowActor( Self );
 }
 
 simulated function Destroyed()

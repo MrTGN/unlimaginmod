@@ -26,32 +26,32 @@ class UM_Monster extends KFMonster
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 // Falling
-var		class<DamageType>			FallingDamageType;
-var		class<DamageType>			LavaDamageType;
+var		class<DamageType>				FallingDamageType;
+var		class<DamageType>				LavaDamageType;
 
-var				bool	bRandomSizeAdjusted, bThisIsMiniBoss;
+var					bool				bRandomSizeAdjusted, bThisIsMiniBoss;
 
-var				range	MassScaleRange;
-var				range	SoundsPitchRange;
+var					range				MassScaleRange;
+var					range				SoundsPitchRange;
 //	Monster Size
-var				float	ExtraSizeChance;
-var				range	SizeScaleRange, ExtraSizeScaleRange;
+var					float				ExtraSizeChance;
+var					range				SizeScaleRange, ExtraSizeScaleRange;
 // Monster Speed
-var				float	ExtraSpeedChance;
-var				range	SpeedScaleRange, ExtraSpeedScaleRange;
+var					float				ExtraSpeedChance;
+var					range				SpeedScaleRange, ExtraSpeedScaleRange;
 // Monster Health
-var				float	ExtraHealthChance;
-var				range	HealthScaleRange, ExtraHealthScaleRange;
-var				range	HeadHealthScaleRange, ExtraHeadHealthScaleRange;
+var					float				ExtraHealthChance;
+var					range				HealthScaleRange, ExtraHealthScaleRange;
+var					range				HeadHealthScaleRange, ExtraHeadHealthScaleRange;
 // Monster Jump ZAxis height scale
-var				range	JumpZScaleRange;
+var					range				JumpZScaleRange;
 // Monster MeleeRange
-var				range	MeleeRangeScale;
+var					range				MeleeRangeScale;
 // Monster Damage
-var				range	DamageScaleRange;
+var					range				DamageScaleRange;
 
-var				float	MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
-var				float	MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
+var					float				MeshTestCollisionHeight;	// Height of test collision cyllinder in the Editor
+var					float				MeshTestCollisionRadius;	// Radius of test collision cyllinder in the Editor
 
 // BallisticCollision
 struct BallisticCollisionData
@@ -76,7 +76,8 @@ var		float							HeadShotSlowMoChargeBonus;
 
 var		transient	bool				bAddedToMonsterList;
 
-var		transient	UM_PlayerController	ShowHeadShotTo;
+var					float				ImpressiveKillChance;
+var					float				ImpressiveKillDuration;
 
 //[end] Varibles
 //====================================================================
@@ -1038,15 +1039,71 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
+//Issue: #264
 function RemoveHead()
 {
+	local	int		i;
+	
 	if ( HeadBallisticCollision != None )  {
 		HeadBallisticCollision.DisableCollision();
 		HeadBallisticCollision.Destroy();
 		HeadBallisticCollision = None;
 	}
-	//ToDo: issue #264
-	Super.RemoveHead();
+	
+	Intelligence = BRAINS_Retarded; // Headless dumbasses!
+	bDecapitated  = True;
+	DECAP = True;
+	DecapTime = Level.TimeSeconds;
+
+	Velocity = vect(0.0, 0.0, 0.0);
+	SetAnimAction('HitF');
+	SetGroundSpeed(GroundSpeed *= 0.80);
+	AirSpeed *= 0.8;
+	WaterSpeed *= 0.8;
+
+	// No more raspy breathin'...cuz he has no throat or mouth :S
+	AmbientSound = MiscSound;
+
+	if ( Controller != None )
+		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
+
+	// Head explodes, causing additional hurty.
+	if ( KFPawn(LastDamagedBy) != None )  {
+		//ToDo: #264.1
+		TakeDamage( (LastDamageAmount + 0.25 * HealthMax) , LastDamagedBy, LastHitLocation, LastMomentum, LastDamagedByType);
+
+		if ( BurnDown > 0 )
+			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
+	}
+
+	if ( Health > 0 )
+		BleedOutTime = Level.TimeSeconds +  BleedOutDuration;
+
+	// He's got no head so biting is out.
+	if ( MeleeAnims[2] == 'Claw3' )
+		MeleeAnims[2] = 'Claw2';
+	if ( MeleeAnims[1] == 'Claw3' )
+		MeleeAnims[1] = 'Claw1';
+
+	// Plug in headless anims if we have them
+	for ( i = 0; i < 4; ++i )  {
+		if ( HeadlessWalkAnims[i] != '' && HasAnim(HeadlessWalkAnims[i]) )  {
+			MovementAnims[i] = HeadlessWalkAnims[i];
+			WalkAnims[i]     = HeadlessWalkAnims[i];
+		}
+	}
+
+	PlaySound(DecapitationSound, SLOT_Misc,1.30,true,525);
+}
+
+function CheckForImpressiveKill( UM_PlayerController PC )
+{
+	if ( PC == None || PC.Pawn == None || UM_BaseGameInfo(Level.Game) == None || !UM_BaseGameInfo(Level.Game).AllowImpressiveKillEvent(ImpressiveKillChance) )
+		Return;
+	
+	UM_BaseGameInfo.DoZedTime( ImpressiveKillDuration );
+	if ( UM_BaseGameInfo(Level.Game).bShowImpressiveKillEvents )
+		PC.ShowActor( Self, ImpressiveKillDuration );
 }
 
 event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector momentum, class<DamageType> damageType, optional int HitIndex )
@@ -1065,13 +1122,13 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 		KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
 
 	// Scale damage if the Zed has been zapped
-    if ( bZapped )
-        Damage *= ZappedDamageMod;
+	if ( bZapped )
+		Damage *= ZappedDamageMod;
 
 	// Zeds and fire dont mix.
 	if ( class<UM_BaseDamType_IncendiaryBullet>(damageType) != None || class<UM_BaseDamType_Flame>(damageType) != None
 		 || (class<KFWeaponDamageType>(damageType) != None && class<KFWeaponDamageType>(damageType).default.bDealBurningDamage) )  {
-        if ( BurnDown < 1 || Damage > LastBurnDamage )  {
+		if ( BurnDown < 1 || Damage > LastBurnDamage )  {
 			// LastBurnDamage variable is storing last burn damage (unperked) received,
 			// which will be used to make additional damage per every burn tick (second).
 			LastBurnDamage = Damage;
@@ -1086,27 +1143,27 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 				FireDamageClass = damageType;
 			else
 				FireDamageClass = class'DamTypeFlamethrower';
-        }
+		}
 
 		if ( class<DamTypeMAC10MPInc>(damageType) == None &&
 			 class<UM_BaseDamType_IncendiaryBullet>(damageType) == None )
-            Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
+			Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
 
-        // BurnDown variable indicates how many ticks are remaining for zed to burn.
-        // It is 0, when zed isn't burning (or stopped burning).
-        // So all the code below will be executed only, if zed isn't already burning
-        if ( BurnDown < 1 )  {
-            if ( HeatAmount > 4 || Damage >= 15 )  {
-                bBurnified = True;
-                BurnDown = 10; // Inits burn tick count to 10
-                SetGroundSpeed(GroundSpeed * 0.8); // Lowers movement speed by 20%
-                BurnInstigator = instigatedBy;
-                SetTimer(1.0,false); // Sets timer function to be executed each second
-            }
-            else
+		// BurnDown variable indicates how many ticks are remaining for zed to burn.
+		// It is 0, when zed isn't burning (or stopped burning).
+		// So all the code below will be executed only, if zed isn't already burning
+		if ( BurnDown < 1 )  {
+			if ( HeatAmount > 4 || Damage >= 15 )  {
+				bBurnified = True;
+				BurnDown = 10; // Inits burn tick count to 10
+				SetGroundSpeed(GroundSpeed * 0.8); // Lowers movement speed by 20%
+				BurnInstigator = instigatedBy;
+				SetTimer(1.0,false); // Sets timer function to be executed each second
+			}
+			else
 				HeatAmount++;
-        }
-    }
+		}
+	}
 
 	if ( !bDecapitated && class<KFWeaponDamageType>(damageType) != None &&
 		 class<KFWeaponDamageType>(damageType).default.bCheckForHeadShots )  {
@@ -1152,11 +1209,13 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 				PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
 				HeadHealth -= LastDamageAmount;
 				if ( HeadHealth <= 0 || Damage > Health )  {
-					ShowHeadShotTo = UM_PlayerController(instigatedBy.Controller);
 					RemoveHead();
 					if ( UM_HumanPawn(instigatedBy) != None )
 						UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
 				}
+				
+				if ( Health < 1 )
+					CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
 			}
 
 			// Award headshot here, not when zombie died.
@@ -1196,9 +1255,6 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation, Vector mome
 	}
 	else
 		Super(Skaarj).TakeDamage(Damage, instigatedBy, hitLocation, momentum, damageType);
-
-	if ( bIsHeadShot && Health < 1 && UM_BaseGameInfo(Level.Game) != None )
-		UM_BaseGameInfo(Level.Game).DramaticEvent(0.03);
 
 	bBackstabbed = False;
 }
@@ -1251,7 +1307,10 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-     HeadShotSlowMoChargeBonus=0.2
+	 ImpressiveKillChance=0.03
+	 ImpressiveKillDuration=3.0
+	 
+	 HeadShotSlowMoChargeBonus=0.2
 	 // Falling
 	 FallingDamageType=Class'Fell'
 	 LavaDamageType=Class'FellLava'
@@ -1286,12 +1345,12 @@ defaultproperties
 	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
 	 //Anims
 	 DoubleJumpAnims(0)="Jump"
-     DoubleJumpAnims(1)="Jump"
-     DoubleJumpAnims(2)="Jump"
-     DoubleJumpAnims(3)="Jump"
+	 DoubleJumpAnims(1)="Jump"
+	 DoubleJumpAnims(2)="Jump"
+	 DoubleJumpAnims(3)="Jump"
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-     ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
-     ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
+	 ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
+	 ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ControllerClass=Class'UnlimaginMod.UM_MonsterController'
 	 // Collision flags
 	 bCollideActors=True

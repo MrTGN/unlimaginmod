@@ -1845,30 +1845,77 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 		ClientDying(DamageType, HitLocation);
 }
 
+function SpawnHitEmitter( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum )
+{
+	local	Vector			HitNormal;
+	local	class<Effects>	DesiredEffect;
+	local	class<Emitter>	DesiredEmitter;
+	local	vector			BloodOffset, Mo;
+
+	// Play any set effect
+	if ( EffectIsRelevant( Location, True ) )  {
+		HitNormal = Normal(HitLocation - Location);
+		DesiredEffect = DamageType.static.GetPawnDamageEffect( HitLocation, Damage, Momentum, self, (Level.bDropDetail || Level.DetailMode == DM_Low) );
+		if ( DesiredEffect != None )  {
+			BloodOffset = 0.2 * CollisionRadius * HitNormal;
+			BloodOffset.Z = BloodOffset.Z * 0.5;
+			Mo = Momentum;
+			if ( Mo.Z > 0 )
+				Mo.Z *= 0.5;
+			Spawn( DesiredEffect, self,, HitLocation + BloodOffset, rotator(Mo) );
+		}
+
+		// Spawn any preset emitter
+		DesiredEmitter = DamageType.Static.GetPawnDamageEmitter( HitLocation, Damage, Momentum, self, (Level.bDropDetail || Level.DetailMode == DM_Low) );
+		if ( DesiredEmitter != None )  {
+			if ( InstigatedBy != None )
+				HitNormal = Normal( (InstigatedBy.Location + (vect(0,0,1) * InstigatedBy. EyeHeight)) - HitLocation );
+
+			Spawn( DesiredEmitter,,, (HitLocation + HitNormal + (-HitNormal * CollisionRadius)), Rotator(HitNormal) );
+		}
+	}
+}
+
 // Clearing old functions
-function OldPlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIndex ) { }
-function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIndex ) { }
+function OldPlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIndex );
+function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIndex );
 
 // Spawn and play effects when damage was taken
 function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType )
 {
-	local	Vector	HitNormal, HitRay;
-	local	Name	HitBone;
-	local	float	HitBoneDist;
-	local	bool	bRecentHit, bShowEffects;
+	local	Vector				HitNormal, HitRay;
+	local	Name				HitBone;
+	local	float				HitBoneDist;
+	local	bool				bRecentHit, bShowEffects;
+	local	PlayerController	PCInstigatedBy;
 
 	if ( DamageType == None || Damage < 1 )
 		Return;
 	
 	bRecentHit = (Level.TimeSeconds - LastPainTime) < 0.2;
 	
-	// spawn some blood
+	//[Block] From OldPlayHit
 	if ( Damage >= DamageType.default.DamageThreshold )
-		SpawnHitEmitter();
+		SpawnHitEmitter( Damage, InstigatedBy, HitLocation, DamageType, Momentum ); // spawn some blood
 	
-	bShowEffects = ( Level.NetMode != NM_StandAlone || (Level.TimeSeconds - LastRenderTime) < 2.5 
-					 || (InstigatedBy != None && PlayerController(InstigatedBy.Controller) != None) 
-					 || PlayerController(Controller) != None );
+	PCInstigatedBy = PlayerController(InstigatedBy.Controller);
+	if ( Health > 0 )  {
+		if ( (Level.TimeSeconds - LastPainTime) > 0.1 )  {
+			if ( PCInstigatedBy != None && DamageType.default.bDirectDamage )  {
+				PCInstigatedBy.bAcuteHearing = True;
+				PlayTakeHit( HitLocation, Damage, damageType );
+				PCInstigatedBy.bAcuteHearing = False;
+			}
+			else
+				PlayTakeHit( HitLocation, Damage, damageType );
+			LastPainTime = Level.TimeSeconds;
+		}
+	}
+	else if ( PhysicsVolume.bDestructive && PhysicsVolume.ExitActor != None )
+		Spawn( PhysicsVolume.ExitActor );
+	//[End]
+	
+	bShowEffects = Level.NetMode != NM_StandAlone || (Level.TimeSeconds - LastRenderTime) < 2.5 || PCInstigatedBy != None || PlayerController(Controller) != None;
 	// Visual Hit Effects next
 	if ( !bShowEffects )
 		Return;
@@ -1900,9 +1947,9 @@ function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, v
 		if ( Momentum != Vect(0.0, 0.0, 0.0) )
 			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Momentum) );
 		else if ( InstigatedBy != None )
-			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(InstigatedBy - Location);
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - InstigatedBy.Location);
 		else
-			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(HitLocation - Location);
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - HitLocation);
 	}
 	
 	// Siren mortal damage effect
@@ -1918,7 +1965,8 @@ function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, v
 	else
 		DoDamageFX( HitBone, Damage, DamageType, rotator(HitNormal) );
 	
-	if ( DamageType.default.DamageOverlayMaterial != None && Health > 0 )
+	// additional check in case shield absorbed
+	if ( DamageType.default.DamageOverlayMaterial != None && Damage > 0 )
 		SetOverlayMaterial( DamageType.default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, False );
 }
 

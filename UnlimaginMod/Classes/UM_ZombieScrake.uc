@@ -161,14 +161,6 @@ function RangedAttack(Actor A)
 	}
 }
 
-function RemoveHead()
-{
-	Super.RemoveHead();
-	
-	if ( ShowHeadShotTo != None )
-		ShowHeadShotTo.ShowActor( Self );
-}
-
 state RunningState
 {
     // Set the zed to the zapped behavior
@@ -332,7 +324,7 @@ State SawingLoop
 }
 
 // Added in Balance Round 1 to reduce the headshot damage taken from Crossbows
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	local bool bIsHeadShot;
 

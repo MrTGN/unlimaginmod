@@ -11,7 +11,8 @@ var					string			SteamStatsAndAchievementsClassName;
 var					string			BuyMenuClassName, MidGameMenuClassName, InputClassName;
 var		transient	bool			bIsActivePlayer;	// This player participates in the game
 
-var 				float			ShowActorTime;
+var 				float			ShowActorDuration;
+var		transient	float			CurrentShowActorDuration;
 var		transient	name			PrevStateName;
 
 var		transient	Pawn			PawnKiller;
@@ -195,6 +196,38 @@ simulated function UpdateHintManagement(bool bUseHints)
 	}
 }
 
+simulated function CheckZEDMessage()
+{
+	if ( !bHadZED )  {
+		ReceiveLocalizedMessage(class'KFMod.WaitingMessage', 5);
+		bHadZED = True;
+		SaveConfig();
+	}
+}
+
+
+// Called by the server when the game enters zed time. Used to play the effects
+simulated function ClientEnterZedTime()
+{
+	CheckZEDMessage();
+
+	// if we have a weapon, play the zed time sound from it so it is higher priority and doesn't get cut off
+	if ( Pawn != None && Pawn.Weapon != None )
+		Pawn.Weapon.PlaySound( Sound'KF_PlayerGlobalSnd.Zedtime_Enter', SLOT_Talk, 2.0, False, 500.0, (1.1 / Level.TimeDilation), False );
+	else
+		PlaySound( Sound'KF_PlayerGlobalSnd.Zedtime_Enter', SLOT_Talk, 2.0, False, 500.0, (1.1 / Level.TimeDilation), False );
+}
+
+// Called by the server when the game exits zed time. Used to play the effects
+simulated function ClientExitZedTime()
+{
+	// if we have a weapon, play the zed time sound from it so it is higher priority and doesn't get cut off
+	if( Pawn != None && Pawn.Weapon != None )
+		Pawn.Weapon.PlaySound( Sound'KF_PlayerGlobalSnd.Zedtime_Exit', SLOT_Talk, 2.0, False, 500.0, (1.1 / Level.TimeDilation), False );
+	else
+		PlaySound( Sound'KF_PlayerGlobalSnd.Zedtime_Exit', SLOT_Talk, 2.0, False, 500.0, (1.1 / Level.TimeDilation), False );
+}
+
 function ServerVerifyViewTarget()
 {
 	if ( ViewTarget == None || ViewTarget == self )
@@ -222,8 +255,6 @@ event ClientSetViewTarget( Actor A )
 
 function ResetViewTarget()
 {
-	bBehindView = False;
-	ClientSetBehindView( False );
 	// Re-attach the controller to the pawn
 	if ( Pawn != None )  {
 		SetViewTarget( Pawn );
@@ -233,10 +264,12 @@ function ResetViewTarget()
 		SetViewTarget( Self );
 		ClientSetViewTarget( Self );
 	}
+	bBehindView = False;
+	ClientSetBehindView( False );
 }
 
 // Temporary show Actor to this player
-function ShowActor( Actor A, optional float NewShowActorTime )
+function ShowActor( Actor A, optional float NewShowActorDuration )
 {
 	// Do not show actor if Pawn have small amount of Health
 	// or if actor is already close enough (4 meters) and visible.
@@ -244,10 +277,10 @@ function ShowActor( Actor A, optional float NewShowActorTime )
 		 || (VSizeSquared(A.Location - Pawn.Location) < 60000.0 && FastTrace(A.Location, Pawn.Location)) )
 		Return;
 	
-	if ( NewShowActorTime > 0.0 )
-		ShowActorTime = NewShowActorTime;
+	if ( NewShowActorDuration > 0.0 )
+		CurrentShowActorDuration = NewShowActorDuration;
 	else
-		ShowActorTime = default.ShowActorTime;
+		CurrentShowActorDuration = ShowActorDuration;
 	
 	SetViewTarget( A );
 	ClientSetViewTarget( A );
@@ -261,36 +294,36 @@ function ShowActor( Actor A, optional float NewShowActorTime )
 // Showing Actor to this player
 state ShowingActor extends BaseSpectating
 {
-	event BeginState()
-	{
-		SetTimer( ShowActorTime, False );
-	}
-	
 	function bool IsSpectating()
 	{
 		Return True;
 	}
 	
-	function ShowActor( Actor A, optional float NewShowActorTime ) { }
+	function ShowActor( Actor A, optional float NewShowActorDuration );
 	
-	event Timer()
+	event PlayerTick( float DeltaTime )
 	{
-		GotoState('PrevStateName');
+		Global.PlayerTick( DeltaTime );
+		
+		if ( CurrentShowActorDuration > 0.0 )
+			CurrentShowActorDuration -= DeltaTime * Level.default.TimeDilation / Level.TimeDilation; // Calc TrueDeltaTime
+		else
+			GotoState(PrevStateName);
 	}
 	
 	exec function Fire( optional float F )
 	{
-		GotoState('PrevStateName');
+		GotoState(PrevStateName);
 	}
 
 	exec function AltFire( optional float F )
 	{
-		GotoState('PrevStateName');
+		GotoState(PrevStateName);
 	}
 	
 	event EndState()
 	{
-		SetTimer(0.0, False);
+		CurrentShowActorDuration = 0.0;
 		ResetViewTarget();
 	}
 }
@@ -338,6 +371,12 @@ simulated event PostBeginPlay()
 	UpdateHintManagement(bShowHints);
 }
 
+// called when gameplay actually starts
+function MatchStarting()
+{
+	Advertising_ExitZone();
+}
+
 // Possess a pawn
 function Possess(Pawn aPawn)
 {
@@ -348,7 +387,8 @@ function Possess(Pawn aPawn)
 	// Spectator
 	if ( PlayerReplicationInfo.bOnlySpectator )
 		Return;
-
+	
+	Advertising_ExitZone();
 	ResetFOV();
 	Pawn = aPawn;
 	aPawn.PossessedBy(self);
@@ -615,21 +655,24 @@ auto state PlayerWaiting
 	}
 }
 
-// Have cut out xPlayer class ComboList logic from PlayerTick for now
+// Have cut out xPlayer class ComboList logic from PlayerTick for now @Gleb
 event PlayerTick( float DeltaTime )
 {
 	// From the KFPlayerController class
 	if ( bHasDelayedSong && Player != None )
 		NetPlayMusic(DelayedSongToPlay, 0.5, 0);
 	
+	//ToDo: I've moved this things to the normal functions.
+	// But I need test this!
+	/*
 	if ( Level.GRI != None )  {
 		if ( KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )
 			Advertising_EnterZone("mp_lobby");
 		else if ( Level.GRI.bMatchHasBegun )
 			Advertising_ExitZone();
-	}
+	}	*/
 
-	Super(xPlayer).PlayerTick( DeltaTime );
+	Super(UnrealPlayer).PlayerTick( DeltaTime );
 }
 
 // Set up the widescreen FOV values for this player
@@ -1377,6 +1420,10 @@ state GameEnded
 	
 	function BeginState()
 	{
+		// EnterZone Lobby
+		if ( KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )
+			Advertising_EnterZone("mp_lobby");
+		
 		EndZoom();
 		StopForceFeedback();
 		CameraDist = Default.CameraDist;
@@ -1405,7 +1452,7 @@ state GameEnded
 
 defaultproperties
 {
-	ShowActorTime=4.0
+	ShowActorDuration=4.0
 	PlayerReplicationInfoClass="UnlimaginMod.UM_PlayerReplicationInfo"
 	InputClass=None
 	InputClassName="UnlimaginMod.UM_PlayerInput"

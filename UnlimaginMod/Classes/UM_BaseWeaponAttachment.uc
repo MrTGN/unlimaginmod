@@ -15,7 +15,7 @@
 //	Comments:		 Base weapon attachment class with multiple muzzles support.
 //================================================================================
 class UM_BaseWeaponAttachment extends KFWeaponAttachment
-	DependsOn(Weapon)
+	//DependsOn(Weapon)
 	Abstract;
 
 //========================================================================
@@ -31,7 +31,8 @@ var		Class<UM_MeshActor>			SecondMeshActorClass;
 var		UM_MeshActor				SecondMeshActor;	
 
 var		bool						bAssetsLoaded;
-var		byte						MuzzleNums[Weapon.NUM_FIRE_MODES]; // Muzzles Numbers for the FireModes
+//var		byte						MuzzleNums[Weapon.NUM_FIRE_MODES]; // Muzzles Numbers for the FireModes
+var		byte						MuzzleNums[2]; // Muzzles Numbers for the FireModes
 
 enum EMeshNum
 {
@@ -52,7 +53,8 @@ struct FireModeData
 	var	array< Class<xEmitter> >	ShellEjectClasses;
 	var	array< xEmitter >			ShellEjects;
 };
-var		FireModeData				FireModeEffects[Weapon.NUM_FIRE_MODES];
+//var		FireModeData				FireModeEffects[Weapon.NUM_FIRE_MODES];
+var		FireModeData				FireModeEffects[2];
 
 var		bool						bAttachFlashEmitter, bAttachSmokeEmitter;
 

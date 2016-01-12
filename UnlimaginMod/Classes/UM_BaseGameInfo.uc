@@ -27,6 +27,30 @@ class UM_BaseGameInfo extends KFGameType
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+
+// Int Range
+struct IRange
+{
+	var()	config	int		Min;
+	var()	config	int		Max;
+};
+
+struct IRandRange
+{
+	var()	config	int		Min;
+	var()	config	int		RandMin;
+	var()	config	int		Max;
+	var()	config	int		RandMax;
+};
+
+struct FRandRange
+{
+	var()	config	float	Min;
+	var()	config	float	RandMin;
+	var()	config	float	Max;
+	var()	config	float	RandMax;
+};
 
 // Do slomo event when was killed a specified number of victims
 struct DramaticKillData
@@ -44,7 +68,7 @@ var					string					GameReplicationInfoClassName;
 var					Class<KFLevelRules>		DefaultLevelRulesClass;
 var					string					LoginMenuClassName;
 
-var					float					ExitZedTime;
+var					float					SpeedingBackZEDTime;
 var					float					BotAtHumanFriendlyFireScale;
 
 // Will be config string at release version
@@ -85,6 +109,9 @@ var					float					UnauthorizedChangesCheckDelay;
 var					float					NextUnauthorizedChangesCheckTime;
 
 var					name					MatchStateName;
+var		config		bool					bAllowImpressiveKillEvents;
+var		config		bool					bShowImpressiveKillEvents;
+var		config		bool					bAllowDramaticEvents;
 
 //[end] Varibles
 //====================================================================
@@ -95,13 +122,6 @@ var					name					MatchStateName;
 function Bot MySpawnBot( optional string BotName );
 event PostNetBeginPlay();
 function StartMatch();
-simulated function PrepareSpecialSquadsFromCollection();
-simulated function PrepareSpecialSquads();
-function SetupWave();
-function AddSpecialSquad();
-function bool AddSquad();
-function DoBossDeath();
-
 exec function KillZeds();
 function DoBossDeath();
 function array<IMClassList> LoadUpMonsterListFromGameType();
@@ -365,7 +385,6 @@ function bool AllowGameSpeedChange()
 
 protected function bool LoadGamePreset( string NewPresetName )
 {
-	local	int		i;
 	local	Class<UM_BaseGamePreset>	GamePresetClass;
 	
 	if ( NewPresetName == "" )  {
@@ -375,7 +394,7 @@ protected function bool LoadGamePreset( string NewPresetName )
 	
 	GamePresetClass = Class<UM_BaseGamePreset>( DynamicLoadObject(NewPresetName, Class'Class') );
 	if ( GamePresetClass == None )  {
-		Warn( "GamePreset wasn't found!", Class.Outer.Name );
+		Warn( "GamePreset wasn't found!");
 		Return False;
 	}
 	
@@ -552,7 +571,6 @@ static function string GetValidCharacter( string S )
 {
 	local	int		i;
 
-	l = Default.AvailableChars.Length;
 	if ( S != "" )  {
 		for( i = 0; i < Default.AvailableChars.Length; ++i )  {
 			if ( Default.AvailableChars[i] ~= S )
@@ -565,7 +583,7 @@ static function string GetValidCharacter( string S )
 
 function Bot SpawnBot( optional string BotName )
 {
-	local	KFInvasionBot	NewBot;
+	local	Bot				NewBot;
 	local	RosterEntry		Chosen;
 	local	UnrealTeamInfo	BotTeam;
 
@@ -740,7 +758,7 @@ function BecomeActivePlayer( PlayerController P )
 	P.PlayerReplicationInfo.bOnlySpectator = False;
 	if ( bTeamGame )  {
 		if ( P.PlayerReplicationInfo.Team != None )
-			ChangeTeam(P, P.PlayerReplicationInfo.Team.TeamIndex, None), false);
+			ChangeTeam(P, P.PlayerReplicationInfo.Team.TeamIndex, false);
 		else
 			ChangeTeam(P, PickTeam(int(GetURLOption("Team")), None), false);
 	}
@@ -760,7 +778,7 @@ function bool AtCapacity( bool bSpectator )
 
 function SendPlayer( PlayerController aPlayer, string URL )
 {
-	if ( bGameEnded || aPlayer == None || aPlayer.PlayerReplicationInfo )
+	if ( bGameEnded || aPlayer == None || aPlayer.PlayerReplicationInfo == None )
 		Return;
 	
 	Broadcast( Self, aPlayer.PlayerReplicationInfo.PlayerName@"has ended the level." );
@@ -1268,8 +1286,7 @@ auto state PendingMatch
 
 	function Timer()
 	{
-		local	Controller	P;
-		local	int			i, ReadyCount;
+		local	int		i, ReadyCount;
 
 		Global.Timer();
 
@@ -1437,62 +1454,6 @@ state StartingMatch
 	}
 }
 
-function ResetSlowMoInstigator()
-{
-	if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
-		SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
-	bSlowMoStartedByHuman = False;
-	SlowMoInstigator = None;
-	SlowMoDeltaTime = 0.0;
-}
-
-function ToggledSlowMoBy( UM_HumanPawn Human )
-{
-	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Level.TimeSeconds < NextSlowMoToggleTime || Human.SlowMoCharge < MinToggleSlowMoCharge )
-		Return;
-	
-	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
-	
-	// Stop SlowMo
-	if ( SlowMoInstigator == Human )
-		CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, ExitZedTime );
-	// Start SlowMo
-	else  {
-		ResetSlowMoInstigator();
-		// Setting Up new SlowMoInstigator
-		bSlowMoStartedByHuman = True;
-		SlowMoInstigator = Human;
-		DramaticEvent(1.0, SlowMoInstigator.SlowMoCharge);
-	}
-}
-
-function ExtendZEDTime( UM_HumanPawn Human )
-{
-	if ( Human == None || Human.Health < 1 || Human.bDeleteMe || Human.SlowMoCharge < ZEDTimeDuration )
-		Return;
-	
-	ResetSlowMoInstigator();
-	// Setting Up new SlowMoInstigator
-	bSlowMoStartedByHuman = True;
-	SlowMoInstigator = Human;
-	DramaticEvent(1.0, ZEDTimeDuration);
-}
-
-function CheckForUnauthorizedChanges()
-{
-	NextUnauthorizedChangesCheckTime = Level.TimeSeconds + UnauthorizedChangesCheckDelay;
-	
-	if ( UM_GameReplicationInfo(GameReplicationInfo) == None )
-		Return;
-	
-	// Checking FriendlyFireScale for the unauthorized changes (not from the SetFriendlyFireScale() function)
-	if ( FriendlyFireScale != LastFriendlyFireScale )
-		SetFriendlyFireScale( FriendlyFireScale );
-	// Checking GameDifficulty for the unauthorized changes (not from the SetGameDifficulty() function)
-	if ( GameDifficulty != LastGameDifficulty )
-		SetGameDifficulty( GameDifficulty );
-}
-
 // Set gameplay speed.
 function SetGameSpeed( float T )
 {
@@ -1516,11 +1477,104 @@ function SetGameSpeed( float T )
 	SetTimer((Level.TimeDilation / GameSpeed), True);
 }
 
+function bool DoZedTime( float DesiredZedTimeDuration )
+{
+	local	byte	i;
+	
+	if ( DesiredZedTimeDuration < CurrentZEDTimeDuration )
+		Return False;	// Already in longer zed time
+	
+	bZEDTimeActive = True;
+	bSpeedingBackUp = False;
+	LastZedTimeEvent = Level.TimeSeconds;
+	CurrentZEDTimeDuration = DesiredZedTimeDuration;
+	SetGameSpeed(ZedTimeSlomoScale);
+	
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )
+		PlayerList[i].ClientEnterZedTime();
+	
+	CheckSpectatorList();
+	for ( i = 0; i < SpectatorList.Length; ++i )
+		SpectatorList[i].ClientEnterZedTime();
+	
+	Return True;
+}
+
+function ResetSlowMoInstigator()
+{
+	// Reduce Last Instigator SlowMoCharge
+	if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
+		SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+	// Reset
+	bSlowMoStartedByHuman = False;
+	SlowMoInstigator = None;
+	SlowMoDeltaTime = 0.0;
+}
+
+function ToggledSlowMoBy( UM_HumanPawn Human )
+{
+	if ( Level.TimeSeconds < NextSlowMoToggleTime || Human == None || Human.bDeleteMe || Human.Health < 1 || Human.SlowMoCharge < (CurrentZEDTimeDuration + MinToggleSlowMoCharge) )
+		Return;
+	
+	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
+	// Start to exit from SlowMo
+	if ( Human == SlowMoInstigator )
+		CurrentZEDTimeDuration = FMin( CurrentZEDTimeDuration, SpeedingBackZEDTime );
+	// Do SlowMo
+	else if ( DoZedTime(Human.SlowMoCharge) )  {
+		ResetSlowMoInstigator();
+		// Setting Up new SlowMoInstigator
+		bSlowMoStartedByHuman = True;
+		SlowMoInstigator = Human;
+	}
+}
+
+function ExtendZEDTime( UM_HumanPawn Human )
+{
+	if ( Human == None || Human.bDeleteMe || Human.Health < 1 || Human.SlowMoCharge < ZEDTimeDuration )
+		Return;
+	
+	if ( DoZedTime( ZEDTimeDuration ) )  {
+		ResetSlowMoInstigator();
+		// Setting Up new SlowMoInstigator
+		bSlowMoStartedByHuman = True;
+		SlowMoInstigator = Human;
+	}
+}
+
+function CheckForUnauthorizedChanges()
+{
+	NextUnauthorizedChangesCheckTime = Level.TimeSeconds + UnauthorizedChangesCheckDelay;
+	
+	if ( UM_GameReplicationInfo(GameReplicationInfo) == None )
+		Return;
+	
+	// Checking FriendlyFireScale for the unauthorized changes (not from the SetFriendlyFireScale() function)
+	if ( FriendlyFireScale != LastFriendlyFireScale )
+		SetFriendlyFireScale( FriendlyFireScale );
+	// Checking GameDifficulty for the unauthorized changes (not from the SetGameDifficulty() function)
+	if ( GameDifficulty != LastGameDifficulty )
+		SetGameDifficulty( GameDifficulty );
+}
+
+function DoSpeedingBack()
+{
+	local	byte	i;
+	
+	bSpeedingBackUp = True;
+	CheckPlayerList();
+	for ( i = 0; i < PlayerList.Length; ++i )
+		PlayerList[i].ClientExitZedTime();
+	
+	CheckSpectatorList();
+	for ( i = 0; i < SpectatorList.Length; ++i )
+		SpectatorList[i].ClientExitZedTime();
+}
+
 event Tick( float DeltaTime )
 {
-	local	float		TrueDeltaTime;
-	local	int			Count;
-	local	Controller	C;
+	local	float	TrueDeltaTime;
 	
 	if ( Level.TimeSeconds >= NextUnauthorizedChangesCheckTime )
 		CheckForUnauthorizedChanges();
@@ -1538,45 +1592,77 @@ event Tick( float DeltaTime )
 				if ( SlowMoInstigator == None || SlowMoInstigator.Health < 1 || SlowMoInstigator.bDeleteMe )  {
 					bSlowMoStartedByHuman = False;
 					SlowMoInstigator = None;
-					CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, ExitZedTime );
+					CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, SpeedingBackZEDTime );
 				}
 				// Reduce SlowMoInstigator SlowMoCharge
 				else if ( SlowMoDeltaTime >= SlowMoInstigator.SlowMoChargeUpdateAmount )  {
-					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime )
+					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
 					SlowMoDeltaTime = 0.0;
 					CurrentZEDTimeDuration = SlowMoInstigator.SlowMoCharge;
 				}
 			}
 			// Smooth exit from the ZedTime
-			if ( CurrentZEDTimeDuration < ExitZedTime )  {
-				if ( !bSpeedingBackUp )  {
-					bSpeedingBackUp = True;
-					for ( i = 0; i < PlayerList.Length; ++i )
-						PlayerList[i].ClientExitZedTime();
-				}
-				SetGameSpeed( Lerp((CurrentZEDTimeDuration / ExitZedTime), 1.0, 0.2) );
+			if ( CurrentZEDTimeDuration < SpeedingBackZEDTime )  {
+				if ( !bSpeedingBackUp )
+					DoSpeedingBack();
+				// Smoothly change game speed back to default
+				SetGameSpeed( Lerp((CurrentZEDTimeDuration / SpeedingBackZEDTime), DefaultGameSpeed, ZedTimeSlomoScale) );
 			}
 		}
+		// Exit from the ZedTime
 		else  {
 			ResetSlowMoInstigator();
 			CurrentZEDTimeDuration = 0.0;
-			SetGameSpeed(DefaultGameSpeed);
+			SetGameSpeed( DefaultGameSpeed );
 			bZEDTimeActive = False;
 			bSpeedingBackUp = False;
 		}
 	}
 }
 
+//ToDo: issue #331
+function bool AllowImpressiveKillEvent( float EventChance )
+{
+	local	float	TimeSinceLastEvent;
+	
+	if ( !bAllowImpressiveKillEvents || EventChance <= 0.0 )
+		Return False;
+	
+	if ( EventChance < 1.0 )  {
+		TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
+		// Don't allow slomo event if we were just IN slomo
+		if ( TimeSinceLastEvent < 10.0 )
+			Return False;
+		
+		// Increase chance by the time
+		if ( EventChance > 15.0 )
+			EventChance *= FMin( TimeSinceLastEvent, 60.0 ) / 15.0;		
+		// More than a minute ago
+		if ( TimeSinceLastEvent > 60.0 )
+			EventChance *= 4.0;
+		// More than a half-minute ago
+		else if( TimeSinceLastEvent > 30.0 )
+			EventChance *= 2.0;
+		
+		Return FRand() <= EventChance;
+	}
+	
+	Return True;
+}
+
+
 // Called when a dramatic event happens that might cause slomo
 // BaseZedTimePossibility - the attempted probability of doing a slomo event
 function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedTimeDuration )
 {
-	local	float		TimeSinceLastEvent;
-	local	Controller	C;
-	local	int			i;
+	local	float	TimeSinceLastEvent;
+	local	bool	bDoZedTime;
 
-	TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
+	if ( !bAllowDramaticEvents || BaseZedTimePossibility <= 0.0 )
+			Return;
+	
 	if ( BaseZedTimePossibility < 1.0 )  {
+		TimeSinceLastEvent = Level.TimeSeconds - LastZedTimeEvent;
 		// Don't go in slomo if we were just IN slomo
 		if ( TimeSinceLastEvent < 10.0 )
 			Return;
@@ -1587,32 +1673,18 @@ function DramaticEvent( float BaseZedTimePossibility, optional float DesiredZedT
 		// More than a half-minute ago
 		else if( TimeSinceLastEvent > 30.0 )
 			BaseZedTimePossibility *= 2.0;
+		
+		bDoZedTime = FRand() <= BaseZedTimePossibility;
 	}
+	else
+		bDoZedTime = True;
 	
 	// if we getting a chance for slomo event
-	if ( FRand() <= BaseZedTimePossibility )  {
-		bZEDTimeActive = True;
-		bSpeedingBackUp = False;
-		LastZedTimeEvent = Level.TimeSeconds;
+	if ( bDoZedTime )  {
+		if ( DesiredZedTimeDuration <= 0.0 )
+			DesiredZedTimeDuration = ZEDTimeDuration;
 		
-		if ( DesiredZedTimeDuration > 0.0 )
-			CurrentZEDTimeDuration = DesiredZedTimeDuration;
-		else
-			CurrentZEDTimeDuration = ZEDTimeDuration;
-
-		SetGameSpeed(ZedTimeSlomoScale);
-
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;
-			// ZedTime Clien Notify
-			if ( KFPlayerController(C) != None )
-				KFPlayerController(C).ClientEnterZedTime();
-			/*
-			// ZedTime Stat
-			if ( C.PlayerReplicationInfo != None && KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements) != None )
-				KFSteamStatsAndAchievements(C.PlayerReplicationInfo.SteamStatsAndAchievements).AddZedTime(ZEDTimeDuration);
-			*/
-		}
+		DoZedTime( DesiredZedTimeDuration );
 	}
 }
 
@@ -2122,6 +2194,10 @@ state MatchOver
 
 defaultproperties
 {
+	 bAllowImpressiveKillEvents=True
+	 bShowImpressiveKillEvents=True
+	 bAllowDramaticEvents=True
+	 
 	 UnauthorizedChangesCheckDelay=0.05
 	 // Do not check first 2 seconds
 	 NextUnauthorizedChangesCheckTime=2.0
@@ -2138,8 +2214,9 @@ defaultproperties
 	 
 	 bSaveSpectatorScores=False
 	 BotAtHumanFriendlyFireScale=0.5
-	 ZEDTimeDuration=3.000000
-	 ExitZedTime=0.500000
+	 ZedTimeSlomoScale=0.2
+	 ZEDTimeDuration=3.0
+	 SpeedingBackZEDTime=0.5
 	 
 	 DelayBetweenSlowMoToggle=0.25
 	 MinToggleSlowMoCharge=2.0

@@ -17,7 +17,6 @@
 	Comment:		 
 ==================================================================================*/
 class UM_InvasionGame extends UM_BaseGameInfo
-	DependsOn(UM_BaseObject)
 	config;
 
 #exec OBJ LOAD FILE=KillingFloorTextures.utx
@@ -53,23 +52,20 @@ class UM_InvasionGame extends UM_BaseGameInfo
 //========================================================================
 //[block] Variables
 
-const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	Maths = Class'UnlimaginMod.UnlimaginMaths';
-
 // GameWaves
 struct GameWaveData
 {
-	var()	config	UM_BaseObject.IRange		AliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-	var()	config	UM_BaseObject.IRandRange	MonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
-	var()	config	UM_BaseObject.FRandRange	SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
+	var()	config	IRange						AliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+	var()	config	IRandRange					MonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+	var()	config	FRandRange					SquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
 	var()	config	int							SquadsSpawnEndTime;	// Time when level will stop to spawn new squads at the end of this wave (in seconds)
 	var()	config	float						WaveDifficulty;		// Used for the Bot Difficulty
 	var()	config	int							StartDelay;		// This wave start time out in seconds
-	var()	config	UM_BaseObject.FRandRange	Duration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
+	var()	config	FRandRange					Duration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
 	var()	config	range						BreakTime;			// Shopping time after this wave in seconds
 	var()	config	range						DoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
-	var()	config	UM_BaseObject.IRange		StartingCash;		// Random starting cash on this wave
-	var()	config	UM_BaseObject.IRange		MinRespawnCash;		// Random min respawn cash on this wave
+	var()	config	IRange						StartingCash;		// Random starting cash on this wave
+	var()	config	IRange						MinRespawnCash;		// Random min respawn cash on this wave
 	var()	config	range						DeathCashModifier;	// Death cash penalty on this wave (Min - MinGameDifficulty, Max - MaxGameDifficulty)
 };
 
@@ -82,14 +78,14 @@ var					int							InitialWaveNum;
 var					array<GameWaveData>			GameWaves;
 
 // Boss Wave Data
-var					UM_BaseObject.IRange		BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-var					UM_BaseObject.IRandRange	BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
-var					UM_BaseObject.FRandRange	BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
+var					IRange						BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+var					IRandRange					BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+var					FRandRange					BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
 var					float						BossWaveDifficulty;		// Used for the Bot Difficulty
 var					int							BossWaveStartDelay;		// This wave start time out in seconds
 var					range						BossWaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
-var					UM_BaseObject.IRange		BossWaveStartingCash;		// Random starting cash on this wave
-var					UM_BaseObject.IRange		BossWaveMinRespawnCash;		// Random min respawn cash on this wave
+var					IRange						BossWaveStartingCash;		// Random starting cash on this wave
+var					IRange						BossWaveMinRespawnCash;		// Random min respawn cash on this wave
 
 // Monsters
 var		export	array<UM_InvasionMonsterData>	Monsters;
@@ -235,7 +231,6 @@ function UpdateStartingCash()
 	if ( WaveNum < FinalWave )  {
 		StartingCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].StartingCash.Min), float(GameWaves[WaveNum].StartingCash.Max)) );
 		MinRespawnCash = Round( Lerp(FRand(), float(GameWaves[WaveNum].MinRespawnCash.Min), float(GameWaves[WaveNum].MinRespawnCash.Max)) );
-		DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
 	}
 	// Boss Wave
 	else  {
@@ -263,7 +258,7 @@ function LoadUpMonsterList()
 	}
 	
 	if ( Monsters.Length < 1 )
-		Warn( "No Monsters to load!", Name );
+		Warn( "No Monsters to load!" );
 }
 
 /* Initialize the game.
@@ -352,6 +347,8 @@ function UpdateDynamicParameters()
 		CurrentWaveDuration = Round( Lerp(LerpGameDifficultyModifier, GameWaves[WaveNum].Duration.Min, GameWaves[WaveNum].Duration.Max) * 60.0 + Lerp(LerpGameDifficultyModifier, GameWaves[WaveNum].Duration.RandMin, GameWaves[WaveNum].Duration.RandMax) * (120.0 * FRand() - 60.0) );
 		// CurrentDoorsRepairChance
 		CurrentDoorsRepairChance = Lerp( LerpGameDifficultyModifier, GameWaves[WaveNum].DoorsRepairChance.Min, GameWaves[WaveNum].DoorsRepairChance.Max );
+		// DeathCashModifier = GameWaves[WaveNum].DeathCashModifier;
+		DeathCashModifier = Lerp( LerpGameDifficultyModifier, GameWaves[WaveNum].DeathCashModifier.Min, GameWaves[WaveNum].DeathCashModifier.Max );
 	}
 	// BossWave
 	else  {
@@ -366,7 +363,7 @@ function UpdateDynamicParameters()
 		// AdjustedDifficulty
 		AdjustedDifficulty = GameDifficulty * BossWaveDifficulty;
 		// CurrentDoorsRepairChance
-		CurrentDoorsRepairChance = Lerp( LerpGameDifficultyModifier, BossWaveDoorsRepairChance.Min, BossWaveDoorsRepairChance.DoorsRepairChance.Max );
+		CurrentDoorsRepairChance = Lerp( LerpGameDifficultyModifier, BossWaveDoorsRepairChance.Min, BossWaveDoorsRepairChance.Max );
 	}
 	
 	// NextMonsterSquadSize
@@ -418,7 +415,7 @@ function bool AddToMonsterList( UM_Monster M )
 function ClearMonsterList()
 {
 	while( AliveMonsterList.Length > 0 )
-		Remove( (AliveMonsterList.Length - 1), 1 );
+		AliveMonsterList.Remove( (AliveMonsterList.Length - 1), 1 );
 }
 
 exec function KillZeds()
@@ -598,6 +595,8 @@ state BeginNewWave
 {
 	event BeginState()
 	{
+		local	int		i;
+		
 		WaveNum = NextWaveNum;
 		if ( WaveNum < FinalWave )  {
 			++NextWaveNum;
@@ -623,10 +622,10 @@ state BeginNewWave
 		
 		WaveElapsedTime = 0;
 		// Reset monster spawn counters
-		for ( i = 0; i < Monster.Length; ++i )  {
-			Monster[i].NumSpawnedThisWave = 0;
-			Monster[i].DeltaCounter = 0;
-			Monster[i].NumInCurrentSquad = 0;
+		for ( i = 0; i < Monsters.Length; ++i )  {
+			Monsters[i].NumSpawnedThisWave = 0;
+			Monsters[i].DeltaCounter = 0;
+			Monsters[i].NumInCurrentSquad = 0;
 		}
 	}
 	
@@ -737,7 +736,7 @@ state Shopping
 				ShopList[i].OpenShop();
 		}
 		
-		CheckPlayerList()
+		CheckPlayerList();
 		// Tell all players to start showing the path to the trader
 		for ( i = 0; i < PlayerList.Length; ++i )  {
 			if ( PlayerList[i].Pawn != None )  {
@@ -903,7 +902,7 @@ state Shopping
 				ShopList[i].CloseShop();
 		}
 		
-		CheckPlayerList()
+		CheckPlayerList();
 		// Tell all players to stop showing the path to the trader
 		for ( i = 0; i < PlayerList.Length; ++i )  {
 			if ( PlayerList[i].Pawn != None )  {
@@ -993,20 +992,20 @@ function BuildNextSquad()
 	
 	// Reset monster squad counters
 	NextSpawnSquad.Length = 0;
-	for ( i = 0; i < Monster.Length; ++i )
-		Monster[i].NumInCurrentSquad = 0;
+	for ( i = 0; i < Monsters.Length; ++i )
+		Monsters[i].NumInCurrentSquad = 0;
 	
-	// Building squad monster list
+	// Building squad Monster list
 	// i limit of tries to fill the squad slots
 	for ( i = 0; NextSpawnSquad.Length < NextMonsterSquadSize && i < BulidSquadIterationLimit; ++i )  {
 		r = Rand(Monsters.Length);
 		if ( Monsters[r].CanSpawn() )  {
 			// Increment spawn counters
-			++Monster[r].NumSpawnedThisWave;
-			++Monster[r].NumInCurrentSquad;
-			++Monster[r].DeltaCounter;
+			++Monsters[r].NumSpawnedThisWave;
+			++Monsters[r].NumInCurrentSquad;
+			++Monsters[r].DeltaCounter;
 			// Add to the monster list
-			NextSpawnSquad[NextSpawnSquad.Length] = Monster[r].MonsterClass;
+			NextSpawnSquad[NextSpawnSquad.Length] = Monsters[r].MonsterClass;
 		}
 	}
 	
@@ -1050,10 +1049,10 @@ function CheckForJammedMonsters()
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
 		if ( UM_MonsterController(AliveMonsterList[i].Controller) != None && UM_MonsterController(AliveMonsterList[i].Controller).CanKillMeYet() )  {
-			NextSpawnSquad[NextSpawnSquad.Length] = Class<KFMonster>(AliveMonsterList[i].Class);
+			NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
 			AliveMonsterList[i].Suicide();
 			AliveMonsterList.Remove(i, 1);
-			--WaveMonster;
+			--WaveMonsters;
 			--i;
 		}
 	}
@@ -1227,14 +1226,16 @@ state WaveInProgress
 //[end] WaveInProgress Code
 
 //[block] BossWaveInProgress Code
-function ShowPawnToPlayers( Pawn P, optional float ShowingTime )
+function ShowActorToPlayers( Actor A, optional float ShowingTime )
 {
-	if ( P == None )
+	local	byte	i;
+	
+	if ( A == None )
 		Return;
 	
 	CheckPlayerList();
 	for ( i = 0; i < PlayerList.Length; ++i )
-		PlayerList[i].ShowActor( P , ShowingTime );
+		PlayerList[i].ShowActor( A , ShowingTime );
 }
 
 state BossWaveInProgress
@@ -1344,7 +1345,7 @@ state BossWaveInProgress
 		}
 		else if ( bShowBossGrandEntry && BossMonster != None && BossMonster.MakeGrandEntry() )  {
 			bShowBossGrandEntry = False;
-			ShowPawnToPlayers( BossMonster );
+			ShowActorToPlayers( BossMonster );
 		}
 		
 		// Respawn Jammed Monsters First
@@ -1365,22 +1366,17 @@ state BossWaveInProgress
 	{
 		local	int		i;
 
-		bZEDTimeActive = True;
-		bSpeedingBackUp = False;
-		LastZedTimeEvent = Level.TimeSeconds;
-		CurrentZEDTimeDuration = ZEDTimeDuration * 2.0;
-		SetGameSpeed( ZedTimeSlomoScale );
-
-		CheckAliveMonsterList();
+		DoZedTime(10.0);
+		if ( BossMonster != None )
+			ShowActorToPlayers( BossMonster, 10.0 );
+		
 		// Kill all alive monsters
+		CheckAliveMonsterList();
 		for ( i = 0; i < AliveMonsterList.Length; ++i )
 			AliveMonsterList[i].Suicide();
 		
+		// End Wave
 		DoWaveEnd();
-		
-		if ( BossMonster != None )
-			ShowPawnToPlayers( BossMonster, 10.0 );
-		
 		bBossKilled = True;
 	}
 }
@@ -1427,7 +1423,7 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 					// Monster has killed another monster
 					else if ( Monster(Killer.Pawn) != None )  {
 						ResetSlowMoInstigator();
-						DramaticEvent(1.00);
+						DoZedTime( ZEDTimeDuration );
 					}
 				}
 				// Chance to start Random ZEDTime
@@ -1511,7 +1507,7 @@ state MatchOver
 		if ( !bBossHasSaidWord )  {
 			bBossHasSaidWord = True;
 			if ( BossMonster != None && BossMonster.SetBossLaught() )			
-				ShowPawnToPlayers( BossMonster, 5.0 );
+				ShowActorToPlayers( BossMonster, 5.0 );
 		}
 		Super.Timer();
 	}
@@ -1521,7 +1517,7 @@ function GetServerDetails( out ServerResponseLine ServerState )
 {
     local	int		l;
 
-    Super().GetServerDetails( ServerState );
+    Super.GetServerDetails( ServerState );
 	
     l = ServerState.ServerInfo.Length;
     ServerState.ServerInfo.Length = l + 1;

@@ -40,6 +40,8 @@ var float DeathTimer;
 
 defaultproperties
 {
+	 ImpressiveKillChance=0.05
+	 
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.5)
 	 ScreamRadius=700
      ScreamDamageType=Class'UnlimaginMod.UM_ZombieDamType_SirenScream'

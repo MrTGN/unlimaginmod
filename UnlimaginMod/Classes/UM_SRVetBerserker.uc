@@ -152,12 +152,12 @@ static function bool CanBeGrabbed(KFPlayerReplicationInfo KFPRI, KFMonster Other
 }
 
 // Set number times Zed Time can be extended
-simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
+static function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
 	Return 5.0 + 1.5 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 20 SlowMo seconds
 }
 
-simulated function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
+static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
 {
 	Return 1.25 + 0.125 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 150% bonus
 }

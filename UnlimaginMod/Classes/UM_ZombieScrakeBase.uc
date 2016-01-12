@@ -41,6 +41,8 @@ replication
 
 defaultproperties
 {
+	 ImpressiveKillChance=0.5
+	 
 	 HeadShotSlowMoChargeBonus=0.35
 	 SawAttackLoopSound=Sound'KF_BaseScrake.Chainsaw.Scrake_Chainsaw_Impale'
      ChainSawOffSound=SoundGroup'KF_ChainsawSnd.Chainsaw_Deselect'

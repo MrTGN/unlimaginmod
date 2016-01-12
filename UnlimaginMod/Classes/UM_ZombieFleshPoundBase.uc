@@ -52,6 +52,8 @@ replication
 
 defaultproperties
 {
+	 ImpressiveKillChance=1.0
+	 
 	 HeadShotSlowMoChargeBonus=0.5
 	 
 	 BlockDamageReduction=0.400000

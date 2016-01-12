@@ -72,6 +72,8 @@ replication
 
 defaultproperties
 {
+	 ImpressiveKillChance=0.0
+	 
 	 HeadShotSlowMoChargeBonus=1.0
 	 
 	 ChargingAnim="RunF"

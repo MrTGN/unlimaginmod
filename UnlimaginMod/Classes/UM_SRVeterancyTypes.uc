@@ -278,7 +278,7 @@ static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 	Return True;
 }
 
-simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
+static function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
 	if ( PRI.ClientVeteranSkillLevel > 6 )
 		Return 0.3 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 3.0 SlowMo seconds
@@ -286,7 +286,7 @@ simulated function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 	Return 0.0;
 }
 
-simulated function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
+static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI )
 {
 	if ( PRI.ClientVeteranSkillLevel > 0 )
 		Return 1.0 + 0.025 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 25% bonus for the all perks

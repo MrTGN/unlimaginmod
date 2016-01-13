@@ -1941,9 +1941,6 @@ defaultproperties
 	 End Object
 	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.ZombieStalkerData'
  
-	 ZEDTimeDuration=3.0
-	 ExitZedTime=0.5
-	  
 	 MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 
 	 LoginMenuClassName="UnlimaginMod.UM_SRInvasionLoginMenu"

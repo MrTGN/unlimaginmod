@@ -169,7 +169,7 @@ defaultproperties
 {
      bAutoLifeSpan=True
 	 bArmed=True
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 ShrapnelClass=None
 	 bCanDisintegrate=True
 	 // Explosion camera shakes

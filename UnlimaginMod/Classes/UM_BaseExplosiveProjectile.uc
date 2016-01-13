@@ -688,7 +688,7 @@ defaultproperties
 {
      bCanBeDamaged=True
 	 bArmed=True
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 bCanHurtOwner=True
 	 DisintegrateDamageScale=0.100000
 	 TransientSoundVolume=2.000000

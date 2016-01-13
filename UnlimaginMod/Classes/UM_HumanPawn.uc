@@ -1947,9 +1947,9 @@ function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, v
 		if ( Momentum != Vect(0.0, 0.0, 0.0) )
 			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Momentum) );
 		else if ( InstigatedBy != None )
-			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - InstigatedBy.Location);
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - InstigatedBy.Location) );
 		else
-			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - HitLocation);
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - HitLocation) );
 	}
 	
 	// Siren mortal damage effect

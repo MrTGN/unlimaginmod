@@ -20,7 +20,7 @@ class UM_BaseProjectile_ExplosiveBullet extends UM_BaseProjectile_ElementalBulle
 
 defaultproperties
 {
-     bIgnoreSameClassProj=True
+     bCanHurtSameTypeProjectile=False
 	 ShrapnelClass=None
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')

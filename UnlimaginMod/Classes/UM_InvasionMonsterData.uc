@@ -152,9 +152,9 @@ function bool CanSpawn()
 	if ( CurrentSpawnChance <= 0.0 )
 		Return False;
 	
-	if ( Level.TimeSeconds >= NextDeltaCounterResetTime )  {
+	if ( Level.TimeSeconds >= NextDeltaLimitResetTime )  {
 		DeltaCounter = 0;
-		NextDeltaCounterResetTime = Level.TimeSeconds + CurrentDeltaLimitTime;
+		NextDeltaLimitResetTime = Level.TimeSeconds + CurrentDeltaLimitTime;
 	}
 	
 	Return NumSpawnedThisWave < CurrentWaveLimit && NumInCurrentSquad < CurrentSquadLimit && DeltaCounter < CurrentDeltaLimit && (CurrentSpawnChance >= 1.0 || FRand() <= CurrentSpawnChance);

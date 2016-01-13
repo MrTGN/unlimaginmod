@@ -21,7 +21,7 @@ class UM_BaseProjectile_IncendiaryBullet extends UM_BaseProjectile_ElementalBull
 
 defaultproperties
 {
-     bIgnoreSameClassProj=True
+     bCanHurtSameTypeProjectile=False
 	 ShrapnelClass=None
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 ///ImpactDamage

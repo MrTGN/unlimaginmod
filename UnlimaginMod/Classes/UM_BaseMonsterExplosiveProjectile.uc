@@ -94,7 +94,7 @@ defaultproperties
 	 CullDistance=5000.000000
 	 ImpactDamage=0.0
 	 ImpactDamageType=None
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 bCanHurtOwner=False
 	 ProjectileDiameter=40.0
 	 ProjectileMass=0.250000	// kilograms

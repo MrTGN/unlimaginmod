@@ -1101,7 +1101,7 @@ function CheckForImpressiveKill( UM_PlayerController PC )
 	if ( PC == None || PC.Pawn == None || UM_BaseGameInfo(Level.Game) == None || !UM_BaseGameInfo(Level.Game).AllowImpressiveKillEvent(ImpressiveKillChance) )
 		Return;
 	
-	UM_BaseGameInfo.DoZedTime( ImpressiveKillDuration );
+	UM_BaseGameInfo(Level.Game).DoZedTime( ImpressiveKillDuration );
 	if ( UM_BaseGameInfo(Level.Game).bShowImpressiveKillEvents )
 		PC.ShowActor( Self, ImpressiveKillDuration );
 }

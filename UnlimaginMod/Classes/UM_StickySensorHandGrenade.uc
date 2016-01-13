@@ -259,7 +259,7 @@ simulated event Destroyed()
 defaultproperties
 {
 	 FearMarkerClass=None
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 //Actually ExplodeTimer is a scanning delay time here
 	 ExplodeTimer=0.500000
 	 GrenadeLightClass=Class'UnlimaginMod.UM_StickySensorHandGrenadeLight'

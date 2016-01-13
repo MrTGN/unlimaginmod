@@ -647,8 +647,9 @@ event Destroyed()
 	}
 	
 	// Was destroyed mid-game for random reason, respawn.
+	/*
 	if ( OwnerController != None && !OwnerController.bDeleteMe )
-		MutatorOwner.AddPlayerToPendingPlayers( OwnerController );
+		MutatorOwner.AddPlayerToPendingPlayers( OwnerController );	*/
 	
 	Super.Destroyed();
 }

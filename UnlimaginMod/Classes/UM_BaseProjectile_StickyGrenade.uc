@@ -188,7 +188,7 @@ simulated event Destroyed()
 defaultproperties
 {
 	 ProjectileDiameter=40.0
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 ExplodeTimer=0.500000
 	 BallisticCoefficient=0.140000
 	 //Shrapnel

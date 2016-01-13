@@ -18,7 +18,7 @@ class UM_ClusterHandGrenade extends UM_BaseProjectile_HandGrenade;
 
 defaultproperties
 {
-     bIgnoreSameClassProj=True
+     bCanHurtSameTypeProjectile=False
 	 //Sounds
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.6,Radius=300.0,bUse3D=True)
 	 ExplodeSound=(Ref="KF_GrenadeSnd.NadeBase.Nade_Explode4",Vol=1.6,Radius=300.0,bUse3D=True)

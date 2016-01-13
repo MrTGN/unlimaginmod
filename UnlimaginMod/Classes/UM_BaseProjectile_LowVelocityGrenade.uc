@@ -161,7 +161,7 @@ defaultproperties
 	 ImpactSurfaces(18)=(FrictionCoefficient=0.5,PlasticityCoefficient=0.4)
 	 // EST_Poop
 	 ImpactSurfaces(19)=(FrictionCoefficient=0.4,PlasticityCoefficient=0.1)
-	 bIgnoreSameClassProj=True
+	 bCanHurtSameTypeProjectile=False
 	 ProjectileDiameter=40.0
 	 //Shrapnel
 	 ShrapnelClass=None

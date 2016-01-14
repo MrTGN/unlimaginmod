@@ -19,7 +19,6 @@
 ==================================================================================*/
 class UM_InvasionMonsterData extends UM_BaseObject
 	DependsOn(UM_BaseGameInfo);
-	//Instanced;
 
 //========================================================================
 //[block] Variables
@@ -93,8 +92,10 @@ function bool InitDataFor( UM_InvasionGame IG )
 	
 	InvasionGame = IG;
 	Level = InvasionGame.Level;
-	if ( InvasionGame == None || Level == None )
+	if ( Level == None )  {
+		Log( "Error: Level variable is None!", Name );
 		Return False;
+	}
 	
 	Log( "MonsterData Object for the Monster Class"@MonsterClassName@"successfully initialized.", Name );
 	Return True;

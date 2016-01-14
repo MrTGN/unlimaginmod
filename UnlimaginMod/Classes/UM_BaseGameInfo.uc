@@ -399,7 +399,7 @@ protected function bool LoadGamePreset( string NewPresetName )
 	}
 	
 	GamePresetClassName = NewPresetName;
-	GamePreset = new(self) GamePresetClass;
+	GamePreset = new(Self) GamePresetClass;
 	
 	if ( GamePreset == None )
 		Return False;

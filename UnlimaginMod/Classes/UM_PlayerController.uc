@@ -807,8 +807,8 @@ simulated event InitInputSystem()
 	if ( Level.NetMode == NM_Client )
 		ShowLoginMenu();
 
-	ServerSetReadyToStart();
 	bReadyToStart = True;
+	ServerSetReadyToStart();
 }
 
 //[block] View Shakers

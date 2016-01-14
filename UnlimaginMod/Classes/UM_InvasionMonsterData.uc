@@ -18,8 +18,8 @@
 					 spawn time, wave limits and restrictions.
 ==================================================================================*/
 class UM_InvasionMonsterData extends UM_BaseObject
-	DependsOn(UM_BaseGameInfo)
-	Instanced;
+	DependsOn(UM_BaseGameInfo);
+	//Instanced;
 
 //========================================================================
 //[block] Variables
@@ -77,20 +77,29 @@ var		transient	float						NextDeltaLimitResetTime;
 
 function bool InitDataFor( UM_InvasionGame IG )
 {
-	if ( IG == None || MonsterClassName == "" || bDisabled )
+	if ( IG == None || bDisabled )
 		Return False;
 	
-	MonsterClass = Class<UM_Monster>( DynamicLoadObject(MonsterClassName, Class'Class') );
-	if ( MonsterClass == None )
+	if ( MonsterClassName == "" )  {
+		Log( "Error: MonsterClassName not specified!", Name );
 		Return False;
+	}
+	
+	MonsterClass = Class<UM_Monster>( DynamicLoadObject(MonsterClassName, Class'Class') );
+	if ( MonsterClass == None )  {
+		Log( "Error: Failed to load Monster Class"@BossMonsterClassName$"!", Name );
+		Return False;
+	}
 	
 	InvasionGame = IG;
 	Level = InvasionGame.Level;
 	if ( InvasionGame == None || Level == None )
 		Return False;
+	
+	Log( "MonsterData Object for the Monster Class"@MonsterClassName@"successfully initialized.", Name );
+	Return True;
 }
 
-//ToDo: Дописать логику для волны босса.
 function UpdateDynamicParameters()
 {
 	local	float	GameModif;

@@ -24,22 +24,26 @@ function bool InternalOnPreDraw(Canvas C)
 
 function bool OnFooterClick(GUIComponent Sender)
 {
-	local GUIController C;
-	local PlayerController PC;
+	local	GUIController		GUIC;
+	local	PlayerController	PC;
 
 	PC = PlayerOwner();
-	C = Controller;
+	GUIC = Controller;
+	if ( PC == None )
+		Return False;
+	
 	if ( Sender == b_Cancel )  {
 		//Kill Window and exit game/disconnect from server
 		LobbyMenu(PageOwner).bAllowClose = True;
-		C.ViewportOwner.Console.ConsoleCommand("DISCONNECT");
+		GUIC.ViewportOwner.Console.ConsoleCommand("DISCONNECT");
 		PC.ClientCloseMenu(true, false);
-		C.AutoLoadMenus();
+		GUIC.AutoLoadMenus();
 	}
 	else if ( Sender == b_Ready )  {
 		//Set Ready
 		if ( PC.Level.NetMode == NM_Standalone || !PC.PlayerReplicationInfo.bReadyToPlay )  {
 			PC.PlayerReplicationInfo.bReadyToPlay = True;
+			// Start match if NM_Standalone or set bReadyToPlay on the server
 			PC.ServerRestartPlayer();
 			//Hide Menu - Match has begun
 			if ( PC.Level.GRI.bMatchHasBegun )

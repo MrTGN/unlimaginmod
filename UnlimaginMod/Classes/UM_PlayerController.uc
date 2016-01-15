@@ -468,11 +468,21 @@ function bool CanRestartPlayer()
 
 function ServerReStartPlayer()
 {
-	if ( Role < ROLE_Authority || Level.Game.bWaitingToStartMatch || PlayerReplicationInfo == None || PlayerReplicationInfo.bOutOfLives )
+	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOutOfLives )
 		Return; // No more main menu bug closing.
 
-	ClientCloseMenu(True, True);
-	Level.Game.RestartPlayer(self);
+	if ( Level.Game.bWaitingToStartMatch )
+		PlayerReplicationInfo.bReadyToPlay = True;
+	else  {
+		ClientCloseMenu(True, True);
+		Level.Game.RestartPlayer(self);
+	}
+}
+
+function ServerUnreadyPlayer()
+{
+	if ( Level.Game.bWaitingToStartMatch )
+		PlayerReplicationInfo.bReadyToPlay = False;
 }
 
 function ServerSpectate()
@@ -584,9 +594,10 @@ function BecomeActivePlayer()
 auto state PlayerWaiting
 {
 	// hax to open menu when player joins the game
-	simulated function BeginState()
+	simulated event BeginState()
 	{
-		Super(PlayerController).BeginState();
+		if ( Role == ROLE_Authority )
+			Super(PlayerController).BeginState();
 
 		bRequestedSteamData = False;
 		if ( Level.NetMode != NM_DedicatedServer && bPendingLobbyDisplay )  {
@@ -616,7 +627,7 @@ auto state PlayerWaiting
 			ServerSpectate();
 	}
 
-	simulated function Timer()
+	simulated event Timer()
 	{
 		if ( !bPendingLobbyDisplay || bDemoOwner || (PlayerReplicationInfo != None && PlayerReplicationInfo.bReadyToPlay) )
 			SetTimer(0, false);
@@ -646,9 +657,10 @@ auto state PlayerWaiting
 		}
 	}
 
-	simulated function EndState()
+	simulated event EndState()
 	{
-		Super(PlayerController).EndState();
+		if ( Role == ROLE_Authority )
+			Super(PlayerController).EndState();
 
 		if ( Level.NetMode != NM_DedicatedServer )
 			SetupWebAPI();
@@ -1303,6 +1315,9 @@ state Dead
 	// Clean Out Parent class code
 	function ServerReStartPlayer()
 	{
+		if ( !Level.Game.PlayerCanRestart( Self ) )
+			Return;
+		
 		Global.ServerReStartPlayer();
 	}
 	

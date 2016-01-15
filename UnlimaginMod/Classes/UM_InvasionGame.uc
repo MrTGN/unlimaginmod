@@ -1168,6 +1168,12 @@ state WaveInProgress
 		WaveCountDown = Max( (CurrentWaveDuration - WaveElapsedTime), 0 );
 	}
 	
+	// Player Can be restarted
+	function bool PlayerCanRestart( PlayerController aPlayer )
+	{
+		Return False;
+	}
+	
 	function bool CanSpawnNextMonsterSquad()
 	{
 		if ( Level.TimeSeconds < NextMonsterSquadSpawnTime )
@@ -1314,6 +1320,12 @@ state BossWaveInProgress
 		// NewMonsterSquad
 		BuildNextSquad();
 		SpawnNextMonsterSquad();
+	}
+	
+	// Player Can be restarted
+	function bool PlayerCanRestart( PlayerController aPlayer )
+	{
+		Return False;
 	}
 	
 	function bool CanSpawnNextMonsterSquad()

@@ -86,7 +86,7 @@ function bool InitDataFor( UM_InvasionGame IG )
 	
 	MonsterClass = Class<UM_Monster>( DynamicLoadObject(MonsterClassName, Class'Class') );
 	if ( MonsterClass == None )  {
-		Log( "Error: Failed to load Monster Class"@BossMonsterClassName$"!", Name );
+		Log( "Error: Failed to load Monster Class"@MonsterClassName$"!", Name );
 		Return False;
 	}
 	
@@ -97,7 +97,7 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
-	Log( "MonsterData Object for the Monster Class"@MonsterClassName@"successfully initialized.", Name );
+	Log( "GameData Object for the Monster Class"@MonsterClassName@"initialized.", Name );
 	Return True;
 }
 

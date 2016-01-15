@@ -168,7 +168,7 @@ function AddSpecialPatriarchSquad();
 function CheckHarchierAchievement();
 static event class<GameInfo> SetGameType( string MapName )
 {
-	Return Super(Invasion).SetGameType( MapName );
+	Return default.Class;
 }
 function string GetEventClotClassName();
 function string GetEventCrawlerClassName();
@@ -795,7 +795,7 @@ function SendPlayer( PlayerController aPlayer, string URL )
 // Player Can be restarted
 function bool PlayerCanRestart( PlayerController aPlayer )
 {
-	Return !bWaveInProgress && (!bWaveBossInProgress || (bRespawnOnBoss && !bHasSetViewYet));
+	Return True;
 }
 
 // Mod this to include the choices made in the GUIClassMenu
@@ -1232,7 +1232,7 @@ static function string GetCurrentMapName( LevelInfo TheLevel )
 //[Block] ToDo: issue #317
 static function FillPlayInfo(PlayInfo PlayInfo)
 {
-	Super(Info).FillPlayInfo(PlayInfo);  // Always begin with calling parent
+	Super(Invasion).FillPlayInfo(PlayInfo);  // Always begin with calling parent
 }
 
 static event string GetDisplayText( string PropName )
@@ -1250,6 +1250,7 @@ auto state PendingMatch
 {
 	function BeginState()
 	{
+		Log("BeginState PendingMatch",Name); // Debug
 		bWaitingToStartMatch = True;
 		StartupStage = 0;
 		NetWait = Max(NetWait, 0);
@@ -1274,13 +1275,17 @@ auto state PendingMatch
 		Return True;
 	}
 	
+	// function RestartPlayer( Controller aPlayer );
 	function RestartPlayer( Controller aPlayer )
 	{
-		Return;
+		Log("PendingMatch RestartPlayer() Call",Name); // Debug
+		if ( CountDown <= 0 )
+			Global.RestartPlayer( aPlayer );
 	}
 	
 	function StartMatch()
 	{
+		Log("PendingMatch StartMatch() Call",Name); // Debug
 		GotoState('StartingMatch');
 	}
 
@@ -1293,6 +1298,7 @@ auto state PendingMatch
 		// Spectating only.
 		if ( Level.NetMode == NM_StandAlone && NumSpectators > 0 )  {
 			StartMatch();
+			PlayStartupMessage();
 			Return;
 		}
 
@@ -1320,38 +1326,43 @@ auto state PendingMatch
 		
 		// check if players are ready
 		StartupStage = 1;
+		CheckPlayerList();
 		for ( i = 0; i < PlayerList.Length; ++i )  {
-			if ( PlayerList[i] == None )  {
-				PlayerList.Remove(i, 1);
-				--i;
-			}
 			// Count Ready players
-			else if ( PlayerList[i].PlayerReplicationInfo != None && PlayerList[i].PlayerReplicationInfo.bReadyToPlay )
+			if ( PlayerList[i].PlayerReplicationInfo != None && PlayerList[i].PlayerReplicationInfo.bWaitingPlayer && PlayerList[i].PlayerReplicationInfo.bReadyToPlay )
 				++ReadyCount;
 		}
 		NumPlayers = PlayerList.Length;
+		Log( "NumPlayers="$string(NumPlayers), Name ); // Debug
 		// Do not start the game if players is not enough
-		if ( NumPlayers < MinHumanPlayers || ReadyCount < MinHumanPlayers )
+		if ( NumPlayers < MinHumanPlayers || ReadyCount < MinHumanPlayers )  {
+			Log( "Not enough Players!", Name ); // Debug
 			Return;
+		}
+		
+		// StartMatch
+		if ( ReadyCount >= NumPlayers && !bReviewingJumpspots )  {
+			CountDown = 0;
+			StartMatch();
+			Return;
+		}
 		
 		// Lobby Timeout
 		if ( CountDown > 0 && NumPlayers > 1 )  {
 			++ElapsedTime;
-			// Start Count Down if 65% of players are ready or after 2 minutes
-			if ( ReadyCount >= (NumPlayers * 0.65) || ElapsedTime > 120 )  {
-				CountDown = Max( (CountDown - 1), 0 );
-				KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = CountDown;
+			if ( CountDown == 1 )  {
+				CountDown = 0;
+				StartMatch();
 			}
-		}
-		// StartMatch
-		if ( CountDown == 0 || (ReadyCount >= NumPlayers && !bReviewingJumpspots) )  {
-			CountDown = 0;
-			StartMatch();
+			// Start Count Down if 65% of players are ready or after 2 minutes
+			else if ( ReadyCount >= int(float(NumPlayers) * 0.65) || ElapsedTime > 120 )
+				KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = --CountDown;
 		}
 	}
 
 	function EndState()
 	{
+		Log("EndState PendingMatch",Name); // Debug
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
 	}
@@ -1421,6 +1432,8 @@ state StartingMatch
 	{
 		local	PlayerReplicationInfo	PRI;
 		local	Actor					A;
+		
+		Log("BeginState StartingMatch",Name);
 		
 		bWaitingToStartMatch = False;
 		// From GameInfo.uc
@@ -1620,7 +1633,6 @@ event Tick( float DeltaTime )
 	}
 }
 
-//ToDo: issue #331
 function bool AllowImpressiveKillEvent( float EventChance )
 {
 	local	float	TimeSinceLastEvent;
@@ -2194,6 +2206,8 @@ state MatchOver
 
 defaultproperties
 {
+	 InitialState="PendingMatch"
+	 
 	 bAllowImpressiveKillEvents=True
 	 bShowImpressiveKillEvents=True
 	 bAllowDramaticEvents=True

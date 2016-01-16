@@ -118,7 +118,6 @@ var		config		bool					bAllowDramaticEvents;
 
 //========================================================================
 //[block] Cleanup old functions
-
 function Bot MySpawnBot( optional string BotName );
 event PostNetBeginPlay();
 function StartMatch();
@@ -135,6 +134,7 @@ function AddMonster();
 function SetupWaveBot(Inventory BotsInv);
 function WarningTimer();
 function UpdateViews();
+function bool BootShopPlayers();
 state MatchInProgress
 {
 	event BeginState();
@@ -1250,7 +1250,6 @@ auto state PendingMatch
 {
 	function BeginState()
 	{
-		Log("BeginState PendingMatch",Name); // Debug
 		bWaitingToStartMatch = True;
 		StartupStage = 0;
 		NetWait = Max(NetWait, 0);
@@ -1278,14 +1277,12 @@ auto state PendingMatch
 	// function RestartPlayer( Controller aPlayer );
 	function RestartPlayer( Controller aPlayer )
 	{
-		Log("PendingMatch RestartPlayer() Call",Name); // Debug
 		if ( CountDown <= 0 )
 			Global.RestartPlayer( aPlayer );
 	}
 	
 	function StartMatch()
 	{
-		Log("PendingMatch StartMatch() Call",Name); // Debug
 		GotoState('StartingMatch');
 	}
 
@@ -1333,12 +1330,9 @@ auto state PendingMatch
 				++ReadyCount;
 		}
 		NumPlayers = PlayerList.Length;
-		Log( "NumPlayers="$string(NumPlayers), Name ); // Debug
 		// Do not start the game if players is not enough
-		if ( NumPlayers < MinHumanPlayers || ReadyCount < MinHumanPlayers )  {
-			Log( "Not enough Players!", Name ); // Debug
+		if ( NumPlayers < MinHumanPlayers || ReadyCount < MinHumanPlayers )
 			Return;
-		}
 		
 		// StartMatch
 		if ( ReadyCount >= NumPlayers && !bReviewingJumpspots )  {
@@ -1362,7 +1356,6 @@ auto state PendingMatch
 
 	function EndState()
 	{
-		Log("EndState PendingMatch",Name); // Debug
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
 	}
@@ -1432,8 +1425,6 @@ state StartingMatch
 	{
 		local	PlayerReplicationInfo	PRI;
 		local	Actor					A;
-		
-		Log("BeginState StartingMatch",Name);
 		
 		bWaitingToStartMatch = False;
 		// From GameInfo.uc

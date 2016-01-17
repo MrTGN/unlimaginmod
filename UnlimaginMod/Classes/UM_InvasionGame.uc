@@ -818,8 +818,8 @@ state Shopping
 		local	int		i, j;
 		
 		UpdateShopList();
-		// Do 5 iterations to teleport all players from closed shops.
-		for ( j = 0; j < 5; ++j )  {
+		// Do 4 iterations to teleport all players from closed shops.
+		for ( j = 0; j < 4; ++j )  {
 			for ( i = 0; i < ShopList.Length; ++i )
 				ShopList[i].BootPlayers();
 		}

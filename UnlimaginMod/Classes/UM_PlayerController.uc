@@ -264,8 +264,12 @@ function ResetViewTarget()
 		SetViewTarget( Self );
 		ClientSetViewTarget( Self );
 	}
+	ClientSetFixedCamera( False );
 	bBehindView = False;
 	ClientSetBehindView( False );
+	SetViewDistance();
+	FixFOV();
+	//CleanOutSavedMoves();  // don't replay moves previous to possession
 }
 
 // Temporary show Actor to this player
@@ -274,7 +278,7 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 	// Do not show actor if Pawn have small amount of Health
 	// or if actor is already close enough (4 meters) and visible.
 	if ( A == None || A == Self || Pawn == None || Pawn.Health < 10 
-		 || (VSizeSquared(A.Location - Pawn.Location) < 60000.0 && FastTrace(A.Location, Pawn.Location)) )
+		 || (VSizeSquared(A.Location - Pawn.Location) < 32400.0 && FastTrace(A.Location, Pawn.Location)) )
 		Return;
 	
 	if ( NewShowActorDuration > 0.0 )
@@ -282,28 +286,42 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 	else
 		CurrentShowActorDuration = ShowActorDuration;
 	
+	
 	SetViewTarget( A );
 	ClientSetViewTarget( A );
 	bBehindView = True;
 	ClientSetBehindView( True );
+	if ( ViewTarget != Pawn )
+		ViewTarget.BecomeViewTarget();
+	FixFOV();
 	
 	PrevStateName = GetStateName();
 	GoToState('ShowingActor');
 }
 
 // Showing Actor to this player
-state ShowingActor extends BaseSpectating
+/*state ShowingActor extends BaseSpectating*/
+state ShowingActor extends PlayerWalking
 {
+	/*
 	function bool IsSpectating()
 	{
 		Return True;
+	}	*/
+	function bool IsSpectating()
+	{
+		Return False;
 	}
 	
 	function ShowActor( Actor A, optional float NewShowActorDuration );
 	
 	event PlayerTick( float DeltaTime )
 	{
-		Global.PlayerTick( DeltaTime );
+		//Global.PlayerTick( DeltaTime );
+		Super.PlayerTick( DeltaTime );
+		
+		if ( Role < ROLE_Authority )
+			Return;
 		
 		if ( CurrentShowActorDuration > 0.0 )
 			CurrentShowActorDuration -= DeltaTime * Level.default.TimeDilation / Level.TimeDilation; // Calc TrueDeltaTime
@@ -311,20 +329,21 @@ state ShowingActor extends BaseSpectating
 			GotoState(PrevStateName);
 	}
 	
-	exec function Fire( optional float F )
-	{
-		GotoState(PrevStateName);
-	}
-
 	exec function AltFire( optional float F )
 	{
+		if ( Role < ROLE_Authority )
+			Return;
+		
 		GotoState(PrevStateName);
 	}
 	
 	event EndState()
 	{
-		CurrentShowActorDuration = 0.0;
+		if ( Role < ROLE_Authority )
+			Return;
+		
 		ResetViewTarget();
+		CurrentShowActorDuration = 0.0;
 	}
 }
 

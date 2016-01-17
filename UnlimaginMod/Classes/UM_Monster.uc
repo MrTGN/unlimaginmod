@@ -174,9 +174,9 @@ function RandomizeMonsterSizes()
 	
 	// CollisionSize scaled by DrawScale
 	//PrePivot.Z = default.MeshTestCollisionHeight * DrawScale - default.CollisionHeight + default.PrePivot.Z + 12.0;
-	PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.CollisionHeight + default.PrePivot.Z;
+	//PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.CollisionHeight + default.PrePivot.Z;
 	//PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.MeshTestCollisionHeight + default.PrePivot.Z;
-	SetCollisionSize( (default.MeshTestCollisionRadius * NewDrawScale), (default.MeshTestCollisionHeight * NewDrawScale) );
+	SetCollisionSize( (default.CollisionRadius * NewDrawScale), (default.CollisionHeight * NewDrawScale) );
 	// Camera EyeHeight scaled by DrawScale
 	BaseEyeHeight = default.BaseEyeHeight * NewDrawScale;
 	EyeHeight = default.EyeHeight * NewDrawScale;
@@ -188,8 +188,10 @@ function RandomizeMonsterSizes()
 	
 	//Collision - Note: un-crouching messes up the collision size
 	//CrouchHeight = default.MeshTestCollisionHeight * NewDrawScale * 0.65;
-	CrouchHeight = default.MeshTestCollisionHeight * NewDrawScale;
-	CrouchRadius = default.MeshTestCollisionRadius * NewDrawScale;
+	CrouchHeight = default.CollisionHeight * NewDrawScale;
+	CrouchRadius = default.CollisionRadius * NewDrawScale;
+	PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.MeshTestCollisionHeight + default.PrePivot.Z;
+	
 		
 	bRandomSizeAdjusted = True;
 } 

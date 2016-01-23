@@ -15,14 +15,19 @@ var 				float			ShowActorDuration;
 var		transient	float			CurrentShowActorDuration;
 var		transient	name			PrevStateName;
 
-var		transient	Pawn			PawnKiller;
-var		transient	bool			bViewPawnKiller;
+//var		transient	Pawn			PawnKiller;
+//var		transient	bool			bViewPawnKiller;
 
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetOwner )
+	// Things the server should send to the client.
+    reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		bUseAdvBehindview;
+	
+	// Functions server can call.
+	reliable if ( Role == ROLE_Authority )
+		ClientResetViewTarget;
 }
 
 function bool SpawnStatObject()
@@ -244,7 +249,7 @@ event ClientSetViewTarget( Actor A )
 		bNewViewTarget = ViewTarget != A;
 		SetViewTarget( A );
 		if ( bNewViewTarget )
-			A.POVChanged(self, false);
+			A.POVChanged( Self, False );
 	}
 	else {
 		if ( ViewTarget != self )
@@ -253,23 +258,42 @@ event ClientSetViewTarget( Actor A )
 	}
 }
 
+function ClientResetViewTarget()
+{
+	local	bool	bNewViewTarget;
+	
+	if ( Pawn != None )  {
+		bNewViewTarget = ViewTarget != Pawn;
+		SetViewTarget( Pawn );
+		bBehindView = Pawn.PointOfView();
+		BehindView( bBehindView );
+		if ( bNewViewTarget )
+			Pawn.POVChanged(self, false);
+	}
+	else  {
+		SetViewTarget( self );
+		bBehindView = False;
+	}
+	CleanOutSavedMoves();
+}
+
 function ResetViewTarget()
 {
+	ClientResetViewTarget();
+	
+	if ( Role < ROLE_Authority )
+		Return; // Server code next
+	
 	// Re-attach the controller to the pawn
 	if ( Pawn != None )  {
 		SetViewTarget( Pawn );
-		ClientSetViewTarget( Pawn );
+		bBehindView = Pawn.PointOfView();
 	}
 	else  {
 		SetViewTarget( Self );
-		ClientSetViewTarget( Self );
+		bBehindView = False;
 	}
-	ClientSetFixedCamera( False );
-	bBehindView = False;
-	ClientSetBehindView( False );
-	SetViewDistance();
-	FixFOV();
-	//CleanOutSavedMoves();  // don't replay moves previous to possession
+	CleanOutSavedMoves();  // don't replay moves previous to possession
 }
 
 // Temporary show Actor to this player
@@ -396,6 +420,62 @@ function MatchStarting()
 	Advertising_ExitZone();
 }
 
+function EnterStartState()
+{
+	local	name	NewState;
+
+	if ( Pawn.PhysicsVolume.bWaterVolume )
+	{
+		if ( Pawn.HeadVolume.bWaterVolume )
+			Pawn.BreathTime = Pawn.UnderWaterTime;
+		NewState = Pawn.WaterMovementState;
+	}
+	else
+		NewState = Pawn.LandMovementState;
+	
+	if ( IsInState(NewState) )
+		BeginState();
+	else
+		GotoState(NewState);
+}
+
+function ClientRestart( Pawn NewPawn )
+{
+	local	bool	bNewViewTarget;
+
+	Pawn = NewPawn;
+	if ( Pawn != None && Pawn.bTearOff )  {
+		Pawn.Controller = None;
+		Pawn = None;
+	}
+	AcknowledgePossession( Pawn );
+	if ( Pawn == None )  {
+		GotoState('WaitingForPawn');
+		Return;
+	}
+	
+	Pawn.ClientRestart();
+	bNewViewTarget = ViewTarget != Pawn;
+	SetViewTarget( Pawn );
+	bBehindView = Pawn.PointOfView();
+	BehindView( bBehindView );
+	if ( bNewViewTarget )
+	    Pawn.POVChanged( Self, False );
+	CleanOutSavedMoves();
+	EnterStartState();
+}
+
+function Restart()
+{
+	Enemy = None;
+	ServerTimeStamp = 0;
+	ResetTimeMargin();
+	EnterStartState();
+	bBehindView = Pawn.PointOfView();
+	ClientRestart( Pawn );
+	SetViewTarget( Pawn );
+}
+
 // Possess a pawn
 function Possess(Pawn aPawn)
 {
@@ -479,10 +559,10 @@ function UnPossess()
 
 function bool CanRestartPlayer()
 {
-	if ( PlayerReplicationInfo == None || IsInState('GameEnded') || IsInState('RoundEnded') )
+	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOnlySpectator || PlayerReplicationInfo.bOutOfLives || IsInState('GameEnded') || IsInState('RoundEnded') || Pawn != None && Pawn.Health > 0 )
 		Return False;
 	
-	Return PlayerReplicationInfo.bReadyToPlay && !PlayerReplicationInfo.bOnlySpectator && !PlayerReplicationInfo.bOutOfLives;
+	Return PlayerReplicationInfo.bReadyToPlay;
 }
 
 function ServerReStartPlayer()
@@ -1184,7 +1264,7 @@ function ServerSetWantsTraderPath( bool bNewWantsTraderPath )
 }
 
 // Show the path the trader
-function Timer()
+event Timer()
 {
 	if ( !bWantsTraderPath )  {
 		bShowTraderPath = False;
@@ -1295,6 +1375,7 @@ function ServerSpeech( name Type, int Index, string Callsign )
 		Super.ServerSpeech(Type,Index,Callsign);
 }
 
+/*
 function WasKilledBy( Controller Killer )
 {
 	if ( Killer == None || Killer.Pawn == None )
@@ -1302,17 +1383,35 @@ function WasKilledBy( Controller Killer )
 	
 	PawnKiller = Killer.Pawn;
 	bViewPawnKiller = True;
+}	*/
+
+// Player movement.
+// Player Standing, walking, running, falling.
+state PlayerWalking
+{
+	simulated event BeginState()
+	{
+		Super(xPlayer).BeginState();
+		// Unzoom if we were zoomed
+		TransitionFOV(DefaultFOV,0.);
+	}
 }
 
 state Dead
 {
-	simulated function BeginState()
+	simulated event BeginState()
 	{
 		// Unzoom if we were zoomed
 		TransitionFOV(DefaultFOV,0.0);
 		
-		if ( Role == ROLE_Authority )
+		if ( Role == ROLE_Authority )  {
+			if ( Pawn != None )  {
+				if ( Pawn.Health > 0 || !Pawn.bDeleteMe )
+					Pawn.Suicide();
+				Pawn = None;
+			}
 			Super(UnrealPlayer).BeginState();
+		}
 		
 		if ( HudKillingFloor(myHUD) != None )  {
 			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
@@ -1326,7 +1425,7 @@ state Dead
 		Return False;
 	}
 	
-	function Timer()
+	event Timer()
 	{
 		Super(xPlayer).Timer();
 	}
@@ -1342,6 +1441,7 @@ state Dead
 	
 	exec function Fire( optional float F )
 	{
+		/*
 		if ( bViewPawnKiller )  {
 			bViewPawnKiller = False;
 			if ( PawnKiller != None )  {
@@ -1352,7 +1452,7 @@ state Dead
 				PawnKiller = None;
 				Return;
 			}
-		}
+		}	*/
 		
 		if ( bFrozen )  {
 			if ( TimerRate <= 0.0 || TimerRate > 1.0 )
@@ -1360,7 +1460,7 @@ state Dead
 			Return;
 		}
 		
-		ResetViewTarget();
+		//ResetViewTarget();
 		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
 			LoadPlayers();
 			if ( bMenuBeforeRespawn )  {
@@ -1402,7 +1502,7 @@ state Dead
 		Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
 	}
 
-	simulated function EndState()
+	simulated event EndState()
 	{
 		if ( Role == ROLE_Authority )
 			Super(UnrealPlayer).EndState();
@@ -1452,7 +1552,7 @@ state GameEnded
 	exec function Fire( optional float F ) { }
 	exec function AltFire( optional float F ) { }
 	
-	function BeginState()
+	event BeginState()
 	{
 		// EnterZone Lobby
 		if ( KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )

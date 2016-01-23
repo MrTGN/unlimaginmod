@@ -674,8 +674,7 @@ function RespawnWaitingPlayers()
 	local	byte	i;
 	
 	for ( i = 0; i < PlayerList.Length; ++i )  {
-		if ( PlayerList[i] == None || PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer()
-			 || (PlayerList[i].Pawn != None && !PlayerList[i].Pawn.bDeleteMe) )
+		if ( PlayerList[i] == None || PlayerList[i].PlayerReplicationInfo == None || !PlayerList[i].CanRestartPlayer() )
 			Continue; // Skip this player
 
 		// Player will be respawned after the death
@@ -686,6 +685,7 @@ function RespawnWaitingPlayers()
 			CheckStartingCash( PlayerList[i] );
 		
 		PlayerList[i].GotoState('PlayerWaiting');
+		// Respawn a pawn and it as set view target
 		PlayerList[i].ServerReStartPlayer();
 		PlayerList[i].ResetViewTarget();
 	}
@@ -795,7 +795,7 @@ function SendPlayer( PlayerController aPlayer, string URL )
 // Player Can be restarted
 function bool PlayerCanRestart( PlayerController aPlayer )
 {
-	Return True;
+	Return bAllowPlayerSpawn;
 }
 
 // Mod this to include the choices made in the GUIClassMenu
@@ -804,8 +804,8 @@ function RestartPlayer( Controller aPlayer )
 	if ( aPlayer == None || aPlayer.PlayerReplicationInfo.bOutOfLives || (aPlayer.Pawn != None && !aPlayer.Pawn.bDeleteMe) )
 		Return;
 
-	if ( PlayerController(aPlayer) != None && !bAllowPlayerSpawn )  {
-		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
+	if ( PlayerController(aPlayer) != None && !PlayerCanRestart(PlayerController(aPlayer)) )  {
+		//aPlayer.PlayerReplicationInfo.bOutOfLives = True;
 		aPlayer.PlayerReplicationInfo.NumLives = MaxLives;
 		aPlayer.GoToState('Spectating');
 		Return;

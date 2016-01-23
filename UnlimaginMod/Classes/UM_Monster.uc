@@ -167,7 +167,7 @@ function RandomizeMonsterSizes()
 	SetDrawScale(NewDrawScale);
 	
 	// Landing to the Ground
-	Move( Location + Vect(0.0, 0.0, (default.CollisionHeight * NewDrawScale - default.CollisionHeight + 6.0)) );
+	Move( Location + Vect(0.0, 0.0, 1.0) * (default.CollisionHeight * NewDrawScale - default.CollisionHeight + 6.0) );
 	
 	// MeleeRange
 	MeleeRange = default.MeleeRange * RandomSizeMult * Lerp( FRand(), MeleeRangeScale.Min, MeleeRangeScale.Max );

@@ -140,7 +140,7 @@ defaultproperties
 	 CollisionHeight=70.0
 	 CollisionRadius=26.0
 	 
-     BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.6,AreaBone="CHR_Head",AreaOffset=(X=2.5,Y=-2.5,Z=0.0),AreaImpactStrength=12.6)
+     BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.6,AreaSizeScale=1.05,AreaBone="CHR_Head",AreaOffset=(X=2.5,Y=-2.5,Z=0.0),AreaImpactStrength=12.6)
 	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=26.0,AreaHeight=50.8,AreaImpactStrength=18.8)
 	 BaseEyeHeight=62.0

@@ -56,17 +56,18 @@ var					float				MeshTestCollisionRadius;	// Radius of test collision cyllinder 
 // BallisticCollision
 struct BallisticCollisionData
 {
-	var	UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
-	var	class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
-	var	float							AreaRadius;	// Radius of the area mesh collision cyllinder
-	var	float							AreaHeight;	// Half-height area mesh collision cyllinder
-	var	name							AreaBone;	// Name Of the bone area will be attached to
-	var	vector							AreaOffset;	// Area offset from the bone
-	var	rotator							AreaRotation;	// Area relative rotation from the bone
-	var	float							AreaImpactStrength;	// J / mm2
-	var	float							AreaHealth;	// Health amount of this body part
-	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
-	var	bool							bArmoredArea;	// This area can be covered with armor
+	var		UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
+	var		class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
+	var		float							AreaRadius;	// Radius of the area mesh collision cyllinder
+	var		float							AreaHeight;	// Half-height area mesh collision cyllinder
+	var		float							AreaSizeScale;
+	var		name							AreaBone;	// Name Of the bone area will be attached to
+	var		vector							AreaOffset;	// Area offset from the bone
+	var		rotator							AreaRotation;	// Area relative rotation from the bone
+	var		float							AreaImpactStrength;	// J / mm2
+	var		float							AreaHealth;	// Health amount of this body part
+	var		float							AreaDamageScale;	// Amount to scale taken damage by this area
+	var		bool							bArmoredArea;	// This area can be covered with armor
 };
 
 var		array<BallisticCollisionData>	BallisticCollision;
@@ -110,7 +111,7 @@ function DropToGround()
 	}
 }
 
-/*
+/* //Backup
 function RandomizeMonsterSizes()
 {
 	local	float	RandomSizeMult, NewDrawScale;
@@ -160,50 +161,59 @@ function RandomizeMonsterSizes()
 		Return;
 	
 	RandomSizeMult = BaseActor.static.GetExtraRandRangeFloat( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
+	
 	// DrawScale
 	NewDrawScale = default.DrawScale * RandomSizeMult;
 	SetDrawScale(NewDrawScale);
 	
+	// Landing to the Ground
+	Move( Location + Vect(0.0, 0.0, (default.CollisionHeight * NewDrawScale - default.CollisionHeight + 6.0)) );
+	
+	// MeleeRange
 	MeleeRange = default.MeleeRange * RandomSizeMult * Lerp( FRand(), MeleeRangeScale.Min, MeleeRangeScale.Max );
+	// BodyPartsScale
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
+	// SoundPitch
 	SoundPitch = default.SoundPitch / RandomSizeMult * BaseActor.static.GetRandPitch( SoundsPitchRange );
-	// Sizes
+	// Mass
 	Mass = default.Mass * RandomSizeMult * Lerp( FRand(), MassScaleRange.Min, MassScaleRange.Max );
 	
-	// CollisionSize scaled by DrawScale
-	//PrePivot.Z = default.MeshTestCollisionHeight * DrawScale - default.CollisionHeight + default.PrePivot.Z + 12.0;
-	//PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.CollisionHeight + default.PrePivot.Z;
-	//PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.MeshTestCollisionHeight + default.PrePivot.Z;
-	SetCollisionSize( (default.CollisionRadius * NewDrawScale), (default.CollisionHeight * NewDrawScale) );
+	/*
+	if ( CollisionHeight < default.CollisionHeight )
+		PrePivot.Z = (default.MeshTestCollisionHeight * NewDrawScale - default.MeshTestCollisionHeight + default.PrePivot.Z) * 2.0;
+	*/
 	// Camera EyeHeight scaled by DrawScale
 	BaseEyeHeight = default.BaseEyeHeight * NewDrawScale;
 	EyeHeight = default.EyeHeight * NewDrawScale;
-		
+	
 	OnlineHeadshotScale = default.OnlineHeadshotScale * RandomSizeMult;
 	//OnlineHeadshotOffset = default.OnlineHeadshotOffset * NewDrawScale;
-	
 	HeadHeight = default.HeadHeight * RandomSizeMult;
 	
 	//Collision - Note: un-crouching messes up the collision size
-	//CrouchHeight = default.MeshTestCollisionHeight * NewDrawScale * 0.65;
 	CrouchHeight = default.CollisionHeight * NewDrawScale;
 	CrouchRadius = default.CollisionRadius * NewDrawScale;
-	PrePivot.Z = default.MeshTestCollisionHeight * NewDrawScale - default.MeshTestCollisionHeight + default.PrePivot.Z;
 	
-		
+	// CollisionSize scaled by DrawScale
+	SetCollisionSize( (default.CollisionRadius * NewDrawScale), (default.CollisionHeight * NewDrawScale) );
+	
+	// Landing to the Ground
+	SetPhysics(PHYS_Falling);
+	
 	bRandomSizeAdjusted = True;
 } 
 
 function BuildBallisticCollision()
 {
 	local	int		i;
+	local	float	CurrentSizeScale;
 	
 	// Server only
 	if ( Role < ROLE_Authority )
 		Return;
-	
+		
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
 		if ( BallisticCollision[i].AreaClass != None )  {
 			// Spawning
@@ -211,25 +221,35 @@ function BuildBallisticCollision()
 			if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
 				Continue; // Skip if not exist
 			
+			// AreaSizeScale
+			if ( BallisticCollision[i].AreaSizeScale <= 0.0 )
+				CurrentSizeScale = DrawScale;
+			else
+				CurrentSizeScale = BallisticCollision[i].AreaSizeScale * DrawScale;
+			
 			// HeadBallisticCollision
 			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
-				HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+				HeadBallisticCollision = UM_PawnHeadCollision( BallisticCollision[i].Area );
+			
 			// CollisionSize
-			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * CurrentSizeScale), (BallisticCollision[i].AreaHeight * CurrentSizeScale) );
+			
 			// Attaching
 			if ( BallisticCollision[i].AreaBone != '' )
 				AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
 			else
 				BallisticCollision[i].Area.SetBase( Self );
+			
 			// if attached
 			if ( BallisticCollision[i].Area.Base != None )  {
 				// AreaOffset
 				if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
+					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
 				// AreaRotation
 				if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
 					BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
 			}
+			
 			// AreaImpactStrength
 			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
 				BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
@@ -309,6 +329,11 @@ simulated event PostBeginPlay()
 		
 		if ( HealthModifer != 0 )
 			Health = HealthModifer;
+		
+		BuildBallisticCollision();
+		/*
+		if ( HeadBallisticCollision != None )
+			OnlineHeadshotOffset = HeadBallisticCollision.Location - (Location - CollisionHeight * Vect(0.0, 0.0, 1.0));	*/
 	}
 
 	AssignInitialPose();
@@ -400,7 +425,7 @@ simulated event PostBeginPlay()
 			//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
 			//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
 			//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-			JumpZ = default.JumpZ * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
+			JumpZ = default.JumpZ * DrawScale * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
 			//int
 			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
@@ -419,13 +444,11 @@ simulated event PostBeginPlay()
 			bDiffAdjusted = True;
 		}
 		
-		BuildBallisticCollision();
-		if ( HeadBallisticCollision != None )
-			OnlineHeadshotOffset = HeadBallisticCollision.Location - (Location - CollisionHeight * Vect(0.0, 0.0, 1.0));
-		
+		/*
 		// Landing to the Ground
 		Move( Location + Vect(0.0, 0.0, 12.0) );
 		SetPhysics(PHYS_Falling);
+		*/
 		
 		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
 			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList( self );

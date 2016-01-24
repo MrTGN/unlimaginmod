@@ -111,6 +111,13 @@ function DropToGround()
 	}
 }
 
+function bool CheckLastSeenTime( optional float CheckTime )
+{
+	
+	
+	Return True;
+}
+
 /* //Backup
 function RandomizeMonsterSizes()
 {

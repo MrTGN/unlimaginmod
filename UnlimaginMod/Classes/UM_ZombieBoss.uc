@@ -1562,6 +1562,11 @@ simulated function bool SpectatorSpecialCalcView(PlayerController Viewer, out Ac
 	Return True;
 }
 
+function bool WasNotSeenMoreThan( float NotSeenTime )
+{
+	Return False;	// Force to not respawn boss
+}
+
 // Overridden to do a cool slomo death view of the patriarch dying
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {

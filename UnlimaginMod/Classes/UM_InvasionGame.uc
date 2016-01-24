@@ -1042,7 +1042,7 @@ function SpawnNextMonsterSquad()
 	}
 }
 
-function CheckForJammedMonsters()
+function RespawnJammedMonsters()
 {
 	local	int		i;
 	
@@ -1051,7 +1051,7 @@ function CheckForJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( UM_MonsterController(AliveMonsterList[i].Controller) != None && UM_MonsterController(AliveMonsterList[i].Controller).CanKillMeYet() )  {
+		if ( AliveMonsterList[i].WasNotSeenMoreThan(45.0) )  {
 			NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
 			AliveMonsterList[i].Suicide();
 			AliveMonsterList.Remove(i, 1);
@@ -1061,6 +1061,24 @@ function CheckForJammedMonsters()
 	}
 	// Respawn Jammed Monsters
 	SpawnNextMonsterSquad();
+}
+
+function KillJammedMonsters()
+{
+	local	int		i;
+	
+	NextJammedMonstersCheckTime = Level.TimeSeconds + JammedMonstersCheckDelay;
+	
+	CheckAliveMonsterList();
+	// Search for Jammed Monsters
+	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
+		if ( AliveMonsterList[i].WasNotSeenMoreThan(15.0) )  {
+			AliveMonsterList[i].Suicide();
+			AliveMonsterList.Remove(i, 1);
+			--WaveMonsters;
+			--i;
+		}
+	}
 }
 
 function DoWaveEnd()
@@ -1193,7 +1211,7 @@ state WaveInProgress
 		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
-			CheckForJammedMonsters();
+			RespawnJammedMonsters();
 		// Spawn New Monster Squad
 		if ( CanSpawnNextMonsterSquad() )  {
 			// NextSpawnTime
@@ -1218,6 +1236,14 @@ state WaveInProgress
 		DecreaseWaveCountDown();
 		// End Wave
 		if ( WaveCountDown < 1 )  {
+			// Kill Jammed Monsters
+			if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
+				KillJammedMonsters();
+			if ( NumMonsters > 1 )  {
+				++WaveCountDown;
+				Return;
+			}
+			
 			DoWaveEnd();
 			if ( NextWaveNum < FinalWave || bUseEndGameBoss )
 				GoToState('Shopping');
@@ -1353,7 +1379,7 @@ state BossWaveInProgress
 		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
-			CheckForJammedMonsters();
+			RespawnJammedMonsters();
 		// Spawn New Monster Squad
 		if ( CanSpawnNextMonsterSquad() )  {
 			// NextSpawnTime
@@ -1553,7 +1579,7 @@ defaultproperties
 	 MinSquadSpawnCheckDelay=0.1
 	 MaxMonsters=1000
 	 MaxAliveMonsters=40
-	 JammedMonstersCheckDelay=30.0
+	 JammedMonstersCheckDelay=15.0
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=10.0

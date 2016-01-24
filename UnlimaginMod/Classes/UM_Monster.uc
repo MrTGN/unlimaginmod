@@ -80,6 +80,8 @@ var		transient	bool				bAddedToMonsterList;
 var					float				ImpressiveKillChance;
 var					float				ImpressiveKillDuration;
 
+var		transient	float				LastSeenCheckTime;
+
 //[end] Varibles
 //====================================================================
 
@@ -109,13 +111,6 @@ function DropToGround()
 		if ( IsHumanControlled() )
 			Controller.GotoState(LandMovementState);
 	}
-}
-
-function bool CheckLastSeenTime( optional float CheckTime )
-{
-	
-	
-	Return True;
 }
 
 /* //Backup
@@ -311,10 +306,17 @@ protected function SetHealth( int NewHealth )
 
 event PreBeginPlay()
 {
+	LastSeenCheckTime = Level.TimeSeconds;
+	
 	if ( !bRandomSizeAdjusted )
 		RandomizeMonsterSizes();
 	
 	Super.PreBeginPlay();
+}
+
+function bool WasNotSeenMoreThan( float NotSeenTime )
+{
+	Return (Level.TimeSeconds - LastSeenCheckTime) > NotSeenTime && (Level.TimeSeconds - LastRenderTime) > NotSeenTime;
 }
 
 simulated event PostBeginPlay()

@@ -687,7 +687,8 @@ function RespawnWaitingPlayers()
 		PlayerList[i].GotoState('PlayerWaiting');
 		// Respawn a pawn and it as set view target
 		PlayerList[i].ServerReStartPlayer();
-		PlayerList[i].ResetViewTarget();
+		PlayerList[i].ClientResetViewTarget();
+		PlayerList[i].ServerResetViewTarget();
 	}
 	CheckPlayerList();
 }
@@ -805,7 +806,7 @@ function RestartPlayer( Controller aPlayer )
 		Return;
 
 	if ( PlayerController(aPlayer) != None && !PlayerCanRestart(PlayerController(aPlayer)) )  {
-		//aPlayer.PlayerReplicationInfo.bOutOfLives = True;
+		aPlayer.PlayerReplicationInfo.bOutOfLives = True;
 		aPlayer.PlayerReplicationInfo.NumLives = MaxLives;
 		aPlayer.GoToState('Spectating');
 		Return;
@@ -2197,6 +2198,9 @@ state MatchOver
 
 defaultproperties
 {
+	 DefaultMaxLives=3
+	 MaxLives=3
+	 
 	 InitialState="PendingMatch"
 	 
 	 bAllowImpressiveKillEvents=True

@@ -13,7 +13,7 @@ var		transient	bool			bIsActivePlayer;	// This player participates in the game
 
 var 				float			ShowActorDuration;
 var		transient	float			CurrentShowActorDuration;
-var		transient	name			PrevStateName;
+var		transient	bool			bShowingActor;
 
 //var		transient	Pawn			PawnKiller;
 //var		transient	bool			bViewPawnKiller;
@@ -27,7 +27,11 @@ replication
 	
 	// Functions server can call.
 	reliable if ( Role == ROLE_Authority )
-		ClientResetViewTarget;
+		ClientResetViewTarget, ClientStartShowingActor, ClientStopShowingActor;
+
+	// Functions client can call.
+	reliable if ( Role < ROLE_Authority )
+		ServerStopShowingActor;
 }
 
 function bool SpawnStatObject()
@@ -277,12 +281,10 @@ function ClientResetViewTarget()
 	CleanOutSavedMoves();
 }
 
-function ResetViewTarget()
+function ServerResetViewTarget()
 {
-	ClientResetViewTarget();
-	
 	if ( Role < ROLE_Authority )
-		Return; // Server code next
+		Return; // Server only
 	
 	// Re-attach the controller to the pawn
 	if ( Pawn != None )  {
@@ -294,6 +296,12 @@ function ResetViewTarget()
 		bBehindView = False;
 	}
 	CleanOutSavedMoves();  // don't replay moves previous to possession
+}
+
+function ClientStartShowingActor()
+{
+	bShowingActor = True;
+	GoToState('ShowingActor');
 }
 
 // Temporary show Actor to this player
@@ -317,15 +325,31 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 	ClientSetBehindView( True );
 	if ( ViewTarget != Pawn )
 		ViewTarget.BecomeViewTarget();
-	FixFOV();
+	//FixFOV();
 	
-	PrevStateName = GetStateName();
+	bShowingActor = True;
+	ClientStartShowingActor();
 	GoToState('ShowingActor');
 }
 
+function ClientStopShowingActor()
+{
+	bShowingActor = False;
+	ClientResetViewTarget();
+	EnterStartState();
+}
+
+function ServerStopShowingActor()
+{
+	bShowingActor = False;
+	ServerResetViewTarget();
+	EnterStartState();
+	CurrentShowActorDuration = 0.0;
+}
+
 // Showing Actor to this player
-/*state ShowingActor extends BaseSpectating*/
-state ShowingActor extends PlayerWalking
+//state ShowingActor extends PlayerWalking
+state ShowingActor extends BaseSpectating
 {
 	/*
 	function bool IsSpectating()
@@ -344,30 +368,34 @@ state ShowingActor extends PlayerWalking
 		//Global.PlayerTick( DeltaTime );
 		Super.PlayerTick( DeltaTime );
 		
-		if ( Role < ROLE_Authority )
-			Return;
+		if ( Role < ROLE_Authority || !bShowingActor )
+			Return; // Server code next
 		
 		if ( CurrentShowActorDuration > 0.0 )
 			CurrentShowActorDuration -= DeltaTime * Level.default.TimeDilation / Level.TimeDilation; // Calc TrueDeltaTime
-		else
-			GotoState(PrevStateName);
+		else  {
+			ClientStopShowingActor();
+			ServerStopShowingActor();
+		}
 	}
 	
+	// Client function
 	exec function AltFire( optional float F )
 	{
-		if ( Role < ROLE_Authority )
+		if ( !bShowingActor )
 			Return;
 		
-		GotoState(PrevStateName);
+		ServerStopShowingActor();
+		ClientStopShowingActor();
 	}
 	
 	event EndState()
 	{
-		if ( Role < ROLE_Authority )
-			Return;
+		if ( Role < ROLE_Authority || !bShowingActor )
+			Return; // Server code next
 		
-		ResetViewTarget();
-		CurrentShowActorDuration = 0.0;
+		ClientStopShowingActor();
+		ServerStopShowingActor();
 	}
 }
 

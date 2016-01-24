@@ -616,7 +616,7 @@ function CheckSlowMoCharge()
 	if ( SlowMoCharge > MaxSlowMoCharge )
 		SlowMoCharge = MaxSlowMoCharge;
 	
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 
 function CheckVeterancyCarryWeightLimit()
@@ -2492,13 +2492,6 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Mome
 }
 
 //[block] SlowMo
-protected function IncreaseSlowMoCharge()
-{
-	NextSlowMoChargeRegenTime = Level.TimeSeconds + SlowMoChargeUpdateAmount / SlowMoChargeRegenRate;
-	SlowMoCharge = Min( (SlowMoCharge + SlowMoChargeUpdateAmount), MaxSlowMoCharge );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
-}
-
 // Replicated from client-owner to server
 function ServerToggleSlowMo()
 {
@@ -2517,16 +2510,23 @@ exec function ToggleSlowMo()
 	ServerToggleSlowMo();
 }
 
+protected function IncreaseSlowMoCharge()
+{
+	NextSlowMoChargeRegenTime = Level.TimeSeconds + SlowMoChargeUpdateAmount / SlowMoChargeRegenRate;
+	SlowMoCharge = Min( (SlowMoCharge + SlowMoChargeUpdateAmount), MaxSlowMoCharge );
+	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
+}
+
 function AddSlowMoCharge( float AddCharge )
 {
 	SlowMoCharge = Min( (SlowMoCharge + Abs(AddCharge)), MaxSlowMoCharge );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 
 function ReduceSlowMoCharge( float ReduceCharge )
 {
 	SlowMoCharge = Max( (SlowMoCharge - Abs(ReduceCharge)), 0.0 );
-	bSlowMoCharged = SlowMoCharge == MaxSlowMoCharge;
+	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 //[end] SlowMo
 
@@ -2940,6 +2940,8 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 MaxSlowMoCharge=2.0
+	 
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
 	 DelayBetweenSlowMoToggle=0.25
 	 SlowMoChargeRegenRate=0.02

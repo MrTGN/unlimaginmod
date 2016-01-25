@@ -97,7 +97,7 @@ var					bool					bSaveSpectatorScores, bSaveSpectatorTeam;
 // Starting Cash lottery
 var					float					ExtraStartingCashChance, ExtraStartingCashModifier;
 var					float					DeathCashModifier;
-var					bool					bAllowPlayerSpawn;
+var		transient	bool					bAllowPlayerSpawn;
 
 // Controllers Lists
 var		transient	array<UM_PlayerController>	PlayerList;
@@ -1275,12 +1275,13 @@ auto state PendingMatch
 		Return True;
 	}
 	
-	// function RestartPlayer( Controller aPlayer );
+	function RestartPlayer( Controller aPlayer );
+	/*
 	function RestartPlayer( Controller aPlayer )
 	{
 		if ( CountDown <= 0 )
 			Global.RestartPlayer( aPlayer );
-	}
+	}	*/
 	
 	function StartMatch()
 	{
@@ -1378,6 +1379,13 @@ function CheckForPlayersDeficit()
 	}
 }
 
+function SetAllowPlayerSpawn( bool bNewAllowPlayerSpawn )
+{
+	bAllowPlayerSpawn = bNewAllowPlayerSpawn;
+	if ( UM_GameReplicationInfo(GameReplicationInfo) != None )
+		UM_GameReplicationInfo(GameReplicationInfo).bAllowPlayerSpawn = bAllowPlayerSpawn;
+}
+
 // Start the game - inform all actors that the match is starting, and spawn player pawns
 state StartingMatch
 {
@@ -1387,7 +1395,7 @@ state StartingMatch
 		local	int			i;
 		
 		// Allow to spawn Players
-		bAllowPlayerSpawn = True;
+		SetAllowPlayerSpawn( True );
 		// start human players first
 		for ( i = 0; i < PlayerList.Length; ++i )  {
 			if ( PlayerList[i] == None )  {
@@ -1414,7 +1422,7 @@ state StartingMatch
 		CheckForPlayersDeficit();
 		bMustJoinBeforeStart = default.bMustJoinBeforeStart;
 		// Disallow to spawn Players
-		bAllowPlayerSpawn = False;
+		SetAllowPlayerSpawn( False );
 	}
 	
 	function BeginMatch()

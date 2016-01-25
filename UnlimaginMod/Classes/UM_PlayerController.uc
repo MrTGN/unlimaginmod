@@ -27,11 +27,11 @@ replication
 	
 	// Functions server can call.
 	reliable if ( Role == ROLE_Authority )
-		ClientResetViewTarget, ClientStartShowingActor, ClientStopShowingActor;
+		ClientResetViewTarget, /*ClientStartShowingActor,*/ ClientStopShowingActor;
 
 	// Functions client can call.
 	reliable if ( Role < ROLE_Authority )
-		ServerStopShowingActor;
+		ServerStopShowingActor, ServerReadyPlayer;
 }
 
 function bool SpawnStatObject()
@@ -262,7 +262,7 @@ event ClientSetViewTarget( Actor A )
 	}
 }
 
-function ClientResetViewTarget()
+simulated function ClientResetViewTarget()
 {
 	local	bool	bNewViewTarget;
 	
@@ -298,11 +298,15 @@ function ServerResetViewTarget()
 	CleanOutSavedMoves();  // don't replay moves previous to possession
 }
 
-function ClientStartShowingActor()
+/*
+simulated function ClientStartShowingActor()
 {
+	if ( Role == ROLE_Authority )
+		Return;
+	
 	bShowingActor = True;
 	GoToState('ShowingActor');
-}
+}	*/
 
 // Temporary show Actor to this player
 function ShowActor( Actor A, optional float NewShowActorDuration )
@@ -310,7 +314,7 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 	// Do not show actor if Pawn have small amount of Health
 	// or if actor is already close enough (4 meters) and visible.
 	if ( A == None || A == Self || Pawn == None || Pawn.Health < 10 
-		 || (VSizeSquared(A.Location - Pawn.Location) < 32400.0 && FastTrace(A.Location, Pawn.Location)) )
+		 || (VSizeSquared(A.Location - Pawn.Location) < 32400.0 && FastTrace(A.Location, Pawn.Location)) || bShowingActor )
 		Return;
 	
 	if ( NewShowActorDuration > 0.0 )
@@ -327,21 +331,21 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 		ViewTarget.BecomeViewTarget();
 	//FixFOV();
 	
-	bShowingActor = True;
-	ClientStartShowingActor();
+	//ClientStartShowingActor();
 	GoToState('ShowingActor');
 }
 
-function ClientStopShowingActor()
+simulated function ClientStopShowingActor()
 {
-	bShowingActor = False;
+	if ( Role == ROLE_Authority )
+		Return;
+	
 	ClientResetViewTarget();
 	EnterStartState();
 }
 
 function ServerStopShowingActor()
 {
-	bShowingActor = False;
 	ServerResetViewTarget();
 	EnterStartState();
 	CurrentShowActorDuration = 0.0;
@@ -349,8 +353,18 @@ function ServerStopShowingActor()
 
 // Showing Actor to this player
 //state ShowingActor extends PlayerWalking
-state ShowingActor extends BaseSpectating
+//state ShowingActor extends BaseSpectating
+state ShowingActor
 {
+	simulated event BeginState()
+	{
+		bShowingActor = True;
+		Log("BeginState() ShowingActor",Name);
+		Super.BeginState();
+		
+		SetTimer((CurrentShowActorDuration * Level.default.TimeDilation / Level.TimeDilation), False);
+	}
+	
 	/*
 	function bool IsSpectating()
 	{
@@ -363,6 +377,7 @@ state ShowingActor extends BaseSpectating
 	
 	function ShowActor( Actor A, optional float NewShowActorDuration );
 	
+	/*
 	event PlayerTick( float DeltaTime )
 	{
 		//Global.PlayerTick( DeltaTime );
@@ -377,25 +392,30 @@ state ShowingActor extends BaseSpectating
 			ClientStopShowingActor();
 			ServerStopShowingActor();
 		}
+	}	*/
+	
+	event Timer()
+	{
+		if ( Role < ROLE_Authority )
+			Return;
+		
+		SetTimer(0.0, False);
+		ClientStopShowingActor();
+		ServerStopShowingActor();
 	}
 	
 	// Client function
 	exec function AltFire( optional float F )
 	{
-		if ( !bShowingActor )
-			Return;
-		
 		ServerStopShowingActor();
 		ClientStopShowingActor();
 	}
 	
-	event EndState()
+	simulated event EndState()
 	{
-		if ( Role < ROLE_Authority || !bShowingActor )
-			Return; // Server code next
-		
-		ClientStopShowingActor();
-		ServerStopShowingActor();
+		Log("EndState() ShowingActor",Name);
+		Super.EndState();
+		bShowingActor = False;
 	}
 }
 
@@ -587,7 +607,7 @@ function UnPossess()
 
 function bool CanRestartPlayer()
 {
-	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOnlySpectator || PlayerReplicationInfo.bOutOfLives || IsInState('GameEnded') || IsInState('RoundEnded') || Pawn != None && Pawn.Health > 0 )
+	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOnlySpectator || PlayerReplicationInfo.bOutOfLives || IsInState('GameEnded') || IsInState('RoundEnded') || (Pawn != None && Pawn.Health > 0) || (UM_GameReplicationInfo(GameReplicationInfo) != None && !UM_GameReplicationInfo(GameReplicationInfo).bAllowPlayerSpawn) )
 		Return False;
 	
 	Return PlayerReplicationInfo.bReadyToPlay;
@@ -595,21 +615,40 @@ function bool CanRestartPlayer()
 
 function ServerReStartPlayer()
 {
-	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOutOfLives )
+	if ( PlayerReplicationInfo == None || PlayerReplicationInfo.bOutOfLives || Level.Game.bWaitingToStartMatch )
 		Return; // No more main menu bug closing.
 
+	/*
 	if ( Level.Game.bWaitingToStartMatch )
 		PlayerReplicationInfo.bReadyToPlay = True;
 	else  {
 		ClientCloseMenu(True, True);
 		Level.Game.RestartPlayer(self);
-	}
+	}	*/
+	ClientCloseMenu( True, True );
+	Level.Game.RestartPlayer( Self );
+}
+
+function ServerReadyPlayer()
+{
+	PlayerReplicationInfo.bReadyToPlay = True;
 }
 
 function ServerUnreadyPlayer()
 {
-	if ( Level.Game.bWaitingToStartMatch )
-		PlayerReplicationInfo.bReadyToPlay = False;
+	PlayerReplicationInfo.bReadyToPlay = False;
+}
+
+function ClientSetReadyToPlay( bool bNewReadyToPlay )
+{
+	if ( bNewReadyToPlay )  {
+		PlayerReplicationInfo.bReadyToPlay = True;
+		ServerReadyPlayer();
+		Return;
+	}
+	
+	PlayerReplicationInfo.bReadyToPlay = False;
+	ServerUnreadyPlayer();
 }
 
 function ServerSpectate()
@@ -757,7 +796,7 @@ auto state PlayerWaiting
 	simulated event Timer()
 	{
 		if ( !bPendingLobbyDisplay || bDemoOwner || (PlayerReplicationInfo != None && PlayerReplicationInfo.bReadyToPlay) )
-			SetTimer(0, false);
+			SetTimer(0.0, false);
 		else if ( !bRequestedSteamData && SteamStatsAndAchievements == None )  {
 			if ( Level.NetMode == NM_Standalone )  {
 				if ( SpawnStatObject() && !SteamStatsAndAchievements.Initialize(self) )  {
@@ -780,7 +819,7 @@ auto state PlayerWaiting
 			// Spawn hint manager (if needed)
 		    UpdateHintManagement(bShowHints);
 			ShowLobbyMenu();
-			SetTimer(0, false);
+			SetTimer(0.0, false);
 		}
 	}
 
@@ -1487,9 +1526,9 @@ state Dead
 				bFrozen = False;
 			Return;
 		}
-		
 		//ResetViewTarget();
-		if ( GameReplicationInfo.bMatchHasBegun && !PlayerReplicationInfo.bOutOfLives )  {
+		
+		if ( UM_GameReplicationInfo(GameReplicationInfo) != None && UM_GameReplicationInfo(GameReplicationInfo).bAllowPlayerSpawn && !PlayerReplicationInfo.bOutOfLives )  {
 			LoadPlayers();
 			if ( bMenuBeforeRespawn )  {
 				bMenuBeforeRespawn = False;
@@ -1608,7 +1647,7 @@ state GameEnded
 		bFrozen = True;
 		FindGoodView();
 		bBehindView = True;
-		SetTimer(5, false);
+		SetTimer(5.0, false);
 	}
 }
 

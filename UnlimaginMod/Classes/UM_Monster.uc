@@ -314,9 +314,9 @@ event PreBeginPlay()
 	Super.PreBeginPlay();
 }
 
-function bool WasNotSeenMoreThan( float NotSeenTime )
+function bool NotRelevantMoreThan( float NotSeenTime )
 {
-	Return (Level.TimeSeconds - LastSeenCheckTime) > NotSeenTime && (Level.TimeSeconds - LastRenderTime) > NotSeenTime;
+	Return (Level.TimeSeconds - LastSeenCheckTime) > NotSeenTime && (Level.TimeSeconds - LastSeenOrRelevantTime) > NotSeenTime;
 }
 
 simulated event PostBeginPlay()
@@ -524,6 +524,9 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 
 simulated event Destroyed()
 {
+	if ( Health > 0 )
+		Suicide();
+	
 	DestroyBallisticCollision();
 	
 	Super.Destroyed();
@@ -679,6 +682,165 @@ event Bump(actor Other)
 			
 			SetAnimAction(PuntAnim);
 		}
+	}
+}
+
+// Return true if we can do the Zombie speed adjust that gets the Zeds
+// to the player faster if they can't be seen
+function bool CanSpeedAdjust()
+{
+	Return !bDecapitated && !bZapped;
+}
+
+function StandaloneRelevantCheck()
+{
+	local	PlayerController	P;
+	local	float				DistSquared;
+	
+	if ( (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
+		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
+			P = Level.GetLocalPlayerController();
+			if ( P != None && P.Pawn != None )  {
+				LastViewCheckTime = Level.TimeSeconds;
+				DistSquared = VSizeSquared(P.Pawn.Location - Location);
+				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
+					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
+					LastSeenOrRelevantTime = Level.TimeSeconds;
+					SetGroundSpeed(GetOriginalGroundSpeed());
+				}
+				else
+					SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
+			}
+		}
+	}
+	else  {
+		LastSeenOrRelevantTime = Level.TimeSeconds;
+		SetGroundSpeed(GetOriginalGroundSpeed());
+	}
+}
+
+function ListenServerRelevantCheck()
+{
+	local	PlayerController	P;
+	local	float				DistSquared;
+	
+	if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 && (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
+		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
+			P = Level.GetLocalPlayerController();
+			if ( P != None && P.Pawn != None )  {
+				LastViewCheckTime = Level.TimeSeconds;
+				DistSquared = VSizeSquared(P.Pawn.Location - Location);
+				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
+					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
+					LastSeenOrRelevantTime = Level.TimeSeconds;
+					SetGroundSpeed(GetOriginalGroundSpeed());
+				}
+				else
+					SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
+			}
+		}
+	}
+	else  {
+		LastSeenOrRelevantTime = Level.TimeSeconds;
+		SetGroundSpeed(GetOriginalGroundSpeed());
+	}
+}
+
+simulated event Tick( float DeltaTime )
+{
+	// If we've flagged this character to be destroyed next tick, handle that
+	if ( bDestroyNextTick && TimeSetDestroyNextTickTime < Level.TimeSeconds )
+		Destroy();
+	
+	// Make Zeds move faster if they aren't net relevant, or noone has seen them
+	// in a while. This well get the Zeds to the player in larger groups, and
+	// quicker - Ramm
+	if ( Level.NetMode != NM_Client && CanSpeedAdjust() )  {
+		if ( Level.NetMode == NM_Standalone )
+			StandaloneRelevantCheck();
+		else if ( Level.NetMode == NM_DedicatedServer )  {
+			if ( Level.TimeSeconds - LastReplicateTime > 0.5 )
+				SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
+			else  {
+				LastSeenOrRelevantTime = Level.TimeSeconds;
+				SetGroundSpeed(GetOriginalGroundSpeed());
+			}
+		}
+		else if ( Level.NetMode == NM_ListenServer )
+			ListenServerRelevantCheck();
+	}
+	
+	if ( bResetAnimAct && ResetAnimActTime < Level.TimeSeconds )  {
+		AnimAction = '';
+		bResetAnimAct = False;
+	}
+	
+	if ( Controller != None )
+		LookTarget = Controller.Enemy;
+	
+	// If the Zed has been bleeding long enough, make it die
+	if ( Role == ROLE_Authority && bDecapitated && BleedOutTime > 0 && (Level.TimeSeconds - BleedOutTime) >= 0.0 )  {
+		Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
+		BleedOutTime = 0.0;
+	}
+	
+	//SPLATTER!!!!!!!!!
+	//TODO - can we work this into Epic's gib code?
+	//Will we see enough improvement in efficiency to be worth the effort?
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		TickFX(DeltaTime);
+		if ( !bBurnified && bBurnApplied )
+			StopBurnFX();
+		else if ( bBurnified && !bBurnApplied && !bGibbed )
+			StartBurnFX();
+
+		if ( bAshen && Level.NetMode == NM_Client && !class'GameInfo'.static.UseLowGore() )  {
+			ZombieCrispUp();
+			bAshen = False;
+		}
+	}
+	
+	if ( DECAP && Level.TimeSeconds > (DecapTime + 2.0) && Controller != None )  {
+		DECAP = False;
+		MonsterController(Controller).ExecuteWhatToDoNext();
+	}
+	
+	if ( BileCount > 0 && NextBileTime < level.TimeSeconds )  {
+		--BileCount;
+		NextBileTime += BileFrequency;
+		TakeBileDamage();
+	}
+	
+	if ( bZapped && Role == ROLE_Authority )  {
+		RemainingZap -= DeltaTime;
+		if ( RemainingZap <= 0 )  {
+			RemainingZap = 0;
+			bZapped = False;
+			ZappedBy = None;
+			// The Zed can take more zap each time they get zapped
+			ZapThreshold *= ZapResistanceScale;
+		}
+	}
+	
+	if ( !bZapped && TotalZap > 0 && (Level.TimeSeconds - LastZapTime) > 0.1 )
+		TotalZap -= DeltaTime;
+	
+	if ( bZapped != bOldZapped )  {
+		if ( bZapped )
+			SetZappedBehavior();
+		else
+			UnSetZappedBehavior();
+
+		bOldZapped = bZapped;
+	}
+	
+	if ( bHarpoonStunned != bOldHarpoonStunned )  {
+		if ( bHarpoonStunned )
+			SetBurningBehavior();
+		else
+			UnSetBurningBehavior();
+
+		bOldHarpoonStunned = bHarpoonStunned;
 	}
 }
 
@@ -1341,6 +1503,7 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
+	 LifeSpan=120.0
 	 ImpressiveKillChance=0.03
 	 ImpressiveKillDuration=3.0
 	 

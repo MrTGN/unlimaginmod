@@ -72,6 +72,8 @@ replication
 
 defaultproperties
 {
+	 LifeSpan=0.0
+	 
 	 ImpressiveKillChance=0.0
 	 
 	 HeadShotSlowMoChargeBonus=1.0

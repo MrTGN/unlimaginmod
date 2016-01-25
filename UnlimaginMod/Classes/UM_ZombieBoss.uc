@@ -1562,7 +1562,7 @@ simulated function bool SpectatorSpecialCalcView(PlayerController Viewer, out Ac
 	Return True;
 }
 
-function bool WasNotSeenMoreThan( float NotSeenTime )
+function bool NotRelevantMoreThan( float NotSeenTime )
 {
 	Return False;	// Force to not respawn boss
 }

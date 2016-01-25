@@ -49,7 +49,7 @@ defaultproperties
 	 //ShakeView
 	 AimingShakeBonus=0.980000
 	 //Movement
-	 MaxMoveShakeScale=1.050000
+	 MaxMoveShakeScale=1.000000
 	 MovingAimErrorScale=4.000000
 	 MovingSpreadScale=0.001200
 	 //[end]

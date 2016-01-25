@@ -21,8 +21,9 @@ class UM_GameReplicationInfo extends KFGameReplicationInfo;
 //========================================================================
 //[block] Variables
 
-var		float		FriendlyFireScale;
-var		float		GameDifficulty;	// Need becuase GameDiff from KFGameReplicationInfo is bNetInitial. It replicates only during the initialization.
+var					float					FriendlyFireScale;
+var					float					GameDifficulty;	// Need becuase GameDiff from KFGameReplicationInfo is bNetInitial. It replicates only during the initialization.
+var					bool					bAllowPlayerSpawn;
 
 //[end] Varibles
 //====================================================================
@@ -33,7 +34,7 @@ var		float		GameDifficulty;	// Need becuase GameDiff from KFGameReplicationInfo 
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FriendlyFireScale, GameDifficulty;
+		FriendlyFireScale, GameDifficulty, bAllowPlayerSpawn;
 }
 
 //[end] Replication

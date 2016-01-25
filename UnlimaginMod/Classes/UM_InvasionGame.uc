@@ -724,7 +724,7 @@ state Shopping
 		local	int		i;
 		
 		// Allow to spawn Players
-		bAllowPlayerSpawn = True;
+		SetAllowPlayerSpawn( True );
 		
 		if ( !CalmMusicPlaying )
 			StartGameMusic(False);
@@ -921,7 +921,7 @@ state Shopping
 	{
 		CheckForPlayersDeficit();
 		// Disallow to spawn Players
-		bAllowPlayerSpawn = False;
+		SetAllowPlayerSpawn( False );
 		SelectNewShop();
 	}
 }
@@ -1051,7 +1051,7 @@ function RespawnJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].WasNotSeenMoreThan(45.0) )  {
+		if ( AliveMonsterList[i].NotRelevantMoreThan(45.0) )  {
 			NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
 			AliveMonsterList[i].Suicide();
 			AliveMonsterList.Remove(i, 1);
@@ -1072,7 +1072,7 @@ function KillJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].WasNotSeenMoreThan(15.0) )  {
+		if ( AliveMonsterList[i].NotRelevantMoreThan(10.0) )  {
 			AliveMonsterList[i].Suicide();
 			AliveMonsterList.Remove(i, 1);
 			--WaveMonsters;
@@ -1105,7 +1105,7 @@ function DoWaveEnd()
 	CheckPlayerList();
 	for ( i = 0; i < PlayerList.Length; ++i )  {
 		if ( PlayerList[i].PlayerReplicationInfo == None )
-			Return; // skip this controller
+			Continue; // skip this controller
 		// Reset Lives Limit
 		PlayerList[i].PlayerReplicationInfo.NumLives = 0;
 		PlayerList[i].PlayerReplicationInfo.bOutOfLives = False;
@@ -1237,13 +1237,7 @@ state WaveInProgress
 		// End Wave
 		if ( WaveCountDown < 1 )  {
 			// Kill Jammed Monsters
-			if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
-				KillJammedMonsters();
-			if ( NumMonsters > 1 )  {
-				++WaveCountDown;
-				Return;
-			}
-			
+			KillJammedMonsters();
 			DoWaveEnd();
 			if ( NextWaveNum < FinalWave || bUseEndGameBoss )
 				GoToState('Shopping');

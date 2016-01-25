@@ -184,9 +184,10 @@ var	array<BallisticCollisionData>		BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
 // Slowmo time like an ZedTime in original KF
-var		float							MaxSlowMoCharge; // Max SloMo charge in seconds
-var		transient		float			SlowMoCharge; // Current SloMo charge in seconds
-var		float							SlowMoChargeRegenRate; // SloMo Charge Regen per second
+var						float			MaxSlowMoCharge; // Max SloMo charge in seconds
+//var		transient		float			SlowMoCharge; // Current SloMo charge in seconds
+var						float			SlowMoCharge;
+var						float			SlowMoChargeRegenRate; // SloMo Charge Regen per second
 var		const			float			SlowMoChargeUpdateAmount;
 var		const			float			MinSlowMoToggleCharge;
 var		const			float			DelayBetweenSlowMoToggle;
@@ -606,12 +607,13 @@ function SetCarryWeight( float NewCarryWeight )
 
 function CheckSlowMoCharge()
 {
+	/*
 	if ( UM_BaseGameInfo(Level.Game) == None || MaxSlowMoCharge < UM_BaseGameInfo(Level.Game).MinToggleSlowMoCharge )  {
 		MaxSlowMoCharge = 0.0;
 		SlowMoCharge = 0.0;
 		bSlowMoCharged = True;
 		Return;
-	}
+	}	*/
 	
 	if ( SlowMoCharge > MaxSlowMoCharge )
 		SlowMoCharge = MaxSlowMoCharge;

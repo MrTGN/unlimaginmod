@@ -107,9 +107,9 @@ simulated function int DoAnimAction( name AnimName )
 	Return Super.DoAnimAction( AnimName );
 }
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
-    super.Tick(DeltaTime);
+    Super.Tick( DeltaTime );
 
 	if( bShotAnim && Role == ROLE_Authority )
 	{

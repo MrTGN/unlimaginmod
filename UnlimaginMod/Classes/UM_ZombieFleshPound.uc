@@ -252,10 +252,10 @@ state BeginRaging
 		Return False;
 	}
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
         Acceleration = vect(0,0,0);
-        Global.Tick(Delta);
+        Global.Tick( DeltaTime );
 	}
 
 Begin:
@@ -300,7 +300,7 @@ Ignores StartCharging;
         return false;
     }
 
-	function BeginState()
+	event BeginState()
 	{
         local float DifficultyModifier;
 
@@ -327,7 +327,7 @@ Ignores StartCharging;
 		}
 	}
 
-	function EndState()
+	event EndState()
 	{
         bChargingPlayer = False;
         bFrustrated = false;
@@ -343,7 +343,7 @@ Ignores StartCharging;
 		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
 		if ( !bShotAnim )  {
 			SetGroundSpeed(OriginalGroundSpeed * 2.3);	//2.0;
@@ -355,7 +355,7 @@ Ignores StartCharging;
     	if ( Role == ROLE_Authority && bShotAnim && LookTarget != None )
    		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 
-        Global.Tick(Delta);
+        Global.Tick( DeltaTime );
 	}
 
 	function Bump( Actor Other )
@@ -402,7 +402,7 @@ state ChargeToMarker extends RageCharging
 {
 Ignores StartCharging;
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
 		if ( !bShotAnim )  {
 			SetGroundSpeed(OriginalGroundSpeed * 2.3);
@@ -414,7 +414,7 @@ Ignores StartCharging;
     	if ( Role == ROLE_Authority && bShotAnim && LookTarget != None )
 			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 
-        Global.Tick(Delta);
+        Global.Tick( DeltaTime );
 	}
 }
 
@@ -559,9 +559,9 @@ simulated function bool AnimNeedsWait(name TestAnim)
 		Return False;
 }
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
-    Super.Tick(DeltaTime);
+    Super.Tick( DeltaTime );
 
     // Keep the flesh pound moving toward its target when attacking
 	if ( Role == ROLE_Authority && bShotAnim && LookTarget != None )

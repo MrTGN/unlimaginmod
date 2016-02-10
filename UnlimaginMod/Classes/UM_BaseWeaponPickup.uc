@@ -106,7 +106,7 @@ function bool CheckCanCarry(KFHumanPawn Hm)
 
 auto state Pickup
 {
-	function BeginState()
+	event BeginState()
 	{
 		UntriggerEvent(Event, self, None);
 		if ( bDropped )  {
@@ -164,9 +164,9 @@ auto state Pickup
 
 state FallingPickup
 {
-	function BeginState() { }
+	event BeginState() { }
 	
-	function Timer() { }
+	event Timer() { }
 	
 	function bool ValidTouch(Actor Other)
 	{
@@ -210,9 +210,9 @@ state FallingPickup
 
 state FadeOut
 {
-	function BeginState() { }
+	event BeginState() { }
 	
-	function Tick(float DeltaTime) { }
+	event Tick(float DeltaTime) { }
 	
 	// When touched by an actor.  Let's mod this to account for Weights. (Player can't pickup items)
 	// IF he's exceeding his max carry weight.

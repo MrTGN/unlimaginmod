@@ -197,9 +197,9 @@ simulated function float PointDistToLine(vector Point, vector Line, vector Origi
 	return VSize(OutClosestPoint-Point);
 }
 
-simulated function Tick(float deltatime)
+simulated event Tick( float DeltaTime )
 {
-    Super.tick(deltatime);
+    Super.Tick( DeltaTime );
 
     // Hack to force animation updates on the server for the bloat if he is relevant to someone
     // He has glitches when some of his animations don't play on the server. If we

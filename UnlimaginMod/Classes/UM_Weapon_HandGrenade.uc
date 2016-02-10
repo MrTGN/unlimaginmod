@@ -19,7 +19,7 @@ class UM_Weapon_HandGrenade extends Frag;
 /*
 var		bool		bPawnCurrentWeightReduced;
 
-function Tick( float DeltaTime )
+event Tick( float DeltaTime )
 {
     local Inventory I;
 	

@@ -122,7 +122,7 @@ state RunningState
         return false;
     }
 
-	function BeginState()
+	event BeginState()
 	{
 		if( bZapped )
         {
@@ -139,7 +139,7 @@ state RunningState
 		}
 	}
 
-	function EndState()
+	event EndState()
 	{
 		if( !bZapped )
 		{
@@ -206,7 +206,7 @@ state RunningState
     	}
     }
 
-    simulated function Tick(float DeltaTime)
+    simulated event Tick( float DeltaTime )
     {
 		// Keep moving toward the target until the timer runs out (anim finishes)
         if( RunAttackTimeout > 0 )
@@ -229,7 +229,7 @@ state RunningState
     		}
         }
 
-        global.Tick(DeltaTime);
+        Global.Tick( DeltaTime );
     }
 
 
@@ -252,7 +252,7 @@ CheckCharge:
 // State where the zed is charging to a marked location.
 state RunningToMarker extends RunningState
 {
-    simulated function Tick(float DeltaTime)
+    simulated event Tick( float DeltaTime )
     {
 		// Keep moving toward the target until the timer runs out (anim finishes)
         if( RunAttackTimeout > 0 )
@@ -275,7 +275,7 @@ state RunningToMarker extends RunningState
     		}
         }
 
-        global.Tick(DeltaTime);
+        Global.Tick( DeltaTime );
     }
 
 

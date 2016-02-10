@@ -163,7 +163,7 @@ simulated static final function UM_ClientRepInfoLink FindStats( PlayerController
 	return None;
 }
 
-simulated function Tick( float DeltaTime )
+simulated event Tick( float DeltaTime )
 {
 	local PlayerController PC;
 	local LinkedReplicationInfo L;

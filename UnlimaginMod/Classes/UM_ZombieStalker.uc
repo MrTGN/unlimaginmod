@@ -121,9 +121,9 @@ simulated function int DoAnimAction( name AnimName )
 	Return super.DoAnimAction( AnimName );
 }
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
-	Super.Tick(DeltaTime);
+	Super.Tick( DeltaTime );
 
 	// From CloatBase
 	if( Role == ROLE_Authority && bGrappling )

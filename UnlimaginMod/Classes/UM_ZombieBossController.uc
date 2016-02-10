@@ -98,7 +98,7 @@ state InitialHunting extends Hunting
         GotoState('ZombieHunt');
 	}
 
-	function BeginState()
+	event BeginState()
 	{
 		local float ZDif;
 
@@ -114,7 +114,7 @@ state InitialHunting extends Hunting
 
 		super.BeginState();
 	}
-	function EndState()
+	event EndState()
 	{
 		local float ZDif;
 
@@ -168,7 +168,7 @@ state RunSomewhere
 {
 Ignores HearNoise,DamageAttitudeTo,Tick,EnemyChanged,Startle;
 
-	function BeginState()
+	event BeginState()
 	{
 		HidingSpots = None;
 		Enemy = None;
@@ -213,7 +213,7 @@ State SyrRetreat
 {
 Ignores HearNoise,DamageAttitudeTo,Tick,EnemyChanged,Startle;
 
-	function BeginState()
+	event BeginState()
 	{
 		HidingSpots = None;
 		Enemy = None;
@@ -353,7 +353,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 			WhatToDoNext(99);
 	}
 
-	function Tick( float Delta )
+	event Tick( float Delta )
 	{
 		Global.Tick(Delta);
 
@@ -377,7 +377,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 			Pawn.AccelRate = 0;
 		}
 	}
-	function EndState()
+	event EndState()
 	{
         super.EndState();
 

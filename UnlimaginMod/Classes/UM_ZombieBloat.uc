@@ -222,12 +222,12 @@ function SpawnTwoShots()
 }
 
 
-simulated function Tick(float deltatime)
+simulated event Tick( float DeltaTime )
 {
     local Vector BileExplosionLoc;
     local FleshHitEmitter GibBileExplosion;
 
-    Super.tick(deltatime);
+    Super.Tick( DeltaTime );
 
     if ( Role == ROLE_Authority && bMovingPukeAttack )  {
 		// Keep moving toward the target until the timer runs out (anim finishes)
@@ -392,13 +392,13 @@ simulated function HideBone(name boneName)
 
 State Dying
 {
-	event Tick(float deltaTime)
+	event Tick( float DeltaTime )
 	{
 		if ( BloatJet != None )  {
 			BloatJet.SetLocation(location);
 			BloatJet.SetRotation(GetBoneRotation(FireRootBone));
 		}
-		Super.Tick(deltaTime);
+		Super.Tick( DeltaTime );
 	}
 }
 

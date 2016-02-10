@@ -18,9 +18,9 @@ class UM_ZombieStalker_HALLOWEEN extends UM_ZombieStalker;
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 #exec OBJ LOAD FILE=KF_Specimens_Trip_HALLOWEEN_T.utx
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
-	Super(UM_Monster).Tick(DeltaTime);
+	Super(UM_Monster).Tick( DeltaTime );
 	
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return; // Servers aren't intrested in this info.

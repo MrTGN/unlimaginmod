@@ -103,11 +103,11 @@ function bool CanGetOutOfWay()
     Return False;
 }
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
 	local KFHumanPawn HP;
 
-	Super.Tick(DeltaTime);
+	Super.Tick( DeltaTime );
 
 	// Process the pipe bomb time damage scale, reducing the scale over time so
 	// it goes back up to 100% damage over a few seconds
@@ -354,10 +354,10 @@ state MakingEntrance
 {
     Ignores RangedAttack;
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
 		Acceleration = vect(0,0,0);
-		Global.Tick(Delta);
+		Global.Tick( DeltaTime );
 	}
 
 Begin:
@@ -375,11 +375,11 @@ state RadialAttack
         Return False;
     }
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
         Acceleration = vect(0,0,0);
         //DrawDebugSphere( Location, 150, 12, 0, 255, 0);
-        Global.Tick(Delta);
+        Global.Tick( DeltaTime );
 	}
 
     function ClawDamageTarget()
@@ -434,7 +434,7 @@ state RadialAttack
     	}
     }
 
-	function EndState()
+	event EndState()
 	{
         NumLumberJacks = 0;
         NumNinjas = 0;
@@ -703,7 +703,7 @@ state FireChaingun
         }
     }
 
-	function EndState()
+	event EndState()
 	{
         TraceHitPos = vect(0,0,0);
 		bMinigunning = False;
@@ -714,7 +714,7 @@ state FireChaingun
         LastChainGunTime = Level.TimeSeconds + 5 + (FRand()*10);
 	}
 
-	function BeginState()
+	event BeginState()
 	{
         bFireAtWill = False;
 		Acceleration = vect(0,0,0);
@@ -865,7 +865,7 @@ Ignores RangedAttack;
         return false;
     }
 
-	function BeginState()
+	event BeginState()
 	{
         Acceleration = vect(0,0,0);
 	}
@@ -933,7 +933,7 @@ state Charging
         return false;
     }
 
-	function BeginState()
+	event BeginState()
 	{
         bChargingPlayer = True;
 		if ( Level.NetMode != NM_DedicatedServer )
@@ -942,7 +942,7 @@ state Charging
 		NumChargeAttacks = Rand(2) + 1;
 	}
 
-	function EndState()
+	event EndState()
 	{
         SetGroundSpeed(GetOriginalGroundSpeed());
 		bChargingPlayer = False;
@@ -952,7 +952,7 @@ state Charging
 		LastChargeTime = Level.TimeSeconds;
 	}
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
         if ( NumChargeAttacks <= 0 )
             GoToState('');
@@ -981,7 +981,7 @@ state Charging
             else
                 SetGroundSpeed(OriginalGroundSpeed * 2.5);
         }
-		Global.Tick(Delta);
+		Global.Tick( DeltaTime );
 	}
 
 	function bool MeleeDamageTarget(int hitdamage, vector pushdir)
@@ -1080,7 +1080,7 @@ State Escaping extends Charging // Got hurt and running away...
 		return Global.MeleeDamageTarget(hitdamage, pushdir*1.5);
 	}
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
         // Keep the flesh pound moving toward its target when attacking
     	if ( Role == ROLE_Authority && bShotAnim )  {
@@ -1104,10 +1104,10 @@ State Escaping extends Charging // Got hurt and running away...
             else
                 SetGroundSpeed(OriginalGroundSpeed * 2.5);
         }
-		Global.Tick(Delta);
+		Global.Tick( DeltaTime );
 	}
 
-	function EndState()
+	event EndState()
 	{
         SetGroundSpeed(GetOriginalGroundSpeed());
 		bChargingPlayer = False;
@@ -1145,13 +1145,13 @@ State SneakAround extends Escaping // Attempt to sneak around.
 		Return RetVal;
 	}
 
-	function BeginState()
+	event BeginState()
 	{
 	    Super.BeginState();
         SneakStartTime = Level.TimeSeconds;
 	}
 
-	function EndState()
+	event EndState()
 	{
 		Super.EndState();
 		LastSneakedTime = Level.TimeSeconds;

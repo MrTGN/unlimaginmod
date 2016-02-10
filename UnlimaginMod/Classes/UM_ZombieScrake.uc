@@ -129,9 +129,9 @@ simulated function UpdateExhaustEmitter()
 	}
 }
 
-simulated function Tick(float DeltaTime)
+simulated event Tick( float DeltaTime )
 {
-	Super.Tick(DeltaTime);
+	Super.Tick( DeltaTime );
 
 	UpdateExhaustEmitter();
 }
@@ -176,7 +176,7 @@ state RunningState
         Return False;
     }
 
-	function BeginState()
+	event BeginState()
 	{
 		if( bZapped )
             GoToState('');
@@ -190,7 +190,7 @@ state RunningState
 		}
 	}
 
-	function EndState()
+	event EndState()
 	{
 		if ( !bZapped )
             SetGroundSpeed(GetOriginalGroundSpeed());
@@ -244,7 +244,7 @@ State SawingLoop
         Return False;
     }
 
-	function BeginState()
+	event BeginState()
 	{
         local float ChargeChance, RagingChargeChance;
 
@@ -302,16 +302,16 @@ State SawingLoop
 			RangedAttack(Controller.Enemy); // Keep on attacking if possible.
 	}
 
-	function Tick( float Delta )
+	event Tick( float DeltaTime )
 	{
         // Keep the scrake moving toward its target when attacking
     	if ( Role == ROLE_Authority && bShotAnim && !bWaitForAnim && LookTarget != None )
 			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 
-		Global.Tick(Delta);
+		Global.Tick( DeltaTime );
 	}
 
-	function EndState()
+	event EndState()
 	{
 		AmbientSound = default.AmbientSound;
 		MeleeDamage = default.MeleeDamage;

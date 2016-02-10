@@ -820,6 +820,7 @@ simulated function DrawHudPassA(Canvas C)
 			C.DrawTile(SlowMoChargeBG.WidgetTexture, SlowMoChargeBG.WidgetTexture.MaterialUSize() * SlowMoChargeBG.TextureScale * 1.5 * HudCanvasScale * ResScaleX * HudScale, SlowMoChargeBG.WidgetTexture.MaterialVSize() * SlowMoChargeBG.TextureScale * HudCanvasScale * ResScaleY * HudScale, 0, 0, SlowMoChargeBG.WidgetTexture.MaterialUSize(), SlowMoChargeBG.WidgetTexture.MaterialVSize());
 		
 		DrawSpriteWidget(C, SlowMoChargeIcon);
+		C.Font = LoadSmallFontStatic(5);
 		C.FontScaleX = C.ClipX / 1024.0;
 		C.FontScaleY = C.FontScaleX;
 		C.SetPos(C.ClipX * SlowMoChargeDigits.PosX, C.ClipY * SlowMoChargeDigits.PosY);
@@ -1221,7 +1222,7 @@ function DrawDoorHealthBars(Canvas C)
 	}
 }
 
-simulated function Tick( float Delta )
+simulated event Tick( float Delta )
 {
 	if( ClientRep==None )
 	{

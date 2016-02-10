@@ -168,8 +168,8 @@ function RandomizeMonsterSizes()
 	NewDrawScale = default.DrawScale * RandomSizeMult;
 	SetDrawScale(NewDrawScale);
 	
-	// Landing to the Ground
-	Move( Location + Vect(0.0, 0.0, 1.0) * (default.CollisionHeight * NewDrawScale - default.CollisionHeight + 6.0) );
+	// Landing on the Ground
+	Move( Location + Vect(0.0, 0.0, 1.0) * (default.CollisionHeight * NewDrawScale - default.CollisionHeight + 1.0) );
 	
 	// MeleeRange
 	MeleeRange = default.MeleeRange * RandomSizeMult * Lerp( FRand(), MeleeRangeScale.Min, MeleeRangeScale.Max );
@@ -1503,7 +1503,7 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-	 LifeSpan=120.0
+	 LifeSpan=150.0
 	 ImpressiveKillChance=0.03
 	 ImpressiveKillDuration=3.0
 	 

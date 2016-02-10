@@ -607,13 +607,12 @@ function SetCarryWeight( float NewCarryWeight )
 
 function CheckSlowMoCharge()
 {
-	/*
 	if ( UM_BaseGameInfo(Level.Game) == None || MaxSlowMoCharge < UM_BaseGameInfo(Level.Game).MinToggleSlowMoCharge )  {
 		MaxSlowMoCharge = 0.0;
 		SlowMoCharge = 0.0;
 		bSlowMoCharged = True;
 		Return;
-	}	*/
+	}
 	
 	if ( SlowMoCharge > MaxSlowMoCharge )
 		SlowMoCharge = MaxSlowMoCharge;
@@ -2508,6 +2507,11 @@ exec function ToggleSlowMo()
 	if ( Level.TimeSeconds < NextSlowMoToggleTime )
 		Return;
 	
+	if ( Role < ROLE_Authority )
+		Log("Client-side ToggleSlowMo() call",Name);
+	else
+		Log("Server-side ToggleSlowMo() call",Name);
+	
 	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
 	ServerToggleSlowMo();
 }
@@ -2515,19 +2519,19 @@ exec function ToggleSlowMo()
 protected function IncreaseSlowMoCharge()
 {
 	NextSlowMoChargeRegenTime = Level.TimeSeconds + SlowMoChargeUpdateAmount / SlowMoChargeRegenRate;
-	SlowMoCharge = Min( (SlowMoCharge + SlowMoChargeUpdateAmount), MaxSlowMoCharge );
+	SlowMoCharge = FMin( (SlowMoCharge + SlowMoChargeUpdateAmount), MaxSlowMoCharge );
 	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 
 function AddSlowMoCharge( float AddCharge )
 {
-	SlowMoCharge = Min( (SlowMoCharge + Abs(AddCharge)), MaxSlowMoCharge );
+	SlowMoCharge = FMin( (SlowMoCharge + Abs(AddCharge)), MaxSlowMoCharge );
 	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 
 function ReduceSlowMoCharge( float ReduceCharge )
 {
-	SlowMoCharge = Max( (SlowMoCharge - Abs(ReduceCharge)), 0.0 );
+	SlowMoCharge = FMax( (SlowMoCharge - Abs(ReduceCharge)), 0.0 );
 	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 //[end] SlowMo

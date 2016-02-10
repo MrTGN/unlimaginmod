@@ -24,21 +24,112 @@ class UM_DefaultInvasionPreset extends UM_BaseInvasionPreset;
 defaultproperties
 {
      // GameWaves - 7 waves
-	 GameWaves(0)=(AliveMonsters=(Min=12,Max=46),MonsterSquadSize=(Min=4,RandMin=2,Max=12,RandMax=6),SquadsSpawnPeriod=(Min=5.0,RandMin=1.0,Max=4.0,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.7,StartDelay=10,Duration=(Min=3.0,RandMin=0.4,Max=8.0,RandMax=0.8),BreakTime=(Min=90.0,Max=100.0),DoorsRepairChance=(Min=1.0,Max=0.6),StartingCash=(Min=240,Max=280),MinRespawnCash=(Min=200,Max=220),DeathCashModifier=(Min=0.98,Max=0.86))
-	 GameWaves(1)=(AliveMonsters=(Min=14,Max=48),MonsterSquadSize=(Min=4,RandMin=2,Max=14,RandMax=7),SquadsSpawnPeriod=(Min=4.5,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=20,WaveDifficulty=0.8,StartDelay=8,Duration=(Min=3.5,RandMin=0.5,Max=9.0,RandMax=1.0),BreakTime=(Min=90.0,Max=110.0),DoorsRepairChance=(Min=1.0,Max=0.55),StartingCash=(Min=260,Max=300),MinRespawnCash=(Min=220,Max=240),DeathCashModifier=(Min=0.97,Max=0.85))
-	 GameWaves(2)=(AliveMonsters=(Min=16,Max=48),MonsterSquadSize=(Min=5,RandMin=2,Max=14,RandMax=8),SquadsSpawnPeriod=(Min=4.0,RandMin=1.0,Max=3.5,RandMax=1.5),SquadsSpawnEndTime=19,WaveDifficulty=0.9,StartDelay=8,Duration=(Min=4.0,RandMin=0.6,Max=10.0,RandMax=1.2),BreakTime=(Min=100.0,Max=110.0),DoorsRepairChance=(Min=1.0,Max=0.5),StartingCash=(Min=280,Max=320),MinRespawnCash=(Min=240,Max=260),DeathCashModifier=(Min=0.96,Max=0.84))
-	 GameWaves(3)=(AliveMonsters=(Min=18,Max=50),MonsterSquadSize=(Min=5,RandMin=3,Max=16,RandMax=8),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=18,WaveDifficulty=1.0,StartDelay=8,Duration=(Min=4.5,RandMin=0.7,Max=11.0,RandMax=1.4),BreakTime=(Min=100.0,Max=120.0),DoorsRepairChance=(Min=1.0,Max=0.45),StartingCash=(Min=300,Max=340),MinRespawnCash=(Min=260,Max=280),DeathCashModifier=(Min=0.95,Max=0.83))
-	 GameWaves(4)=(AliveMonsters=(Min=20,Max=50),MonsterSquadSize=(Min=6,RandMin=3,Max=16,RandMax=10),SquadsSpawnPeriod=(Min=3.5,RandMin=1.0,Max=3.0,RandMax=1.5),SquadsSpawnEndTime=17,WaveDifficulty=1.1,StartDelay=6,Duration=(Min=5.0,RandMin=0.8,Max=12.0,RandMax=1.6),BreakTime=(Min=110.0,Max=120.0),DoorsRepairChance=(Min=1.0,Max=0.4),StartingCash=(Min=320,Max=360),MinRespawnCash=(Min=280,Max=300),DeathCashModifier=(Min=0.94,Max=0.82))
-	 GameWaves(5)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=6,RandMin=3,Max=18,RandMax=10),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.5,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.2,StartDelay=6,Duration=(Min=5.5,RandMin=0.9,Max=13.0,RandMax=1.8),BreakTime=(Min=110.0,Max=130.0),DoorsRepairChance=(Min=1.0,Max=0.35),StartingCash=(Min=340,Max=380),MinRespawnCash=(Min=300,Max=320),DeathCashModifier=(Min=0.93,Max=0.81))
-	 GameWaves(6)=(AliveMonsters=(Min=22,Max=52),MonsterSquadSize=(Min=7,RandMin=3,Max=18,RandMax=12),SquadsSpawnPeriod=(Min=3.0,RandMin=1.0,Max=2.0,RandMax=1.5),SquadsSpawnEndTime=16,WaveDifficulty=1.3,StartDelay=6,Duration=(Min=6.0,RandMin=1.0,Max=14.0,RandMax=2.0),BreakTime=(Min=120.0,Max=130.0),DoorsRepairChance=(Min=1.0,Max=0.3),StartingCash=(Min=360,Max=400),MinRespawnCash=(Min=320,Max=340),DeathCashModifier=(Min=0.92,Max=0.8))
+	 InitialWaveNum=0
+	 // WaveAliveMonsters
+	 WaveAliveMonsters(0)=(Min=12,Max=46)
+	 WaveAliveMonsters(1)=(Min=14,Max=48)
+	 WaveAliveMonsters(2)=(Min=14,Max=48)
+	 WaveAliveMonsters(3)=(Min=16,Max=50)
+	 WaveAliveMonsters(4)=(Min=16,Max=50)
+	 WaveAliveMonsters(5)=(Min=18,Max=52)
+	 WaveAliveMonsters(6)=(Min=18,Max=52)
+	 // WaveMonsterSquadSize
+	 WaveMonsterSquadSize(0)=(Min=4,RandMin=2,Max=12,RandMax=6)
+	 WaveMonsterSquadSize(1)=(Min=4,RandMin=2,Max=14,RandMax=7)
+	 WaveMonsterSquadSize(2)=(Min=5,RandMin=2,Max=14,RandMax=8)
+	 WaveMonsterSquadSize(3)=(Min=5,RandMin=3,Max=16,RandMax=8)
+	 WaveMonsterSquadSize(4)=(Min=6,RandMin=3,Max=16,RandMax=10)
+	 WaveMonsterSquadSize(5)=(Min=6,RandMin=3,Max=18,RandMax=10)
+	 WaveMonsterSquadSize(6)=(Min=7,RandMin=3,Max=18,RandMax=12)
+	 // WaveSquadsSpawnPeriod
+	 WaveSquadsSpawnPeriod(0)=(Min=5.0,RandMin=1.0,Max=4.0,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(1)=(Min=4.5,RandMin=1.0,Max=3.5,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(2)=(Min=4.5,RandMin=1.0,Max=3.5,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(3)=(Min=4.0,RandMin=1.0,Max=3.0,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(4)=(Min=4.0,RandMin=1.0,Max=3.0,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(5)=(Min=3.5,RandMin=1.0,Max=2.5,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(6)=(Min=3.5,RandMin=1.0,Max=2.5,RandMax=1.5)
+	 // WaveSquadsSpawnEndTime
+	 WaveSquadsSpawnEndTime(0)=25
+	 WaveSquadsSpawnEndTime(1)=26
+	 WaveSquadsSpawnEndTime(2)=26
+	 WaveSquadsSpawnEndTime(3)=28
+	 WaveSquadsSpawnEndTime(4)=28
+	 WaveSquadsSpawnEndTime(5)=30
+	 WaveSquadsSpawnEndTime(6)=30
+	 // WaveDifficulty
+	 WaveDifficulty(0)=0.7
+	 WaveDifficulty(1)=0.8
+	 WaveDifficulty(2)=0.9
+	 WaveDifficulty(3)=1.0
+	 WaveDifficulty(4)=1.1
+	 WaveDifficulty(5)=1.2
+	 WaveDifficulty(6)=1.3
+	 // WaveStartDelay
+	 WaveStartDelay(0)=10
+	 WaveStartDelay(1)=10
+	 WaveStartDelay(2)=8
+	 WaveStartDelay(3)=8
+	 WaveStartDelay(4)=8
+	 WaveStartDelay(5)=6
+	 WaveStartDelay(6)=6
+	 // WaveDuration
+	 WaveDuration(0)=(Min=2.0,RandMin=0.5,Max=4.0,RandMax=1.0)
+	 WaveDuration(1)=(Min=2.5,RandMin=0.5,Max=5.0,RandMax=1.0)
+	 WaveDuration(2)=(Min=3.0,RandMin=0.6,Max=6.0,RandMax=1.2)
+	 WaveDuration(3)=(Min=3.5,RandMin=0.7,Max=7.0,RandMax=1.4)
+	 WaveDuration(4)=(Min=4.0,RandMin=0.8,Max=8.0,RandMax=1.6)
+	 WaveDuration(5)=(Min=4.5,RandMin=0.9,Max=9.0,RandMax=1.8)
+	 WaveDuration(6)=(Min=5.0,RandMin=1.0,Max=10.0,RandMax=2.0)
+	 // WaveBreakTime
+	 WaveBreakTime(0)=(Min=90.0,Max=100.0)
+	 WaveBreakTime(1)=(Min=90.0,Max=110.0)
+	 WaveBreakTime(2)=(Min=100.0,Max=110.0)
+	 WaveBreakTime(3)=(Min=100.0,Max=120.0)
+	 WaveBreakTime(4)=(Min=110.0,Max=120.0)
+	 WaveBreakTime(5)=(Min=110.0,Max=130.0)
+	 WaveBreakTime(6)=(Min=120.0,Max=130.0)
+	 // WaveDoorsRepairChance
+	 WaveDoorsRepairChance(0)=(Min=1.0,Max=0.6)
+	 WaveDoorsRepairChance(1)=(Min=1.0,Max=0.55)
+	 WaveDoorsRepairChance(2)=(Min=1.0,Max=0.5)
+	 WaveDoorsRepairChance(3)=(Min=1.0,Max=0.45)
+	 WaveDoorsRepairChance(4)=(Min=1.0,Max=0.4)
+	 WaveDoorsRepairChance(5)=(Min=1.0,Max=0.35)
+	 WaveDoorsRepairChance(6)=(Min=1.0,Max=0.3)
+	 // WaveStartingCash
+	 WaveStartingCash(0)=(Min=240,Max=280)
+	 WaveStartingCash(1)=(Min=260,Max=300)
+	 WaveStartingCash(2)=(Min=280,Max=320)
+	 WaveStartingCash(3)=(Min=300,Max=340)
+	 WaveStartingCash(4)=(Min=320,Max=360)
+	 WaveStartingCash(5)=(Min=340,Max=380)
+	 WaveStartingCash(6)=(Min=360,Max=400)
+	 // WaveMinRespawnCash
+	 WaveMinRespawnCash(0)=(Min=200,Max=220)
+	 WaveMinRespawnCash(1)=(Min=220,Max=240)
+	 WaveMinRespawnCash(2)=(Min=240,Max=260)
+	 WaveMinRespawnCash(3)=(Min=260,Max=280)
+	 WaveMinRespawnCash(4)=(Min=280,Max=300)
+	 WaveMinRespawnCash(5)=(Min=300,Max=320)
+	 WaveMinRespawnCash(6)=(Min=320,Max=340)
+	 // WaveDeathCashModifier
+	 WaveDeathCashModifier(0)=(Min=0.98,Max=0.86)
+	 WaveDeathCashModifier(1)=(Min=0.97,Max=0.85)
+	 WaveDeathCashModifier(2)=(Min=0.96,Max=0.84)
+	 WaveDeathCashModifier(3)=(Min=0.95,Max=0.83)
+	 WaveDeathCashModifier(4)=(Min=0.94,Max=0.82)
+	 WaveDeathCashModifier(5)=(Min=0.93,Max=0.81)
+	 WaveDeathCashModifier(6)=(Min=0.92,Max=0.8)
 	 
 	 // BossWave
+	 BossWaveNum=7
 	 BossMonsterClassName="UnlimaginMod.UM_ZombieBoss"
 	 BossWaveAliveMonsters=(Min=16,Max=48)
 	 BossWaveMonsterSquadSize=(Min=12,RandMin=4,Max=36,RandMax=12)
 	 BossWaveSquadsSpawnPeriod=(Min=40.0,RandMin=5.0,Max=40.0,RandMax=10.0)
 	 BossWaveDifficulty=1.4
-	 BossWaveStartDelay=5
+	 BossWaveStartDelay=6
 	 BossWaveDoorsRepairChance=(Min=1.0,Max=0.2)
 	 BossWaveStartingCash=(Min=400,Max=450)
 	 BossWaveMinRespawnCash=(Min=340,Max=380)

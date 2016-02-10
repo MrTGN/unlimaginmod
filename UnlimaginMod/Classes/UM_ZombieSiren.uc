@@ -211,9 +211,9 @@ function RemoveHead()
 	}
 }
 
-simulated function Tick( float Delta )
+simulated event Tick( float DeltaTime )
 {
-	Super.Tick(Delta);
+	Super.Tick( DeltaTime );
 	
 	if ( bAboutToDie && Level.TimeSeconds > DeathTimer )  {
 		if( Health > 0 && Level.NetMode != NM_Client )

@@ -391,7 +391,7 @@ simulated event Landed( vector HitNormal )
 	Explode(Location,HitNormal);
 }
 
-function Tick( float DeltaTime )
+event Tick( float DeltaTime )
 {
     if( Role < ROLE_Authority )
 		Return;

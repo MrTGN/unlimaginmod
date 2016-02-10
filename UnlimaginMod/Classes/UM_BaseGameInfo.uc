@@ -1249,7 +1249,7 @@ static event string GetDescriptionText(string PropName)
 
 auto state PendingMatch
 {
-	function BeginState()
+	event BeginState()
 	{
 		bWaitingToStartMatch = True;
 		StartupStage = 0;
@@ -1288,7 +1288,7 @@ auto state PendingMatch
 		GotoState('StartingMatch');
 	}
 
-	function Timer()
+	event Timer()
 	{
 		local	int		i, ReadyCount;
 
@@ -1356,7 +1356,7 @@ auto state PendingMatch
 		}
 	}
 
-	function EndState()
+	event EndState()
 	{
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).LobbyTimeout = -1;
@@ -1521,13 +1521,13 @@ function ResetSlowMoInstigator()
 		SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
 	// Reset
 	bSlowMoStartedByHuman = False;
-	SlowMoInstigator = None;
 	SlowMoDeltaTime = 0.0;
+	SlowMoInstigator = None;
 }
 
 function ToggledSlowMoBy( UM_HumanPawn Human )
 {
-	if ( Level.TimeSeconds < NextSlowMoToggleTime || Human == None || Human.bDeleteMe || Human.Health < 1 || Human.SlowMoCharge < (CurrentZEDTimeDuration + MinToggleSlowMoCharge) )
+	if ( Level.TimeSeconds < NextSlowMoToggleTime || Human == None || Human.bDeleteMe || Human.Health < 1 )
 		Return;
 	
 	NextSlowMoToggleTime = Level.TimeSeconds + DelayBetweenSlowMoToggle;
@@ -1535,11 +1535,11 @@ function ToggledSlowMoBy( UM_HumanPawn Human )
 	if ( Human == SlowMoInstigator )
 		CurrentZEDTimeDuration = FMin( CurrentZEDTimeDuration, SpeedingBackZEDTime );
 	// Do SlowMo
-	else if ( DoZedTime(Human.SlowMoCharge) )  {
+	else if ( Human.SlowMoCharge > (CurrentZEDTimeDuration + MinToggleSlowMoCharge) && DoZedTime(Human.SlowMoCharge) )  {
 		ResetSlowMoInstigator();
 		// Setting Up new SlowMoInstigator
-		bSlowMoStartedByHuman = True;
 		SlowMoInstigator = Human;
+		bSlowMoStartedByHuman = True;
 	}
 }
 
@@ -1551,8 +1551,8 @@ function ExtendZEDTime( UM_HumanPawn Human )
 	if ( DoZedTime( ZEDTimeDuration ) )  {
 		ResetSlowMoInstigator();
 		// Setting Up new SlowMoInstigator
-		bSlowMoStartedByHuman = True;
 		SlowMoInstigator = Human;
+		bSlowMoStartedByHuman = True;
 	}
 }
 
@@ -1605,13 +1605,13 @@ event Tick( float DeltaTime )
 				if ( SlowMoInstigator == None || SlowMoInstigator.Health < 1 || SlowMoInstigator.bDeleteMe )  {
 					bSlowMoStartedByHuman = False;
 					SlowMoInstigator = None;
-					CurrentZEDTimeDuration = Min( CurrentZEDTimeDuration, SpeedingBackZEDTime );
+					CurrentZEDTimeDuration = FMin( CurrentZEDTimeDuration, SpeedingBackZEDTime );
 				}
 				// Reduce SlowMoInstigator SlowMoCharge
 				else if ( SlowMoDeltaTime >= SlowMoInstigator.SlowMoChargeUpdateAmount )  {
 					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
 					SlowMoDeltaTime = 0.0;
-					CurrentZEDTimeDuration = SlowMoInstigator.SlowMoCharge;
+					//CurrentZEDTimeDuration = SlowMoInstigator.SlowMoCharge;
 				}
 			}
 			// Smooth exit from the ZedTime

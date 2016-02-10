@@ -126,7 +126,7 @@ simulated function SetFireMode(EFireMode NewFM)
 
 state SwitchingFireMode
 {
-	simulated function BeginState()
+	simulated event BeginState()
 	{
 		local	PlayerController	Player;
 		
@@ -149,7 +149,7 @@ state SwitchingFireMode
 		}
 	}
 	
-	simulated function Timer()
+	simulated event Timer()
 	{
 		SetTimer(0.0, false);
 		GotoState(InitialState);

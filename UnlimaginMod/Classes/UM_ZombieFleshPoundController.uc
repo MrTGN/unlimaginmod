@@ -90,7 +90,7 @@ WaitForAnim:
 
 state ZombieCharge
 {
-	function Tick( float Delta )
+	event Tick( float Delta )
 	{
 		local UM_ZombieFleshPound ZFP;
         Global.Tick(Delta);
@@ -132,7 +132,7 @@ state ZombieCharge
 		TimedFireWeaponAtEnemy();
 	}
 
-	function BeginState()
+	event BeginState()
 	{
         super.BeginState();
 
@@ -173,7 +173,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
     // Don't do this in this state
     function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
 
-	function BeginState()
+	event BeginState()
 	{
         bUseFreezeHack = False;
 	}
@@ -193,7 +193,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 		}
 	}
 
-	function Tick( float Delta )
+	event Tick( float Delta )
 	{
 		Global.Tick(Delta);
 
@@ -217,7 +217,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 			Pawn.AccelRate = 0;
 		}
 	}
-	function EndState()
+	event EndState()
 	{
         if( Pawn!=None )
 		{

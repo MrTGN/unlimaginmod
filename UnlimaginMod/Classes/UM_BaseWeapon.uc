@@ -336,7 +336,7 @@ exec function ToggleTacticalModule()
 
 state TogglingTacticalModule
 {
-	simulated function BeginState()
+	simulated event BeginState()
 	{
 		TacticalModule.Toggle();
 		SetTimer(TacticalModuleToggleTime, False);
@@ -344,7 +344,7 @@ state TogglingTacticalModule
 			PlayAnim(TacticalModuleToggleAnim.Anim, TacticalModuleToggleAnim.Rate, TacticalModuleToggleAnim.TweenTime);
 	}
 	
-	simulated function Timer()
+	simulated event Timer()
 	{		
 		SetTimer(0.0, false);
 		GotoState(InitialState);
@@ -1052,7 +1052,7 @@ simulated function bool InterruptReload()
 }
 
 // From KFWeapon.uc
-simulated function Timer()
+simulated event Timer()
 {
 	local	int		Mode;
 	local	float	OldDownDelay;

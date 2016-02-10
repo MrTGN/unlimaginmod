@@ -92,7 +92,7 @@ auto state Pickup
 		Return Super.ValidTouch(Other);
 	}
 
-	function Timer()
+	event Timer()
 	{
 		if ( bDropped && !bPreventFadeOut )
 			GotoState('FadeOut');
@@ -107,7 +107,7 @@ state FallingPickup
 			GiveCashTo(Pawn(Other));
 	}
 
-	function Timer()
+	event Timer()
 	{
 		if ( !bPreventFadeOut )
 			GotoState('FadeOut');

@@ -51,7 +51,6 @@ defaultproperties
 	 RecoilRate=0.060000
      maxVerticalRecoilAngle=124
      maxHorizontalRecoilAngle=75
-     RecoilVelocityScale=0.000000
      bPawnRapidFireAnim=True
      TransientSoundVolume=1.820000
      TweenTime=0.025000

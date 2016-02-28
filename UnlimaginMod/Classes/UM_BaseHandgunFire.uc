@@ -20,7 +20,8 @@ class UM_BaseHandgunFire extends UM_BaseProjectileWeaponFire
 
 defaultproperties
 {
-     //Instigator MovingSpeedScale
+     RecoilVelocityScale=2.5
+	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.820000
 	 FireMovingSpeedScale=0.600000
      //[block] Bonuses

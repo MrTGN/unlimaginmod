@@ -126,7 +126,7 @@ static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, 
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
 	if ( DamageType == Class'Fell' )
-		Return 1.0 - 0.08 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 80% reduced Damage by falling
+		Return 1.0 - 0.095 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 95% reduced Damage by falling
 	else if ( DamageType == class'DamTypeVomit' )
 		Return 1.0 - 0.09 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 90% reduced Bloat Bile damage
 	else if ( DamageType == Class'UM_ZombieDamType_Poison' )
@@ -143,12 +143,7 @@ static function bool CanMeleeStun()
 
 static function bool CanBeGrabbed(KFPlayerReplicationInfo KFPRI, KFMonster Other)
 {
-	if ( Other.IsA('ZombieClot') )
-		Return !Other.IsA('ZombieClot');
-	else if ( Other.IsA('UM_ZombieClot') )
-		Return !Other.IsA('UM_ZombieClot');
-	else if ( Other.IsA('UM_ZombieStalker'))
-		Return !Other.IsA('UM_ZombieStalker');
+	Return False;
 }
 
 // Set number times Zed Time can be extended

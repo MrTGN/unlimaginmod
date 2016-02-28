@@ -33,9 +33,9 @@ defaultproperties
 	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
 	 //ExplodeTimer
 	 ExplodeTimer=2.000000
-	 BallisticRandRange=(Min=0.7,Max=1.3)
+	 BallisticRandRange=(Min=0.8,Max=1.2)
      //MuzzleVelocity
-     MuzzleVelocity=26.000000	// m/sec
+     MuzzleVelocity=10.000000	// m/sec
 	 Trail=(xEmitterClass=Class'KFTracer')
 	 //Mesh
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'

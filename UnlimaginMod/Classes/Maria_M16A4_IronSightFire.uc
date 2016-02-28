@@ -40,7 +40,6 @@ defaultproperties
      RecoilRate=0.065000
      maxVerticalRecoilAngle=192
      maxHorizontalRecoilAngle=100
-     RecoilVelocityScale=0.000000
      FireRate=0.075000
      AmmoClass=Class'UnlimaginMod.Maria_M16A4Ammo'
      ShakeRotMag=(X=52.000000,Y=50.000000,Z=350.000000)

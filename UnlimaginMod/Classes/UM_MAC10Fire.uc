@@ -40,7 +40,6 @@ defaultproperties
      RecoilRate=0.050000
      maxVerticalRecoilAngle=150
      maxHorizontalRecoilAngle=100
-     RecoilVelocityScale=1.500000
      FireSoundRef="KF_MAC10MPSnd.MAC10_Silenced_Fire"
      StereoFireSoundRef="KF_MAC10MPSnd.MAC10_Silenced_FireST"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"

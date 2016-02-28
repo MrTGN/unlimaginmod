@@ -29,6 +29,6 @@ defaultproperties
 	 IgnoredVictims(0)="UM_ClusterGrenadeProj"
 	 //Shrapnel
 	 ShrapnelClass=Class'UnlimaginMod.UM_ClusterGrenadeProj'
+	 MinShrapnelAmount=6
 	 MaxShrapnelAmount=8
-	 MinShrapnelAmount=5
 }

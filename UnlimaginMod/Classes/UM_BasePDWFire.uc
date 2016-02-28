@@ -20,7 +20,8 @@ class UM_BasePDWFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-     //Instigator MovingSpeedScale
+     RecoilVelocityScale=1.5
+	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.850000
 	 FireMovingSpeedScale=0.650000
      //[block] Bonuses

@@ -434,7 +434,8 @@ simulated event PostBeginPlay()
 			//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
 			//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
 			//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-			JumpZ = default.JumpZ * DrawScale * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
+			//JumpZ = default.JumpZ * DrawScale * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
+			JumpZ = default.JumpZ * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
 			//int
 			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
@@ -1517,22 +1518,22 @@ defaultproperties
 	 PlayerNumHeadHealthScale=0.1
 	 MassScaleRange=(Min=0.95,Max=1.05)
 	 // Monster Size
-	 SizeScaleRange=(Min=0.8,Max=1.2)
+	 SizeScaleRange=(Min=0.85,Max=1.15)
 	 // Monster Speed
-	 SpeedScaleRange=(Min=0.8,Max=1.1)
+	 SpeedScaleRange=(Min=0.9,Max=1.1)
 	 // Monster Health
 	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 // Monster HeadHealth
 	 HeadHealthScaleRange=(Min=0.92,Max=1.08)
 	 // JumpZ
-	 JumpZScaleRange=(Min=0.88,Max=1.12)
+	 JumpZScaleRange=(Min=1.0,Max=1.2)
 	 // MeleeRange
 	 MeleeRangeScale=(Min=0.95,Max=1.05)
 	 // DamageScale
 	 DamageScaleRange=(Min=0.9,Max=1.1)
 	 // Extra Sizes
 	 ExtraSizeChance=0.150000
-	 ExtraSizeScaleRange=(Min=0.55,Max=1.25)
+	 ExtraSizeScaleRange=(Min=0.6,Max=1.3)
 	 // Extra Speed
 	 ExtraSpeedChance=0.200000
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.0)

@@ -488,32 +488,34 @@ function SpawnShrapnel()
 	local	Actor		SpawnBlocker;
 	local	Vector		THitLoc, THitNorm, ShrapnelCollisionExtent;
 	
-	if ( ShrapnelClass != None && MaxShrapnelAmount > 0 )  {
-		if ( MaxShrapnelAmount > 1 )  {
-			for ( i = Rand( Max((MaxShrapnelAmount - MinShrapnelAmount), 1) ); i < MaxShrapnelAmount; ++i )  {
-				SpawnRotation = RotRand(True);
-				ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
-				// Can't spawn Shrapnel
-				if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
-					ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
-					SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
-					// If something blocking shrapnel spawn location
-					if ( SpawnBlocker != None )
-						Spawn(ShrapnelClass, Instigator,, (THitLoc + ShrapnelCollisionExtent), SpawnRotation);
-				}
-			}
+	if ( ShrapnelClass == None || MaxShrapnelAmount < 1 )
+		Return;
+	
+	if ( MaxShrapnelAmount == 1 )  {
+		SpawnRotation = RotRand(True);
+		ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
+		// Can't spawn Shrapnel
+		if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
+			ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
+				SpawnBlocker = Trace( THitLoc, THitNorm, (Location + ShrapnelCollisionExtent), Location, False );
+			// If something blocking shrapnel spawn location
+			if ( SpawnBlocker != None )
+				Spawn(ShrapnelClass, Instigator,, (THitLoc - ShrapnelCollisionExtent), SpawnRotation);
 		}
-		else  {
-			SpawnRotation = RotRand(True);
-			ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
-			// Can't spawn Shrapnel
-			if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
-				ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
-				SpawnBlocker = Trace(THitLoc, THitNorm, (Location + 2.0 * ShrapnelCollisionExtent), Location, False, ShrapnelCollisionExtent);
-				// If something blocking shrapnel spawn location
-				if ( SpawnBlocker != None )
-					Spawn(ShrapnelClass, Instigator,, (THitLoc + ShrapnelCollisionExtent), SpawnRotation);
-			}
+		Return;
+	}
+	
+	// Random ShrapnelAmount spawn
+	for ( i = Rand( Max((MaxShrapnelAmount - MinShrapnelAmount), 0) + 1 ); i < MaxShrapnelAmount; ++i )  {
+		SpawnRotation = RotRand(True);
+		ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
+		// Can't spawn Shrapnel
+		if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
+			ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
+			SpawnBlocker = Trace( THitLoc, THitNorm, (Location + ShrapnelCollisionExtent), Location, False );
+			// If something blocking shrapnel spawn location
+			if ( SpawnBlocker != None )
+				Spawn(ShrapnelClass, Instigator,, (THitLoc - ShrapnelCollisionExtent), SpawnRotation);
 		}
 	}
 }

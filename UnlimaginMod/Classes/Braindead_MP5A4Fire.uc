@@ -43,7 +43,6 @@ defaultproperties
 	 RecoilRate=0.060000
      maxVerticalRecoilAngle=124
      maxHorizontalRecoilAngle=80
-     RecoilVelocityScale=0.000000
      FireRate=0.075000
 	 AmmoClass=Class'UnlimaginMod.Braindead_MP5A4Ammo'
 	 ShakeRotMag=(X=25.000000,Y=25.000000,Z=125.000000)

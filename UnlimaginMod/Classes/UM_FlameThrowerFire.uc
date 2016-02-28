@@ -38,8 +38,8 @@ defaultproperties
      AmbientFireSoundRef="KF_FlamethrowerSnd.FireLoop"
 	 NoAmmoSoundRef="KF_FlamethrowerSnd.FT_DryFire"
      EffectiveRange=1500.000000
-     maxVerticalRecoilAngle=180
-     maxHorizontalRecoilAngle=150
+     maxVerticalRecoilAngle=160
+     maxHorizontalRecoilAngle=100
 	 ProjSpawnOffsets(0)=(X=0.000000,Y=1.000000,Z=0.000000)
 	 bSplashDamage=True
      bRecommendSplashDamage=True
@@ -54,10 +54,10 @@ defaultproperties
      AmmoClass=Class'KFMod.FlameAmmo'
      ShakeRotMag=(X=0.000000,Y=0.000000,Z=0.000000)
      ShakeRotRate=(X=0.000000,Y=0.000000,Z=0.000000)
-	 ShakeRotTime=0.750000
+	 ShakeRotTime=0.000000
      ShakeOffsetMag=(X=0.000000,Y=0.000000,Z=0.000000)
 	 ShakeOffsetRate=(X=0.000000,Y=0.000000,Z=0.000000)
-	 ShakeOffsetTime=1.250000
+	 ShakeOffsetTime=0.000000
      ProjectileClass=Class'KFMod.FlameTendril'
 	 BotRefireRate=0.070000
      AimError=70.000000

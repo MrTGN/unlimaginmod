@@ -20,7 +20,8 @@ class UM_BaseAssaultRifleFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-     //Instigator MovingSpeedScale
+     RecoilVelocityScale=2.5
+	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.750000
 	 FireMovingSpeedScale=0.500000
 	 //[block] Bonuses

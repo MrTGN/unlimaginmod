@@ -1083,6 +1083,8 @@ function KillJammedMonsters()
 			--WaveMonsters;
 			--i;
 		}
+		else
+			AliveMonsterList[i].LifeSpan = FClamp( AliveMonsterList[i].LifeSpan, 5.0, 30.0 );
 	}
 }
 
@@ -1594,7 +1596,7 @@ defaultproperties
 	 BotAtHumanFriendlyFireScale=0.5
 
 	 MinHumanPlayers=1
-	 MaxHumanPlayers=12
+	 MaxHumanPlayers=10
 	 
 	 bBeginMatchWithShopping=True
 	 InitialShoppingTime=(Min=90.0,Max=110.0)

@@ -20,7 +20,8 @@ class UM_BaseFlameThrowerFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-     //[block] Fire Effects
+     RecoilVelocityScale=1.25
+	 //[block] Fire Effects
 	 bRecoilIgnoreZVelocity=True
 	 MuzzleBones(0)="tip"
 	 SmokeEmitterClasses(0)=Class'UnlimaginMod.UM_BaseMuzzleSmoke1st'

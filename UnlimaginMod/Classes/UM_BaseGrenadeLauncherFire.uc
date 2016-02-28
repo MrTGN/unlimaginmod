@@ -28,6 +28,7 @@ function float UpdateSpread(float NewSpread)
 
 defaultproperties
 {
+	 RecoilVelocityScale=1.5
 	 //Animation
 	 FireEndAnims(0)=(Anim="")
 	 //Instigator MovingSpeedScale

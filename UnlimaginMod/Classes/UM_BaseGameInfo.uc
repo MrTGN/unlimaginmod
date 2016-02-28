@@ -2235,7 +2235,7 @@ defaultproperties
 	 ZEDTimeDuration=3.0
 	 SpeedingBackZEDTime=0.5
 	 
-	 DelayBetweenSlowMoToggle=0.25
+	 DelayBetweenSlowMoToggle=0.2
 	 MinToggleSlowMoCharge=2.0
 	 
 	 MinHumanPlayers=1

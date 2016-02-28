@@ -20,7 +20,8 @@ class UM_BaseMachineGunFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-     //Instigator MovingSpeedScale
+     RecoilVelocityScale=3.0
+	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.650000
 	 FireMovingSpeedScale=0.400000
      //[block] Bonuses

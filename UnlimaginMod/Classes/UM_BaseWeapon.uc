@@ -1634,6 +1634,7 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 	Instigator = Other;
 	W = Weapon( Instigator.FindInventoryType(Class) );
 	// added class check because somebody made FindInventoryType() return subclasses for some reason
+	// Don't have a single weapon
 	if ( W == None || W.Class != Class )  {
 		//bJustSpawned = Instigator.AddInventory( Self );
 		bJustSpawned = True;
@@ -1776,7 +1777,7 @@ function DropFrom( vector StartLocation )
 	
 	if ( Pickup != None )  {
 		Pickup.InitDroppedPickupFor(self);
-		Pickup.Velocity = Velocity + (Direction * 100.0);
+		Pickup.Velocity = Velocity + (Direction * 200.0);
 		if ( SW != None && KFW != None && KFWeaponPickup(Pickup) != None )  {
 			KFWeaponPickup(Pickup).AmmoAmount[0] = AmmoThrown;
 			KFWeaponPickup(Pickup).MagAmmoRemaining = MagAmmoRemaining;

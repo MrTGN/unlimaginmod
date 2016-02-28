@@ -20,8 +20,8 @@ class UM_BaseWeaponPickup extends KFWeaponPickup
 
 //Dual weapon
 var		class<KFWeapon>		SingleWeaponClass, DualWeaponClass;
-var		bool				bPawnCanPickupOnlySingleWeapon;
-
+var		bool				bPickedUpSingleWeapon;
+var		Pawn				LastCantCarryPawn;
 
 function bool AllowRepeatPickup()
 {
@@ -32,7 +32,7 @@ function Inventory SpawnCopy( Pawn Other )
 {
 	local	Inventory	Copy;
 
-	if ( bPawnCanPickupOnlySingleWeapon )  {
+	if ( bPickedUpSingleWeapon )  {
 		if ( Inventory != None )  {
 			Inventory.Destroy();
 			Inventory = None;
@@ -55,7 +55,7 @@ function Inventory SpawnCopy( Pawn Other )
 
 function SetRespawn()
 {
-	if ( bPawnCanPickupOnlySingleWeapon ) {
+	if ( bPickedUpSingleWeapon ) {
 		Spawn(SingleWeaponClass.default.PickupClass, Owner);
 		Destroy();
 	}
@@ -65,47 +65,67 @@ function SetRespawn()
 		Destroy();
 }
 
-function bool CheckCanCarry(KFHumanPawn Hm)
+function bool CheckCanCarry( KFHumanPawn H )
 {
-	local	Inventory			Inv;
-	local	PlayerController	PC;
-
-	for ( Inv = Hm.Inventory; Inv != None; Inv = Inv.Inventory )  {
-		if ( Inv.PickupClass != None )  {
-			// if this is a DualWeaponPickup and Pawn has a Single variant of this weapon
-			if ( SingleWeaponClass != None && Inv.Class == SingleWeaponClass 
-				 && Hm.CanCarry(SingleWeaponClass.default.Weight) )  {
-				bPawnCanPickupOnlySingleWeapon = True;
-				Return True;
-			}
-			// Do not allow to pickup if Pawn already have a Dual variant of this Weapon
-			else if ( DualWeaponClass != None && Inv.Class == DualWeaponClass )  {
-				PC = PlayerController(Hm.Controller);
-				if ( PC != None && Level.TimeSeconds > LastCantCarryTime )  {
-					LastCantCarryTime = Level.TimeSeconds + 0.5;
-					//HasWeaponMsg
-					PC.ReceiveLocalizedMessage(Class'KFMainMessages', 1);
-				}
+	local	Inventory	Inv;
+	
+	if ( H == LastCantCarryPawn && Level.TimeSeconds < LastCantCarryTime )
+		Return False;
+	
+	// Check if Pawn already have a Dual variant of this Weapon
+	if ( DualWeaponClass != None )  {
+		for ( Inv = H.Inventory; Inv != None; Inv = Inv.Inventory )  {
+			if ( Inv.Class == DualWeaponClass )  {
+				// Has this Weapon Msg
+				if ( PlayerController(H.Controller) != None )
+					PlayerController(H.Controller).ReceiveLocalizedMessage(Class'KFMainMessages', 1);
+				// Can't carry this weapon
+				LastCantCarryPawn = H;
+				LastCantCarryTime = Level.TimeSeconds + 0.5;
 				Return False;
 			}
 		}
 	}
-
-	if ( !Hm.CanCarry(Weight) ) {
-		PC = PlayerController(Hm.Controller);
-		if ( PC != None && Level.TimeSeconds > LastCantCarryTime )  {
-			LastCantCarryTime = Level.TimeSeconds + 0.5;
-			//NoCarryMoreMsg
-			PC.ReceiveLocalizedMessage(Class'KFMainMessages', 2);
+	// If Pawn can't carry this weapon
+	else if ( !H.CanCarry(Weight) )  {
+		// if this is a DualWeaponPickup
+		if ( SingleWeaponClass != None && H.CanCarry(SingleWeaponClass.default.Weight) )  {
+			bPickedUpSingleWeapon = True;
+			Return True;
 		}
+		
+		// Has this Weapon Msg
+		if ( PlayerController(H.Controller) != None )
+			PlayerController(H.Controller).ReceiveLocalizedMessage(Class'KFMainMessages', 2);
+		// Can't carry this weapon
+		LastCantCarryPawn = H;
+		LastCantCarryTime = Level.TimeSeconds + 0.5;
 		Return False;
 	}
 
 	Return True;
 }
 
+function bool ValidTouch( Actor Other )
+{
+	// Make sure its a live player, not touching through wall and can carry this item
+	if ( Pawn(Other) == None || !Pawn(Other).bCanPickupInventory || (Pawn(Other).DrivenVehicle == None && Pawn(Other).Controller == None) || !FastTrace(Other.Location, Location) || (KFHumanPawn(Other) != None && !CheckCanCarry(KFHumanPawn(Other))) )
+		Return False;
+	
+	// make sure game will let player pick me up
+	if( Level.Game.PickupQuery(Pawn(Other), self) )  {
+		TriggerEvent(Event, self, Pawn(Other));
+		Return True;
+	}
+	
+	Return False;
+}
+
 auto state Pickup
 {
+	// Overload state super function
+	function bool ValidTouch( Actor Other );
+	
 	event BeginState()
 	{
 		UntriggerEvent(Event, self, None);
@@ -114,34 +134,15 @@ auto state Pickup
 			SetTimer(20, false);
 		}
 	}
-	
-	function bool ValidTouch(Actor Other)
-	{
-		// make sure its a live player
-		// and he is not touching me through wall
-		if ( Pawn(Other) == None || !Pawn(Other).bCanPickupInventory
-			 || (Pawn(Other).DrivenVehicle == None && Pawn(Other).Controller == None)
-			 || !FastTrace(Other.Location, Location)
-			 || (KFHumanPawn(Other) != None && !CheckCanCarry(KFHumanPawn(Other))) )
-			Return False;
 
-		// make sure game will let player pick me up
-		if( Level.Game.PickupQuery(Pawn(Other), self) )  {
-			TriggerEvent(Event, self, Pawn(Other));
-			Return True;
-		}
-		
-		Return False;
-	}
-
-	// When touched by an actor.  Let's mod this to account for Weights. (Player can't pickup items)
-	// IF he's exceeding his max carry weight.
-	function Touch(Actor Other)
+	/* When touched by an actor.  Let's mod this to account for Weights. 
+		Player can't pickup items if he's exceeding his max carry weight */
+	event Touch(Actor Other)
 	{
 		local	Inventory	Copy;
 
 		// If touched by a player pawn, let him pick this up.
-		if ( ValidTouch(Other) )  {
+		if ( Global.ValidTouch(Other) )  {
 			Copy = SpawnCopy(Pawn(Other));
 			AnnouncePickup(Pawn(Other));
 			SetRespawn();
@@ -164,25 +165,21 @@ auto state Pickup
 
 state FallingPickup
 {
-	event BeginState() { }
+	event BeginState();
+	event Timer();
 	
-	event Timer() { }
-	
-	function bool ValidTouch(Actor Other)
+	function bool ValidTouch( Actor Other )
 	{
 		// make sure thrower doesn't run over own weapon
-		if ( (bThrown && Physics == PHYS_Falling && Velocity.Z > 0 
-				 && (Velocity dot Other.Velocity) > 0 
-				 && (Velocity dot (Location - Other.Location)) > 0)
-			 || (KFHumanPawn(Other) != None && !CheckCanCarry(KFHumanPawn(Other))) )
+		if ( bThrown && Physics == PHYS_Falling && Velocity.Z > 0.0 && (Velocity dot Other.Velocity) > 0.0 && (Velocity dot (Location - Other.Location)) > 0.0 )
 			Return False;
 		
-		Return Super.ValidTouch(Other);
+		Return Global.ValidTouch( Other );
 	}
 	
 	// When touched by an actor.  Let's mod this to account for Weights. (Player can't pickup items)
 	// IF he's exceeding his max carry weight.
-	function Touch(Actor Other)
+	event Touch( Actor Other )
 	{
 		local	Inventory	Copy;
 
@@ -192,7 +189,7 @@ state FallingPickup
 			AnnouncePickup(Pawn(Other));
 			SetRespawn();
 			if ( Copy != None )
-				Copy.PickupFunction(Pawn(Other));
+				Copy.PickupFunction( Pawn(Other) );
 
 			if ( MySpawner != None && KFGameType(Level.Game) != None )
 				KFGameType(Level.Game).WeaponPickedUp(MySpawner);
@@ -200,8 +197,7 @@ state FallingPickup
 			if ( KFWeapon(Copy) != None )  {
 				KFWeapon(Copy).SellValue = SellValue;
 				KFWeapon(Copy).bPreviouslyDropped = bDropped;
-				if ( !bPreviouslyDropped && KFWeapon(Copy).bIsTier3Weapon 
-					 && Pawn(Other).Controller != None && Pawn(Other).Controller != DroppedBy )
+				if ( !bPreviouslyDropped && KFWeapon(Copy).bIsTier3Weapon && Pawn(Other).Controller != None && Pawn(Other).Controller != DroppedBy )
 					KFWeapon(Copy).Tier3WeaponGiver = DroppedBy;
 			}
 		}
@@ -210,18 +206,17 @@ state FallingPickup
 
 state FadeOut
 {
-	event BeginState() { }
-	
-	event Tick(float DeltaTime) { }
+	event BeginState();
+	event Tick(float DeltaTime);
 	
 	// When touched by an actor.  Let's mod this to account for Weights. (Player can't pickup items)
 	// IF he's exceeding his max carry weight.
-	function Touch(Actor Other)
+	event Touch(Actor Other)
 	{
 		local	Inventory	Copy;
 
 		// If touched by a player pawn, let him pick this up.
-		if ( ValidTouch(Other) )  {
+		if ( Global.ValidTouch( Other ) )  {
 			Copy = SpawnCopy(Pawn(Other));
 			AnnouncePickup(Pawn(Other));
 			SetRespawn();
@@ -244,8 +239,11 @@ state FadeOut
 
 defaultproperties
 {
-     UV2Texture=None
+     bFixedRotationDir=False
+	 UV2Texture=None
+	 Physics=PHYS_Rotating
 	 //LightColor
+	 bAmbientGlow=True
 	 LightBrightness=193.000000
 	 LightHue=149
      LightSaturation=125

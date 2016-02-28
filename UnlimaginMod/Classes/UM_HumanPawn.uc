@@ -2949,7 +2949,7 @@ defaultproperties
 	 MaxSlowMoCharge=2.0
 	 
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
-	 DelayBetweenSlowMoToggle=0.25
+	 DelayBetweenSlowMoToggle=0.2
 	 SlowMoChargeRegenRate=0.02
 	 SlowMoChargeUpdateAmount=0.1
 	 PlayerDeathMarkClass=Class'PlayerDeathMark'
@@ -3021,7 +3021,7 @@ defaultproperties
 	 BaseMeleeIncrease=1.2
 	 //
 	 IntuitiveShootingRange=150.000000
-	 JumpRandRange=(Min=0.95,Max=1.05)
+	 JumpRandRange=(Min=0.98,Max=1.06)
 	 BounceRemaining=0
 	 BounceCheckDistance=9.000000
 	 BounceMomentum=(X=380.000000,Z=140.000000)

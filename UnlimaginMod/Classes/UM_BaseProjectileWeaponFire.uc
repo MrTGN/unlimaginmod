@@ -90,6 +90,7 @@ var				float			FirstShotMovingSpeedScale, FireMovingSpeedScale;
 
 // Movement
 var				float			InstigatorMovingSpeed;
+var(Movement)	float			MoveShakeScale;
 var(Movement)	float			MaxMoveShakeScale;		// Increases the fire screen shake effects while player is moving up to MaxMoveShakeScale * ShakeRotMag.
 var(Movement)	float			MovingAimErrorScale;	// Increases AimError when player is moving. Must be > 1.000000
 var(Movement)	float			MovingSpreadScale;		// Increases Spread when player is moving. Must be > 1.000000
@@ -902,18 +903,18 @@ function ShakePlayerView()
 	if ( P != None )  {
 		// Add up to MaxMoveShakeScale shake depending on how fast the player is moving
 		if ( !KFWeapon(Weapon).bSteadyAim && MaxMoveShakeScale > 1.0 )
-			ShakeScaler = FMax((MaxMoveShakeScale * InstigatorMovingSpeed / Instigator.default.GroundSpeed), 1.0) * VeterancyShakeViewModifier;
+			ShakeScaler = FMin( (1.0 + MoveShakeScale * InstigatorMovingSpeed / Instigator.default.GroundSpeed), MaxMoveShakeScale ) * VeterancyShakeViewModifier;
 		else
-			ShakeScaler = 1.0 * VeterancyShakeViewModifier;
+			ShakeScaler = VeterancyShakeViewModifier;
 		
 		// Aiming bonuses
 		if ( KFWeap.bAimingRifle )
 			ShakeScaler *= AimingShakeBonus;
 		
-		ShakeRotMag = default.ShakeRotMag * ShakeScaler;
-		ShakeOffsetMag = default.ShakeOffsetMag * ShakeScaler;
+		//ShakeRotMag = default.ShakeRotMag * ShakeScaler;
+		//ShakeOffsetMag = default.ShakeOffsetMag * ShakeScaler;
 		
-		P.WeaponShakeView(ShakeRotMag, ShakeRotRate, ShakeRotTime, ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
+		P.WeaponShakeView( (default.ShakeRotMag * ShakeScaler), ShakeRotRate, ShakeRotTime, default.ShakeOffsetMag, ShakeOffsetRate, ShakeOffsetTime);
 	}
 }
 
@@ -972,15 +973,13 @@ function AddRecoil()
 	if ( KFPC != None && !KFPC.bFreeCamera )  {
 		// Aiming bonuses
 		if ( KFWeap.bAimingRifle )  {
-			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle * AimingVerticalRecoilBonus;
-			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle * AimingHorizontalRecoilBonus;
+			NewRecoilRotation.Pitch = Round( Lerp(FRand(), (default.maxVerticalRecoilAngle * 0.5), default.maxVerticalRecoilAngle) * AimingVerticalRecoilBonus );
+			NewRecoilRotation.Yaw = Round( Lerp(FRand(), (default.maxHorizontalRecoilAngle * 0.5), default.maxHorizontalRecoilAngle) * AimingHorizontalRecoilBonus );
 		}
 		else  {
-			maxVerticalRecoilAngle = default.maxVerticalRecoilAngle;
-			maxHorizontalRecoilAngle = default.maxHorizontalRecoilAngle;
+			NewRecoilRotation.Pitch = Round( Lerp(FRand(), (default.maxVerticalRecoilAngle * 0.5), default.maxVerticalRecoilAngle) );
+			NewRecoilRotation.Yaw = Round( Lerp(FRand(), (default.maxHorizontalRecoilAngle * 0.5), default.maxHorizontalRecoilAngle) );
 		}
-		NewRecoilRotation.Pitch = RandRange((maxVerticalRecoilAngle * 0.5), maxVerticalRecoilAngle);
-		NewRecoilRotation.Yaw = RandRange((maxHorizontalRecoilAngle * 0.5), maxHorizontalRecoilAngle);
 
 		if ( !bRecoilRightOnly && Rand(2) == 1 )
 			NewRecoilRotation.Yaw *= -1.0;
@@ -1007,8 +1006,8 @@ function AddRecoil()
 			}
 		}
 		// Recoil based on how much Health the player have
-		NewRecoilRotation.Pitch += Round(Instigator.HealthMax / float(Instigator.Health) * 5.0);
-		NewRecoilRotation.Yaw += Round(Instigator.HealthMax / float(Instigator.Health) * 5.0);
+		NewRecoilRotation.Pitch += Round( Instigator.HealthMax / float(Instigator.Health) * 5.0 );
+		NewRecoilRotation.Yaw += Round( Instigator.HealthMax / float(Instigator.Health) * 5.0 );
 		// Perk bouns
 		KFPC.SetRecoil( (NewRecoilRotation * VeterancyRecoilModifier), (RecoilRate * FireSpeedModif) );
  	}
@@ -1337,6 +1336,7 @@ defaultproperties
 	 //ShakeView
 	 AimingShakeBonus=0.950000
 	 //Movement
+	 MoveShakeScale=0.2
 	 MaxMoveShakeScale=1.100000
 	 MovingAimErrorScale=4.000000
 	 // Max InstigatorMovingSpeed (GroundSpeed) = 200

@@ -25,7 +25,7 @@ defaultproperties
 	 MuzzleVelocity=360.000000		// m/sec
      Damage=42.000000
 	 DamageRadius=120.000000
-     MomentumTransfer=100000.000000
+     MomentumTransfer=10000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM32ShotgunIncBullet'
 	 DrawScale=2.500000
 }

@@ -94,9 +94,9 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 		Return 0.2 + (0.20 * float(Min(KFPRI.ClientVeteranSkillLevel, 6))); // Up to 7 nades on 6 lvl
 	else if ( AmmoType == class'UM_MGL140Ammo' && KFPRI.ClientVeteranSkillLevel >= 5 )
 		Return 1.17; // 6 Extra Grenades for MGL140
-	else if ( (AmmoType == class'MAC10Ammo' || AmmoType == class'HuskGunAmmo' || 
-				AmmoType == class'LAWAmmo' || AmmoType == class'FlareRevolverAmmo' ||
-				AmmoType == class'M203Ammo' || AmmoType == class'GoldenFlameAmmo') 
+	else if ( AmmoType == class'HuskGunAmmo' )
+		Return 1.00 + (0.1 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 100% bonus
+	else if ( (AmmoType == class'MAC10Ammo' || AmmoType == class'LAWAmmo' || AmmoType == class'FlareRevolverAmmo' || AmmoType == class'M203Ammo' || AmmoType == class'GoldenFlameAmmo') 
 			 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,6))); // Up to 60% larger fuel canister/MAC10/Husk gun ammo carry
 	else if ( AmmoType == class'M79Ammo' && KFPRI.ClientVeteranSkillLevel > 0 )

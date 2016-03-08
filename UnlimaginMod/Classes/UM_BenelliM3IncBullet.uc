@@ -23,6 +23,6 @@ defaultproperties
 	 MuzzleVelocity=450.000000		// m/sec
      Damage=105.000000
 	 DamageRadius=140.000000
-     MomentumTransfer=100000.000000
+     MomentumTransfer=5000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM3IncBullet'
 }

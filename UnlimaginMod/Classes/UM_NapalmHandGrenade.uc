@@ -31,6 +31,7 @@ defaultproperties
 	 //Damage
      Damage=80.000000
      DamageRadius=420.000000
+	 MomentumTransfer=10000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeNapalmHandGrenade'
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeNapalmHandGrenadeImpact'
 }

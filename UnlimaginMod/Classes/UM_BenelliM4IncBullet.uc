@@ -23,6 +23,6 @@ defaultproperties
 	 MuzzleVelocity=445.000000		// m/sec
      Damage=95.000000
 	 DamageRadius=160.000000
-     MomentumTransfer=100000.000000
+     MomentumTransfer=5000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM4IncBullet'
 }

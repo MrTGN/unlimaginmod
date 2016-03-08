@@ -25,6 +25,6 @@ defaultproperties
 	 MuzzleVelocity=460.000000		// m/sec
      Damage=100.000000
 	 DamageRadius=150.000000
-     MomentumTransfer=100000.000000
+     MomentumTransfer=6500.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeSpas12IncBullet'
 }

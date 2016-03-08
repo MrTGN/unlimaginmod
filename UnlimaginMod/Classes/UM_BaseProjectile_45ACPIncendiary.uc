@@ -37,7 +37,7 @@ defaultproperties
 	 Damage=30.000000
 	 DamageRadius=40.000000
 	 MyDamageType=None
-	 MomentumTransfer=10000.000000
+	 MomentumTransfer=1000.000000
 	 //Sound Effects
 	 TransientSoundVolume=1.000000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=220.0,bUse3D=True)

@@ -25,6 +25,6 @@ defaultproperties
 	 MuzzleVelocity=440.000000		// m/sec
      Damage=100.000000
 	 DamageRadius=140.000000
-     MomentumTransfer=100000.000000
+     MomentumTransfer=8000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM37IthacaIncBullet'
 }

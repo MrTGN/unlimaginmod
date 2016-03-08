@@ -27,7 +27,7 @@ defaultproperties
 	 ImpactDamageType=None
 	 Damage=100.000000
 	 DamageRadius=140.000000
-     MomentumTransfer=10000.000000
+     MomentumTransfer=1000.000000
      MyDamageType=None
 	 //BallisticCoefficient
 	 BallisticCoefficient=0.200000

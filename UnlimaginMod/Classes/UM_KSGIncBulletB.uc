@@ -25,6 +25,6 @@ defaultproperties
 	 MuzzleVelocity=400.000000		// m/sec
      Damage=20.000000
 	 DamageRadius=50.000000
-     MomentumTransfer=20000.000000
+     MomentumTransfer=7000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeKSGIncBullet'
 }

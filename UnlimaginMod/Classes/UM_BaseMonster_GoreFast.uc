@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_ZombieGoreFastBase
-//	Parent class:	 UM_Monster
+//	Class name:		 UM_BaseMonster_GoreFast
+//	Parent class:	 UM_BaseMonster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:15
 //================================================================================
-class UM_ZombieGoreFastBase extends UM_Monster
+class UM_BaseMonster_GoreFast extends UM_BaseMonster
 	Abstract;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax

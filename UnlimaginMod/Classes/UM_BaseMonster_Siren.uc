@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_ZombieSirenBase
-//	Parent class:	 UM_Monster
+//	Class name:		 UM_BaseMonster_Siren
+//	Parent class:	 UM_BaseMonster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:26
 //================================================================================
-class UM_ZombieSirenBase extends UM_Monster
+class UM_BaseMonster_Siren extends UM_BaseMonster
 	Abstract;
 
 var () int ScreamRadius; // AOE for scream attack.

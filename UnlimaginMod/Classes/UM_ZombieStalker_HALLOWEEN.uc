@@ -20,7 +20,7 @@ class UM_ZombieStalker_HALLOWEEN extends UM_ZombieStalker;
 
 simulated event Tick( float DeltaTime )
 {
-	Super(UM_Monster).Tick( DeltaTime );
+	Super(UM_BaseMonster).Tick( DeltaTime );
 	
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return; // Servers aren't intrested in this info.
@@ -133,7 +133,7 @@ function RemoveHead()
 
 simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
-	Super(UM_Monster).PlayDying(DamageType,HitLoc);
+	Super(UM_BaseMonster).PlayDying(DamageType,HitLoc);
 
 	if ( bUnlit )
 		bUnlit = !bUnlit;

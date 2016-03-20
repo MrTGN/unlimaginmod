@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieStalker
-//	Parent class:	 UM_ZombieStalkerBase
+//	Parent class:	 UM_BaseMonster_Stalker
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:26
 //================================================================================
-class UM_ZombieStalker extends UM_ZombieStalkerBase;
+class UM_ZombieStalker extends UM_BaseMonster_Stalker;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KFX.utx

@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieHusk
-//	Parent class:	 UM_ZombieHuskBase
+//	Parent class:	 UM_BaseMonster_Husk
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:16
 //================================================================================
-class UM_ZombieHusk extends UM_ZombieHuskBase;
+class UM_ZombieHusk extends UM_BaseMonster_Husk;
 
 //----------------------------------------------------------------------------
 // NOTE: All Variables are declared in the base class to eliminate hitching

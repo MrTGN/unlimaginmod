@@ -1078,8 +1078,8 @@ function DoBounce( bool bUpdating )
 	
 	if ( BounceVictim != None )  {
 		NewVel = -NewVel * FClamp((Mass / BounceVictim.Mass), 0.25, 1.25);
-		if ( UM_Monster(BounceVictim) != None )
-			UM_Monster(BounceVictim).PushAwayZombie(NewVel);
+		if ( UM_BaseMonster(BounceVictim) != None )
+			UM_BaseMonster(BounceVictim).PushAwayZombie(NewVel);
 		else
 			BounceVictim.AddVelocity(NewVel);
 		
@@ -1995,8 +1995,10 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	// Momentum
 	if ( Physics == PHYS_Walking && DamageType.default.bExtraMomentumZ )
 		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
+	
 	if ( InstigatedBy == self )
 		Momentum *= 0.75;
+	
 	Momentum /= Mass;
 	
 	//[block] Damage modifiers
@@ -2404,9 +2406,7 @@ event BreathTimer()
 event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
 {
 	// GodMode or FriendlyFire
-	if ( Role < ROLE_Authority || (Controller != None && Controller.bGodMode) || Damage < 1
-		 || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None 
-			 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 && InstigatedBy.GetTeamNum() == GetTeamNum()) )
+	if ( Role < ROLE_Authority || Damage < 1 || (Controller != None && Controller.bGodMode) || (InstigatedBy != None && InstigatedBy != Self && UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 &&  InstigatedBy.GetTeamNum() == GetTeamNum()) )
 		Return;
 	
 	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )  {

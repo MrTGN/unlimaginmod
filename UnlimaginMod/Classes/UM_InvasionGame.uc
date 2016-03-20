@@ -86,8 +86,8 @@ var					IRange						BossWaveMinRespawnCash;		// Random min respawn cash on this 
 var		export	array<UM_InvasionMonsterData>	Monsters;
 // BossMonsterClass
 var()				string						BossMonsterClassName;
-var()				class<UM_Monster>			BossMonsterClass;
-var		transient	UM_Monster					BossMonster;
+var()				class<UM_BaseMonster>			BossMonsterClass;
+var		transient	UM_BaseMonster					BossMonster;
 
 var		config		bool						bShowBossGrandEntry;
 var		config		bool						bShowBossDeath;
@@ -95,7 +95,7 @@ var		transient	bool						bNeedToSpawnBoss;
 var		transient	bool						bBossKilled;
 
 // Spawned monster list
-var		transient	array<UM_Monster>			AliveMonsterList;
+var		transient	array<UM_BaseMonster>			AliveMonsterList;
 
 var					int							BulidSquadIterationLimit;
 
@@ -250,7 +250,7 @@ function LoadUpMonsterList()
 	local	int		i;
 	
 	if ( BossMonsterClassName != "" )  {
-		BossMonsterClass = class<UM_Monster>( DynamicLoadObject(BossMonsterClassName, Class'class') );
+		BossMonsterClass = class<UM_BaseMonster>( DynamicLoadObject(BossMonsterClassName, Class'class') );
 		if ( BossMonsterClass == None )
 			Log( "Error: Failed to load Boss Monster Class"@BossMonsterClassName$"!", Name );
 	}
@@ -410,8 +410,8 @@ function CheckAliveMonsterList()
 	NumMonsters = AliveMonsterList.Length;
 }
 
-// Called from the UM_Monster in PostBeginPlay() function
-function bool AddToMonsterList( UM_Monster M )
+// Called from the UM_BaseMonster in PostBeginPlay() function
+function bool AddToMonsterList( UM_BaseMonster M )
 {
 	if ( M == None )
 		Return False;
@@ -764,11 +764,13 @@ state Shopping
 			}
 		}
 		
-		// Next Hints time
-		if ( bShowHint_2 || bShowHint_3 )  {
+		// Second Hint time
+		if ( bShowHint_2 )
 			HintTime_1 = Level.TimeSeconds + 11.0;
-			HintTime_2 = HintTime_1 + 11.0;
-		}
+		
+		// Third Hint Time
+		if ( bShowHint_3 )
+			HintTime_2 = Level.TimeSeconds + 22.0;
 		
 		// Break Time
 		if ( NextWaveNum > InitialWave )
@@ -832,53 +834,49 @@ state Shopping
 	
 	function PlaySecondHint()
 	{
-		local	Controller	C;
-		local	int			i;
+		local	byte	i;
 		
 		bShowHint_2 = False; // Turn off this hint
 		
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			if ( C.Pawn != None && C.Pawn.Health > 0 )
-				KFPlayerController(C).CheckForHint(32);
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+				PlayerList[i].CheckForHint(32);
 		}
 	}
 	
 	function PlayThirdHint()
 	{
-		local	Controller	C;
-		local	int			i;
+		local	byte	i;
 		
 		bShowHint_3 = False; // Turn off this hint
 		
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			if ( C.Pawn != None && C.Pawn.Health > 0 )
-				KFPlayerController(C).CheckForHint(33);
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+				PlayerList[i].CheckForHint(33);
 		}
 	}
 	
 	function PlayTenSecondsLeftMessage()
 	{
-		local	Controller	C;
-		local	int			i;
+		local	byte	i;
 		
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			if ( KFPlayerController(C) != None )
-				KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, none, 'TRADER', 5);
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+				PlayerList[i].ClientLocationalVoiceMessage( PlayerList[i].PlayerReplicationInfo, None, 'TRADER', 5 );
 		}
 	}
 	
 	function PlayThirtySecondsLeftMessage()
 	{
-		local	Controller	C;
-		local	int			i;
+		local	byte	i;
 		
-		for ( C = Level.ControllerList; C != None && i < 1000; C = C.NextController )  {
-			++i;	// To prevent runaway loop
-			if ( KFPlayerController(C) != None )
-				KFPlayerController(C).ClientLocationalVoiceMessage(C.PlayerReplicationInfo, none, 'TRADER', 4);
+		CheckPlayerList();
+		for ( i = 0; i < PlayerList.Length; ++i )  {
+			if ( PlayerList[i].Pawn != None && PlayerList[i].Pawn.Health > 0 )
+				PlayerList[i].ClientLocationalVoiceMessage( PlayerList[i].PlayerReplicationInfo, None, 'TRADER', 4 );
 		}
 	}
 	

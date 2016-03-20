@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_ZombieHuskBase
-//	Parent class:	 UM_Monster
+//	Class name:		 UM_BaseMonster_Husk
+//	Parent class:	 UM_BaseMonster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.10.2012 23:18
 //================================================================================
-class UM_ZombieHuskBase extends UM_Monster
+class UM_BaseMonster_Husk extends UM_BaseMonster
 	Abstract;
 
 var     float   NextFireProjectileTime; // Track when we will fire again

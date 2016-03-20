@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieCrawler
-//	Parent class:	 UM_ZombieCrawlerBase
+//	Parent class:	 UM_BaseMonster_Crawler
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:08
 //================================================================================
-class UM_ZombieCrawler extends UM_ZombieCrawlerBase;
+class UM_ZombieCrawler extends UM_BaseMonster_Crawler;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 

@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBoss
-//	Parent class:	 UM_ZombieBossBase
+//	Parent class:	 UM_BaseMonster_Boss
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:02
 //================================================================================
-class UM_ZombieBoss extends UM_ZombieBossBase;
+class UM_ZombieBoss extends UM_BaseMonster_Boss;
 
 #exec OBJ LOAD FILE=KFPatch2.utx
 #exec OBJ LOAD FILE=KF_Specimens_Trip_T.utx

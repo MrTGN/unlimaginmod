@@ -34,7 +34,7 @@ struct DeltaData
 var					bool						bDisabled;			//
 
 var()				string						MonsterClassName;	// Dynamic MonsterClass Load
-var()				class<UM_Monster>			MonsterClass;		// Class of the current Monster
+var()				class<UM_BaseMonster>			MonsterClass;		// Class of the current Monster
 
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
@@ -83,7 +83,7 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
-	MonsterClass = Class<UM_Monster>( DynamicLoadObject(MonsterClassName, Class'Class') );
+	MonsterClass = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassName, Class'Class') );
 	if ( MonsterClass == None )  {
 		Log( "Error: Failed to load Monster Class"@MonsterClassName$"!", Name );
 		Return False;

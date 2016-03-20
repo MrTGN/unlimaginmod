@@ -867,10 +867,10 @@ simulated function ProcessHitActor(
 
 simulated function bool CanTouchActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	/*	Todo: UM_Monster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
+	/*	Todo: UM_BaseMonster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
 		и не реагировали на класс мностров. */
 	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) 
-		 && (LastTouched == None || (A != LastTouched && A.Base != LastTouched)) && UM_Monster(A) == None )  {
+		 && (LastTouched == None || (A != LastTouched && A.Base != LastTouched)) && UM_BaseMonster(A) == None )  {
 		if ( Mover(A.Base) != None )
 			A = A.Base;
 		

@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieFleshPound
-//	Parent class:	 UM_ZombieFleshPoundBase
+//	Parent class:	 UM_BaseMonster_FleshPound
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:11
 //================================================================================
-class UM_ZombieFleshPound extends UM_ZombieFleshPoundBase;
+class UM_ZombieFleshPound extends UM_BaseMonster_FleshPound;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 

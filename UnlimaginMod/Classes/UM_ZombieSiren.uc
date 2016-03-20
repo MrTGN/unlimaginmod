@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieSiren
-//	Parent class:	 UM_ZombieSirenBase
+//	Parent class:	 UM_BaseMonster_Siren
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:23
 //================================================================================
-class UM_ZombieSiren extends UM_ZombieSirenBase;
+class UM_ZombieSiren extends UM_BaseMonster_Siren;
 
 //----------------------------------------------------------------------------
 // NOTE: All Variables are declared in the base class to eliminate hitching

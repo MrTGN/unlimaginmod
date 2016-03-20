@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieScrake
-//	Parent class:	 UM_ZombieScrakeBase
+//	Parent class:	 UM_BaseMonster_Scrake
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 16:18
 //================================================================================
-class UM_ZombieScrake extends UM_ZombieScrakeBase;
+class UM_ZombieScrake extends UM_BaseMonster_Scrake;
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 

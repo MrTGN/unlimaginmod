@@ -1,7 +1,7 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_Monster
+//	Class name:		 UM_BaseMonster
 //	Parent class:	 KFMonster
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 06.10.2012 18:35
 //================================================================================
-class UM_Monster extends KFMonster
+class UM_BaseMonster extends KFMonster
 	hidecategories(AnimTweaks,DeRes,Force,Gib,Karma,Udamage,UnrealPawn)
 	Abstract;
 
@@ -1349,6 +1349,231 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
+function CheckForImpressiveKill( UM_PlayerController PC )
+{
+	if ( PC == None || PC.Pawn == None || UM_BaseGameInfo(Level.Game) == None || !UM_BaseGameInfo(Level.Game).AllowImpressiveKillEvent(ImpressiveKillChance) )
+		Return;
+	
+	UM_BaseGameInfo(Level.Game).DoZedTime( ImpressiveKillDuration );
+	if ( UM_BaseGameInfo(Level.Game).bShowImpressiveKillEvents )
+		PC.ShowActor( Self, ImpressiveKillDuration );
+}
+
+// Process the damaging and return the amount of taken damage
+function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+{
+	local	bool						bIsHeadshot;
+	local	Controller					Killer;
+	local	KFPlayerReplicationInfo		KFPRI;
+	
+	// Only server
+	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
+		Return 0;
+	
+	if ( DamageType == None )  {
+		if ( InstigatedBy != None && InstigatedBy.Weapon != None )
+			Warn("No damagetype for damage by "$InstigatedBy$" with weapon "$InstigatedBy.Weapon);
+		DamageType = class'DamageType';
+	}
+	
+	if ( (InstigatedBy == None || InstigatedBy.Controller == None) && DamageType.default.bDelayedDamage && DelayedDamageInstigatorController != None )
+		InstigatedBy = DelayedDamageInstigatorController.Pawn;
+	
+	if ( Physics == PHYS_None && DrivenVehicle == None )
+		SetMovementPhysics();
+	
+	// Momentum
+	if ( Physics == PHYS_Walking && DamageType.default.bExtraMomentumZ )
+		Momentum.Z = FMax( (0.4 * VSize(Momentum)), Momentum.Z );
+	
+	if ( InstigatedBy == self )
+		Momentum *= 0.75;
+	
+	Momentum /= Mass;
+	
+	//[block] Damage modifiers
+	// Scale damage if the Zed has been zapped
+	if ( bZapped )
+		Damage = Round( float(Damage) * ZappedDamageMod );
+		
+	// Owner takes damage while holding this weapon - used by shield gun
+	if ( Weapon != None )
+		Weapon.AdjustPlayerDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	// Modify Damage if Pawn is driving a vehicle
+	if ( DrivenVehicle != None )
+		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	
+	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
+		Damage *= 2;
+	
+	KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
+	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )  {
+		// Do larger headshot checks if it is a melee attach
+		if ( class<DamTypeMelee>(DamageType) != None )
+			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.25);
+		else
+			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
+		
+		if ( bIsHeadShot )  {
+			if ( class<DamTypeMelee>(DamageType) == None && KFPRI != None &&
+				 KFPRI.ClientVeteranSkill != None )
+				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType) );
+			else
+				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult );
+		}
+		
+		bLaserSightedEBRM14Headshotted = bIsHeadshot && M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
+	}
+	else
+		bLaserSightedEBRM14Headshotted = bLaserSightedEBRM14Headshotted && bDecapitated;
+	
+	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
+		Damage = KFPRI.ClientVeteranSkill.Static.AddDamage(KFPRI, self, KFPawn(instigatedBy), Damage, DamageType);
+	
+	// ReduceDamage
+	if ( Level.Game != None )
+		Damage = Level.Game.ReduceDamage( Damage, self, instigatedBy, HitLocation, Momentum, DamageType );
+	
+	//ToDo: issue #204
+	// if ( Armor != None )
+		//ArmorAbsorbDamage( Damage, instigatedBy, Momentum, DamageType );
+	if ( DamageType.default.bArmorStops )
+		Damage = ShieldAbsorb( Damage );
+	//[end]
+	
+	// Just return if this wouldn't even damage us.
+	if ( Damage < 1 )
+		Return 0;
+	
+	LastDamagedBy = InstigatedBy;
+	LastDamagedByType = damageType;
+	HitMomentum = VSize(Momentum);
+	LastHitLocation = Hitlocation;
+	LastMomentum = Momentum;
+	LastDamageAmount = Damage;
+	
+	if ( DamageType != None && LastDamagedBy != None && LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None && KFMonsterController(Controller) != None )
+		KFMonsterController(Controller).AddKillAssistant( LastDamagedBy.Controller, FMin(Health, Damage) );
+
+	if ( !bDecapitated )  {
+		if ( bIsHeadShot )  {
+			// Play a sound when someone gets a headshot TODO: Put in the real sound here
+			PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
+			HeadHealth = Max( (HeadHealth - Damage), 0 );
+			if ( HeadHealth < 1 || Damage > Health )  {
+				RemoveHead();
+				if ( UM_HumanPawn(instigatedBy) != None )
+					UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
+			}
+			// ImpressiveKill
+			if ( Damage > Health )
+				CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
+		}
+		// Award headshot here, not when zombie died.
+		if ( bDecapitated && Class<KFWeaponDamageType>(DamageType) != None && 
+			 instigatedBy != None && KFPlayerController(instigatedBy.Controller) != None )  {
+			bLaserSightedEBRM14Headshotted = M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
+			Class<KFWeaponDamageType>(DamageType).Static.ScoredHeadshot(KFSteamStatsAndAchievements(PlayerController(instigatedBy.Controller).SteamStatsAndAchievements), self.Class, bLaserSightedEBRM14Headshotted);
+		}
+	}
+	
+		// Client check for Gore FX
+	//BodyPartRemoval(Damage,instigatedBy,Hitlocation,Momentum,DamageType);
+	if ( Damage < Health && DamageType != class'DamTypeFrag' && DamageType != class'DamTypePipeBomb' && DamageType != class'DamTypeM79Grenade' && DamageType != class'DamTypeM32Grenade' && DamageType != class'DamTypeM203Grenade' && DamageType != class'DamTypeDwarfAxe' && DamageType != class'DamTypeSPGrenade' && DamageType != class'DamTypeSealSquealExplosion' && DamageType != class'DamTypeSeekerSixRocket' && Class<Whisky_DamTypeHammer>(DamageType) == None && Class<UM_BaseDamType_Explosive>(DamageType) == None )
+		Momentum *= float(Damage) / float(Health) * 0.75;
+
+	if ( HitLocation == vect(0.0, 0.0, 0.0) )
+		HitLocation = Location;
+	
+	Health = Max( (Health - Damage), 0 );
+	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
+	// Pawn died
+	if ( Health < 1 )  {
+		if ( InstigatedBy != None && InstigatedBy != self )
+			Killer = InstigatedBy.Controller;
+		else if ( DamageType.default.bCausedByWorld && LastHitBy != None )
+			Killer = LastHitBy;
+		// if no Killer
+		if ( Killer == None && DelayedDamageInstigatorController != None )
+			Killer = DelayedDamageInstigatorController;
+		
+		if ( bPhysicsAnimUpdate )
+			SetTearOffMomemtum( Momentum );
+		
+		// KilledShouldExplode
+		if ( KFPRI != None && KFPRI.ClientVeteranSkill != None && KFPRI.ClientVeteranSkill.static.KilledShouldExplode(KFPRI, KFPawn(instigatedBy)) )
+			HurtRadius( 500.0, 1000.0, class'DamTypeFrag', 100000.0, Location );
+		
+		Died( Killer, DamageType, HitLocation );
+	}
+	// Paw has lost some Health
+	else  {
+		AddVelocity( Momentum );
+		if ( Controller != None )
+			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
+		if ( InstigatedBy != None && InstigatedBy != self )
+			LastHitBy = InstigatedBy.Controller;
+	}
+	MakeNoise(1.0);
+	bBackstabbed = False;
+	
+	Return Damage;
+}
+
+event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
+{
+	// GodMode
+	if ( Role < ROLE_Authority || Damage < 1 || (Controller != None && Controller.bGodMode) )
+		Return;
+
+	// Fire damage
+	if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None || (class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bDealBurningDamage) )  {
+		if ( BurnDown < 1 || Damage > LastBurnDamage )  {
+			// LastBurnDamage variable is storing last burn damage (unperked) received,
+			// which will be used to make additional damage per every burn tick (second).
+			LastBurnDamage = Damage;
+			// FireDamageClass variable stores damage type, which started zed's burning
+			// and will be passed to this function again every next burn tick (as DamageType argument)
+			if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None ||
+				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != none || class<DamTypeFlareRevolver>(DamageType) != None || class<DamTypeMAC10MPInc>(DamageType) != None )
+				FireDamageClass = DamageType;
+			else
+				FireDamageClass = class'DamTypeFlamethrower';
+		}
+
+		if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) == None && class<DamTypeMAC10MPInc>(DamageType) == None )
+			Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
+		
+		if ( Damage >= 15 )
+			HeatAmount = 5;
+		else
+			++HeatAmount;
+		
+		// if enough Heat
+		if ( HeatAmount > 4 )  {
+			HeatAmount = 4;
+			BurnDown = 10; // Inits burn tick count to 10
+			if ( !bBurnified )  {
+				bBurnified = True;
+				SetGroundSpeed(GroundSpeed * 0.8); // Lowers movement speed by 20%
+				BurnInstigator = instigatedBy;
+				SetTimer(1.0, False); // Sets timer to execute after the second
+			}
+		}
+	}
+
+	// Same rules apply to zombies as players.
+	if ( class<DamTypeVomit>(DamageType) != None )  {
+		BileCount = 7;
+		BileInstigator = instigatedBy;
+		if ( NextBileTime < Level.TimeSeconds )
+			NextBileTime = Level.TimeSeconds+BileFrequency;
+	}
+
+	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+}
+
 //Issue: #264
 function RemoveHead()
 {
@@ -1380,7 +1605,7 @@ function RemoveHead()
 	// Head explodes, causing additional hurty.
 	if ( KFPawn(LastDamagedBy) != None )  {
 		//ToDo: #264.1
-		TakeDamage( (LastDamageAmount + 0.25 * HealthMax) , LastDamagedBy, LastHitLocation, LastMomentum, LastDamagedByType);
+		ProcessTakeDamage( (LastDamageAmount + HealthMax * 0.25), LastDamagedBy, LastHitLocation, LastMomentum, LastDamagedByType );
 
 		if ( BurnDown > 0 )
 			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
@@ -1406,32 +1631,25 @@ function RemoveHead()
 	PlaySound(DecapitationSound, SLOT_Misc,1.30,true,525);
 }
 
-function CheckForImpressiveKill( UM_PlayerController PC )
-{
-	if ( PC == None || PC.Pawn == None || UM_BaseGameInfo(Level.Game) == None || !UM_BaseGameInfo(Level.Game).AllowImpressiveKillEvent(ImpressiveKillChance) )
-		Return;
-	
-	UM_BaseGameInfo(Level.Game).DoZedTime( ImpressiveKillDuration );
-	if ( UM_BaseGameInfo(Level.Game).bShowImpressiveKillEvents )
-		PC.ShowActor( Self, ImpressiveKillDuration );
-}
-
 function TakeFireDamage( int Damage, Pawn FireDamageInstigator );
+
+function TakeBileDamage()
+{
+	ProcessTakeDamage( (Rand(3) + 2), BileInstigator, Location, Vect(0.0, 0.0, 0.0), LastBileDamagedByType );
+}
 
 simulated event Timer()
 {
 	// bSTUNNED variable actually indicates flinching, not stunning! So don't get confused.
 	bSTUNNED = False;
 	
-	// If burn tick count > 0, call TakeFireDamage() function.
-	// Otherwise stop burning and turn off the timer
-	// Every timer LastBurnDamage is increased by 2 + random value from 0 to 2
 	if ( Role < Role_Authority )
 		Return;	// Server code next
 	
 	if ( BurnDown > 0 )  {
 		--BurnDown;
-		TakeDamage( (LastBurnDamage + Rand(3) + 2), BurnInstigator, Vect(0.0, 0.0, 0.0), Vect(0.0, 0.0, 0.0), FireDamageClass);
+		LastBurnDamage = Round( Lerp(FRand(), float(LastBurnDamage) * 0.9, float(LastBurnDamage) );
+		ProcessTakeDamage( LastBurnDamage, BurnInstigator, Vect(0.0, 0.0, 0.0), Vect(0.0, 0.0, 0.0), FireDamageClass );
 		// Melt em' :)
 		if ( BurnDown < CrispUpThreshhold )
 			ZombieCrispUp();
@@ -1450,155 +1668,6 @@ simulated event Timer()
 		SetGroundSpeed(default.GroundSpeed);
 	StopBurnFX();
 	SetTimer(0.0, False);  // Disable timer
-}
-
-event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
-{
-	local bool bIsHeadshot;
-	local KFPlayerReplicationInfo KFPRI;
-	local float HeadShotCheckScale;
-
-	LastDamagedBy = instigatedBy;
-	LastDamagedByType = DamageType;
-	HitMomentum = VSize(Momentum);
-	LastHitLocation = Hitlocation;
-	LastMomentum = Momentum;
-
-	if ( KFPawn(instigatedBy) != None && instigatedBy.PlayerReplicationInfo != None )
-		KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
-
-	// Scale damage if the Zed has been zapped
-	if ( bZapped )
-		Damage *= ZappedDamageMod;
-
-	// Fire damage
-	if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None || (class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bDealBurningDamage) )  {
-		if ( BurnDown < 1 || (Damage + 4) > LastBurnDamage )  {
-			// LastBurnDamage variable is storing last burn damage (unperked) received,
-			// which will be used to make additional damage per every burn tick (second).
-			LastBurnDamage = Damage;
-			// FireDamageClass variable stores damage type, which started zed's burning
-			// and will be passed to this function again every next burn tick (as DamageType argument)
-			if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None ||
-				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != none || class<DamTypeFlareRevolver>(DamageType) != None || class<DamTypeMAC10MPInc>(DamageType) != None )
-				FireDamageClass = DamageType;
-			else
-				FireDamageClass = class'DamTypeFlamethrower';
-			
-			if ( Damage >= 10 )
-				HeatAmount = 5;
-			else
-				++HeatAmount;
-		}
-
-		if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) == None && class<DamTypeMAC10MPInc>(DamageType) == None )
-			Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
-		
-		// if enough Heat
-		if ( HeatAmount > 4 )  {
-			HeatAmount = 4;
-			BurnDown = 10; // Inits burn tick count to 10
-			if ( !bBurnified )  {
-				bBurnified = True;
-				SetGroundSpeed(GroundSpeed * 0.8); // Lowers movement speed by 20%
-				BurnInstigator = instigatedBy;
-				SetTimer(1.0, False); // Sets timer to execute after the second
-			}
-		}
-	}
-
-	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None &&
-		 class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots )  {
-		HeadShotCheckScale = 1.0;
-
-		// Do larger headshot checks if it is a melee attach
-		if ( class<DamTypeMelee>(DamageType) != None )
-			HeadShotCheckScale *= 1.25;
-
-		bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), HeadShotCheckScale);
-		bLaserSightedEBRM14Headshotted = bIsHeadshot && M14EBRBattleRifle(instigatedBy.Weapon) != none && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
-	}
-	else
-		bLaserSightedEBRM14Headshotted = bLaserSightedEBRM14Headshotted && bDecapitated;
-
-	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
-		Damage = KFPRI.ClientVeteranSkill.Static.AddDamage(KFPRI, self, KFPawn(instigatedBy), Damage, DamageType);
-
-	if ( DamageType != None && LastDamagedBy != None && 
-		 LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None )  {
-		if ( UM_MonsterController(Controller) != none )
-			UM_MonsterController(Controller).AddKillAssistant(LastDamagedBy.Controller, FMin(Health, Damage));
-		else if ( KFMonsterController(Controller) != none )
-			KFMonsterController(Controller).AddKillAssistant(LastDamagedBy.Controller, FMin(Health, Damage));
-	}
-
-	if ( (bDecapitated || bIsHeadShot) && class<DamTypeBurned>(DamageType) == None 
-		 && class<DamTypeFlamethrower>(DamageType) == None )  {
-		// Do not change Damage if bCheckForHeadShots=False in DamageType class 
-		if ( class<KFWeaponDamageType>(DamageType) != None &&
-			 class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots )
-			Damage = Damage * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult;
-
-		if ( class<DamTypeMelee>(DamageType) == None && KFPRI != None &&
-			 KFPRI.ClientVeteranSkill != None )
-			Damage = float(Damage) * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType);
-
-		LastDamageAmount = Damage;
-
-		if ( !bDecapitated )  {
-			if ( bIsHeadShot )  {
-			    // Play a sound when someone gets a headshot TODO: Put in the real sound here
-				PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
-				HeadHealth -= LastDamageAmount;
-				if ( HeadHealth <= 0 || Damage > Health )  {
-					RemoveHead();
-					if ( UM_HumanPawn(instigatedBy) != None )
-						UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
-				}
-				
-				if ( Health < 1 )
-					CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
-			}
-
-			// Award headshot here, not when zombie died.
-			if ( bDecapitated && Class<KFWeaponDamageType>(DamageType) != None && 
-				 instigatedBy != None && KFPlayerController(instigatedBy.Controller) != None )  {
-				bLaserSightedEBRM14Headshotted = M14EBRBattleRifle(instigatedBy.Weapon) != none && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
-				Class<KFWeaponDamageType>(DamageType).Static.ScoredHeadshot(KFSteamStatsAndAchievements(PlayerController(instigatedBy.Controller).SteamStatsAndAchievements), self.Class, bLaserSightedEBRM14Headshotted);
-			}
-		}
-	}
-
-	// Client check for Gore FX
-	//BodyPartRemoval(Damage,instigatedBy,Hitlocation,Momentum,DamageType);
-
-	if ( Damage < Health && DamageType != class'DamTypeFrag' 
-		 && DamageType != class'DamTypePipeBomb' && DamageType != class'DamTypeM79Grenade' 
-		 && DamageType != class'DamTypeM32Grenade' && DamageType != class'DamTypeM203Grenade' 
-		 && DamageType != class'DamTypeDwarfAxe' && DamageType != class'DamTypeSPGrenade'
-		 && DamageType != class'DamTypeSealSquealExplosion'
-		 && DamageType != class'DamTypeSeekerSixRocket'
-		 && Class<Whisky_DamTypeHammer>(DamageType) == None
-		 && Class<UM_BaseDamType_Explosive>(DamageType) == None )
-		Momentum *= float(Damage) / float(Health) * 0.75;
-
-	// Same rules apply to zombies as players.
-	if ( class<DamTypeVomit>(DamageType) != None )  {
-		BileCount = 7;
-		BileInstigator = instigatedBy;
-		if ( NextBileTime < Level.TimeSeconds )
-			NextBileTime = Level.TimeSeconds+BileFrequency;
-	}
-
-	if ( KFPRI != None && (Health - Damage) <= 0 && KFPRI.ClientVeteranSkill != None && 
-		 KFPRI.ClientVeteranSkill.static.KilledShouldExplode(KFPRI, KFPawn(instigatedBy)) )  {
-		Super(Skaarj).TakeDamage(Damage + 600, instigatedBy, Hitlocation, Momentum, DamageType);
-		HurtRadius(500, 1000, class'DamTypeFrag', 100000, Location);
-	}
-	else
-		Super(Skaarj).TakeDamage(Damage, instigatedBy, Hitlocation, Momentum, DamageType);
-
-	bBackstabbed = False;
 }
 
 function PushAwayZombie(Vector NewVelocity)

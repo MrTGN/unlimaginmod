@@ -143,7 +143,7 @@ function UpdateForSaleBuyables()
 
 		for( i=0; i<SRLR.CachePerks.Length; ++i )
 			if( !SRLR.CachePerks[i].PerkClass.Static.AllowWeaponInTrader(ForSalePickup,KFPRI,SRLR.CachePerks[i].CurrentLevel) )
-				break;
+				Break;
 		if( i<SRLR.CachePerks.Length )
 			continue;
 
@@ -182,7 +182,7 @@ function UpdateForSaleBuyables()
 		ForSaleBuyable.ItemPerkIndex		= ForSalePickup.default.CorrespondingPerkIndex;
 
 		// Make sure we mark the list as a sale list
-		ForSaleBuyable.bSaleList = true;
+		ForSaleBuyable.bSaleList = True;
 
 		// Sort same perk weapons in front.
 		if( ForSalePickup.default.CorrespondingPerkIndex == PlayerVeterancy.default.PerkIndex )  {
@@ -258,7 +258,7 @@ function UpdateList()
 	if ( bNotify )
 		CheckLinkedObjects(Self);
 
-	if ( MyScrollBar != none )
+	if ( MyScrollBar != None )
 		MyScrollBar.AlignThumb();
 
 	bNeedsUpdate = False;

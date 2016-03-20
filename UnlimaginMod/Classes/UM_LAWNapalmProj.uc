@@ -33,7 +33,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	// Incendiary Effects..
 	PlaySound(sound'KF_GrenadeSnd.FlameNade_Explode',,100.5*TransientSoundVolume);
 
-	if ( EffectIsRelevant(Location,false) )
+	if ( EffectIsRelevant(Location,False) )
 	{
 		Spawn(Class'KFIncendiaryExplosion',,, HitLocation, rotator(vect(0,0,1)));
 		Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));

@@ -50,7 +50,7 @@ simulated function PlayHitEffects(
 	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail && Level.DetailMode != DM_Low )  {
 		//Level.Game.Broadcast(self, "HitMat = " $HitMat.SurfaceType$" Effect = "$HitEffects[ST].Effect$" Particle Effect = "$HitEffects[ST].ParticleEffect$" TempEffect = "$HitEffects[ST].TempEffect);
 		//log("
-		Trace(HitLoc, HitNormal, (Location + Vector(Rotation) * 20.0), Location, false,, HitMat);
+		Trace(HitLoc, HitNormal, (Location + Vector(Rotation) * 20.0), Location, False,, HitMat);
 		
 		if ( SurfaceType == EST_Default || SurfaceType >= ArrayCount(HitEffects) )  {
 			if ( HitMat != None )

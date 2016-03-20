@@ -23,11 +23,11 @@ simulated exec function ToggleIronSights()
 	if ( bHasAimingMode )
 	{
 		if ( bAimingRifle )
-			PerformZoom(false);
+			PerformZoom(False);
 		else
 		{
 			/*
-			if ( Owner != none && Owner.Physics == PHYS_Falling &&
+			if ( Owner != None && Owner.Physics == PHYS_Falling &&
 				Owner.PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
 				Return;
 			*/
@@ -47,7 +47,7 @@ simulated exec function IronSightZoomIn()
 	if( bHasAimingMode )
 	{
 		/*
-		if ( Owner != none && Owner.Physics == PHYS_Falling &&
+		if ( Owner != None && Owner.Physics == PHYS_Falling &&
 			Owner.PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
 			Return;
 		*/

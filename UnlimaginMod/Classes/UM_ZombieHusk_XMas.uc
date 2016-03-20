@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieHusk_XMas
-//	Parent class:	 UM_ZombieHusk
+//	Parent class:	 UM_BaseMonster_FireBallHusk
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 23:08
 //================================================================================
-class UM_ZombieHusk_XMas extends UM_ZombieHusk;
+class UM_ZombieHusk_XMas extends UM_BaseMonster_FireBallHusk;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 #exec OBJ LOAD FILE=KF_Specimens_Trip_XMAS_T_Two.utx

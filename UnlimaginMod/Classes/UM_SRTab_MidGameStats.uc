@@ -30,7 +30,7 @@ function InitComponent(GUIController MyController, GUIComponent MyOwner)
 
 	for ( i = 0; i < Controls.Length; ++i )  {
 		if ( GUIButton(Controls[i]) != None && Controls[i] != b_Team )  {
-			GUIButton(Controls[i]).bAutoSize = true;
+			GUIButton(Controls[i]).bAutoSize = True;
 			GUIButton(Controls[i]).SizingCaption = s;
 			GUIButton(Controls[i]).AutoSizePadding.HorzPerc = 0.04;
 			GUIButton(Controls[i]).AutoSizePadding.VertPerc = 0.5;
@@ -140,13 +140,13 @@ function SetupGroups()
 
 	if ( bTeamGame )  {
 		//RemoveComponent(lb_FFA, True);
-		//RemoveComponent(sb_FFA, true);
+		//RemoveComponent(sb_FFA, True);
 		if ( PC.GameReplicationInfo != None && PC.GameReplicationInfo.bNoTeamChanges )
-			RemoveComponent(b_Team, true);
+			RemoveComponent(b_Team, True);
 		//lb_FFA = None;
 	}
 	else if ( bFFAGame )
-		RemoveComponent(b_Team, true);
+		RemoveComponent(b_Team, True);
 	else  {
 		for ( i = 0; i < Controls.Length; ++i )  {
 			if ( Controls[i] != i_BGPerks && Controls[i] != lb_PerkSelect )
@@ -202,7 +202,7 @@ function SetButtonPositions(Canvas C)
 	ButtonsLeftInRow = ButtonsPerRow;
 
 	for ( i = 0; i < Components.Length; ++i )  {
-		if ( Components[i].bVisible && GUIButton(Components[i]) != none && Components[i] != b_Team )
+		if ( Components[i].bVisible && GUIButton(Components[i]) != None && Components[i] != b_Team )
 			++NumButtons;
 	}
 
@@ -217,7 +217,7 @@ function SetButtonPositions(Canvas C)
 		if ( !Components[i].bVisible || GUIButton(Components[i]) == None || Components[i] == b_Team )
 			Continue;
 
-		Components[i].SetPosition( X, Y, Width, Height, true );
+		Components[i].SetPosition( X, Y, Width, Height, True );
 
 		if ( --ButtonsLeftInRow > 0 )
 			X += Width + ButtonSpacing;
@@ -250,7 +250,7 @@ function bool CurrentServerIsInFavorites()
 	address = PlayerOwner().GetServerNetworkAddress();
 
 	if ( address == "" )
-		Return True; // slightly hacky - dont want to add "none"!
+		Return True; // slightly hacky - dont want to add "None"!
 
 	// Parse text to find IP and possibly port number
 	if ( Divide(address, ":", Fav.IP, portstring) )
@@ -273,13 +273,13 @@ function bool ButtonClicked(GUIComponent Sender)
 	/*if ( Sender == i_JoinRed )
 	{
 		//Join Red team
-		if ( PC.PlayerReplicationInfo == None || PC.PlayerReplicationInfo.Team == none ||
+		if ( PC.PlayerReplicationInfo == None || PC.PlayerReplicationInfo.Team == None ||
 			 PC.PlayerReplicationInfo.Team.TeamIndex != 0 )
 		{
 			PC.ChangeTeam(0);
 		}
 
-		Controller.CloseMenu(false);
+		Controller.CloseMenu(False);
 	}
 	*/
 	
@@ -339,7 +339,7 @@ function bool InternalOnPreDraw(Canvas C)
 		/*
 		if ( bTeamGame )
 		{
-			if ( PlayerOwner().PlayerReplicationInfo.Team != none )
+			if ( PlayerOwner().PlayerReplicationInfo.Team != None )
 			{
 				sb_Red.HeaderBase = texture'InterfaceArt_tex.Menu.RODisplay';
 			}
@@ -532,7 +532,7 @@ defaultproperties
 		WinLeft=0.019240
 		WinTop=0.012063
 		Caption="Stats"
-		bFillClient=true
+		bFillClient=True
 	End Object
 	i_BGPerks=GUISectionBackground'UnlimaginMod.UM_SRTab_MidGameStats.BGPerks'
 
@@ -553,8 +553,8 @@ defaultproperties
 		WinLeft=0.194420
 		WinTop=0.878657
 		TabOrder=0
-		bBoundToParent=true
-		bScaleToParent=true
+		bBoundToParent=True
+		bScaleToParent=True
 	End Object
 	b_Settings=GUIButton'UnlimaginMod.UM_SRTab_MidGameStats.SettingsButton'
 
@@ -568,8 +568,8 @@ defaultproperties
 		WinTop=0.85000//0.675
 		bAutoSize=True
 		TabOrder=1
-		bBoundToParent=true
-		bScaleToParent=true
+		bBoundToParent=True
+		bScaleToParent=True
 	End Object
 	b_Browser=GUIButton'UnlimaginMod.UM_SRTab_MidGameStats.BrowserButton'
 
@@ -583,8 +583,8 @@ defaultproperties
 		WinTop=0.87//0.750
 		bAutoSize=True
 		TabOrder=10
-		bBoundToParent=true
-		bScaleToParent=true
+		bBoundToParent=True
+		bScaleToParent=True
 	End Object
 	b_Leave=GUIButton'UnlimaginMod.UM_SRTab_MidGameStats.LeaveMatchButton'
 
@@ -596,8 +596,8 @@ defaultproperties
 		WinHeight=0.05000
 		WinLeft=0.02500
 		WinTop=0.870
-		bBoundToParent=true
-		bScaleToParent=true
+		bBoundToParent=True
+		bScaleToParent=True
 		OnClick=ButtonClicked
 		bAutoSize=True
 		TabOrder=3

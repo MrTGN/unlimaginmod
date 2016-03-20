@@ -20,7 +20,7 @@ var name FireAnim2;
 simulated function ModeDoFire()
 {
 
-	if (Weapon != none && KFPlayerController(pawn(Weapon.Owner).Controller) != none )
+	if (Weapon != None && KFPlayerController(pawn(Weapon.Owner).Controller) != None )
 	{
 		KFPlayerController(pawn(Weapon.Owner).Controller).ToggleTorch();
 		KFWeapon(Weapon).AdjustLightGraphic();
@@ -37,15 +37,15 @@ function DoTrace(Vector Start, Rotator Dir)
 // Sends a value to the 9mm attachment telling whether the light is being used.
 function bool LightFiring()
 {
-	return bIsFiring;
+	Return bIsFiring;
 }
 
 simulated function bool AllowFire()
 {
-	if(KFWeapon(Weapon).bIsReloading || KFPawn(Instigator).SecondaryItem!=none || KFPawn(Instigator).bThrowingNade )
-		return false;
+	if(KFWeapon(Weapon).bIsReloading || KFPawn(Instigator).SecondaryItem!=None || KFPawn(Instigator).bThrowingNade )
+		Return False;
 	if(Level.TimeSeconds - LastClickTime > FireRate)
-		return true;
+		Return True;
 }
 
 defaultproperties

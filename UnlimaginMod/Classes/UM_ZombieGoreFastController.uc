@@ -20,7 +20,7 @@ state ZombieHunt
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
+		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != None )
 		{
 			// 25% chance of first player to see this Gorefast saying something
 			if ( UM_InvasionGame(Level.Game) != None )
@@ -28,7 +28,7 @@ state ZombieHunt
 				if ( !UM_InvasionGame(Level.Game).bDidSpottedGorefastMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 13, "");
-					UM_InvasionGame(Level.Game).bDidSpottedGorefastMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedGorefastMessage = True;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )
@@ -36,11 +36,11 @@ state ZombieHunt
 				if ( !KFGameType(Level.Game).bDidSpottedGorefastMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 13, "");
-					KFGameType(Level.Game).bDidSpottedGorefastMessage = true;
+					KFGameType(Level.Game).bDidSpottedGorefastMessage = True;
 				}
 			}
 			
-			bDoneSpottedCheck = true;
+			bDoneSpottedCheck = True;
 		}
 
 		global.SeePlayer(SeenPlayer);

@@ -31,10 +31,10 @@ struct DeltaData
 	var()	config	float	MaxTime;
 };
 
-var					bool						bDisabled;			//
+var					bool							bDisabled;			//
 
-var()				string						MonsterClassName;	// Dynamic MonsterClass Load
-var()				class<UM_BaseMonster>			MonsterClass;		// Class of the current Monster
+var()				array<string>					MonsterClassNames;	// Dynamic MonsterClasses Load
+var()	transient	array<class<UM_BaseMonster>>	MonsterClasses;		// Class of the current Monster
 
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
@@ -75,18 +75,19 @@ var		transient	float						NextDeltaLimitResetTime;
 
 function bool InitDataFor( UM_InvasionGame IG )
 {
+	local	int		i;
+	
 	if ( IG == None || bDisabled )
 		Return False;
 	
-	if ( MonsterClassName == "" )  {
-		Log( "Error: MonsterClassName not specified!", Name );
+	if ( MonsterClassNames.Length < 1 )  {
+		Log( "Error: MonsterClassNames not specified!", Name );
 		Return False;
 	}
 	
-	MonsterClass = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassName, Class'Class') );
-	if ( MonsterClass == None )  {
-		Log( "Error: Failed to load Monster Class"@MonsterClassName$"!", Name );
-		Return False;
+	for ( i = 0; i < MonsterClassNames.Length; ++i )  {
+		if ( MonsterClassNames[i] != "" )
+			MonsterClasses[MonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassNames[i], Class'Class') );
 	}
 	
 	InvasionGame = IG;
@@ -96,8 +97,28 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
-	Log( "GameData Object for the Monster Class"@MonsterClassName@"initialized.", Name );
+	for ( i = 0; i < MonsterClasses.Length; ++i )  {
+		if ( MonsterClasses[i] != None )
+			MonsterClasses[i].static.PreCacheAssets( Level );
+		else
+			MonsterClasses.Remove(i, 1);
+	}
+	
+	if ( MonsterClasses.Length < 1 )  {
+		Log( "Error: No Monster Classes to load!", Name );
+		Return False;
+	}
+	
+	Log( "GameData Object for the Monster Class"@MonsterClassNames@"initialized.", Name );
 	Return True;
+}
+
+function Class<UM_BaseMonster> GetMonsterClass()
+{
+	if ( MonsterClasses.Length < 2 )
+		Return MonsterClasses[0];
+	
+	Return MonsterClasses[ Rand(MonsterClasses.Length) ];
 }
 
 function UpdateDynamicParameters()

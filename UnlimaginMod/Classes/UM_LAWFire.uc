@@ -16,12 +16,12 @@ class UM_LAWFire extends LAWFire;
 
 function bool AllowFire()
 {
-	return ( Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
+	Return ( Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
 }
 
 event ModeDoFire()
 {
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none )
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 	{
 		// -- Switch damage types for the firebug --
 		if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )

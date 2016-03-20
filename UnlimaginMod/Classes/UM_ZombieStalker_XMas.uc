@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieStalker_XMas
-//	Parent class:	 UM_ZombieStalker
+//	Parent class:	 UM_BaseMonster_Stalker
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 14.12.2012 0:02
 //================================================================================
-class UM_ZombieStalker_XMas extends UM_ZombieStalker;
+class UM_ZombieStalker_XMas extends UM_BaseMonster_Stalker;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 
@@ -32,14 +32,14 @@ simulated event Tick( float DeltaTime )
 	{
 		NextCheckTime = Level.TimeSeconds + 0.5;
 
-		if( LocalKFHumanPawn != none && LocalKFHumanPawn.Health > 0 && LocalKFHumanPawn.ShowStalkers() &&
+		if( LocalKFHumanPawn != None && LocalKFHumanPawn.Health > 0 && LocalKFHumanPawn.ShowStalkers() &&
 			VSizeSquared(Location - LocalKFHumanPawn.Location) < LocalKFHumanPawn.GetStalkerViewDistanceMulti() * 640000.0 ) // 640000 = 800 Units
 		{
 			bSpotted = True;
 		}
 		else
 		{
-			bSpotted = false;
+			bSpotted = False;
 		}
 
 		if ( !bSpotted && !bCloaked && Skins[0] != Combiner'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_cmb' )
@@ -51,7 +51,7 @@ simulated event Tick( float DeltaTime )
 			// if we're uberbrite, turn down the light
 			if( bSpotted && Skins[0] != Finalblend'KFX.StalkerGlow' )
 			{
-				bUnlit = false;
+				bUnlit = False;
 				CloakStalker();
 			}
 			else if ( Skins[0] != Shader'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_invisible' )
@@ -68,24 +68,24 @@ simulated function CloakStalker()
     // No cloaking if zapped
     if( bZapped )
     {
-        return;
+        Return;
     }
 
 	if ( bSpotted )
 	{
 		if( Level.NetMode == NM_DedicatedServer )
-			return;
+			Return;
 
 		Skins[0] = Finalblend'KFX.StalkerGlow';
 		Skins[1] = Finalblend'KFX.StalkerGlow';
-		bUnlit = true;
-		return;
+		bUnlit = True;
+		Return;
 	}
 
 	if ( !bDecapitated && !bCrispified ) // No head, no cloak, honey.  updated :  Being charred means no cloak either :D
 	{
 		Visibility = 1;
-		bCloaked = true;
+		bCloaked = True;
 
 		if( Level.NetMode == NM_DedicatedServer )
 			Return;
@@ -94,15 +94,15 @@ simulated function CloakStalker()
 		Skins[1] = Shader'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_invisible';
 
 		// Invisible - no shadow
-		if(PlayerShadow != none)
-			PlayerShadow.bShadowActive = false;
-		if(RealTimeShadow != none)
+		if(PlayerShadow != None)
+			PlayerShadow.bShadowActive = False;
+		if(RealTimeShadow != None)
 			RealTimeShadow.Destroy();
 
 		// Remove/disallow projectors on invisible people
 		Projectors.Remove(0, Projectors.Length);
-		bAcceptsProjectors = false;
-		SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, true);
+		bAcceptsProjectors = False;
+		SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
 	}
 }
 
@@ -110,7 +110,7 @@ simulated function UnCloakStalker()
 {
     if( bZapped )
     {
-        return;
+        Return;
     }
 
 	if( !bCrispified )
@@ -118,26 +118,26 @@ simulated function UnCloakStalker()
 		LastUncloakTime = Level.TimeSeconds;
 
 		Visibility = default.Visibility;
-		bCloaked = false;
+		bCloaked = False;
 
 		if ( UM_InvasionGame(Level.Game) != None )
 		{
 			// 25% chance of our Enemy saying something about us being invisible
-			if( Level.NetMode!=NM_Client && !UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=none &&
-			 PlayerController(Controller.Enemy.Controller)!=none )
+			if( Level.NetMode!=NM_Client && !UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=None &&
+			 PlayerController(Controller.Enemy.Controller)!=None )
 			{
 				PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
-				UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage = true;
+				UM_InvasionGame(Level.Game).bDidStalkerInvisibleMessage = True;
 			}
 		}
 		else if ( KFGameType(Level.Game) != None )
 		{
 			// 25% chance of our Enemy saying something about us being invisible
-			if( Level.NetMode!=NM_Client && !KFGameType(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=none &&
-			 PlayerController(Controller.Enemy.Controller)!=none )
+			if( Level.NetMode!=NM_Client && !KFGameType(Level.Game).bDidStalkerInvisibleMessage && FRand()<0.25 && Controller.Enemy!=None &&
+			 PlayerController(Controller.Enemy.Controller)!=None )
 			{
 				PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
-				KFGameType(Level.Game).bDidStalkerInvisibleMessage = true;
+				KFGameType(Level.Game).bDidStalkerInvisibleMessage = True;
 			}
 		}
 
@@ -151,14 +151,14 @@ simulated function UnCloakStalker()
 			Skins[1] = FinalBlend'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_fb';
 			Skins[0] = Combiner'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_cmb';
 
-			if ( PlayerShadow != none )
+			if ( PlayerShadow != None )
 			{
-				PlayerShadow.bShadowActive = true;
+				PlayerShadow.bShadowActive = True;
 			}
 
-			bAcceptsProjectors = true;
+			bAcceptsProjectors = True;
 
-			SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, true);
+			SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
 		}
 	}
 }
@@ -168,18 +168,18 @@ simulated function SetZappedBehavior()
 {
     super(KFMonster).SetZappedBehavior();
 
-	bUnlit = false;
+	bUnlit = False;
 	// Handle setting the zed to uncloaked so the zapped overlay works properly
     if( Level.Netmode != NM_DedicatedServer )
 	{
 		Skins[1] = FinalBlend'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_fb';
 		Skins[0] = Combiner'KF_Specimens_Trip_XMAS_T.StalkerClause.StalkerClause_cmb';
 
-		if (PlayerShadow != none)
-			PlayerShadow.bShadowActive = true;
+		if (PlayerShadow != None)
+			PlayerShadow.bShadowActive = True;
 
-		bAcceptsProjectors = true;
-		SetOverlayMaterial(Material'KFZED_FX_T.Energy.ZED_overlay_Hit_Shdr', 999, true);
+		bAcceptsProjectors = True;
+		SetOverlayMaterial(Material'KFZED_FX_T.Energy.ZED_overlay_Hit_Shdr', 999, True);
 	}
 }
 
@@ -203,7 +203,7 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 		bUnlit=!bUnlit;
 	}
 
-	LocalKFHumanPawn = none;
+	LocalKFHumanPawn = None;
 
 	if ( !bCrispified )
 	{

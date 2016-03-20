@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieScrake_XMas
-//	Parent class:	 UM_ZombieScrake
+//	Parent class:	 UM_BaseMonster_Scrake
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 23:37
 //================================================================================
-class UM_ZombieScrake_XMas extends UM_ZombieScrake;
+class UM_ZombieScrake_XMas extends UM_BaseMonster_Scrake;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 #exec OBJ LOAD FILE=KF_BaseScrake_Xmas.uax

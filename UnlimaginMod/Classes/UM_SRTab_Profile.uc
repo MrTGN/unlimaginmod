@@ -67,7 +67,7 @@ function ShowPanel(bool bShow)
 
 		if ( PlayerOwner() != None )  {
 			S = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
-			if ( S != none )  {
+			if ( S != None )  {
 				// Initialize the List
 				lb_PerkSelect.List.InitList(None);
 				lb_PerkProgress.List.InitList();
@@ -78,7 +78,7 @@ function ShowPanel(bool bShow)
 						  	  i_BGPerks.WinTop + 38.0 / float(Controller.ResY),
 							  i_BGPerks.WinWidth - 10.0 / float(Controller.ResX),
 							  i_BGPerks.WinHeight - 35.0 / float(Controller.ResY),
-							  true);
+							  True);
 
 	SetVisibility(bShow);
 }

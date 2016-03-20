@@ -37,7 +37,7 @@ var		Material			ScriptedTextureFallback;	// The texture to render if the users s
 var		Combiner			ScriptedScopeCombiner;
 var		Combiner			ScriptedScopeStatic;
 var		texture				TexturedScopeTexture;
-var		bool				bInitializedScope;		// Set to true when the scope has been initialized
+var		bool				bInitializedScope;		// Set to True when the scope has been initialized
 
 //[block] Dynamic Loading Vars
 var		string	ZoomMatRef;
@@ -58,10 +58,10 @@ static function PreloadAssets(Inventory Inv, optional bool bSkipRefCount)
 	super.PreloadAssets(Inv, bSkipRefCount);
 
 	if ( default.ZoomMatRef != "" && default.ZoomMat == None )
-		default.ZoomMat = FinalBlend(DynamicLoadObject(default.ZoomMatRef, class'FinalBlend', true));
+		default.ZoomMat = FinalBlend(DynamicLoadObject(default.ZoomMatRef, class'FinalBlend', True));
 	
 	if ( default.ScriptedTextureFallbackRef != "" && default.ScriptedTextureFallback == None )
-		default.ScriptedTextureFallback = texture(DynamicLoadObject(default.ScriptedTextureFallbackRef, class'texture', true));
+		default.ScriptedTextureFallback = texture(DynamicLoadObject(default.ScriptedTextureFallbackRef, class'texture', True));
 	
 	if ( OperationY_SVDLLI(Inv) != None )
 	{
@@ -91,20 +91,20 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( (B == None) || (B.Enemy == None) )
-		return AIRating;
+		Return AIRating;
 
-	return AIRating;
+	Return AIRating;
 }
 
 function byte BestMode()
 {
-	return 0;
+	Return 0;
 }
 
 exec function pfov(int thisFOV)
 {
 	if( !class'ROEngine.ROLevelInfo'.static.RODebugMode() )
-		return;
+		Return;
 
 	scopePortalFOV = thisFOV;
 }
@@ -112,7 +112,7 @@ exec function pfov(int thisFOV)
 exec function pPitch(int num)
 {
 	if( !class'ROEngine.ROLevelInfo'.static.RODebugMode() )
-		return;
+		Return;
 
 	scopePitch = num;
 	scopePitchHigh = num;
@@ -121,7 +121,7 @@ exec function pPitch(int num)
 exec function pYaw(int num)
 {
 	if( !class'ROEngine.ROLevelInfo'.static.RODebugMode() )
-		return;
+		Return;
 
 	scopeYaw = num;
 	scopeYawHigh = num;
@@ -130,7 +130,7 @@ exec function pYaw(int num)
 simulated exec function TexSize(int i, int j)
 {
 	if( !class'ROEngine.ROLevelInfo'.static.RODebugMode() )
-		return;
+		Return;
 
 	ScopeScriptedTexture.SetSize(i, j);
 }
@@ -138,9 +138,9 @@ simulated exec function TexSize(int i, int j)
 simulated function bool ShouldDrawPortal()
 {
 	if( bAimingRifle )
-		return true;
+		Return True;
 	else
-		return false;
+		Return False;
 }
 
 simulated event PostBeginPlay()
@@ -164,20 +164,20 @@ simulated event PostBeginPlay()
 
 simulated function UpdateScopeMode()
 {
-	if (Level.NetMode != NM_DedicatedServer && Instigator != none && Instigator.IsLocallyControlled() &&
+	if (Level.NetMode != NM_DedicatedServer && Instigator != None && Instigator.IsLocallyControlled() &&
 		Instigator.IsHumanControlled() )
 	{
 		if( KFScopeDetail == KF_ModelScope )
 		{
 			scopePortalFOV = default.scopePortalFOV;
 			ZoomedDisplayFOV = default.ZoomedDisplayFOV;
-			//bPlayerFOVZooms = false;
+			//bPlayerFOVZooms = False;
 			if (bUsingSights)
 			{
 				PlayerViewOffset = XoffsetScoped;
 			}
 
-			if( ScopeScriptedTexture == none )
+			if( ScopeScriptedTexture == None )
 			{
 				ScopeScriptedTexture = ScriptedTexture(Level.ObjectPool.AllocateObject(class'ScriptedTexture'));
 			}
@@ -186,7 +186,7 @@ simulated function UpdateScopeMode()
 			ScopeScriptedTexture.SetSize(512,512);
 			ScopeScriptedTexture.Client = Self;
 
-			if( ScriptedScopeCombiner == none )
+			if( ScriptedScopeCombiner == None )
 			{
 				ScriptedScopeCombiner = Combiner(Level.ObjectPool.AllocateObject(class'Combiner'));
 				ScriptedScopeCombiner.Material1 = Texture'SVDLLI_A.SVDLLI_T.PSO1Scope';
@@ -196,7 +196,7 @@ simulated function UpdateScopeMode()
 				ScriptedScopeCombiner.Material2 = ScopeScriptedTexture;
 			}
 
-			if( ScriptedScopeStatic == none )
+			if( ScriptedScopeStatic == None )
 			{
 				// Construct the Combiner
 				ScriptedScopeStatic = Combiner(Level.ObjectPool.AllocateObject(class'Combiner'));
@@ -208,7 +208,7 @@ simulated function UpdateScopeMode()
 	        }
 
 			
-			if( ScopeScriptedShader == none )
+			if( ScopeScriptedShader == None )
 			{
 				ScopeScriptedShader = Shader(Level.ObjectPool.AllocateObject(class'Shader'));
 				ScopeScriptedShader.Diffuse = ScriptedScopeCombiner;
@@ -216,7 +216,7 @@ simulated function UpdateScopeMode()
 				ScopeScriptedShader.FallbackMaterial = Shader'ScopeShaders.Zoomblur.LensShader';
 			}
 
-			bInitializedScope = true;
+			bInitializedScope = True;
 		}
 		else if( KFScopeDetail == KF_ModelScopeHigh )
 		{
@@ -227,7 +227,7 @@ simulated function UpdateScopeMode()
 				PlayerViewOffset = XoffsetHighDetail;
 			}
 
-			if( ScopeScriptedTexture == none )
+			if( ScopeScriptedTexture == None )
 			{
 				ScopeScriptedTexture = ScriptedTexture(Level.ObjectPool.AllocateObject(class'ScriptedTexture'));
 			}
@@ -235,7 +235,7 @@ simulated function UpdateScopeMode()
 			ScopeScriptedTexture.SetSize(1024,1024);
 			ScopeScriptedTexture.Client = Self;
 
-			if( ScriptedScopeCombiner == none )
+			if( ScriptedScopeCombiner == None )
 			{
 				ScriptedScopeCombiner = Combiner(Level.ObjectPool.AllocateObject(class'Combiner'));
 				ScriptedScopeCombiner.Material1 = Texture'SVDLLI_A.SVDLLI_T.PSO1Scope';
@@ -245,7 +245,7 @@ simulated function UpdateScopeMode()
 				ScriptedScopeCombiner.Material2 = ScopeScriptedTexture;
 			}
 
-			if( ScriptedScopeStatic == none )
+			if( ScriptedScopeStatic == None )
 			{
 				// Construct the Combiner
 				ScriptedScopeStatic = Combiner(Level.ObjectPool.AllocateObject(class'Combiner'));
@@ -257,7 +257,7 @@ simulated function UpdateScopeMode()
 	        }
 
 						
-			if( ScopeScriptedShader == none )
+			if( ScopeScriptedShader == None )
 			{
 				ScopeScriptedShader = Shader(Level.ObjectPool.AllocateObject(class'Shader'));
 				ScopeScriptedShader.Diffuse = ScriptedScopeCombiner;
@@ -265,14 +265,14 @@ simulated function UpdateScopeMode()
 				ScopeScriptedShader.FallbackMaterial = Shader'ScopeShaders.Zoomblur.LensShader';
 			}
 
-			bInitializedScope = true;
+			bInitializedScope = True;
 		}
 		else if (KFScopeDetail == KF_TextureScope)
 		{
 			ZoomedDisplayFOV = default.ZoomedDisplayFOV;
 			PlayerViewOffset.X = default.PlayerViewOffset.X;
 
-			bInitializedScope = true;
+			bInitializedScope = True;
 		}
 	}
 }
@@ -283,7 +283,7 @@ simulated event RenderTexture(ScriptedTexture Tex)
 
 	RollMod = Instigator.GetViewRotation();
 
-	if(Owner != none && Instigator != none && Tex != none && Tex.Client != none)
+	if(Owner != None && Instigator != None && Tex != None && Tex.Client != None)
 		Tex.DrawPortal(0,0,Tex.USize,Tex.VSize,Owner,(Instigator.Location + Instigator.EyePosition()), RollMod,  scopePortalFOV );
 }
 
@@ -335,8 +335,8 @@ simulated function ZoomIn(bool bAnimateTransition)
 		KFHumanPawn(Instigator).SetAiming(True);
 
 	if ( Level.NetMode != NM_DedicatedServer && 
-		 KFPlayerController(Instigator.Controller) != none && AimInSound != none )
-		PlayOwnedSound(AimInSound, SLOT_Interact,,,,, false);
+		 KFPlayerController(Instigator.Controller) != None && AimInSound != None )
+		PlayOwnedSound(AimInSound, SLOT_Interact,,,,, False);
 
 	
 	//[block] Decreasing Mouse Sensitivity if needed
@@ -368,10 +368,10 @@ simulated function ZoomOut(bool bAnimateTransition)
 	if( KFHumanPawn(Instigator)!=None )
 		KFHumanPawn(Instigator).SetAiming(False);
 
-	if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != none )
+	if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != None )
 	{
-		if( AimOutSound != none )
-            PlayOwnedSound(AimOutSound, SLOT_Interact,,,,, false);
+		if( AimOutSound != None )
+            PlayOwnedSound(AimOutSound, SLOT_Interact,,,,, False);
 		
 		KFPlayerController(Instigator.Controller).TransitionFOV(KFPlayerController(Instigator.Controller).DefaultFOV,0.0);
 	}
@@ -393,10 +393,10 @@ simulated function WeaponTick(float dt)
 	{
 		ForceZoomOutTime = 0;
 
-		ZoomOut(false);
+		ZoomOut(False);
 
 		if( Role < ROLE_Authority)
-			ServerZoomOut(false);
+			ServerZoomOut(False);
 	}
 } */
 
@@ -418,7 +418,7 @@ simulated event OnZoomInFinished()
 		}
 	}
 
-	if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != none &&
+	if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != None &&
 		KFScopeDetail == KF_TextureScope )
 	{
 		KFPlayerController(Instigator.Controller).TransitionFOV(PlayerIronSightFOV,0.0);
@@ -436,19 +436,19 @@ simulated event RenderOverlays(Canvas Canvas)
 	local PlayerController PC;
 
 	if (Instigator == None)
-		return;
+		Return;
 
 	PC = PlayerController(Instigator.Controller);
 
 	if(PC == None)
-		return;
+		Return;
 
-	if(!bInitializedScope && PC != none )
+	if(!bInitializedScope && PC != None )
 	{
 		UpdateScopeMode();
 	}
 
-	Canvas.DrawActor(None, false, true);
+	Canvas.DrawActor(None, False, True);
 
 	for (m = 0; m < NUM_FIRE_MODES; m++)
 	{
@@ -464,11 +464,11 @@ simulated event RenderOverlays(Canvas Canvas)
 
 	PreDrawFPWeapon();
 
-	if(bAimingRifle && PC != none && (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh))
+	if(bAimingRifle && PC != None && (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh))
 	{
 		if (ShouldDrawPortal())
 		{
-			if ( ScopeScriptedTexture != none )
+			if ( ScopeScriptedTexture != None )
 			{
 				Skins[LenseMaterialID] = ScopeScriptedShader;
 				ScopeScriptedTexture.Client = Self;
@@ -476,9 +476,9 @@ simulated event RenderOverlays(Canvas Canvas)
 			}
 		}
 
-		bDrawingFirstPerson = true;
-		Canvas.DrawBoundActor(self, false, false,DisplayFOV,PC.Rotation,rot(0,0,0),Instigator.CalcZoomedDrawOffset(self));
-		bDrawingFirstPerson = false;
+		bDrawingFirstPerson = True;
+		Canvas.DrawBoundActor(self, False, False,DisplayFOV,PC.Rotation,rot(0,0,0),Instigator.CalcZoomedDrawOffset(self));
+		bDrawingFirstPerson = False;
 	}
 	else if( KFScopeDetail == KF_TextureScope && PC.DesiredFOV == PlayerIronSightFOV && bAimingRifle)
 	{
@@ -507,9 +507,9 @@ simulated event RenderOverlays(Canvas Canvas)
 	else
 	{
 		Skins[LenseMaterialID] = ScriptedTextureFallback;
-		bDrawingFirstPerson = true;
-		Canvas.DrawActor(self, false, false, DisplayFOV);
-		bDrawingFirstPerson = false;
+		bDrawingFirstPerson = True;
+		Canvas.DrawActor(self, False, False, DisplayFOV);
+		bDrawingFirstPerson = False;
 	}
 }
 
@@ -520,7 +520,7 @@ simulated function AdjustIngameScope()
 	PC = PlayerController(Instigator.Controller);
 
 	if( !bHasScope )
-		return;
+		Return;
 
 	switch (KFScopeDetail)
 	{
@@ -529,24 +529,24 @@ simulated function AdjustIngameScope()
 				DisplayFOV = default.ZoomedDisplayFOV;
 			if ( PC.DesiredFOV == PlayerIronSightFOV && bAimingRifle )
 			{
-				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != none )
+				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != None )
 				{
 					KFPlayerController(Instigator.Controller).TransitionFOV(KFPlayerController(Instigator.Controller).DefaultFOV,0.0);
 }
 			}
-			break;
+			Break;
 
 		case KF_TextureScope:
 			if( bAimingRifle )
 				DisplayFOV = default.ZoomedDisplayFOV;
 			if ( bAimingRifle && PC.DesiredFOV != PlayerIronSightFOV )
 			{
-				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != none )
+				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != None )
 				{
 					KFPlayerController(Instigator.Controller).TransitionFOV(PlayerIronSightFOV,0.0);
 				}
 			}
-			break;
+			Break;
 
 		case KF_ModelScopeHigh:
 			if( bAimingRifle )
@@ -558,12 +558,12 @@ simulated function AdjustIngameScope()
 			}
 			if ( bAimingRifle && PC.DesiredFOV == PlayerIronSightFOV )
 			{
-				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != none )
+				if( Level.NetMode != NM_DedicatedServer && KFPlayerController(Instigator.Controller) != None )
 				{
 					KFPlayerController(Instigator.Controller).TransitionFOV(KFPlayerController(Instigator.Controller).DefaultFOV,0.0);
 				}
 			}
-			break;
+			Break;
 	}
 
 	UpdateScopeMode();
@@ -580,17 +580,17 @@ simulated event Destroyed()
 
 	if (ScriptedScopeCombiner != None)
 	{
-		ScriptedScopeCombiner.Material2 = none;
+		ScriptedScopeCombiner.Material2 = None;
 		Level.ObjectPool.FreeObject(ScriptedScopeCombiner);
-		ScriptedScopeCombiner = none;
+		ScriptedScopeCombiner = None;
 	}
 
 	if (ScopeScriptedShader != None)
 	{
-		ScopeScriptedShader.Diffuse = none;
-		ScopeScriptedShader.SelfIllumination = none;
+		ScopeScriptedShader.Diffuse = None;
+		ScopeScriptedShader.SelfIllumination = None;
 		Level.ObjectPool.FreeObject(ScopeScriptedShader);
-		ScopeScriptedShader = none;
+		ScopeScriptedShader = None;
 	}
 
 	Super.Destroyed();
@@ -607,17 +607,17 @@ simulated function PreTravelCleanUp()
 
 	if (ScriptedScopeCombiner != None)
 	{
-		ScriptedScopeCombiner.Material2 = none;
+		ScriptedScopeCombiner.Material2 = None;
 		Level.ObjectPool.FreeObject(ScriptedScopeCombiner);
-		ScriptedScopeCombiner = none;
+		ScriptedScopeCombiner = None;
 	}
 
 	if (ScopeScriptedShader != None)
 	{
-		ScopeScriptedShader.Diffuse = none;
-		ScopeScriptedShader.SelfIllumination = none;
+		ScopeScriptedShader.Diffuse = None;
+		ScopeScriptedShader.SelfIllumination = None;
 		Level.ObjectPool.FreeObject(ScopeScriptedShader);
-		ScopeScriptedShader = none;
+		ScopeScriptedShader = None;
 	}
 }
 

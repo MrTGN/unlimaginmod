@@ -68,7 +68,7 @@ simulated event UpdateScoreBoard(Canvas Canvas)
 	BoxSpaceY = 0.25 * YL;
 
 	while( ((PlayerBoxSizeY + BoxSpaceY) * PlayerCount) > (Canvas.ClipY - HeaderOffsetY) )  {
-		// Shrink font, if too small then break loop.
+		// Shrink font, if too small then Break loop.
 		if ( ++i >= 5 || ++FontReduction >= 3 )  {
 			// We need to remove some player names here to make it fit.
 			NotShownCount = PlayerCount-int((Canvas.ClipY-HeaderOffsetY)/(PlayerBoxSizeY+BoxSpaceY))+1;
@@ -170,7 +170,7 @@ simulated event UpdateScoreBoard(Canvas Canvas)
 		Canvas.DrawColor.G = 255;
 		Canvas.DrawColor.B = 0;
 		Canvas.SetPos(NameXPos, ((PlayerBoxSizeY + BoxSpaceY) * PlayerCount + BoxTextOffsetY));
-		Canvas.DrawText(NotShownCount@NotShownInfo, true);
+		Canvas.DrawText(NotShownCount@NotShownInfo, True);
 	}
 
 	Canvas.ClipX = MaxNamePos;
@@ -202,7 +202,7 @@ simulated event UpdateScoreBoard(Canvas Canvas)
 		S = string(int(PRI.Score));
 		Canvas.TextSize(S, XL, YL);
 		Canvas.SetPos(CashXPos-XL*0.5f, (PlayerBoxSizeY + BoxSpaceY)*i + BoxTextOffsetY);
-		Canvas.DrawText(S,true);
+		Canvas.DrawText(S,True);
 
 		// draw time
 		if( GRI.ElapsedTime<PRI.StartTime ) // Login timer error, fix it.
@@ -210,7 +210,7 @@ simulated event UpdateScoreBoard(Canvas Canvas)
 		S = FormatTime(GRI.ElapsedTime-PRI.StartTime);
 		Canvas.TextSize(S, XL, YL);
 		Canvas.SetPos(TimeXPos-XL*0.5f, (PlayerBoxSizeY + BoxSpaceY)*i + BoxTextOffsetY);
-		Canvas.DrawText(S,true);
+		Canvas.DrawText(S,True);
 
 		// Draw ping
 		if ( PRI.bAdmin )  {

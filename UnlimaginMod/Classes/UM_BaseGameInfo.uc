@@ -759,9 +759,9 @@ function BecomeActivePlayer( PlayerController P )
 	P.PlayerReplicationInfo.bOnlySpectator = False;
 	if ( bTeamGame )  {
 		if ( P.PlayerReplicationInfo.Team != None )
-			ChangeTeam(P, P.PlayerReplicationInfo.Team.TeamIndex, false);
+			ChangeTeam(P, P.PlayerReplicationInfo.Team.TeamIndex, False);
 		else
-			ChangeTeam(P, PickTeam(int(GetURLOption("Team")), None), false);
+			ChangeTeam(P, PickTeam(int(GetURLOption("Team")), None), False);
 	}
 }
 
@@ -893,7 +893,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		Return None;
 	}
 	// If admin, force spectate mode if the server already full of reg. players
-	else if ( bAdmin && AtCapacity(false) )
+	else if ( bAdmin && AtCapacity(False) )
 		bSpectator = True;
 
 	// Pick a team (if need teams)
@@ -947,7 +947,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 		InName = DefaultPlayerName;
 	
 	if ( Level.NetMode != NM_Standalone || NewPlayer.PlayerReplicationInfo.PlayerName == DefaultPlayerName )
-		ChangeName( NewPlayer, InName, false );
+		ChangeName( NewPlayer, InName, False );
 
 	// custom voicepack
 	NewPlayer.PlayerReplicationInfo.VoiceTypeName = ParseOption ( Options, "Voice");
@@ -961,7 +961,7 @@ event PlayerController Login( string Portal, string Options, out string Error )
 	// Set the player's ID.
 	NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
 
-	if ( bSpectator || NewPlayer.PlayerReplicationInfo.bOnlySpectator || !ChangeTeam(NewPlayer, InTeam, false) )  {
+	if ( bSpectator || NewPlayer.PlayerReplicationInfo.bOnlySpectator || !ChangeTeam(NewPlayer, InTeam, False) )  {
 		NewPlayer.PlayerReplicationInfo.bOnlySpectator = True;
 		NewPlayer.PlayerReplicationInfo.bIsSpectator = True;
 		NewPlayer.PlayerReplicationInfo.bOutOfLives = True;
@@ -1735,7 +1735,7 @@ function int ReduceDamage( int Damage, Pawn Injured, Pawn InstigatedBy, vector H
 	if ( InstigatorController == None )  {
 		InstigatorController = Injured.DelayedDamageInstigatorController;
 		if ( InstigatorController == None )
-			Return Damage; // Nothing to do in this case. Just return a Damage.
+			Return Damage; // Nothing to do in this case. Just Return a Damage.
 		else
 			InstigatedBy = InstigatorController.Pawn;
 	}

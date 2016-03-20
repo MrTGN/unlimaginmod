@@ -159,19 +159,19 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 			 UM_BaseSMG(Other) != None ) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50% more MagCapacity 
-	else if ( (Bullpup(Other) != none || AK47AssaultRifle(Other) != none || 
-			 SCARMK17AssaultRifle(Other) != none || M4AssaultRifle(Other) != none || 
-			 FNFAL_ACOG_AssaultRifle(Other) != none || M4203AssaultRifle(Other) != none ||
-			 UM_FNFAL_ACOG_AssaultRifle(Other) != none || MAC10MP(Other) != none ||
-			 MKb42AssaultRifle(Other) != none || ThompsonSMG(Other) != none ||
-			 FluX_G36CAssaultRifle(Other) != none || Maria_M16A4_IronSight(Other) != none ||
-			 Maria_M16A4_Aimpoint(Other) != none || GoldenAK47AssaultRifle(Other) != none ||
-			 JSullivan_L85A2AssaultRifle(Other) != none || Braindead_MP5A4SMG(Other) != none ||
-			 Braindead_MP5K_Dual(Other) != none || Braindead_MP5SD(Other) != none ||
-			 Exod_BlueStahli_XMV850Minigun(Other) != none || Exod_PooSH_StingerMinigun(Other) != none ||
-			 ZedekPD_Type19PDW(Other) != none || ZedekPD_XM8AssaultRifle(Other) != none ||
-			 OperationY_UMP45SMG(Other) != none || OperationY_PKM(Other) != none ||
-			 ThompsonDrumSMG(Other) != none || SPThompsonSMG(Other) != none)
+	else if ( (Bullpup(Other) != None || AK47AssaultRifle(Other) != None || 
+			 SCARMK17AssaultRifle(Other) != None || M4AssaultRifle(Other) != None || 
+			 FNFAL_ACOG_AssaultRifle(Other) != None || M4203AssaultRifle(Other) != None ||
+			 UM_FNFAL_ACOG_AssaultRifle(Other) != None || MAC10MP(Other) != None ||
+			 MKb42AssaultRifle(Other) != None || ThompsonSMG(Other) != None ||
+			 FluX_G36CAssaultRifle(Other) != None || Maria_M16A4_IronSight(Other) != None ||
+			 Maria_M16A4_Aimpoint(Other) != None || GoldenAK47AssaultRifle(Other) != None ||
+			 JSullivan_L85A2AssaultRifle(Other) != None || Braindead_MP5A4SMG(Other) != None ||
+			 Braindead_MP5K_Dual(Other) != None || Braindead_MP5SD(Other) != None ||
+			 Exod_BlueStahli_XMV850Minigun(Other) != None || Exod_PooSH_StingerMinigun(Other) != None ||
+			 ZedekPD_Type19PDW(Other) != None || ZedekPD_XM8AssaultRifle(Other) != None ||
+			 OperationY_UMP45SMG(Other) != None || OperationY_PKM(Other) != None ||
+			 ThompsonDrumSMG(Other) != None || SPThompsonSMG(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 50% more MagCapacity 
 
@@ -184,17 +184,17 @@ static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmuniti
 			 UM_BasePDWAmmo(Other) != None || UM_BaseSMGAmmo(Other) != None) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));
-	else if ( (BullpupAmmo(Other) != none || AK47Ammo(Other) != none || 
-			 SCARMK17Ammo(Other) != none || M4Ammo(Other) != none || 
-			 FNFALAmmo(Other) != none || MAC10Ammo(Other) != none ||
-			 MKb42Ammo(Other) != none || ThompsonAmmo(Other) != none ||
-			 FluX_G36CAmmo(Other) != none || JSullivan_L85A2Ammo(Other) != none ||
-			 Maria_M16A4Ammo(Other) != none || Braindead_MP5A4Ammo(Other) != none ||
-			 Braindead_MP5KAmmo(Other) != none || Exod_BlueStahli_XMV850Ammo(Other) != none ||
-			 Exod_PooSH_StingerMinigunAmmo(Other) != none || ZedekPD_Type19Ammo(Other) != none ||
-			 ZedekPD_XM8Ammo(Other) != none || OperationY_UMP45Ammo(Other) != none ||
-			 OperationY_PKMAmmo(Other) != none || ThompsonDrumAmmo(Other) != none || 
-			 SPThompsonAmmo(Other) != none || OperationY_VALDTAmmo(Other) != none) 
+	else if ( (BullpupAmmo(Other) != None || AK47Ammo(Other) != None || 
+			 SCARMK17Ammo(Other) != None || M4Ammo(Other) != None || 
+			 FNFALAmmo(Other) != None || MAC10Ammo(Other) != None ||
+			 MKb42Ammo(Other) != None || ThompsonAmmo(Other) != None ||
+			 FluX_G36CAmmo(Other) != None || JSullivan_L85A2Ammo(Other) != None ||
+			 Maria_M16A4Ammo(Other) != None || Braindead_MP5A4Ammo(Other) != None ||
+			 Braindead_MP5KAmmo(Other) != None || Exod_BlueStahli_XMV850Ammo(Other) != None ||
+			 Exod_PooSH_StingerMinigunAmmo(Other) != None || ZedekPD_Type19Ammo(Other) != None ||
+			 ZedekPD_XM8Ammo(Other) != None || OperationY_UMP45Ammo(Other) != None ||
+			 OperationY_PKMAmmo(Other) != None || ThompsonDrumAmmo(Other) != None || 
+			 SPThompsonAmmo(Other) != None || OperationY_VALDTAmmo(Other) != None) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.05 * float(Min(KFPRI.ClientVeteranSkillLevel, 10));
 	
@@ -263,12 +263,12 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 		 DmgType == class'DamTypeThompsonDrum' || DmgType == class'DamTypeSPThompson' )
 	{
 		if ( KFPRI.ClientVeteranSkillLevel == 0 )
-			return float(InDamage) * 1.05;
+			Return float(InDamage) * 1.05;
 		
-		return float(InDamage) * (1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)))); // Up to 50% increase in Damage with Bullpup
+		Return float(InDamage) * (1.00 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel, 5)))); // Up to 50% increase in Damage with Bullpup
 	}
 	
-	return InDamage;
+	Return InDamage;
 }
 
 static function float ModifyRecoilSpread(KFPlayerReplicationInfo KFPRI, WeaponFire Other, out float Recoil)
@@ -276,20 +276,20 @@ static function float ModifyRecoilSpread(KFPlayerReplicationInfo KFPRI, WeaponFi
 	if ( UM_BaseAssaultRifleFire(Other) != None ||
 		 UM_BasePDWFire(Other) != None ||
 		 UM_BaseSMGFire(Other) != None ||
-		 Bullpup(Other.Weapon) != none || AK47AssaultRifle(Other.Weapon) != none || 
-		 SCARMK17AssaultRifle(Other.Weapon) != none || M4AssaultRifle(Other.Weapon) != none || 
-		 FNFAL_ACOG_AssaultRifle(Other.Weapon) != none || M4203AssaultRifle(Other.Weapon) != none ||
-		 UM_FNFAL_ACOG_AssaultRifle(Other.Weapon) != none || 
-		 MAC10MP(Other.Weapon) != none || MKb42AssaultRifle(Other.Weapon) != none || 
-		 ThompsonSMG(Other.Weapon) != none || Maria_M16A4_Aimpoint(Other.Weapon) != none || 
-		 Maria_M16A4_IronSight(Other.Weapon) != none || FluX_G36CAssaultRifle(Other.Weapon) != none ||
-		 GoldenAK47AssaultRifle(Other.Weapon) != none || JSullivan_L85A2AssaultRifle(Other.Weapon) != none ||
-		 Braindead_MP5A4SMG(Other.Weapon) != none || Braindead_MP5K_Dual(Other.Weapon) != none || 
-		 Braindead_MP5SD(Other.Weapon) != none || Exod_BlueStahli_XMV850Minigun(Other.Weapon) != none || 
-		 Exod_PooSH_StingerMinigun(Other.Weapon) != none || ZedekPD_Type19PDW(Other.Weapon) != none || 
-		 ZedekPD_XM8AssaultRifle(Other.Weapon) != none || OperationY_UMP45SMG(Other.Weapon) != none  ||
-		 OperationY_PKM(Other.Weapon) != none || ThompsonDrumSMG(Other.Weapon) != none ||
-		 SPThompsonSMG(Other.Weapon) != none )
+		 Bullpup(Other.Weapon) != None || AK47AssaultRifle(Other.Weapon) != None || 
+		 SCARMK17AssaultRifle(Other.Weapon) != None || M4AssaultRifle(Other.Weapon) != None || 
+		 FNFAL_ACOG_AssaultRifle(Other.Weapon) != None || M4203AssaultRifle(Other.Weapon) != None ||
+		 UM_FNFAL_ACOG_AssaultRifle(Other.Weapon) != None || 
+		 MAC10MP(Other.Weapon) != None || MKb42AssaultRifle(Other.Weapon) != None || 
+		 ThompsonSMG(Other.Weapon) != None || Maria_M16A4_Aimpoint(Other.Weapon) != None || 
+		 Maria_M16A4_IronSight(Other.Weapon) != None || FluX_G36CAssaultRifle(Other.Weapon) != None ||
+		 GoldenAK47AssaultRifle(Other.Weapon) != None || JSullivan_L85A2AssaultRifle(Other.Weapon) != None ||
+		 Braindead_MP5A4SMG(Other.Weapon) != None || Braindead_MP5K_Dual(Other.Weapon) != None || 
+		 Braindead_MP5SD(Other.Weapon) != None || Exod_BlueStahli_XMV850Minigun(Other.Weapon) != None || 
+		 Exod_PooSH_StingerMinigun(Other.Weapon) != None || ZedekPD_Type19PDW(Other.Weapon) != None || 
+		 ZedekPD_XM8AssaultRifle(Other.Weapon) != None || OperationY_UMP45SMG(Other.Weapon) != None  ||
+		 OperationY_PKM(Other.Weapon) != None || ThompsonDrumSMG(Other.Weapon) != None ||
+		 SPThompsonSMG(Other.Weapon) != None )
 		Recoil = 0.95 - (0.05 * float(Min(KFPRI.ClientVeteranSkillLevel,8))); // Up to 45% recoil reduction
 	else
 		Recoil = 1.00;
@@ -300,12 +300,12 @@ static function float ModifyRecoilSpread(KFPlayerReplicationInfo KFPRI, WeaponFi
 static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
 	if ( UM_BaseSMG(Other) != None ||
-		 UM_M4AssaultRifle(Other) != none ||
-		 M4AssaultRifle(Other) != none ||
-		 MAC10MP(Other) != none || FNFAL_ACOG_AssaultRifle(Other) != none || 
-		 UM_FNFAL_ACOG_AssaultRifle(Other) != none ||
-		 Braindead_MP5A4SMG(Other) != none || Braindead_MP5K_Dual(Other) != none || 
-		 Braindead_MP5SD(Other) != none || OperationY_UMP45SMG(Other) != none )
+		 UM_M4AssaultRifle(Other) != None ||
+		 M4AssaultRifle(Other) != None ||
+		 MAC10MP(Other) != None || FNFAL_ACOG_AssaultRifle(Other) != None || 
+		 UM_FNFAL_ACOG_AssaultRifle(Other) != None ||
+		 Braindead_MP5A4SMG(Other) != None || Braindead_MP5K_Dual(Other) != None || 
+		 Braindead_MP5SD(Other) != None || OperationY_UMP45SMG(Other) != None )
 		Return 1.10 + (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster reload speed on Bonus weapons (SMG, M4, etc.)
 
 	Return 1.05 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 45% faster reload speed on all other weapons
@@ -330,9 +330,9 @@ static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI
 static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel >= 3 )
-		return class'UM_StickySensorHandGrenade'; // Sticky Grenade
+		Return class'UM_StickySensorHandGrenade'; // Sticky Grenade
 
-	return super.GetNadeType(KFPRI);
+	Return super.GetNadeType(KFPRI);
 } */
 
 // Change the cost of particular items
@@ -421,7 +421,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
 	ReplaceText(S,"%z",string(Level-2));
 	ReplaceText(S,"%r",GetPercentStr(FMin(0.05 * float(Level)+0.1,1.f)));
-	return S;
+	Return S;
 }
 
 defaultproperties

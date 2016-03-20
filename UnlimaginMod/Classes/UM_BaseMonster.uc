@@ -298,12 +298,6 @@ function AddVelocity( vector NewVelocity )
 	Velocity += NewVelocity;
 }
 
-// Sets the current Health
-protected function SetHealth( int NewHealth )
-{
-	Health = Max(NewHealth, 0);
-}
-
 event PreBeginPlay()
 {
 	LastSeenCheckTime = Level.TimeSeconds;
@@ -348,7 +342,7 @@ simulated event PostBeginPlay()
 	AssignInitialPose();
 	// Let's randomly alter the position of our zombies' spines, to give their animations
 	// the appearance of being somewhat unique.
-	SetTimer(1.0, false);
+	SetTimer(1.0, False);
 
 	//Set Karma Ragdoll skeleton for this character.
 	if ( KFRagdollName != "" )
@@ -373,8 +367,8 @@ simulated event PostBeginPlay()
 		}
 	}
 
-	bSTUNNED = false;
-	DECAP = false;
+	bSTUNNED = False;
+	DECAP = False;
 
 	if ( Role == ROLE_Authority )  {
 		// Difficulty Scaling
@@ -639,7 +633,7 @@ event FellOutOfWorld( eKillZType KillType )
 	if ( Level.NetMode == NM_Client || (Controller != None && Controller.AvoidCertainDeath()) )
 		Return;
 	
-	SetHealth(0);
+	Health = 0;
 	
 	if ( KillType == KILLZ_Lava )
 		Died( None, LavaDamageType, Location );
@@ -686,7 +680,7 @@ event Bump(actor Other)
 	}
 }
 
-// Return true if we can do the Zombie speed adjust that gets the Zeds
+// Return True if we can do the Zombie speed adjust that gets the Zeds
 // to the player faster if they can't be seen
 function bool CanSpeedAdjust()
 {
@@ -819,7 +813,7 @@ simulated function UnSetBurningBehavior()
         }
 
 		// Set normal accuracy
-		if ( Controller != none )
+		if ( Controller != None )
 		   MonsterController(Controller).Accuracy = MonsterController(Controller).default.Accuracy;
 	}
 
@@ -969,7 +963,7 @@ function KickActor()
 		UM_MonsterController(controller).GotoState('Kicking');
 	else if ( KFMonsterController(Controller) != None )
 		KFMonsterController(controller).GotoState('Kicking');
-	bShotAnim = true;
+	bShotAnim = True;
 }
 
 // High damage was taken, make em fall over.
@@ -978,7 +972,7 @@ function bool FlipOver()
 	if ( Physics==PHYS_Falling )
 		SetPhysics(PHYS_Walking);
 
-	bShotAnim = true;
+	bShotAnim = True;
 	SetAnimAction('KnockDown');
 	Acceleration = vect(0, 0, 0);
 	Velocity.X = 0;
@@ -1007,16 +1001,16 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 			 Class<Whisky_DamTypeHammerHeadShot>(DamageType) == None &&
 			 Class<Whisky_DamTypeHammerSecondaryHeadShot>(DamageType) == None )
 			HitFX[HitFxTicker].damtype = class'DamTypeMeleeDecapitation';
-		else if( class<DamTypeNailGun>(DamageType) != none )
+		else if( class<DamTypeNailGun>(DamageType) != None )
 			HitFX[HitFxTicker].damtype = class'DamTypeProjectileDecap';
 		else
 			HitFX[HitFxTicker].damtype = class'DamTypeDecapitation';
 
 		if ( DamageType.default.bNeverSevers || class'GameInfo'.static.UseLowGore()
-			|| (Level.Game != none && Level.Game.PreventSever(self, boneName, Damage, DamageType)) )
-			HitFX[HitFxTicker].bSever = false;
+			|| (Level.Game != None && Level.Game.PreventSever(self, boneName, Damage, DamageType)) )
+			HitFX[HitFxTicker].bSever = False;
 		else
-			HitFX[HitFxTicker].bSever = true;
+			HitFX[HitFxTicker].bSever = True;
 
 		HitFX[HitFxTicker].bone = HeadBone;
 		HitFX[HitFxTicker].rotDir = r;
@@ -1025,7 +1019,7 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 		if( HitFxTicker > ArrayCount(HitFX)-1 )
 			HitFxTicker = 0;
 
-		bPlayBrainSplash = true;
+		bPlayBrainSplash = True;
 
 		if ( Damage <= DamageType.default.HumanObliterationThreshhold && Damage == 1000 )
 			Return;
@@ -1041,39 +1035,39 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 			{
 				case 'neck':
 					boneName = HeadBone;
-					break;
+					Break;
 
 				case LeftFootBone:
 				case 'lleg':
 					boneName = LeftThighBone;
-					break;
+					Break;
 
 				case RightFootBone:
 				case 'rleg':
 					boneName = RightThighBone;
-					break;
+					Break;
 
 				case RightHandBone:
 				case RightShoulderBone:
 				case 'rarm':
 					boneName = RightFArmBone;
-					break;
+					Break;
 
 				case LeftHandBone:
 				case LeftShoulderBone:
 				case 'larm':
 					boneName = LeftFArmBone;
-					break;
+					Break;
 
 				case 'None':
 				case 'spine':
 					boneName = FireRootBone;
-					break;
+					Break;
 			}
 
 			if ( DamageType.default.bAlwaysSevers || Damage == 1000 )  {
-				HitFX[HitFxTicker].bSever = true;
-				bDidSever = true;
+				HitFX[HitFxTicker].bSever = True;
+				bDidSever = True;
 				if ( boneName == 'None' )
 					boneName = FireRootBone;
 			}
@@ -1088,8 +1082,8 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 
 		if ( DamageType.default.bNeverSevers || class'GameInfo'.static.UseLowGore() 
 			 || (Level.Game != None && Level.Game.PreventSever(self, boneName, Damage, DamageType)) )  {
-			HitFX[HitFxTicker].bSever = false;
-			bDidSever = false;
+			HitFX[HitFxTicker].bSever = False;
+			bDidSever = False;
 		}
 
 		if ( HitFX[HitFxTicker].bSever )  {
@@ -1101,19 +1095,19 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 	            {
 	                case 0:
 						boneName = LeftThighBone;
-						break;
+						Break;
 	                case 1:
 						boneName = RightThighBone;
-						break;
+						Break;
 	                case 2:
 						boneName = LeftFArmBone;
-	                    break;
+	                    Break;
 	                case 3:
 						boneName = RightFArmBone;
-	                    break;
+	                    Break;
 	                case 4:
 						boneName = HeadBone;
-	                    break;
+	                    Break;
 	                default:
 	                	boneName = LeftThighBone;
 	            }
@@ -1345,7 +1339,7 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	if ( AdditionalScale > 1.0 )
 		TraceExtetnt = vect(1.0, 1.0, 1.0) * AdditionalScale;
 	
-	// TraceThisActor returns true if did not hit this actor.
+	// TraceThisActor returns True if did not hit this actor.
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
@@ -1359,7 +1353,7 @@ function CheckForImpressiveKill( UM_PlayerController PC )
 		PC.ShowActor( Self, ImpressiveKillDuration );
 }
 
-// Process the damaging and return the amount of taken damage
+// Process the damaging and Return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
 	local	bool						bIsHeadshot;
@@ -1442,7 +1436,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		Damage = ShieldAbsorb( Damage );
 	//[end]
 	
-	// Just return if this wouldn't even damage us.
+	// Just Return if this wouldn't even damage us.
 	if ( Damage < 1 )
 		Return 0;
 	
@@ -1459,7 +1453,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( !bDecapitated )  {
 		if ( bIsHeadShot )  {
 			// Play a sound when someone gets a headshot TODO: Put in the real sound here
-			PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,true,500);
+			PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,True,500);
 			HeadHealth = Max( (HeadHealth - Damage), 0 );
 			if ( HeadHealth < 1 || Damage > Health )  {
 				RemoveHead();
@@ -1536,7 +1530,7 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 			// FireDamageClass variable stores damage type, which started zed's burning
 			// and will be passed to this function again every next burn tick (as DamageType argument)
 			if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None ||
-				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != none || class<DamTypeFlareRevolver>(DamageType) != None || class<DamTypeMAC10MPInc>(DamageType) != None )
+				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != None || class<DamTypeFlareRevolver>(DamageType) != None || class<DamTypeMAC10MPInc>(DamageType) != None )
 				FireDamageClass = DamageType;
 			else
 				FireDamageClass = class'DamTypeFlamethrower';
@@ -1628,7 +1622,7 @@ function RemoveHead()
 		}
 	}
 
-	PlaySound(DecapitationSound, SLOT_Misc,1.30,true,525);
+	PlaySound(DecapitationSound, SLOT_Misc,1.30,True,525);
 }
 
 function TakeFireDamage( int Damage, Pawn FireDamageInstigator );
@@ -1722,6 +1716,10 @@ defaultproperties
 	 ImpressiveKillChance=0.03
 	 ImpressiveKillDuration=3.0
 	 
+	 HealthMax=150.0
+     Health=150
+	 HeadHealth=25.0
+	 
 	 HeadShotSlowMoChargeBonus=0.2
 	 // Falling
 	 FallingDamageType=Class'Fell'
@@ -1784,4 +1782,6 @@ defaultproperties
 	 CrouchRadius=25.0
 	 
 	 PrePivot=(X=0.0,Y=0.0,Z=0.0)
+	 
+	 Mass=200.0
 }

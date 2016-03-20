@@ -34,7 +34,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	// Hint check
 	Player = KFPlayerController(Instigator.Controller);
 
-	if ( Player != none )
+	if ( Player != None )
 	{
 	Braindead_MP5A4Fire(FireMode[0]).bSetToBurst = False;
 	}
@@ -54,12 +54,12 @@ simulated function AltFire(float F)
 
 function AdjustLightGraphic()
 {
-	if ( TacShine==none )
+	if ( TacShine==None )
 	{
 		TacShine = Spawn(TacShineClass,,,,);
 		AttachToBone(TacShine,'LightBone');
 	}
-	if( FlashLight!=none )
+	if( FlashLight!=None )
 		Tacshine.bHidden = !FlashLight.bHasLight;
 }
 
@@ -99,17 +99,17 @@ simulated function WeaponTick(float dt)
 {
 
 	// Turn it off on death  / battery expenditure
-	if (FlashLight != none)
+	if (FlashLight != None)
 	{
 		// Keep the 1Pweapon client beam up to date.
 		AdjustLightGraphic();
 		if (FlashLight.bHasLight)
 		{
-			if (Instigator.Health <= 0 || KFHumanPawn(Instigator).TorchBatteryLife <= 0 || Instigator.PendingWeapon != none )
+			if (Instigator.Health <= 0 || KFHumanPawn(Instigator).TorchBatteryLife <= 0 || Instigator.PendingWeapon != None )
 			{
 				//Log("Killing Light...you're out of batteries, or switched / dropped weapons");
 				Braindead_MP5A4Fire(FireMode[0]).bSetToBurst = False;
-				KFHumanPawn(Instigator).bTorchOn = false;
+				KFHumanPawn(Instigator).bTorchOn = False;
 				ServerSpawnLight();
 			}
 		}
@@ -120,27 +120,27 @@ simulated function WeaponTick(float dt)
 
 
 
-// GetCurrentBind( "Space", CommandBoundToSpace ); return true if successful
+// GetCurrentBind( "Space", CommandBoundToSpace ); Return True if successful
 final function bool GetCurrentBind( string BindKeyName, out string BindKeyValue )
 {
 	if ( BindKeyName != "" )
 	{
 		BindKeyValue = ConsoleCommand("KEYBINDING" @ BindKeyName);
-		return BindKeyValue != "";
+		Return BindKeyValue != "";
 	}
 
-	return false;
+	Return False;
 }
 
-// SetKeyBind( "Space", "Jump" ); return true if successful
+// SetKeyBind( "Space", "Jump" ); Return True if successful
 final function bool SetKeyBind( string BindKeyName, string BindKeyValue )
 {
 	ConsoleCommand("set Input" @ BindKeyName @ BindKeyValue );
-	return true;
+	Return True;
 }
 
 
-// GetAssignedKeys( "Jump", ArrayOfKeysThatPerformJump ); return true if successful
+// GetAssignedKeys( "Jump", ArrayOfKeysThatPerformJump ); Return True if successful
 final function bool GetAssignedKeys( string BindAlias, out array<string> BindKeyNames, out array<string> LocalizedBindKeyNames )
 {
 	local int i, iKey;
@@ -160,7 +160,7 @@ final function bool GetAssignedKeys( string BindAlias, out array<string> BindKey
 		}
 	}
 
-	return BindKeyNames.Length > 0;
+	Return BindKeyNames.Length > 0;
 }
 
 // Check if the zoom in and out keys are set, if not, set to defaults, if they are not set

@@ -18,18 +18,18 @@ class UM_NapalmPipeBombProj extends PipeBombProjectile;
 
 static function PreloadAssets()
 {
-	default.ExplodeSounds[0] = sound(DynamicLoadObject(default.ExplodeSoundRefs[0], class'Sound', true));
+	default.ExplodeSounds[0] = sound(DynamicLoadObject(default.ExplodeSoundRefs[0], class'Sound', True));
 
-	UpdateDefaultStaticMesh(StaticMesh(DynamicLoadObject(default.StaticMeshRef, class'StaticMesh', true)));
+	UpdateDefaultStaticMesh(StaticMesh(DynamicLoadObject(default.StaticMeshRef, class'StaticMesh', True)));
 }
 
 static function bool UnloadAssets()
 {
-	default.ExplodeSounds[0] = none;
+	default.ExplodeSounds[0] = None;
 
-	UpdateDefaultStaticMesh(none);
+	UpdateDefaultStaticMesh(None);
 
-	return true;
+	Return True;
 }
 
 simulated function Destroyed()
@@ -40,7 +40,7 @@ simulated function Destroyed()
 	if( bHidden && !bDisintegrated )
 		Disintegrate(Location,vect(0,0,1));
 
-	if( BombLight != none )
+	if( BombLight != None )
 	{
 		BombLight.Destroy();
 	}
@@ -61,10 +61,10 @@ simulated event PostBeginPlay()
 	{
 		Velocity = Speed * Vector(Rotation);
 		RandSpin(25000);
-		bCanHitOwner = false;
+		bCanHitOwner = False;
 		if (Instigator.HeadVolume.bWaterVolume)
 		{
-			bHitWater = true;
+			bHitWater = True;
 			Velocity = 0.6*Velocity;
 		}
 	}
@@ -77,18 +77,18 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	bHasExploded = True;
 	BlowUp(HitLocation);
 
-	bTriggered = true;
+	bTriggered = True;
 
 	if( Role == ROLE_Authority )
 	{
-		SetTimer(0.1, false);
+		SetTimer(0.1, False);
 		NetUpdateTime = Level.TimeSeconds - 1;
 	}
 
 	// Incendiary Effects..
 	PlaySound(sound'KF_GrenadeSnd.FlameNade_Explode',,100.5*TransientSoundVolume);
 
-	if ( EffectIsRelevant(Location,false) )
+	if ( EffectIsRelevant(Location,False) )
 	{
 		Spawn(Class'KFIncendiaryExplosion',,, HitLocation, rotator(vect(0,0,1)));
 		Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));

@@ -78,8 +78,8 @@ simulated final function string GetCustomValue( class<UM_SRCustomProgress> C )
 
 	for( S=CustomLink; S!=None; S=S.NextLink )
 		if( S.Class.Name==C.Name )
-			return S.GetProgress();
-	return "";
+			Return S.GetProgress();
+	Return "";
 }
 
 simulated final function int GetCustomValueInt( class<UM_SRCustomProgress> C )
@@ -88,8 +88,8 @@ simulated final function int GetCustomValueInt( class<UM_SRCustomProgress> C )
 
 	for( S=CustomLink; S!=None; S=S.NextLink )
 		if( S.Class.Name==C.Name )
-			return S.GetProgressInt();
-	return 0;
+			Return S.GetProgressInt();
+	Return 0;
 }
 
 final function UM_SRCustomProgress AddCustomValue( class<UM_SRCustomProgress> C )
@@ -100,7 +100,7 @@ final function UM_SRCustomProgress AddCustomValue( class<UM_SRCustomProgress> C 
 	{
 		Last = S;
 		if( S.Class.Name==C.Name )
-			return S;
+			Return S;
 	}
 	S = Spawn(C,Owner);
 	S.RepLink = Self;
@@ -109,7 +109,7 @@ final function UM_SRCustomProgress AddCustomValue( class<UM_SRCustomProgress> C 
 	if( Last!=None )
 		Last.NextLink = S;
 	else CustomLink = S;
-	return S;
+	Return S;
 }
 
 final function ProgressCustomValue( class<UM_SRCustomProgress> C, int Count )
@@ -121,7 +121,7 @@ final function ProgressCustomValue( class<UM_SRCustomProgress> C, int Count )
 		if( S.Class.Name==C.Name )
 		{
 			S.IncrementProgress(Count);
-			break;
+			Break;
 		}
 	}
 }
@@ -145,22 +145,22 @@ simulated static final function UM_ClientRepInfoLink FindStats( PlayerController
 			if( C.Owner==Other )
 			{
 				C.RepLinkBroken();
-				return C;
+				Return C;
 			}
-		return None; // Not yet init.
+		Return None; // Not yet init.
 	}
 	for( L=Other.PlayerReplicationInfo.CustomReplicationInfo; L!=None; L=L.NextReplicationInfo )
 		if( UM_ClientRepInfoLink(L)!=None )
-			return UM_ClientRepInfoLink(L);
+			Return UM_ClientRepInfoLink(L);
 	if( Other.Level.NetMode!=NM_Client )
-		return None; // Not yet init.
+		Return None; // Not yet init.
 	foreach Other.DynamicActors(Class'UM_ClientRepInfoLink',C)
 		if( C.Owner==Other )
 		{
 			C.RepLinkBroken();
-			return C;
+			Return C;
 		}
-	return None;
+	Return None;
 }
 
 simulated event Tick( float DeltaTime )
@@ -171,16 +171,16 @@ simulated event Tick( float DeltaTime )
 	if( Level.NetMode==NM_DedicatedServer )
 	{
 		Disable('Tick');
-		return;
+		Return;
 	}
 	PC = Level.GetLocalPlayerController();
 	if( Level.NetMode!=NM_Client && PC!=Owner )
 	{
 		Disable('Tick');
-		return;
+		Return;
 	}
 	if( PC.PlayerReplicationInfo==None )
-		return;
+		Return;
 	Disable('Tick');
 	Class'UM_SRLevelCleanup'.Static.AddSafeCleanup(PC);
 
@@ -188,14 +188,14 @@ simulated event Tick( float DeltaTime )
 	{
 		for( L=PC.PlayerReplicationInfo.CustomReplicationInfo; L!=None; L=L.NextReplicationInfo )
 			if( L==Self )
-				return; // Make sure not already added.
+				Return; // Make sure not already added.
 
 		NextReplicationInfo = None;
 		for( L=PC.PlayerReplicationInfo.CustomReplicationInfo; L!=None; L=L.NextReplicationInfo )
 			if( L.NextReplicationInfo==None )
 			{
 				L.NextReplicationInfo = Self; // Add to the end of the chain.
-				return;
+				Return;
 			}
 	}
 	PC.PlayerReplicationInfo.CustomReplicationInfo = Self;
@@ -217,8 +217,8 @@ final function Class<UM_SRVeterancyTypes> PickRandomPerk()
 			CA[CA.Length] = CachePerks[i].PerkClass;
 	}
 	if( CA.Length==0 )
-		return None;
-	return CA[Rand(CA.Length)];
+		Return None;
+	Return CA[Rand(CA.Length)];
 }
 final function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
 {
@@ -234,7 +234,7 @@ final function SendClientPerks()
 	local byte i;
 
 	if( !StatObject.bStatsReadyNow )
-		return;
+		Return;
 	NextRepTime = Level.TimeSeconds+2.f;
 	for( i=0; i<CachePerks.Length; i++ )
 		ClientReceivePerk(i,CachePerks[i].PerkClass,CachePerks[i].CurrentLevel);
@@ -308,7 +308,7 @@ simulated final function ClientAllReceived()
 	local PlayerController PC;
 	
 	if( SmileyTags.Length==0 )
-		return;
+		Return;
 	PC = Level.GetLocalPlayerController();
 	if( PC!=None && UM_HUD(PC.MyHUD)!=None )
 		UM_HUD(PC.MyHUD).SmileyMsgs = SmileyTags;
@@ -325,12 +325,12 @@ simulated final function string PickRandomCustomChar()
 	local int i;
 	
 	if( CustomChars.Length==0 )
-		return "";
+		Return "";
 	S = CustomChars[Rand(CustomChars.Length)];
 	i = InStr(S,":");
 	if( i>=0 )
 		S = Mid(S,i+1);
-	return S;
+	Return S;
 }
 simulated final function bool IsCustomCharacter( string CN )
 {
@@ -338,15 +338,15 @@ simulated final function bool IsCustomCharacter( string CN )
 
 	for( i=0; i<CustomChars.Length; ++i )
 		if( CustomChars[i]~=CN || Right(CustomChars[i],Len(CN)+1)~=(":"$CN) )
-			return true;
-	return false;
+			Return True;
+	Return False;
 }
 simulated final function SelectedCharacter( string CN )
 {
 	if( !IsCustomCharacter(CN) ) // Was not a custom character, update URL too.
 	{
 		if( bNoStandardChars && CustomChars.Length>0 ) // Denied.
-			return;
+			Return;
 		Level.GetLocalPlayerController().UpdateURL("Character", CN, True);
 	}
 	ServerSetCharacter(CN);
@@ -369,10 +369,10 @@ final function bool CanBuyPickup( class<KFWeaponPickup> WC )
 			K = KFPlayerReplicationInfo(StatObject.OwnerController.PlayerReplicationInfo);
 			for( i=(CachePerks.Length-1); i>=0; --i )
 				if( !CachePerks[i].PerkClass.Static.AllowWeaponInTrader(WC,K,CachePerks[i].CurrentLevel) )
-					return false;
-			return true;
+					Return False;
+			Return True;
 		}
-	return false;
+	Return False;
 }
 
 Auto state RepSetup
@@ -440,11 +440,11 @@ simulated final function ResetItem( GUIBuyable Item )
 	Item.ItemSpeed = 0;
 	Item.ItemAmmoCurrent = 0;
 	Item.ItemAmmoMax = 0;
-	Item.bSaleList = false;
-	Item.bSellable = false;
-	Item.bMelee = false;
-	Item.bIsVest = false;
-	Item.bIsFirstAidKit = false;
+	Item.bSaleList = False;
+	Item.bSellable = False;
+	Item.bMelee = False;
+	Item.bIsVest = False;
+	Item.bIsFirstAidKit = False;
 	Item.ItemPerkIndex = 0;
 	Item.ItemSellValue = 0;
 }

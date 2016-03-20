@@ -10,10 +10,10 @@ static function bool UnloadAssets()
 {
 	if ( super.UnloadAssets() )
 	{
-		default.SelectSound = none;
+		default.SelectSound = None;
 	}
 
-	return true;
+	Return True;
 }
 
 defaultproperties

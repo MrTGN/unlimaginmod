@@ -42,7 +42,7 @@ simulated final function string GetTimeText( int V )
 	V -= (Minutes * 60);
 	Minutes -= (Hours * 60);
 
-	return Eval(Hours<10,"0"$Hours,string(Hours))$":"$Eval(Minutes<10,"0"$Minutes,string(Minutes))$":"$Eval(V<10,"0"$V,string(V));
+	Return Eval(Hours<10,"0"$Hours,string(Hours))$":"$Eval(Minutes<10,"0"$Minutes,string(Minutes))$":"$Eval(V<10,"0"$V,string(V));
 }
 
 // Called when stat owner killed or was killed by a monster.
@@ -51,9 +51,9 @@ function NotifyPlayerKilled( Pawn Killer, class<DamageType> damageType );
 
 defaultproperties
 {
-	bAlwaysRelevant=false
-	bOnlyRelevantToOwner=true
-	bOnlyDirtyReplication=true
+	bAlwaysRelevant=False
+	bOnlyRelevantToOwner=True
+	bOnlyDirtyReplication=True
 	ProgressName="Lazy modder! Kill him!!"
 	NetUpdateFrequency=2
 }

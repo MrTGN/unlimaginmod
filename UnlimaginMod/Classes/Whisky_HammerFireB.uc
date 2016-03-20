@@ -36,7 +36,7 @@ simulated event Timer()
 			PointRot = Instigator.GetViewRotation();
 
 		EndTrace = StartTrace + vector(PointRot)*weaponRange;
-		HitActor = Instigator.Trace( HitLocation, HitNormal, EndTrace, StartTrace, true);
+		HitActor = Instigator.Trace( HitLocation, HitNormal, EndTrace, StartTrace, True);
 
         //Instigator.ClearStayingDebugLines();
         //Instigator.DrawStayingDebugLine( StartTrace, EndTrace,0, 255, 0);
@@ -87,7 +87,7 @@ simulated event Timer()
 				//[end]
 
             	if ( MeleeHitSounds.Length > 0 )
-					Weapon.PlaySound(MeleeHitSounds[Rand(MeleeHitSounds.length)],SLOT_None,MeleeHitVolume,,,,false);
+					Weapon.PlaySound(MeleeHitSounds[Rand(MeleeHitSounds.length)],SLOT_None,MeleeHitVolume,,,,False);
 
 				if ( VSize(Instigator.Velocity) > 300 && 
 					 KFMonster(HitActor).Mass <= Instigator.Mass )
@@ -110,7 +110,7 @@ simulated event Timer()
 		{
             foreach Weapon.VisibleCollidingActors( class 'Pawn', Victims, (weaponRange * 2), StartTrace ) //, RadiusHitLocation
     		{
-                if ( (HitActor != none && Victims == HitActor) || Victims.Health <= 0 )
+                if ( (HitActor != None && Victims == HitActor) || Victims.Health <= 0 )
 					Continue;
 
             	if ( Victims != Instigator )
@@ -149,7 +149,7 @@ simulated event Timer()
 							KFMonster(Victims).BreakGrapple();
 						//[end]
                     	if ( MeleeHitSounds.Length > 0 )
-							Victims.PlaySound(MeleeHitSounds[Rand(MeleeHitSounds.length)],SLOT_None,MeleeHitVolume,,,,false);
+							Victims.PlaySound(MeleeHitSounds[Rand(MeleeHitSounds.length)],SLOT_None,MeleeHitVolume,,,,False);
     	           	}
     	           	//else
     	           	//{

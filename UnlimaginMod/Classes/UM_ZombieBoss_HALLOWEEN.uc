@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBoss_HALLOWEEN
-//	Parent class:	 UM_ZombieBoss
+//	Parent class:	 UM_BaseMonster_Boss
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:13
 //================================================================================
-class UM_ZombieBoss_HALLOWEEN extends UM_ZombieBoss;
+class UM_ZombieBoss_HALLOWEEN extends UM_BaseMonster_Boss;
 
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
@@ -61,14 +61,14 @@ simulated function CloakBoss()
 
 	// Remove/disallow projectors on invisible people
 	Projectors.Remove(0, Projectors.Length);
-	bAcceptsProjectors = false;
-	SetOverlayMaterial(FinalBlend'KF_Specimens_Trip_T.patriarch_fizzle_FB', 1.0, true);
+	bAcceptsProjectors = False;
+	SetOverlayMaterial(FinalBlend'KF_Specimens_Trip_T.patriarch_fizzle_FB', 1.0, True);
 
 	// Randomly send out a message about Patriarch going invisible(10% chance)
 	if ( FRand() < 0.10 )  {
 		// Pick a random Player to say the message
 		Index = Rand(Level.Game.NumPlayers);
-		for ( C = Level.ControllerList; C != none; C = C.NextController )  {
+		for ( C = Level.ControllerList; C != None; C = C.NextController )  {
 			if ( PlayerController(C) != None )  {
 				if ( Index == 0 )  {
 					PlayerController(C).Speech('AUTO', 8, "");
@@ -83,38 +83,38 @@ simulated function CloakBoss()
 // Speech notifies called from the anims
 function PatriarchKnockDown()
 {
-	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_KnockedDown', SLOT_Misc, 2.0,true,500.0);
+	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_KnockedDown', SLOT_Misc, 2.0,True,500.0);
 }
 
 function PatriarchEntrance()
 {
-	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Entrance', SLOT_Misc, 2.0,true,500.0);
+	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Entrance', SLOT_Misc, 2.0,True,500.0);
 }
 
 function PatriarchVictory()
 {
-	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Victory', SLOT_Misc, 2.0,true,500.0);
+	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Victory', SLOT_Misc, 2.0,True,500.0);
 }
 
 function PatriarchMGPreFire()
 {
-	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_WarnGun', SLOT_Misc, 2.0,true,1000.0);
+	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_WarnGun', SLOT_Misc, 2.0,True,1000.0);
 }
 
 function PatriarchMisslePreFire()
 {
-	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_WarnRocket', SLOT_Misc, 2.0,true,1000.0);
+	PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_WarnRocket', SLOT_Misc, 2.0,True,1000.0);
 }
 
 // Taunt to use when doing the melee exploit radial attack
 function PatriarchRadialTaunt()
 {
     if ( NumNinjas > 0 && NumNinjas > NumLumberJacks )
-        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntNinja', SLOT_Misc, 2.0,true,500.0);
+        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntNinja', SLOT_Misc, 2.0,True,500.0);
     else if ( NumLumberJacks > 0 && NumLumberJacks > NumNinjas )
-        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntLumberJack', SLOT_Misc, 2.0,true,500.0);
+        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntLumberJack', SLOT_Misc, 2.0,True,500.0);
     else
-        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntRadial', SLOT_Misc, 2.0,true,500.0);
+        PlaySound(SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_TauntRadial', SLOT_Misc, 2.0,True,500.0);
 }
 
 state KnockDown // Knocked

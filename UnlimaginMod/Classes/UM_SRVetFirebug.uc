@@ -64,7 +64,7 @@ static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int 
 
 static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
-	if ( UM_BaseFlameThrower(Other) != none && KFPRI.ClientVeteranSkillLevel > 0 )
+	if ( UM_BaseFlameThrower(Other) != None && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% larger fuel canister
 	else if ( (MAC10MP(Other) != None || UM_MAC10MP(Other) != None || M4203AssaultRifle(Other) != None) && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 60% larger mag in MAC10
@@ -74,11 +74,11 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 
 static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmunition Other)
 {
-	if ( (UM_BaseFlameThrowerAmmo(Other) != none || FlameAmmo(Other) != none) 
+	if ( (UM_BaseFlameThrowerAmmo(Other) != None || FlameAmmo(Other) != None) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 100% larger fuel canister
-	else if ( (MAC10Ammo(Other) != none || HuskGunAmmo(Other) != none || 
-			TrenchgunAmmo(Other) != none || FlareRevolverAmmo(Other) != none)
+	else if ( (MAC10Ammo(Other) != None || HuskGunAmmo(Other) != None || 
+			TrenchgunAmmo(Other) != None || FlareRevolverAmmo(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 60% larger fuel canister/MAC10 ammo/Husk gun ammo
 
@@ -124,8 +124,8 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 
 static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, KFPawn Instigator, int InDamage, class<DamageType> DmgType)
 {
-	if ( class<DamTypeBurned>(DmgType) != none || class<DamTypeFlamethrower>(DmgType) != none || 
-		 class<DamTypeHuskGunProjectileImpact>(DmgType) != none || class<DamTypeFlareProjectileImpact>(DmgType) != none ||
+	if ( class<DamTypeBurned>(DmgType) != None || class<DamTypeFlamethrower>(DmgType) != None || 
+		 class<DamTypeHuskGunProjectileImpact>(DmgType) != None || class<DamTypeFlareProjectileImpact>(DmgType) != None ||
 		 Class<UM_BaseDamType_Flame>(DmgType) != None || Class<UM_BaseDamType_IncendiaryBullet>(DmgType) != None ||
 		 Class<UM_BaseDamType_IncendiaryProjImpact>(DmgType) != None )
 		Return float(InDamage) * (1.06 + 0.09 * float(Min(KFPRI.ClientVeteranSkillLevel,6))); //  Up to 60% extra damage
@@ -160,7 +160,7 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel >= 3 )
-		return class'FlameNade'; // Grenade detonations cause enemies to catch fire
+		Return class'FlameNade'; // Grenade detonations cause enemies to catch fire
 
 	Return Super.GetNadeType(KFPRI);
 } */
@@ -168,9 +168,9 @@ static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
 	if ( (UM_BaseFlameThrower(Other) != None || UM_MAC10MP(Other) != None ||
-			MAC10MP(Other) != none ||
-			Trenchgun(Other) != none || FlareRevolver(Other) != none ||
-			DualFlareRevolver(Other) != none) && KFPRI.ClientVeteranSkillLevel > 0 )
+			MAC10MP(Other) != None ||
+			Trenchgun(Other) != None || FlareRevolver(Other) != None ||
+			DualFlareRevolver(Other) != None) && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 70% faster reload speed
 
 	Return 1.00;
@@ -207,7 +207,7 @@ static function float GetShakeViewModifier( UM_PlayerReplicationInfo PRI, Weapon
 
 static function class<DamageType> GetMAC10DamageType(KFPlayerReplicationInfo KFPRI)
 {
-	return class'DamTypeMAC10MPInc';
+	Return class'DamTypeMAC10MPInc';
 }
 
 static function string GetCustomLevelInfo( byte Level )
@@ -218,7 +218,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%s",GetPercentStr(0.1 * float(Level)));
 	ReplaceText(S,"%m",GetPercentStr(0.05 * float(Level)));
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
-	return S;
+	Return S;
 }
 
 defaultproperties

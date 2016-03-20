@@ -135,7 +135,7 @@ state SwitchingFireMode
 			SelectiveFireModeNum = 0;
 		
 		SetFireMode(SelectiveFireModes[SelectiveFireModeNum]);
-		SetTimer(FireModeSwitchTime, false);
+		SetTimer(FireModeSwitchTime, False);
 		
 		if ( Instigator.IsLocallyControlled() && HasAnim(FireModeSwitchAnim.Anim) )
 			PlayAnim(FireModeSwitchAnim.Anim, FireModeSwitchAnim.Rate, FireModeSwitchAnim.TweenTime);
@@ -151,7 +151,7 @@ state SwitchingFireMode
 	
 	simulated event Timer()
 	{
-		SetTimer(0.0, false);
+		SetTimer(0.0, False);
 		GotoState(InitialState);
 	}
 }

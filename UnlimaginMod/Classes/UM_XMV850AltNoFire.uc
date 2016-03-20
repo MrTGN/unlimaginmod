@@ -19,10 +19,10 @@ class UM_XMV850AltNoFire extends NoFire;
 simulated event PostBeginPlay()
 {
     if (bFireOnRelease)
-        bWaitForRelease = true;
+        bWaitForRelease = True;
 
     if (bWaitForRelease)
-        bNowWaiting = true;
+        bNowWaiting = True;
 }
 
 function StartBerserk()
@@ -39,12 +39,12 @@ function StartSuperBerserk()
 
 function bool IsFiring()
 {
-	return bIsFiring;
+	Return bIsFiring;
 }
 
 simulated function bool AllowFire()
 {
-    return true;
+    Return True;
 }
 
 /*function actor Spawn

@@ -28,16 +28,16 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( B == None )
-		return AIRating;
+		Return AIRating;
 
 	if ( (B.Target != None) && (Pawn(B.Target) == None) && (VSize(B.Target.Location - Instigator.Location) < 1250) )
-		return 0.9;
+		Return 0.9;
 
 	if ( B.Enemy == None )
 	{
 		if ( (B.Target != None) && VSize(B.Target.Location - B.Pawn.Location) > 3500 )
-			return 0.2;
-		return AIRating;
+			Return 0.2;
+		Return AIRating;
 	}
 
 	EnemyDir = B.Enemy.Location - Instigator.Location;
@@ -47,25 +47,25 @@ function float GetAIRating()
 		if ( EnemyDist > 2000 )
 		{
 			if ( EnemyDist > 3500 )
-				return 0.2;
-			return (AIRating - 0.3);
+				Return 0.2;
+			Return (AIRating - 0.3);
 		}
 		if ( EnemyDir.Z < -0.5 * EnemyDist )
-			return (AIRating - 0.3);
+			Return (AIRating - 0.3);
 	}
 	else if ( (B.Enemy.Weapon != None) && B.Enemy.Weapon.bMeleeWeapon )
-		return (AIRating + 0.35);
+		Return (AIRating + 0.35);
 	else if ( EnemyDist < 400 )
-		return (AIRating + 0.2);
-	return FMax(AIRating + 0.2 - (EnemyDist - 400) * 0.0008, 0.2);
+		Return (AIRating + 0.2);
+	Return FMax(AIRating + 0.2 - (EnemyDist - 400) * 0.0008, 0.2);
 }
 
 function float SuggestAttackStyle()
 {
 	if ( (AIController(Instigator.Controller) != None)
 		&& (AIController(Instigator.Controller).Skill < 3) )
-		return 0.4;
-    return 0.8;
+		Return 0.4;
+    Return 0.8;
 }
 
 simulated function SetZoomBlendColor(Canvas c)

@@ -67,7 +67,7 @@ simulated function NotifyPawnsTeamChanged()
 		if ( Pawn(A) != None && Pawn(A).PlayerReplicationInfo == self )  {
 			Pawn(A).NotifyTeamChanged();
 			if ( PC.PlayerReplicationInfo != self )
-				break;
+				Break;
 		}
 		else if ( A.bNotifyLocalPlayerTeamReceived && PC.PlayerReplicationInfo == self )
 			A.NotifyLocalPlayerTeamReceived(); //if this is the local player's PRI, tell actors that want to know about it

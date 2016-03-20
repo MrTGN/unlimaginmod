@@ -10,7 +10,7 @@ final function CopyAllBuyables()
 
 	L = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if( L==None )
-		return;
+		Return;
 	for( i=0; i<MyBuyables.Length; ++i )
 		if( MyBuyables[i]!=None )
 			L.AllocatedObjects[L.AllocatedObjects.Length] = MyBuyables[i];
@@ -20,11 +20,11 @@ final function GUIBuyable AllocateEntry( UM_ClientRepInfoLink L )
 	local GUIBuyable G;
 
 	if( L.AllocatedObjects.Length==0 )
-		return new Class'GUIBuyable';
+		Return new Class'GUIBuyable';
 	G = L.AllocatedObjects[0];
 	L.ResetItem(G);
 	L.AllocatedObjects.Remove(0,1);
-	return G;
+	Return G;
 }
 final function FreeBuyable( UM_ClientRepInfoLink L, GUIBuyable B )
 {
@@ -52,13 +52,13 @@ function UpdateMyBuyables()
 	PRI = KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo);
 	KFLR = Class'UM_ClientRepInfoLink'.Static.FindStats(PlayerOwner());
 	if( KFLR==None || PRI==None )
-		return; // Hmmmm?
+		Return; // Hmmmm?
 
 	// Let's start with our current inventory
-	if ( PlayerOwner().Pawn.Inventory == none )
+	if ( PlayerOwner().Pawn.Inventory == None )
 	{
-		log("Inventory is none!");
-		return;
+		log("Inventory is None!");
+		Return;
 	}
 
 	DualDivider = 1;
@@ -73,7 +73,7 @@ function UpdateMyBuyables()
 		KFV = Class'KFVeterancyTypes';
 
 	// Fill the Buyables
-	for ( CurInv = PlayerOwner().Pawn.Inventory; CurInv != none; CurInv = CurInv.Inventory )
+	for ( CurInv = PlayerOwner().Pawn.Inventory; CurInv != None; CurInv = CurInv.Inventory )
 	{
 		if ( KFWeapon(CurInv)==None || CurInv.IsA('Welder') || CurInv.IsA('Syringe') )
 			continue;
@@ -111,11 +111,11 @@ function UpdateMyBuyables()
 		MyBuyable.ItemSpeed		= MyPickup.default.SpeedValue;
 		MyBuyable.ItemAmmoCurrent	= CurAmmo;
 		MyBuyable.ItemAmmoMax		= MaxAmmo;
-		MyBuyable.bMelee			= (KFMeleeGun(CurInv)!=none || MyBuyable.ItemAmmoClass==None);
-		MyBuyable.bSaleList		= false;
+		MyBuyable.bMelee			= (KFMeleeGun(CurInv)!=None || MyBuyable.ItemAmmoClass==None);
+		MyBuyable.bSaleList		= False;
 		MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
 
-		if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
+		if ( KFWeapon(CurInv) != None && KFWeapon(CurInv).SellValue != -1 )
 			MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
 		else MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
 
@@ -124,12 +124,12 @@ function UpdateMyBuyables()
 
 		if ( CurInv.IsA('Knife') )
 		{
-			MyBuyable.bSellable	= false;
+			MyBuyable.bSellable	= False;
 			KnifeBuyable = MyBuyable;
 		}
 		else if ( CurInv.IsA('Frag') )
 		{
-			MyBuyable.bSellable	= false;
+			MyBuyable.bSellable	= False;
 			FragBuyable = MyBuyable;
 		}
 		else
@@ -163,12 +163,12 @@ function UpdateMyBuyables()
 		MyBuyable.ItemSpeed		= MyPickup.default.SpeedValue;
 		MyBuyable.ItemAmmoCurrent	= CurAmmo;
 		MyBuyable.ItemAmmoMax		= MaxAmmo;
-		MyBuyable.bMelee		= (KFMeleeGun(CurInv) != none);
-		MyBuyable.bSaleList		= false;
+		MyBuyable.bMelee		= (KFMeleeGun(CurInv) != None);
+		MyBuyable.bSaleList		= False;
 		MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
 		MyBuyable.bSellable		= !KFWeapon(CurInv).default.bKFNeverThrow;
 
-		if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
+		if ( KFWeapon(CurInv) != None && KFWeapon(CurInv).SellValue != -1 )
 			MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
 		else MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
 
@@ -189,10 +189,10 @@ function UpdateMyBuyables()
 	MyBuyable.ItemCost		= int(class'BuyableVest'.default.ItemCost * KFV.static.GetCostScaling(PRI, class'Vest'));
 	MyBuyable.ItemAmmoCost		= MyBuyable.ItemCost / 100;
 	MyBuyable.ItemFillAmmoCost	= int((100.0 - MyBuyable.ItemAmmoCurrent) * MyBuyable.ItemAmmoCost);
-	MyBuyable.bIsVest			= true;
-	MyBuyable.bMelee			= false;
-	MyBuyable.bSaleList		= false;
-	MyBuyable.bSellable		= false;
+	MyBuyable.bIsVest			= True;
+	MyBuyable.bMelee			= False;
+	MyBuyable.bSaleList		= False;
+	MyBuyable.bSellable		= False;
 	MyBuyable.ItemPerkIndex		= class'BuyableVest'.default.CorrespondingPerkIndex;
 
 	if( MyBuyables.Length<=(7-SecTypes.Length) )
@@ -206,7 +206,7 @@ function UpdateMyBuyables()
 	}
 	else
 	{
-		MyBuyables[MyBuyables.Length] = none;
+		MyBuyables[MyBuyables.Length] = None;
 		for( i=(SecTypes.Length-1); i>=0; --i )
 			MyBuyables[MyBuyables.Length] = SecTypes[i];
 		MyBuyables[MyBuyables.Length] = KnifeBuyable;
@@ -227,8 +227,8 @@ function UpdateList()
 
 	if ( MyBuyables.Length < 1 )
 	{
-		bNeedsUpdate = true;
-		return;
+		bNeedsUpdate = True;
+		Return;
 	}
 
 	// Clear the arrays
@@ -244,7 +244,7 @@ function UpdateList()
 	// Update the players inventory list
 	for ( i = 0; i < ItemCount; i++ )
 	{
-		if ( MyBuyables[i] == none )
+		if ( MyBuyables[i] == None )
 			continue;
 
 		NameStrings[i] = MyBuyables[i].ItemName;
@@ -294,7 +294,7 @@ function UpdateList()
 
 	if ( bNotify )
 		CheckLinkedObjects(Self);
-	if ( MyScrollBar != none )
+	if ( MyScrollBar != None )
 		MyScrollBar.AlignThumb();
 }
 function DrawInvItem(Canvas Canvas, int CurIndex, float X, float Y, float Width, float Height, bool bSelected, bool bPending)
@@ -313,7 +313,7 @@ function DrawInvItem(Canvas Canvas, int CurIndex, float X, float Y, float Width,
 	if ( MyBuyables[CurIndex]==None )
 	{
 		if( MyBuyables.Length==(CurIndex+1) || MyBuyables[CurIndex+1]==None )
-			return;
+			Return;
 
 		Canvas.SetPos(X + EquipmentBGXOffset, Y + Height - EquipmentBGYOffset - EquipmentBGHeightScale * Height);
 		Canvas.DrawTileStretched(AmmoBackground, EquipmentBGWidthScale * Width, EquipmentBGHeightScale * Height);

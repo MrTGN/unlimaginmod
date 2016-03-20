@@ -16,7 +16,7 @@ simulated function string GetProgress()
 
 simulated function int GetProgressInt()
 {
-	return CurrentValue;
+	Return CurrentValue;
 }
 
 function SetProgress( string S )

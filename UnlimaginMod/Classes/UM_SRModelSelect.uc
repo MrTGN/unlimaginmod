@@ -149,7 +149,7 @@ function bool IsUnlocked(xUtil.PlayerRecord Test)
 {
 	local int i;
 
-	// If character has no menu filter, just return true
+	// If character has no menu filter, just Return True
 	if ( PlayerOwner() == None )
 		Return True;
 
@@ -168,8 +168,8 @@ defaultproperties
 	StockText="Stock"
 
 	Begin Object Class=moComboBox Name=CharRace
-		bScaleToParent=true
-		bBoundToParent=true
+		bScaleToParent=True
+		bBoundToParent=True
 		WinWidth=0.388155
 		WinHeight=0.042857
 		WinLeft=0.052733

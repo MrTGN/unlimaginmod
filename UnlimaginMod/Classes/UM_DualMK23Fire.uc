@@ -26,7 +26,7 @@ event ModeDoFire()
 	local name bn;
 	
 	//[block] Switching DamageType for Firebug
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none )
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 	{
 		// -- Switch damage type for the firebug --
 		if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )
@@ -57,15 +57,15 @@ event ModeDoFire()
 			RoundsToFire--;
 			if ( RoundsToFire < 1 )
 			{
-				SetTimer(0, false);
+				SetTimer(0, False);
 				RoundsToFire = 0;
-				bBursting = false;
+				bBursting = False;
 				Return;
 			}
 		}
 		else if ( !bBursting && AllowFire() ) //If not already firing, start a burst.
 		{
-			bBursting = true;
+			bBursting = True;
 			//[block] Switching fire flash bone and anim to second or first gun
 			bn = UM_DualMK23Pistol(Weapon).altFlashBoneName;
 			UM_DualMK23Pistol(Weapon).altFlashBoneName = UM_DualMK23Pistol(Weapon).FlashBoneName;
@@ -87,7 +87,7 @@ event ModeDoFire()
 				RoundsToFire = BurstLength;
 			else
 				RoundsToFire = KFWeapon(Weapon).MagAmmoRemaining;
-			SetTimer(BurstRate, true);
+			SetTimer(BurstRate, True);
 		}
 	}
 	else
@@ -118,7 +118,7 @@ simulated event Timer()
 	if ( bBursting )
 		ModeDoFire();
 	else 
-		SetTimer(0, false);
+		SetTimer(0, False);
 }
 
 defaultproperties

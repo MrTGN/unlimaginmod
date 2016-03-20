@@ -12,7 +12,7 @@ defaultproperties
 	 PowerValue=60
      SpeedValue=35
      RangeValue=90
-     Description="Thompson G2 Contender is a break-action single-shot pistol with 14 inch barrel and optical 3-9X40 scope."
+     Description="Thompson G2 Contender is a Break-action single-shot pistol with 14 inch barrel and optical 3-9X40 scope."
      ItemName="Thompson G2 Contender"
      ItemShortName="G2 Contender"
      AmmoItemName=".45-70 Government 300 Rem"

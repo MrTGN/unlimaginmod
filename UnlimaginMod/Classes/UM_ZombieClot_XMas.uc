@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieClot_XMas
-//	Parent class:	 UM_ZombieClot
+//	Parent class:	 UM_BaseMonster_Clot
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 22:34
 //================================================================================
-class UM_ZombieClot_XMas extends UM_ZombieClot;
+class UM_ZombieClot_XMas extends UM_BaseMonster_Clot;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 #exec OBJ LOAD FILE=KF_Specimens_Trip_XMAS_T.utx

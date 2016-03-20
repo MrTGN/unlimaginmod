@@ -48,7 +48,7 @@ function bool MyOnDraw(Canvas C)
 			C.DrawTile(BarTop, XScale*(float(i)/float(MaxBoxes)), BoxSizeY * C.ClipX, 0, 0, BarTop.MaterialUSize()*i, BarTop.MaterialVSize() );
 		}
 	}
-	return false;
+	Return False;
 }
 
 defaultproperties

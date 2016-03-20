@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieScrake_HALLOWEEN
-//	Parent class:	 UM_ZombieScrake
+//	Parent class:	 UM_BaseMonster_Scrake
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:17
 //================================================================================
-class UM_ZombieScrake_HALLOWEEN extends UM_ZombieScrake;
+class UM_ZombieScrake_HALLOWEEN extends UM_BaseMonster_Scrake;
 
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax

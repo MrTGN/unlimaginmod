@@ -39,11 +39,11 @@ static function bool UnloadAssets()
 {
 	if ( super.UnloadAssets() )
 	{
-		default.SelectSound = none;
-		default.FireModeSwitchSound = none;
+		default.SelectSound = None;
+		default.FireModeSwitchSound = None;
 	}
 
-	return true;
+	Return True;
 }
 //[end]
 
@@ -61,7 +61,7 @@ simulated function DoToggle ()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSound(FireModeSwitchSound,SLOT_None,2.2,,,,false);
+		PlayOwnedSound(FireModeSwitchSound,SLOT_None,2.2,,,,False);
 		UM_MK23Fire(FireMode[0]).bSetToBurst = !UM_MK23Fire(FireMode[0]).bSetToBurst;
 		if ( UM_MK23Fire(FireMode[0]).bSetToBurst )
 			Player.ReceiveLocalizedMessage(class'UnlimaginMod.UM_MK23SwitchMessage',0);
@@ -87,31 +87,31 @@ function bool HandlePickupQuery( pickup Item )
 {
 	if ( Item.InventoryType == Class )
 	{
-		if ( KFHumanPawn(Owner) != none && !KFHumanPawn(Owner).CanCarry(class'UM_DualMK23Pistol'.Default.Weight) )
+		if ( KFHumanPawn(Owner) != None && !KFHumanPawn(Owner).CanCarry(class'UM_DualMK23Pistol'.Default.Weight) )
 		{
 			PlayerController(Instigator.Controller).ReceiveLocalizedMessage(Class'KFMainMessages', 2);
-			return true;
+			Return True;
 		}
 
-		if ( KFPlayerController(Instigator.Controller) != none )
+		if ( KFPlayerController(Instigator.Controller) != None )
 		{
 			KFPlayerController(Instigator.Controller).PendingAmmo = WeaponPickup(Item).AmmoAmount[0];
 		}
 
-		return false; // Allow to "pickup" so this weapon can be replaced with dual MK23.
+		Return False; // Allow to "pickup" so this weapon can be replaced with dual MK23.
 	}
 
-	return Super(KFWeapon).HandlePickupQuery(Item);
+	Return Super(KFWeapon).HandlePickupQuery(Item);
 }
 
 simulated function bool PutDown()
 {
 	if ( Instigator.PendingWeapon.class == class'UM_DualMK23Pistol' )
 	{
-		bIsReloading = false;
+		bIsReloading = False;
 	}
 
-	return super(KFWeapon).PutDown();
+	Return super(KFWeapon).PutDown();
 }
 
 defaultproperties

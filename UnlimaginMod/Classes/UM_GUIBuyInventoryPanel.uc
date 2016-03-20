@@ -35,7 +35,7 @@ function Update()
 	OldX = TabPanelInventoryHeader.WinTop + 0.017000;
 	PC = PlayerOwner();
 	if ( PC == None || PC.Pawn == None || PC.Pawn.Inventory == None )  {
-		Log("Inventory is none!", Name);
+		Log("Inventory is None!", Name);
 		Return;
 	}
 

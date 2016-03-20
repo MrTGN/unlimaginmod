@@ -126,15 +126,15 @@ auto state Flying
         }
         Spawn(class'KFMod.VomitDecal',,,, rotator(-HitNormal));
 
-        bCollideWorld = false;
+        bCollideWorld = False;
         SetCollisionSize( (GoopVolume * 10.0), (GoopVolume * 10.0) );
-        bProjTarget = true;
+        bProjTarget = True;
 
         NewRot = Rotator(HitNormal);
         NewRot.Roll += 32768;
         SetRotation(NewRot);
         SetPhysics(PHYS_None);
-        bCheckedsurface = false;
+        bCheckedsurface = False;
         Fear = Spawn(class'AvoidMarker');
         GotoState('OnGround');
     }
@@ -144,7 +144,7 @@ auto state Flying
 		Landed(HitNormal);
 		if ( !Wall.bStatic && !Wall.bWorldGeometry )
 		{
-			bOnMover = true;
+			bOnMover = True;
 			SetBase(Wall);
 			if (Base == None)
 				BlowUp(Location);

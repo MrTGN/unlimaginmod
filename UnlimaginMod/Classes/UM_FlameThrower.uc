@@ -16,18 +16,18 @@ class UM_FlameThrower extends UM_BaseFlameThrower;
 
 function bool RecommendRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 function float SuggestAttackStyle()
 {
-	return -1.0;
+	Return -1.0;
 }
 
 
 function bool RecommendLongRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 defaultproperties

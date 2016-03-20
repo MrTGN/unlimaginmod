@@ -15,14 +15,14 @@ simulated function UpdateTacBeam( float Dist )
 
 	if( !bBeamEnabled )
 	{
-		if (TacShine == none )
+		if (TacShine == None )
 		{
 			TacShine = Spawn(Class'Single'.Default.TacShineClass,Owner,,,);
 			AttachToBone(TacShine,'FlashLight');
 			TacShine.RemoteRole = ROLE_None;
 		}
 		else TacShine.bHidden = False;
-		if (TacShineCorona == none )
+		if (TacShineCorona == None )
 		{
 			TacShineCorona = Spawn(class 'KFTacLightCorona',Owner,,,);
 			AttachToBone(TacShineCorona,'FlashLight');
@@ -41,9 +41,9 @@ simulated function TacBeamGone()
 {
 	if( bBeamEnabled )
 	{
-		if (TacShine!=none )
+		if (TacShine!=None )
 			TacShine.bHidden = True;
-		if (TacShineCorona!=none )
+		if (TacShineCorona!=None )
 			TacShineCorona.bHidden = True;
 		bBeamEnabled = False;
 	}

@@ -105,7 +105,7 @@ simulated function WeaponTick(float dt)
 
 		EndTrace = StartTrace + 65535 * X;
 
-		Other = Trace(HitLocation, HitNormal, EndTrace, StartTrace, true);
+		Other = Trace(HitLocation, HitNormal, EndTrace, StartTrace, True);
 
 		if ( Other != None && Other != Instigator && Other.Base != Instigator )
 			MyEndBeamEffect = HitLocation;
@@ -252,7 +252,7 @@ simulated function TurnOffLaser(optional bool bPutDown)
 	if ( Instigator.IsLocallyControlled() )
 	{
 		if ( Role < ROLE_Authority  )
-			ServerSetLaserActive(false);
+			ServerSetLaserActive(False);
 
 		if (!bPutDown)
 			bLaserActive = False;
@@ -333,7 +333,7 @@ simulated event RenderOverlays( Canvas Canvas )
 	local coords C;
 
 	if (Instigator == None)
-		return;
+		Return;
 
 	if ( Instigator.Controller != None )
 		Hand = Instigator.Controller.Handedness;
@@ -370,7 +370,7 @@ simulated event RenderOverlays( Canvas Canvas )
 
 		EndTrace = StartTrace + 65535 * X;
 
-		Other = Trace(HitLocation, HitNormal, EndTrace, StartTrace, true);
+		Other = Trace(HitLocation, HitNormal, EndTrace, StartTrace, True);
 
 		if ( Other != None && Other != Instigator && Other.Base != Instigator )
 			EndBeamEffect = HitLocation;
@@ -398,25 +398,25 @@ simulated event RenderOverlays( Canvas Canvas )
 
 	//PreDrawFPWeapon();	// Laurent -- Hook to override things before render (like rotation if using a staticmesh)
 
-	bDrawingFirstPerson = true;
-	Canvas.DrawActor(self, false, false, DisplayFOV);
-	bDrawingFirstPerson = false;
+	bDrawingFirstPerson = True;
+	Canvas.DrawActor(self, False, False, DisplayFOV);
+	bDrawingFirstPerson = False;
 }
 
 function bool RecommendRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 
 function bool RecommendLongRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 function float SuggestAttackStyle()
 {
-	return -1.0;
+	Return -1.0;
 }
 
 function float GetAIRating()
@@ -425,14 +425,14 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( (B == None) || (B.Enemy == None) )
-		return AIRating;
+		Return AIRating;
 
-	return AIRating;
+	Return AIRating;
 }
 
 function byte BestMode()
 {
-	return 0;
+	Return 0;
 }
 
 simulated function SetZoomBlendColor(Canvas c)

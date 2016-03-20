@@ -59,7 +59,7 @@ static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int 
 		/*default:
 			FinalInt = 100000+GetDoubleScaling(CurLevel,20000);*/
 	}
-	return Min(StatOther.RDamageHealedStat,FinalInt);
+	Return Min(StatOther.RDamageHealedStat,FinalInt);
 }
 
 static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
@@ -135,8 +135,8 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 
 static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
-	if ( (MP7MMedicGun(Other) != none || MP5MMedicGun(Other) != none || 
-			 M7A3MMedicGun(Other) != none || KrissMMedicGun(Other) != none) 
+	if ( (MP7MMedicGun(Other) != None || MP5MMedicGun(Other) != None || 
+			 M7A3MMedicGun(Other) != None || KrissMMedicGun(Other) != None) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // 100% increase in MP7 Medic weapon ammo carry
 
@@ -145,8 +145,8 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 
 static function float GetAmmoPickupMod(KFPlayerReplicationInfo KFPRI, KFAmmunition Other)
 {
-	if ( (MP7MAmmo(Other) != none || MP5MAmmo(Other) != none || 
-			 M7A3MAmmo(Other) != none || KrissMAmmo(Other) != none)
+	if ( (MP7MAmmo(Other) != None || MP5MAmmo(Other) != None || 
+			 M7A3MAmmo(Other) != None || KrissMAmmo(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // 100% increase in MP7 Medic weapon ammo carry
 
@@ -203,7 +203,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
 	ReplaceText(S,"%m",GetPercentStr(0.15+FMin(0.02 * float(Level),0.83f)));
 	ReplaceText(S,"%r",GetPercentStr(FMin(0.05 * float(Level),0.65f)-0.05));
-	return S;
+	Return S;
 }
 
 defaultproperties

@@ -23,12 +23,12 @@ var     bool        bAlreadyFoundEnemy; // The Boss has already found an enemy a
 
 function bool CanKillMeYet()
 {
-    return false;
+	Return False;
 }
 
 function TimedFireWeaponAtEnemy()
 {
-	if ( (Enemy == None) || FireWeaponAt(Enemy) )
+	if ( Enemy == None || FireWeaponAt(Enemy) )
 		SetCombatTimer();
 	else
 		SetTimer(0.01, True);
@@ -37,46 +37,40 @@ function TimedFireWeaponAtEnemy()
 // Overridden to support a quick initial attack to get the boss to the players quickly
 function FightEnemy(bool bCanCharge)
 {
-	if( KFM.bShotAnim )
-	{
+	if ( KFM.bShotAnim )  {
 		GoToState('WaitForAnim');
 		Return;
 	}
-	if (KFM.MeleeRange != KFM.default.MeleeRange)
+	if ( KFM.MeleeRange != KFM.default.MeleeRange )
 		KFM.MeleeRange = KFM.default.MeleeRange;
 
-	if ( Enemy == none || Enemy.Health <= 0 )
+	if ( Enemy == None || Enemy.Health < 1 )
 		FindNewEnemy();
 
-	if ( (Enemy == FailedHuntEnemy) && (Level.TimeSeconds == FailedHuntTime) )
-	{
+	if ( Enemy == FailedHuntEnemy && Level.TimeSeconds == FailedHuntTime )  {
 	//	if ( Enemy.Controller.bIsPlayer )
 		//	FindNewEnemy();
-
-		if ( Enemy == FailedHuntEnemy )
-		{
-                        GoalString = "FAILED HUNT - HANG OUT";
+		if ( Enemy == FailedHuntEnemy )  {
+						GoalString = "FAILED HUNT - HANG OUT";
 			if ( EnemyVisible() )
-				bCanCharge = false;
+				bCanCharge = False;
 		}
 	}
-	if ( !EnemyVisible() )
-	{
-        // Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
-        if( bAlreadyFoundEnemy || UM_ZombieBoss(Pawn).SneakCount > 2 )
-        {
-            bAlreadyFoundEnemy = true;
-            GoalString = "Hunt";
-            GotoState('ZombieHunt');
-        }
-        else
-        {
-            // Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
-            UM_ZombieBoss(Pawn).SneakCount++;
-            GoalString = "InitialHunt";
-            GotoState('InitialHunting');
-        }
-		return;
+	
+	if ( !EnemyVisible() )  {
+		// Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
+		if ( bAlreadyFoundEnemy || UM_BaseMonster_Boss(Pawn).SneakCount > 2 )  {
+			bAlreadyFoundEnemy = True;
+			GoalString = "Hunt";
+			GotoState('ZombieHunt');
+		}
+		else  {
+			// Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
+			UM_BaseMonster_Boss(Pawn).SneakCount++;
+			GoalString = "InitialHunt";
+			GotoState('InitialHunting');
+		}
+		Return;
 	}
 
 	// see enemy - decide whether to charge it or strafe around/stand and fire
@@ -92,40 +86,38 @@ state InitialHunting extends Hunting
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-        super.SeePlayer(SeenPlayer);
-		bAlreadyFoundEnemy = true;
+		super.SeePlayer(SeenPlayer);
+		bAlreadyFoundEnemy = True;
 		GoalString = "Hunt";
-        GotoState('ZombieHunt');
+		GotoState('ZombieHunt');
 	}
 
 	event BeginState()
 	{
 		local float ZDif;
 
-        // Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
-        UM_ZombieBoss(Pawn).SneakCount++;
+		// Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
+		UM_BaseMonster_Boss(Pawn).SneakCount++;
 
-		if( Pawn.CollisionRadius>27 || Pawn.CollisionHeight>46 )
-		{
-			ZDif = Pawn.CollisionHeight-44;
-			Pawn.SetCollisionSize(24,44);
-			Pawn.MoveSmooth(vect(0,0,-1)*ZDif);
+		if ( Pawn.CollisionRadius > 27.0 || Pawn.CollisionHeight > 46.0 )  {
+			ZDif = Pawn.CollisionHeight - 44.0;
+			Pawn.SetCollisionSize(24.0, 44.0);
+			Pawn.MoveSmooth( vect(0.0,0.0,-1.0) * ZDif );
 		}
 
-		super.BeginState();
+		Super.BeginState();
 	}
 	event EndState()
 	{
 		local float ZDif;
 
-		if( Pawn.CollisionRadius!=Pawn.Default.CollisionRadius || Pawn.CollisionHeight!=Pawn.Default.CollisionHeight )
-		{
-			ZDif = Pawn.Default.CollisionRadius-44;
-			Pawn.MoveSmooth(vect(0,0,1)*ZDif);
-			Pawn.SetCollisionSize(Pawn.Default.CollisionRadius,Pawn.Default.CollisionHeight);
+		if ( Pawn.CollisionRadius != Pawn.Default.CollisionRadius || Pawn.CollisionHeight !=Pawn.Default.CollisionHeight )  {
+			ZDif = Pawn.Default.CollisionRadius - 44.0;
+			Pawn.MoveSmooth( vect(0.0,0.0,1.0) * ZDif );
+			Pawn.SetCollisionSize( Pawn.Default.CollisionRadius, Pawn.Default.CollisionHeight );
 		}
 
-		super.EndState();
+		Super.EndState();
 	}
 }
 
@@ -133,13 +125,13 @@ state ZombieCharge
 {
 	function bool StrafeFromDamage(float Damage, class<DamageType> DamageType, bool bFindDest)
 	{
-		return false;
+		Return False;
 	}
 
 	// I suspect this function causes bloats to get confused
 	function bool TryStrafe(vector sideDir)
 	{
-		return false;
+		Return False;
 	}
 
 	event Timer()
@@ -152,10 +144,8 @@ state ZombieCharge
 WaitForAnim:
 
 	if ( Monster(Pawn).bShotAnim )
-	{
 		Goto('Moving');
-	}
-	if ( !FindBestPathToward(Enemy, false,true) )
+	if ( !FindBestPathToward(Enemy, False,True) )
 		GotoState('ZombieRestFormation');
 Moving:
 	MoveToward(Enemy);
@@ -180,33 +170,41 @@ Ignores HearNoise,DamageAttitudeTo,Tick,EnemyChanged,Startle;
 	}
 	event Timer()
 	{
-		if( Enemy==None )
+		if ( Enemy == None )
 			Return;
 		Target = Enemy;
 		KFM.RangedAttack(Target);
 	}
 Begin:
-	if( Pawn.Physics==PHYS_Falling )
+	if ( Pawn.Physics == PHYS_Falling )
 		WaitForLanding();
+	
 	While( KFM.bShotAnim )
 		Sleep(0.25);
-	if( HidingSpots==None )
+	
+	if ( HidingSpots == None )
 		HidingSpots = FindRandomDest();
-	if( HidingSpots==None )
-		UM_ZombieBoss(Pawn).BeginHealing();
-	if( ActorReachable(HidingSpots) )
-	{
+	
+	if ( HidingSpots == None )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
+	
+	if ( ActorReachable(HidingSpots) )  {
 		MoveTarget = HidingSpots;
 		HidingSpots = None;
 	}
-	else FindBestPathToward(HidingSpots,True,False);
-	if( MoveTarget==None )
-		UM_ZombieBoss(Pawn).BeginHealing();
-	if( Enemy!=None && VSize(Enemy.Location-Pawn.Location)<100 )
+	else 
+		FindBestPathToward(HidingSpots,True,False);
+	
+	if ( MoveTarget == None )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
+	
+	if ( Enemy != None && VSize(Enemy.Location - Pawn.Location) < 100.0 )
 		MoveToward(MoveTarget,Enemy,,False);
-	else MoveToward(MoveTarget,MoveTarget,,False);
-	if( HidingSpots==None || !PlayerSeesMe() )
-		UM_ZombieBoss(Pawn).BeginHealing();
+	else 
+		MoveToward(MoveTarget,MoveTarget,,False);
+	
+	if ( HidingSpots == None || !PlayerSeesMe() )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
 	GoTo'Begin';
 }
 State SyrRetreat
@@ -236,62 +234,68 @@ Ignores HearNoise,DamageAttitudeTo,Tick,EnemyChanged,Startle;
 		local float Dist,BDist,MDist;
 		local vector EnemyDir;
 
-		if( Enemy==None )
-		{
+		if ( Enemy == None )  {
 			HidingSpots = FindRandomDest();
 			Return;
 		}
-		EnemyDir = Normal(Enemy.Location-Pawn.Location);
-		For( N=Level.NavigationPointList; N!=None; N=N.NextNavigationPoint )
-		{
+		EnemyDir = Normal(Enemy.Location - Pawn.Location);
+		for( N = Level.NavigationPointList; N != None; N = N.NextNavigationPoint )  {
 			MDist = VSize(N.Location-Pawn.Location);
-			if( MDist<2500 && !FastTrace(N.Location,Enemy.Location) && FindPathToward(N)!=None )
-			{
+			if ( MDist < 2500.0 && !FastTrace(N.Location,Enemy.Location) && FindPathToward(N)!=None )  {
 				Dist = VSize(N.Location-Enemy.Location)/FMax(MDist/800.f,1.5);
-				if( (EnemyDir Dot Normal(Enemy.Location-N.Location))<0.2 )
-					Dist/=10;
-				if( BN==None || BDist<Dist )
-				{
+				if ( (EnemyDir Dot Normal(Enemy.Location-N.Location)) < 0.2 )
+					Dist /= 10.0;
+				if ( BN==None || BDist<Dist )  {
 					BN = N;
 					BDist = Dist;
 				}
 			}
 		}
-		if( BN==None )
+		if ( BN == None )
 			HidingSpots = FindRandomDest();
-		else HidingSpots = BN;
+		else 
+			HidingSpots = BN;
 	}
+
 Begin:
-	if( Pawn.Physics==PHYS_Falling )
+	if ( Pawn.Physics == PHYS_Falling )
 		WaitForLanding();
+	
 	While( KFM.bShotAnim )
 		Sleep(0.25);
-	if( HidingSpots==None )
+	
+	if ( HidingSpots == None )
 		FindHideSpot();
-	if( HidingSpots==None )
-		UM_ZombieBoss(Pawn).BeginHealing();
-	if( ActorReachable(HidingSpots) )
-	{
+	
+	if ( HidingSpots == None )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
+	
+	if ( ActorReachable(HidingSpots) )  {
 		MoveTarget = HidingSpots;
 		HidingSpots = None;
 	}
-	else FindBestPathToward(HidingSpots,True,False);
-	if( MoveTarget==None )
-		UM_ZombieBoss(Pawn).BeginHealing();
-	if( Enemy!=None && VSize(Enemy.Location-Pawn.Location)<100 )
+	else 
+		FindBestPathToward(HidingSpots,True,False);
+	
+	if ( MoveTarget == None )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
+	
+	if ( Enemy != None && VSize(Enemy.Location - Pawn.Location) < 100.0 )
 		MoveToward(MoveTarget,Enemy,,False);
-	else MoveToward(MoveTarget,MoveTarget,,False);
-	if( HidingSpots==None )
-		UM_ZombieBoss(Pawn).BeginHealing();
+	else 
+		MoveToward(MoveTarget,MoveTarget,,False);
+	
+	if ( HidingSpots == None )
+		UM_BaseMonster_Boss(Pawn).BeginHealing();
 	GoTo'Begin';
 }
+
 function bool PlayerSeesMe()
 {
 	local Controller C;
 
-	For( C=Level.ControllerList; C!=None; C=C.NextController )
-	{
-		if( C.bIsPlayer && C.Pawn!=None && C.Pawn!=Pawn && LineOfSightTo(C.Pawn) )
+	for( C = Level.ControllerList; C != None; C = C.NextController )  {
+		if ( C.bIsPlayer && C.Pawn != None && C.Pawn != Pawn && LineOfSightTo(C.Pawn) )
 			Return True;
 	}
 	Return False;
@@ -305,8 +309,8 @@ function bool PlayerSeesMe()
 // probably take this out in the future. But for now the fix works - Ramm
 function SetWaitForAnimTimout(float NewWaitAnimTimeout, name AnimToWaitFor)
 {
-    WaitAnimTimeout = NewWaitAnimTimeout;
-    AnimWaitingFor = AnimToWaitFor;
+	WaitAnimTimeout = NewWaitAnimTimeout;
+	AnimWaitingFor = AnimToWaitFor;
 }
 
 state WaitForAnim
@@ -315,16 +319,14 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 
 
 	// The anim has ended, clear the flags and let the AI do its thing
-    function WaitTimeout()
+	function WaitTimeout()
 	{
-        if( bUseFreezeHack )
-		{
-            if( Pawn!=None )
-    		{
-    			Pawn.AccelRate = Pawn.Default.AccelRate;
-    			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-    		}
-    		bUseFreezeHack = False;
+		if ( bUseFreezeHack )  {
+			if ( Pawn != None )  {
+				Pawn.AccelRate = Pawn.Default.AccelRate;
+				Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
+			}
+			bUseFreezeHack = False;
 		}
 
 		AnimEnd(AnimWaitChannel);
@@ -332,21 +334,21 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 
 	event AnimEnd(int Channel)
 	{
-    	/*local name  Sequence;
-    	local float Frame, Rate;
+		/*local name  Sequence;
+		local float Frame, Rate;
 
 
-        Pawn.GetAnimParams( KFMonster(Pawn).ExpectingChannel, Sequence, Frame, Rate );
+		Pawn.GetAnimParams( KFMonster(Pawn).ExpectingChannel, Sequence, Frame, Rate );
 
-        log(GetStateName()$" AnimEnd for Exp Chan "$KFMonster(Pawn).ExpectingChannel$" = "$Sequence$" Channel = "$Channel);
+		log(GetStateName()$" AnimEnd for Exp Chan "$KFMonster(Pawn).ExpectingChannel$" = "$Sequence$" Channel = "$Channel);
 
-        Pawn.GetAnimParams( 0, Sequence, Frame, Rate );
-        log(GetStateName()$" AnimEnd for Chan 0 = "$Sequence);
+		Pawn.GetAnimParams( 0, Sequence, Frame, Rate );
+		log(GetStateName()$" AnimEnd for Chan 0 = "$Sequence);
 
-        Pawn.GetAnimParams( 1, Sequence, Frame, Rate );
-        log(GetStateName()$" AnimEnd for Chan 1 = "$Sequence);
+		Pawn.GetAnimParams( 1, Sequence, Frame, Rate );
+		log(GetStateName()$" AnimEnd for Chan 1 = "$Sequence);
 
-        log(GetStateName()$" AnimEnd bShotAnim = "$Monster(Pawn).bShotAnim); */
+		log(GetStateName()$" AnimEnd bShotAnim = "$Monster(Pawn).bShotAnim); */
 
 		Pawn.AnimEnd(Channel);
 		if ( !Monster(Pawn).bShotAnim )
@@ -357,19 +359,15 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 	{
 		Global.Tick(Delta);
 
-		if( WaitAnimTimeout > 0 )
-		{
-            WaitAnimTimeout -= Delta;
-
-            if( WaitAnimTimeout <= 0 )
-            {
-                WaitAnimTimeout = 0;
-                WaitTimeout();
-            }
+		if ( WaitAnimTimeout > 0 )  {
+			WaitAnimTimeout -= Delta;
+			if ( WaitAnimTimeout < 1 )  {
+				WaitAnimTimeout = 0;
+				WaitTimeout();
+			}
 		}
 
-		if( bUseFreezeHack )
-		{
+		if ( bUseFreezeHack )  {
 			MoveTarget = None;
 			MoveTimer = -1;
 			Pawn.Acceleration = vect(0,0,0);
@@ -379,9 +377,8 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 	}
 	event EndState()
 	{
-        super.EndState();
-
-        AnimWaitingFor = '';
+		Super.EndState();
+		AnimWaitingFor = '';
 	}
 }
 

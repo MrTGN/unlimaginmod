@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieGoreFast_HALLOWEEN
-//	Parent class:	 UM_ZombieGoreFast
+//	Parent class:	 UM_BaseMonster_GoreFast
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:16
 //================================================================================
-class UM_ZombieGoreFast_HALLOWEEN extends UM_ZombieGoreFast;
+class UM_ZombieGoreFast_HALLOWEEN extends UM_BaseMonster_GoreFast;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 

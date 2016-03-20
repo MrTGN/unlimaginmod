@@ -88,7 +88,7 @@ state OnGround
 			if (DotProduct > 0.7)
 			{
 				bDrip = True;
-				SetTimer(DripTime, false);
+				SetTimer(DripTime, False);
 				if (bOnMover)
 					BlowUp(Location);
 			}
@@ -117,7 +117,7 @@ state OnGround
 		SetCollisionSize( (GoopVolume * 10.0), (GoopVolume * 10.0));
 		PlaySound(ImpactSound, SLOT_Misc);
 		bCheckedSurface = False;
-		SetTimer(RestTime, false);
+		SetTimer(RestTime, False);
 	}
 }
 
@@ -146,7 +146,7 @@ singular function SplashGlobs(int NumGloblings)
 
 simulated event Destroyed()
 {
-    if ( !bNoFX && EffectIsRelevant(Location,false) )
+    if ( !bNoFX && EffectIsRelevant(Location,False) )
     {
         //Spawn(class'xEffects.GoopSmoke');
         Spawn(class'KFmod.VomGroundSplash');
@@ -184,15 +184,15 @@ auto state Flying
         }
         Spawn(class'KFMod.VomitDecal',,,, rotator(-HitNormal));
 
-        bCollideWorld = false;
+        bCollideWorld = False;
         SetCollisionSize(GoopVolume*10.0, GoopVolume*10.0);
-        bProjTarget = true;
+        bProjTarget = True;
 
         NewRot = Rotator(HitNormal);
         NewRot.Roll += 32768;
         SetRotation(NewRot);
         SetPhysics(PHYS_None);
-        bCheckedsurface = false;
+        bCheckedsurface = False;
         Fear = Spawn(class'AvoidMarker');
         GotoState('OnGround');
     }
@@ -202,7 +202,7 @@ auto state Flying
 		Landed(HitNormal);
 		if ( !Wall.bStatic && !Wall.bWorldGeometry )
 		{
-			bOnMover = true;
+			bOnMover = True;
 			SetBase(Wall);
 			if (Base == None)
 				BlowUp(Location);

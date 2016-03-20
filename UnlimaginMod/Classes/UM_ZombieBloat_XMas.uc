@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBloat_XMas
-//	Parent class:	 UM_ZombieBloat
+//	Parent class:	 UM_BaseMonster_Bloat
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 22:10
 //================================================================================
-class UM_ZombieBloat_XMas extends UM_ZombieBloat;
+class UM_ZombieBloat_XMas extends UM_BaseMonster_Bloat;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 
@@ -22,17 +22,17 @@ function PlayDyingSound()
 	{
 		if ( bGibbed )
 		{
-			PlaySound(sound'KF_EnemiesFinalSnd_Xmas.Bloat_DeathPop', SLOT_Pain,2.0,true,525);
-			return;
+			PlaySound(sound'KF_EnemiesFinalSnd_Xmas.Bloat_DeathPop', SLOT_Pain,2.0,True,525);
+			Return;
 		}
 
 		if ( bDecapitated )
 		{
-			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,true,525);
+			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,True,525);
 		}
 		else
 		{
-			PlaySound(sound'KF_EnemiesFinalSnd_Xmas.Bloat_DeathPop', SLOT_Pain,2.0,true,525);
+			PlaySound(sound'KF_EnemiesFinalSnd_Xmas.Bloat_DeathPop', SLOT_Pain,2.0,True,525);
 		}
 	}
 }

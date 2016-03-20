@@ -131,7 +131,7 @@ auto state Pickup
 		UntriggerEvent(Event, self, None);
 		if ( bDropped )  {
 			AddToNavigation();
-			SetTimer(20, false);
+			SetTimer(20, False);
 		}
 	}
 

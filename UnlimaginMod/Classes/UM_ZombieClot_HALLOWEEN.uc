@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieClot_HALLOWEEN
-//	Parent class:	 UM_ZombieClot
+//	Parent class:	 UM_BaseMonster_Clot
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:14
 //================================================================================
-class UM_ZombieClot_HALLOWEEN extends UM_ZombieClot;
+class UM_ZombieClot_HALLOWEEN extends UM_BaseMonster_Clot;
 
 var Shader ClotSkins[5];
 

@@ -33,6 +33,8 @@ var()	float			GrappleDuration;	// How long a grapple by this zombie should last
 var		float			GrabMessageDelay;	// Amount of time between a player saying "I've been grabbed" message
 var		float			GrabChance, MinGrabChance, MaxGrabChance;
 
+var(Display) array<Material> 	UnCloakedSkins;
+
 //[end] Varibles
 //====================================================================
 
@@ -163,7 +165,7 @@ simulated event Tick( float DeltaTime )
 			else
 				bSpotted = False;
 
-			if ( !bSpotted && !bCloaked && Skins[0] != Combiner'KF_Specimens_Trip_T.stalker_cmb' )
+			if ( !bSpotted && !bCloaked && Skins[0] != UnCloakedSkins[0] )
 				UncloakStalker();
 			else if ( Level.TimeSeconds - LastUncloakTime > 1.2 )  {
 				// if we're uberbrite, turn down the light
@@ -171,7 +173,7 @@ simulated event Tick( float DeltaTime )
 					bUnlit = False;
 					CloakStalker();
 				}
-				else if ( Skins[0] != Shader'KF_Specimens_Trip_T.stalker_invisible' )
+				else if ( Skins[0] != default.Skins[0] )
 					CloakStalker();
 			}
 		}
@@ -179,7 +181,6 @@ simulated event Tick( float DeltaTime )
 }
 
 // Cloak Functions ( called from animation notifies to save Gibby trouble ;) )
-
 simulated function CloakStalker()
 {
 	// No cloaking if zapped
@@ -204,8 +205,8 @@ simulated function CloakStalker()
 		if ( Level.NetMode == NM_DedicatedServer )
 			Return;
 
-		Skins[0] = Shader'KF_Specimens_Trip_T.stalker_invisible';
-		Skins[1] = Shader'KF_Specimens_Trip_T.stalker_invisible';
+		Skins[0] = default.Skins[0];
+		Skins[1] = default.Skins[1];
 
 		// Invisible - no shadow
 		if ( PlayerShadow != None )
@@ -241,9 +242,8 @@ simulated function UnCloakStalker()
 		if ( Level.NetMode == NM_DedicatedServer )
 			Return;
 
-		if ( Skins[0] != Combiner'KF_Specimens_Trip_T.stalker_cmb' )  {
-			Skins[1] = FinalBlend'KF_Specimens_Trip_T.stalker_fb';
-			Skins[0] = Combiner'KF_Specimens_Trip_T.stalker_cmb';
+		if ( Skins[0] != UnCloakedSkins[0] )  {
+			Skins = UnCloakedSkins;
 
 			if ( PlayerShadow != None )
 				PlayerShadow.bShadowActive = True;
@@ -263,8 +263,7 @@ simulated function SetZappedBehavior()
 
 	// Handle setting the zed to uncloaked so the zapped overlay works properly
 	if ( Level.Netmode != NM_DedicatedServer )  {
-		Skins[1] = FinalBlend'KF_Specimens_Trip_T.stalker_fb';
-		Skins[0] = Combiner'KF_Specimens_Trip_T.stalker_cmb';
+		Skins = UnCloakedSkins;
 
 		if ( PlayerShadow != None )
 			PlayerShadow.bShadowActive = True;
@@ -315,10 +314,8 @@ function RemoveHead()
 		DisabledPawn = None;
 	}
 	
-	if ( !bCrispified )  {
-		Skins[1] = FinalBlend'KF_Specimens_Trip_T.stalker_fb';
-		Skins[0] = Combiner'KF_Specimens_Trip_T.stalker_cmb';
-	}
+	if ( !bCrispified )
+		Skins = UnCloakedSkins;
 }
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
@@ -339,10 +336,8 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 
 	LocalKFHumanPawn = None;
 
-	if ( !bCrispified )  {
-		Skins[1] = FinalBlend'KF_Specimens_Trip_T.stalker_fb';
-		Skins[0] = Combiner'KF_Specimens_Trip_T.stalker_cmb';
-	}
+	if ( !bCrispified )
+		Skins = UnCloakedSkins;
 }
 
 simulated function Destroyed()
@@ -390,19 +385,6 @@ function bool DoJump( bool bUpdating )
 	Return False;
 }
 
-static simulated function PreCacheMaterials(LevelInfo myLevel)
-{//should be derived and used.
-	myLevel.AddPrecacheMaterial(Combiner'KF_Specimens_Trip_T.stalker_cmb');
-	myLevel.AddPrecacheMaterial(Combiner'KF_Specimens_Trip_T.stalker_env_cmb');
-	myLevel.AddPrecacheMaterial(Texture'KF_Specimens_Trip_T.stalker_diff');
-	myLevel.AddPrecacheMaterial(Texture'KF_Specimens_Trip_T.stalker_spec');
-	myLevel.AddPrecacheMaterial(Material'KF_Specimens_Trip_T.stalker_invisible');
-	myLevel.AddPrecacheMaterial(Combiner'KF_Specimens_Trip_T.StalkerCloakOpacity_cmb');
-	myLevel.AddPrecacheMaterial(Material'KF_Specimens_Trip_T.StalkerCloakEnv_rot');
-	myLevel.AddPrecacheMaterial(Material'KF_Specimens_Trip_T.stalker_opacity_osc');
-	myLevel.AddPrecacheMaterial(Material'KFCharacters.StalkerSkin');
-}
-
 //[end] Functions
 //====================================================================
 
@@ -415,26 +397,17 @@ defaultproperties
 	 MeleeAnims(0)="StalkerSpinAttack"
 	 MeleeAnims(1)="StalkerAttack1"
 	 MeleeAnims(2)="JumpAttack"
-	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Talk'
+	 
 	 MeleeDamage=9
 	 damageForce=5000
 	 KFRagdollName="Stalker_Trip"
 	 ZombieDamType(0)=Class'KFMod.DamTypeSlashingAttack'
 	 ZombieDamType(1)=Class'KFMod.DamTypeSlashingAttack'
 	 ZombieDamType(2)=Class'KFMod.DamTypeSlashingAttack'
-	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_HitPlayer'
-	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Jump'
+	 
 	 CrispUpThreshhold=10
 	 PuntAnim="ClotPunt"
-	 SeveredArmAttachScale=0.800000
-	 SeveredLegAttachScale=0.700000
-	 MotionDetectorThreat=0.250000
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Death'
-	 ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Challenge'
-	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Challenge'
-	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Challenge'
-	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Stalker.Stalker_Challenge'
+	 
 	 ScoringValue=15
 	 SoundGroupClass=Class'KFMod.KFFemaleZombieSounds'
 	 IdleHeavyAnim="StalkerIdle"
@@ -443,7 +416,6 @@ defaultproperties
 	 GroundSpeed=200.000000
 	 WaterSpeed=180.000000
 	 JumpZ=350.000000
-	 Health=100
 	 HeadHeight=2.500000
 	 MenuName="Stalker"
 	 MovementAnims(0)="ZombieRun"
@@ -456,37 +428,18 @@ defaultproperties
 	 WalkAnims(3)="ZombieRun"
 	 IdleCrouchAnim="StalkerIdle"
 	 IdleWeaponAnim="StalkerIdle"
-	 IdleRestAnim="StalkerIdle"
-	 AmbientSound=Sound'KF_BaseStalker.Stalker_IdleLoop'
+	 IdleRestAnim="StalkerIdle"	 
 	 
-	 Skins(0)=Shader'KF_Specimens_Trip_T.stalker_invisible'
-	 Skins(1)=Shader'KF_Specimens_Trip_T.stalker_invisible'
-	 Mesh=SkeletalMesh'UM_Stalker_A.Stalker_Mesh'
-	 
-	 MeshTestCollisionHeight=50.0
-	 MeshTestCollisionRadius=14.0
-	 
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionHeight=69.0
-	 //CollisionRadius=20.0
-	 
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
-	 CollisionHeight=55.0
-	 CollisionRadius=15.4
-	 
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.2,AreaHeight=7.0,AreaSizeScale=1.05,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-1.2,Z=0.0),AreaImpactStrength=5.2)
-	 //ToDo: UM_PawnBodyCollision - это временная колизия туловища. В дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=36.0,AreaImpactStrength=7.0)
-	 BaseEyeHeight=43.0
-	 EyeHeight=43.0
-	 // DrawScale
-	 DrawScale=1.100000
-	 
-	 //OnlineHeadshotOffset=(X=18.000000,Z=33.000000)
-	 OnlineHeadshotOffset=(X=18.000000,Z=41.000000)
-	 OnlineHeadshotScale=1.200000
+	 SeveredArmAttachScale=0.800000
+	 SeveredLegAttachScale=0.700000
+	 MotionDetectorThreat=0.250000
 	 
 	 RotationRate=(Yaw=45000,Roll=0)
+	 
+	 HealthMax=100.0
+     Health=100
+	 HeadHealth=25.0
+	 PlayerCountHealthScale=0.0
+	 PlayerNumHeadHealthScale=0.0
+	 Mass=140.000000 // lb (фунт)
 }

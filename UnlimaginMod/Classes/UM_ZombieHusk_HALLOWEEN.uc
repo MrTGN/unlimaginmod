@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieHusk_HALLOWEEN
-//	Parent class:	 UM_ZombieHusk
+//	Parent class:	 UM_BaseMonster_FireBallHusk
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:17
 //================================================================================
-class UM_ZombieHusk_HALLOWEEN extends UM_ZombieHusk;
+class UM_ZombieHusk_HALLOWEEN extends UM_BaseMonster_FireBallHusk;
 
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
@@ -37,14 +37,14 @@ function SpawnTwoShots()
 		SavedFireProperties.WarnTargetPct = 1;
 		SavedFireProperties.MaxRange = 65535;
 		SavedFireProperties.bTossed = False;
-		SavedFireProperties.bTrySplash = true;
+		SavedFireProperties.bTrySplash = True;
 		SavedFireProperties.bLeadTarget = True;
 		SavedFireProperties.bInstantHit = False;
 		SavedFireProperties.bInitialized = True;
 	}
 
     // Turn off extra collision before spawning vomit, otherwise spawn fails
-    ToggleAuxCollision(false);
+    ToggleAuxCollision(False);
 	FireRotation = Controller.AdjustAim(SavedFireProperties,FireStart,600);
 	foreach DynamicActors(class'UM_MonsterController', UM_KFMonstControl)
 	{
@@ -56,7 +56,7 @@ function SpawnTwoShots()
 	Spawn(Class'HuskFireProjectile',,,FireStart,FireRotation);
 
 	// Turn extra collision back on
-	ToggleAuxCollision(true);
+	ToggleAuxCollision(True);
 }
 
 defaultproperties

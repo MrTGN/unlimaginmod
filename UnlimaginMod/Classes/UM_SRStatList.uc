@@ -77,7 +77,7 @@ function InitList( UM_ClientRepInfoLink L )
 	if ( bNotify )
 		CheckLinkedObjects(Self);
 
-	if ( MyScrollBar != none )
+	if ( MyScrollBar != None )
 		MyScrollBar.AlignThumb();
 }
 

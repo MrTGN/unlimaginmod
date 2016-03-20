@@ -19,7 +19,7 @@ class UM_BaseDamType_PDW extends UM_BaseProjectileDamageType
 
 static function AwardKill(KFSteamStatsAndAchievements KFStatsAndAchievements, KFPlayerController Killer, KFMonster Killed )
 {
-	if( Killed.IsA('ZombieStalker') || Killed.IsA('UM_ZombieStalker') )
+	if ( UM_BaseMonster_Stalker(Killed) != None )
 		KFStatsAndAchievements.AddStalkerKill();
 }
 

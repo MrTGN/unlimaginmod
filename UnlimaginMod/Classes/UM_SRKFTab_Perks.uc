@@ -13,7 +13,7 @@ function ShowPanel(bool bShow)
 			lb_PerkSelect.List.InitList(None);
 			lb_PerkProgress.List.InitList();
 		}
-		l_ChangePerkOncePerWave.SetVisibility(false);
+		l_ChangePerkOncePerWave.SetVisibility(False);
 	}
 }
 

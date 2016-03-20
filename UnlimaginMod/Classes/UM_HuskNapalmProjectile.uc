@@ -43,7 +43,7 @@ defaultproperties
      DamageRadius=150.000000
 	 MyDamageType=Class'KFMod.DamTypeBurned'
 	 //MuzzleVelocity
-	 MuzzleVelocity=50.000000	// m/sec
+	 MuzzleVelocity=48.000000	// m/sec
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 TransientSoundVolume=1.500000

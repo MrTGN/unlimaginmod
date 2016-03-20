@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieGoreFast_XMas
-//	Parent class:	 UM_ZombieGorefast
+//	Parent class:	 UM_BaseMonster_GoreFast
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 22:53
 //================================================================================
-class UM_ZombieGoreFast_XMas extends UM_ZombieGorefast;
+class UM_ZombieGoreFast_XMas extends UM_BaseMonster_GoreFast;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 #exec OBJ LOAD FILE=KF_Specimens_Trip_XMAS_T.utx

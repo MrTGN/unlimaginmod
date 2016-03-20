@@ -26,7 +26,7 @@ function AddPlayer( KFPlayerReplicationInfo PRI, int Index, Canvas C )
 		Top = Index*0.045;
 		PlayerBoxes.Length = Index+1;
 		PlayerBoxes[Index].ReadyBox = new (None) Class'moCheckBox';
-		PlayerBoxes[Index].ReadyBox.bValueReadOnly = true;
+		PlayerBoxes[Index].ReadyBox.bValueReadOnly = True;
 		PlayerBoxes[Index].ReadyBox.ComponentJustification = TXTA_Left;
 		PlayerBoxes[Index].ReadyBox.CaptionWidth = 0.82;
 		PlayerBoxes[Index].ReadyBox.LabelColor.B = 0;
@@ -58,10 +58,10 @@ function AddPlayer( KFPlayerReplicationInfo PRI, int Index, Canvas C )
 		PlayerBoxes[Index].PlayerVetLabel.WinWidth = 0.151172;
 		PlayerBoxes[Index].PlayerVetLabel.WinHeight = 0.045;
 		PlayerBoxes[Index].PlayerVetLabel.RenderWeight = 0.5;
-		AppendComponent(PlayerBoxes[Index].ReadyBox, true);
-		AppendComponent(PlayerBoxes[Index].PlayerBox, true);
-		AppendComponent(PlayerBoxes[Index].PlayerPerk, true);
-		AppendComponent(PlayerBoxes[Index].PlayerVetLabel, true);
+		AppendComponent(PlayerBoxes[Index].ReadyBox, True);
+		AppendComponent(PlayerBoxes[Index].PlayerBox, True);
+		AppendComponent(PlayerBoxes[Index].PlayerPerk, True);
+		AppendComponent(PlayerBoxes[Index].PlayerVetLabel, True);
 		
 		Top = (PlayerBoxes[Index].PlayerBox.WinTop+PlayerBoxes[Index].PlayerBox.WinHeight);
 		if ( !bMOTDHidden && Top >= ADBackground.WinTop )  {
@@ -121,8 +121,8 @@ function InitComponent(GUIController MyC, GUIComponent MyO)
 
 event Opened(GUIComponent Sender)
 {
-	bShouldUpdateVeterancy = true;
-	SetTimer(1,true);
+	bShouldUpdateVeterancy = True;
+	SetTimer(1,True);
 }
 
 function DrawPortrait()
@@ -163,7 +163,7 @@ function bool InternalOnPreDraw(Canvas C)
 	PC = PlayerOwner();
 
 	if ( PC == None || PC.Level == None ) // Error?
-		return false;
+		Return False;
 	
 	if ( (PC.PlayerReplicationInfo != None && (!PC.PlayerReplicationInfo.bWaitingPlayer || PC.PlayerReplicationInfo.bOnlySpectator)) 
 		 || PC.Outer.Name == 'Entry' )  {
@@ -349,7 +349,7 @@ function DrawPerk(Canvas Canvas)
 function bool ShowPerkMenu(GUIComponent Sender)
 {
 	if ( PlayerOwner() != None )
-		PlayerOwner().ClientOpenMenu("UnlimaginMod.UM_SRProfilePage", false);
+		PlayerOwner().ClientOpenMenu("UnlimaginMod.UM_SRProfilePage", False);
 		
 	Return True;
 }
@@ -374,7 +374,7 @@ defaultproperties
 		WinLeft=0.016090
 		WinWidth=0.971410
 		WinHeight=0.100000
-   		ToolTip=none
+   		ToolTip=None
 	End Object
 	t_ChatBox=UM_SRLobbyChat'UnlimaginMod.UM_SRLobbyMenu.ChatBox'
 

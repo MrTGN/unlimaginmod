@@ -155,15 +155,15 @@ simulated static function PreloadAssets(LevelInfo LevelInfo, optional KFShotgunF
 {
 	//[block] Loading Defaults
 	if ( default.FireSoundRef != "" )
-		default.FireSound = sound(DynamicLoadObject(default.FireSoundRef, class'Sound', true));
+		default.FireSound = sound(DynamicLoadObject(default.FireSoundRef, class'Sound', True));
 	
 	if ( LevelInfo.bLowSoundDetail || (default.StereoFireSoundRef == "" && default.StereoFireSound == None) )
 		default.StereoFireSound = default.FireSound;
 	else if ( default.StereoFireSoundRef != "" )
-		default.StereoFireSound = sound(DynamicLoadObject(default.StereoFireSoundRef, class'Sound', true));
+		default.StereoFireSound = sound(DynamicLoadObject(default.StereoFireSoundRef, class'Sound', True));
 	
 	if ( default.NoAmmoSoundRef != "" )
-		default.NoAmmoSound = sound(DynamicLoadObject(default.NoAmmoSoundRef, class'Sound', true));
+		default.NoAmmoSound = sound(DynamicLoadObject(default.NoAmmoSoundRef, class'Sound', True));
 	//[end]
 	
 	if ( Spawned != None )  {
@@ -532,21 +532,21 @@ simulated function DrawMuzzleFlash(Canvas Canvas)
 	if ( SmokeEmitters.Length > MuzzleNum && SmokeEmitters[MuzzleNum] != None )  {
         if ( !bAttachSmokeEmitter && SmokeEmitters[MuzzleNum].Base != Weapon )
 			SmokeEmitters[MuzzleNum].SetLocation( EffectStart );
-        Canvas.DrawActor( SmokeEmitters[MuzzleNum], false, false, Weapon.DisplayFOV );
+        Canvas.DrawActor( SmokeEmitters[MuzzleNum], False, False, Weapon.DisplayFOV );
     }
 	
 	if ( FlashEmitters.Length > MuzzleNum && FlashEmitters[MuzzleNum] != None )  {
         if ( !bAttachFlashEmitter && FlashEmitters[MuzzleNum].Base != Weapon )
 			FlashEmitters[MuzzleNum].SetLocation( EffectStart );
-		Canvas.DrawActor( FlashEmitters[MuzzleNum], false, false, Weapon.DisplayFOV );
+		Canvas.DrawActor( FlashEmitters[MuzzleNum], False, False, Weapon.DisplayFOV );
 	}
 	
     // Draw shell ejects
     if ( ShellEjectEmitters.Length > MuzzleNum && ShellEjectEmitters[MuzzleNum] != None )
-        Canvas.DrawActor( ShellEjectEmitters[MuzzleNum], false, false, Weapon.DisplayFOV );
+        Canvas.DrawActor( ShellEjectEmitters[MuzzleNum], False, False, Weapon.DisplayFOV );
 	// If this weapon have more than one muzzle, but only one ShellEjectBone and ShellEjectEmitter
 	else if ( ShellEjectEmitters.Length > 0 && ShellEjectEmitters[0] != None )
-		Canvas.DrawActor( ShellEjectEmitters[0], false, false, Weapon.DisplayFOV );
+		Canvas.DrawActor( ShellEjectEmitters[0], False, False, Weapon.DisplayFOV );
 }
 
 function FlashMuzzleFlash()
@@ -1068,7 +1068,7 @@ event ModeDoFire()
 		HoldTime = 0;	// if bot decides to stop firing, HoldTime must be reset first
 
 		if ( AIController(Instigator.Controller) != None )
-			AIController(Instigator.Controller).WeaponFireAgain(BotRefireRate, true);
+			AIController(Instigator.Controller).WeaponFireAgain(BotRefireRate, True);
 
 		Instigator.DeactivateSpawnProtection();
     }

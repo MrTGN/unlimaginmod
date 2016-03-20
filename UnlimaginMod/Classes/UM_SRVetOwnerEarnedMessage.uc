@@ -48,7 +48,7 @@ static function string GetString(
 	local string S;
 
 	if( Class<KFVeterancyTypes>(OptionalObject)==None )
-		return "";
+		Return "";
 	S = Default.EarnedString;
 	ReplaceText(S,"%v",Class<KFVeterancyTypes>(OptionalObject).Default.VeterancyName);
 	ReplaceText(S,"%l",string(Switch));
@@ -62,8 +62,8 @@ static function ClientReceive(
     optional PlayerReplicationInfo RelatedPRI_2,
     optional Object OptionalObject )
 {
-	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',true,2.f,SLOT_Talk);
-	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',true,2.f,SLOT_Interface);
+	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',True,2.f,SLOT_Talk);
+	P.ClientPlaySound(Sound'KF_InterfaceSnd.Perks.PerkAchieved',True,2.f,SLOT_Interface);
 
 	if ( UM_HUD(P.myHUD) != None 
 		 && KFPlayerReplicationInfo(P.PlayerReplicationInfo) != None && OptionalObject != None 
@@ -85,5 +85,5 @@ defaultproperties
 	DrawColor=(R=255,G=50,B=50,A=255)
 	EarnedString="You have qualified for %v level %l!"
 	bIsConsoleMessage=True
-	bComplexString=true
+	bComplexString=True
 }

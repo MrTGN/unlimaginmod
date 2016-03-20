@@ -13,14 +13,14 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( (B == None) || (B.Enemy == None) )
-		return AIRating;
+		Return AIRating;
 
-	return (AIRating + 0.0003 * FClamp(1500 - VSize(B.Enemy.Location - Instigator.Location),0,1000));
+	Return (AIRating + 0.0003 * FClamp(1500 - VSize(B.Enemy.Location - Instigator.Location),0,1000));
 }
 
 function byte BestMode()
 {
-    return 0;
+    Return 0;
 }
 
 defaultproperties

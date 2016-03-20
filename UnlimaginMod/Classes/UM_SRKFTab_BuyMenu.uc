@@ -32,7 +32,7 @@ function bool InternalOnClick(GUIComponent Sender)
 
 function UpdateAll()
 {
-	KFPlayerController(PlayerOwner()).bDoTraderUpdate = false;
+	KFPlayerController(PlayerOwner()).bDoTraderUpdate = False;
 	InvSelect.List.UpdateMyBuyables();
 	SaleSelect.List.UpdateForSaleBuyables();
 

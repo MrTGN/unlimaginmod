@@ -87,10 +87,10 @@ static function float GetTotalProgress( UM_ClientRepInfoLink StatOther, byte Cur
 		else 
 			RV += FClamp((float(V) / (float(R))), 0.f, 1.f);
 	}
-	return RV/float(rc);
+	Return RV/float(rc);
 }
 
-// Return true if this level is earned.
+// Return True if this level is earned.
 static function bool LevelIsFinished( UM_ClientRepInfoLink StatOther, byte CurLevel )
 {
 	local byte i,rc;
@@ -203,7 +203,7 @@ static final function string GetPercentStr( float InValue )
 }
 
 // This function is called for every weapon with and every perk every time trader menu is shown.
-// If returned false on any perk, weapon is hidden from the buyable list.
+// If returned False on any perk, weapon is hidden from the buyable list.
 static function bool AllowWeaponInTrader( class<KFWeaponPickup> Pickup, KFPlayerReplicationInfo KFPRI, byte Level )
 {
 	Return True;

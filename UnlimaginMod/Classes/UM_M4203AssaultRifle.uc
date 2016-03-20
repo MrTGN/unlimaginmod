@@ -19,7 +19,7 @@ class UM_M4203AssaultRifle extends UM_BaseAssaultRifle;
 
 simulated function bool CanZoomNow()
 {
-    return ( !FireMode[1].bIsFiring &&
+    Return ( !FireMode[1].bIsFiring &&
            ((FireMode[1].NextFireTime - FireMode[1].FireRate * 0.2) < Level.TimeSeconds + FireMode[1].PreFireTime));
 }
 

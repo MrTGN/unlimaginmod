@@ -36,7 +36,7 @@ function bool OnFooterClick(GUIComponent Sender)
 		//Kill Window and exit game/disconnect from server
 		LobbyMenu(PageOwner).bAllowClose = True;
 		GUIC.ViewportOwner.Console.ConsoleCommand("DISCONNECT");
-		PC.ClientCloseMenu(true, false);
+		PC.ClientCloseMenu(True, False);
 		GUIC.AutoLoadMenus();
 	}
 	else if ( Sender == b_Ready )  {
@@ -50,7 +50,7 @@ function bool OnFooterClick(GUIComponent Sender)
 				PC.ServerRestartPlayer();
 			// Hide Menu - Match has begun
 			if ( PC.Level.GRI.bMatchHasBegun )
-				PC.ClientCloseMenu(true, false);
+				PC.ClientCloseMenu(True, False);
 			// Change button name
 			b_Ready.Caption = UnreadyString;
 			// Unhide ViewMap button
@@ -69,13 +69,13 @@ function bool OnFooterClick(GUIComponent Sender)
 		}
 	}
 	else if ( Sender == b_Options )
-		PC.ClientOpenMenu("KFGUI.KFSettingsPage", false);
+		PC.ClientOpenMenu("KFGUI.KFSettingsPage", False);
 	else if ( Sender == b_Perks )
-		PC.ClientOpenMenu("UnlimaginMod.UM_SRInvasionLoginMenu", false);
+		PC.ClientOpenMenu("UnlimaginMod.UM_SRInvasionLoginMenu", False);
 	else if ( Sender == b_ViewMap && PC.PlayerReplicationInfo.bReadyToPlay )  {
 		// Spectate map while waiting for players to get ready
 		LobbyMenu(PageOwner).bAllowClose = True;
-		PC.ClientCloseMenu(true, false);
+		PC.ClientCloseMenu(True, False);
 	}
 	
 	Return False;

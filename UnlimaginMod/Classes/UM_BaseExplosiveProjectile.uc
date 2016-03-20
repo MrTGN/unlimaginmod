@@ -558,7 +558,7 @@ simulated function Explode( vector HitLocation, vector HitNormal )
 	if ( Role == ROLE_Authority )  {
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 		BlowUp(HitLocation);
-		//SetTimer(0.1, false);
+		//SetTimer(0.1, False);
 		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
 	}
 	
@@ -601,7 +601,7 @@ simulated function Disintegrate( vector HitLocation, vector HitNormal )
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
 		BlowUp(HitLocation);
-		//SetTimer(0.1, false);
+		//SetTimer(0.1, False);
 		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
 	}
 	

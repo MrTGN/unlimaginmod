@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieFleshPound_HALLOWEEN
-//	Parent class:	 UM_ZombieFleshPound
+//	Parent class:	 UM_BaseMonster_FleshPound
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:15
 //================================================================================
-class UM_ZombieFleshPound_HALLOWEEN extends UM_ZombieFleshPound;
+class UM_ZombieFleshPound_HALLOWEEN extends UM_BaseMonster_FleshPound;
 
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax

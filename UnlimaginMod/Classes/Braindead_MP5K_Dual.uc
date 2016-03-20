@@ -77,7 +77,7 @@ function UM_ServerChangeFireMode(bool bNewWaitForRelease, bool bNewSetToBurst)
 
 function bool RecommendLongRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 exec function SwitchModes()
@@ -91,9 +91,9 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( (B == None) || (B.Enemy == None) )
-		return AIRating;
+		Return AIRating;
 
-	return AIRating;
+	Return AIRating;
 }
 
 /**
@@ -128,7 +128,7 @@ simulated function ZoomIn(bool bAnimateTransition)
 simulated function ZoomOut(bool bAnimateTransition)
 {
     local float AnimLength, AnimSpeed;
-    super.ZoomOut(false);
+    super.ZoomOut(False);
 
     if( bAnimateTransition )
     {
@@ -148,17 +148,17 @@ simulated function ZoomOut(bool bAnimateTransition)
 
 function byte BestMode()
 {
-    return 0;
+    Return 0;
 }
 
 function bool RecommendRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 function float SuggestAttackStyle()
 {
-    return -0.7;
+    Return -0.7;
 }
 
 defaultproperties

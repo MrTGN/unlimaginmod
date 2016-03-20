@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieCrawler_XMas
-//	Parent class:	 UM_ZombieCrawler
+//	Parent class:	 UM_BaseMonster_Crawler
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 22:39
 //================================================================================
-class UM_ZombieCrawler_XMas extends UM_ZombieCrawler;
+class UM_ZombieCrawler_XMas extends UM_BaseMonster_Crawler;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 

@@ -397,7 +397,7 @@ simulated static function bool UnloadAssets()
 //simulated function used to Spawn trails on client side
 simulated function SpawnTrail()
 {
-	// Level.bDropDetail is true when frame rate is below DesiredFrameRate
+	// Level.bDropDetail is True when frame rate is below DesiredFrameRate
 	// DM_Low - is a low-detail Mode
 	if ( Level.NetMode != NM_DedicatedServer && !bTrailSpawned && !Level.bDropDetail
 		/* && Level.DetailMode != DM_Low */ && !PhysicsVolume.bWaterVolume )  {

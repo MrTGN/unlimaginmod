@@ -87,9 +87,9 @@ simulated static function PreloadAssets(optional KFWeaponAttachment Spawned)
 	local	int		i;
 	
 	if ( default.MeshRef != "" )
-		UpdateDefaultMesh( Mesh(DynamicLoadObject(default.MeshRef, class'Mesh', true)) );
+		UpdateDefaultMesh( Mesh(DynamicLoadObject(default.MeshRef, class'Mesh', True)) );
 	if ( default.AmbientSoundRef != "" )
-		default.AmbientSound = sound(DynamicLoadObject(default.AmbientSoundRef, class'Sound', true));
+		default.AmbientSound = sound(DynamicLoadObject(default.AmbientSoundRef, class'Sound', True));
 
 	for ( i = 0; i < default.SkinRefs.Length; ++i )  {
 		if ( default.SkinRefs[i] != "" )
@@ -234,11 +234,11 @@ simulated function WeaponLight()
 				PlayerController(Instigator.Controller) != None) )  {
 		if ( Instigator.IsFirstPerson() )  {
 			LitWeapon = Instigator.Weapon;
-			LitWeapon.bDynamicLight = true;
+			LitWeapon.bDynamicLight = True;
 		}
 		else
-			bDynamicLight = true;
-        SetTimer(0.15, false);
+			bDynamicLight = True;
+        SetTimer(0.15, False);
     }
     else
 		Timer();
@@ -402,7 +402,7 @@ simulated function EjectShell()
 
 
 // ThirdPersonEffects called by Pawn's C++ tick if FlashCount incremented
-// becomes true
+// becomes True
 // OR called locally for local player
 simulated event ThirdPersonEffects()
 {
@@ -418,10 +418,10 @@ simulated event ThirdPersonEffects()
 			if ( FiringMode == 1
 				 || (FireModeEffects[FiringMode].MeshNums.Length > MuzzleNums[FiringMode]
 					 && FireModeEffects[FiringMode].MeshNums[ MuzzleNums[FiringMode] ] == MN_Two) )
-				KFPawn(Instigator).StartFiringX(true, bRapidFire);
+				KFPawn(Instigator).StartFiringX(True, bRapidFire);
 			//FireAnim
 			else
-				KFPawn(Instigator).StartFiringX(false, bRapidFire);
+				KFPawn(Instigator).StartFiringX(False, bRapidFire);
 		}
 
 		if ( bDoFiringEffects )  {

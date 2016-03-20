@@ -94,18 +94,18 @@ exec function SwitchModes()
 
 function bool RecommendRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 
 function bool RecommendLongRangedAttack()
 {
-	return true;
+	Return True;
 }
 
 function float SuggestAttackStyle()
 {
-	return -1.0;
+	Return -1.0;
 }
 
 function float GetAIRating()
@@ -114,14 +114,14 @@ function float GetAIRating()
 
 	B = Bot(Instigator.Controller);
 	if ( (B == None) || (B.Enemy == None) )
-		return AIRating;
+		Return AIRating;
 
-	return AIRating;
+	Return AIRating;
 }
 
 function byte BestMode()
 {
-	return 0;
+	Return 0;
 }
 
 simulated function SetZoomBlendColor(Canvas c)

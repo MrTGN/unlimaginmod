@@ -31,21 +31,21 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 		NetUpdateTime = Level.TimeSeconds - 1;
 
 		if ( FireMode[Mode].AmmoPerFire > 0 && InventoryGroup > 0 && !bMeleeWeapon && bConsumesPhysicalAmmo &&
-			 (Ammo[0] == none || FireMode[0] == none || FireMode[0].AmmoPerFire <= 0 || Ammo[0].AmmoAmount < FireMode[0].AmmoPerFire) &&
-			 (Ammo[1] == none || FireMode[1] == none || FireMode[1].AmmoPerFire <= 0 || Ammo[1].AmmoAmount < FireMode[1].AmmoPerFire) )
+			 (Ammo[0] == None || FireMode[0] == None || FireMode[0].AmmoPerFire <= 0 || Ammo[0].AmmoAmount < FireMode[0].AmmoPerFire) &&
+			 (Ammo[1] == None || FireMode[1] == None || FireMode[1].AmmoPerFire <= 0 || Ammo[1].AmmoAmount < FireMode[1].AmmoPerFire) )
 		{
-			bOutOfAmmo = true;
+			bOutOfAmmo = True;
 
-			for ( Inv = Instigator.Inventory; Inv != none; Inv = Inv.Inventory )
+			for ( Inv = Instigator.Inventory; Inv != None; Inv = Inv.Inventory )
 			{
 				KFWeap = KFWeapon(Inv);
 
-				if ( Inv.InventoryGroup > 0 && KFWeap != none && !KFWeap.bMeleeWeapon && KFWeap.bConsumesPhysicalAmmo &&
-					 ((KFWeap.Ammo[0] != none && KFWeap.FireMode[0] != none && KFWeap.FireMode[0].AmmoPerFire > 0 &&KFWeap.Ammo[0].AmmoAmount >= KFWeap.FireMode[0].AmmoPerFire) ||
-					 (KFWeap.Ammo[1] != none && KFWeap.FireMode[1] != none && KFWeap.FireMode[1].AmmoPerFire > 0 && KFWeap.Ammo[1].AmmoAmount >= KFWeap.FireMode[1].AmmoPerFire)) )
+				if ( Inv.InventoryGroup > 0 && KFWeap != None && !KFWeap.bMeleeWeapon && KFWeap.bConsumesPhysicalAmmo &&
+					 ((KFWeap.Ammo[0] != None && KFWeap.FireMode[0] != None && KFWeap.FireMode[0].AmmoPerFire > 0 &&KFWeap.Ammo[0].AmmoAmount >= KFWeap.FireMode[0].AmmoPerFire) ||
+					 (KFWeap.Ammo[1] != None && KFWeap.FireMode[1] != None && KFWeap.FireMode[1].AmmoPerFire > 0 && KFWeap.Ammo[1].AmmoAmount >= KFWeap.FireMode[1].AmmoPerFire)) )
 				{
-					bOutOfAmmo = false;
-					break;
+					bOutOfAmmo = False;
+					Break;
 				}
 			}
 
@@ -55,9 +55,9 @@ simulated function bool ConsumeAmmo( int Mode, float Load, optional bool bAmount
 			}
 		}
 
-		return true;
+		Return True;
 	}
-	return false;
+	Return False;
 }
 
 defaultproperties

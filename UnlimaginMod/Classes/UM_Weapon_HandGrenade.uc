@@ -49,16 +49,16 @@ event Tick( float DeltaTime )
 				KFHumanPawn(Instigator).CurrentWeight += default.Weight;
 				if ( KFHumanPawn(Instigator).CurrentWeight > KFHumanPawn(Instigator).MaxCarryWeight )
 				{
-					for ( I = Instigator.Inventory; I != none; I = I.Inventory )
+					for ( I = Instigator.Inventory; I != None; I = I.Inventory )
 					{
-						if ( KFWeapon(I) != none && !KFWeapon(I).bKFNeverThrow &&
+						if ( KFWeapon(I) != None && !KFWeapon(I).bKFNeverThrow &&
 							 Knife(I) == None )
 						{
 							I.Velocity = Velocity;
 							I.DropFrom(Instigator.Location + VRand() * 10);
 							
 							if ( KFHumanPawn(Instigator).CurrentWeight <= KFHumanPawn(Instigator).MaxCarryWeight )
-								break; // Drop weapons until player is capable of carrying them all.
+								Break; // Drop weapons until player is capable of carrying them all.
 						}
 					}
 				}

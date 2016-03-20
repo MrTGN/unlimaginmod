@@ -1226,7 +1226,7 @@ function bool CanCarry( float Weight )
 }
 
 // Add Item to this pawn's inventory.
-// Returns true if successfully added, false if not.
+// Returns True if successfully added, False if not.
 function bool AddInventory( Inventory NewItem )
 {
 	if ( KFWeapon(NewItem) != None )  {
@@ -1340,7 +1340,7 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 	UpdateGroundSpeed();
 }
 
-// Returns true if this pawn is able to hold a weapon of the supplied type
+// Returns True if this pawn is able to hold a weapon of the supplied type
 simulated function bool AllowHoldWeapon( Weapon InWeapon )
 {
 	if ( UM_PlayerRepInfo != None )
@@ -1570,13 +1570,13 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 		 || (WClass==class'Magnum44Pistol' && HasWeaponClass(class'Dual44Magnum'))
 		 || (WClass==class'MK23Pistol' && HasWeaponClass(class'DualMK23Pistol'))
 		 || (WClass==class'Dualies' && HasWeaponClass(class'Single')) )
-			return; // Has the dual weapon.
+			Return; // Has the dual weapon.
 	}
 	else // Check for custom dual weapon mode
 	{
 		for ( I=Inventory; I!=None; I=I.Inventory )
 			if( Weapon(I)!=None && Weapon(I).DemoReplacement==WClass )
-				return;
+				Return;
 	}
 
 	Price = int(Price); // Truncuate price.
@@ -1585,9 +1585,9 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 		Return;
 
 	I = Spawn(WClass);
-	if ( I != none )
+	if ( I != None )
 	{
-		if ( KFGameType(Level.Game) != none )
+		if ( KFGameType(Level.Game) != None )
 			KFGameType(Level.Game).WeaponSpawned(I);
 
 		KFWeapon(I).UpdateMagCapacity(PlayerReplicationInfo);
@@ -1609,13 +1609,13 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	local Weapon NewWep;
 	local float Price;
 
-	if ( !CanBuyNow() || Class<KFWeapon>(WClass) == none || Class<KFWeaponPickup>(WClass.Default.PickupClass)==none
+	if ( !CanBuyNow() || Class<KFWeapon>(WClass) == None || Class<KFWeaponPickup>(WClass.Default.PickupClass)==None
 		|| Class<KFWeapon>(WClass).Default.bKFNeverThrow )  {
 		SetTraderUpdate();
 		Return;
 	}
 
-	for ( I = Inventory; I != none; I = I.Inventory )
+	for ( I = Inventory; I != None; I = I.Inventory )
 	{
 		if ( I.Class == WClass )
 		{
@@ -1656,9 +1656,9 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 			SetTraderUpdate();
 
-			if ( KFGameType(Level.Game)!=none )
+			if ( KFGameType(Level.Game)!=None )
 				KFGameType(Level.Game).WeaponDestroyed(WClass);
-			return;
+			Return;
 		}
 	}
 }
@@ -1971,7 +1971,7 @@ function PlayDamageEffects( int Damage, Pawn InstigatedBy, vector HitLocation, v
 		SetOverlayMaterial( DamageType.default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, False );
 }
 
-// Process the damaging and return the amount of taken damage
+// Process the damaging and Return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
 	local	Controller	Killer;
@@ -2029,7 +2029,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		Damage = ShieldAbsorb( Damage );
 	//[end]
 	
-	// Just return if this wouldn't even damage us.
+	// Just Return if this wouldn't even damage us.
 	if ( Damage < 1 )
 		Return 0;
 	
@@ -3037,4 +3037,6 @@ defaultproperties
 	 bNetNotify=False
 	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'
 	 JumpZ=330.000000
+	 //Mass=400.0
+	 Mass=220.0 // lb (фунт)
 }

@@ -21,30 +21,17 @@ state ZombieHunt
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
-		{
+		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != None )  {
 			// 25% chance of first player to see this Crawler saying something
-			if ( UM_InvasionGame(Level.Game) != None )
-			{
-				if ( !UM_InvasionGame(Level.Game).bDidSpottedCrawlerMessage && FRand() < 0.25 )
-				{
-					PlayerController(SeenPlayer.Controller).Speech('AUTO', 18, "");
-					UM_InvasionGame(Level.Game).bDidSpottedCrawlerMessage = true;
-				}
-			}
-			else if ( KFGameType(Level.Game) != None )
-			{
-				if ( !KFGameType(Level.Game).bDidSpottedCrawlerMessage && FRand() < 0.25 )
-				{
-					PlayerController(SeenPlayer.Controller).Speech('AUTO', 18, "");
-					KFGameType(Level.Game).bDidSpottedCrawlerMessage = true;
-				}
+			if ( KFGameType(Level.Game) != None && !KFGameType(Level.Game).bDidSpottedCrawlerMessage && FRand() < 0.25 )  {
+				PlayerController(SeenPlayer.Controller).Speech('AUTO', 18, "");
+				KFGameType(Level.Game).bDidSpottedCrawlerMessage = True;
 			}
 
-			bDoneSpottedCheck = true;
+			bDoneSpottedCheck = True;
 		}
 
-		super.SeePlayer(SeenPlayer);
+		Super.SeePlayer(SeenPlayer);
 	}
 }
 
@@ -52,32 +39,25 @@ function bool IsInPounceDist(actor PTarget)
 {
 	local vector DistVec;
 	local float time;
-
 	local float HeightMoved;
 	local float EndHeight;
 
 	//work out time needed to reach target
 
-	DistVec = pawn.location - PTarget.location;
-	DistVec.Z=0;
+	DistVec = Pawn.location - PTarget.location;
+	DistVec.Z = 0;
 
-	time = vsize(DistVec)/UM_ZombieCrawler(pawn).PounceSpeed;
-
+	time = vsize(DistVec) / UM_BaseMonster_Crawler(Pawn).PounceSpeed;
 	// vertical change in that time
-
 	//assumes downward grav only
-	HeightMoved = Pawn.JumpZ*time + 0.5*pawn.PhysicsVolume.Gravity.z*time*time;
-
-	EndHeight = pawn.Location.z +HeightMoved;
+	HeightMoved = Pawn.JumpZ * time + 0.5 * Pawn.PhysicsVolume.Gravity.z * time * time;
+	EndHeight = Pawn.Location.z + HeightMoved;
 
 	//log(Vsize(Pawn.Location - PTarget.Location));
-
-
-	if((abs(EndHeight - PTarget.Location.Z) < Pawn.CollisionHeight + PTarget.CollisionHeight) 
-		 && VSize(pawn.Location - PTarget.Location) < KFMonster(pawn).MeleeRange * 5)
-		return true;
+	if ( (abs(EndHeight - PTarget.Location.Z) < Pawn.CollisionHeight + PTarget.CollisionHeight) && VSize(Pawn.Location - PTarget.Location) < (KFMonster(Pawn).MeleeRange * 5.0) )
+		Return True;
 	else
-		return false;
+		Return False;
 }
 
 function bool FireWeaponAt(Actor A)
@@ -87,44 +67,35 @@ function bool FireWeaponAt(Actor A)
 
 	if ( A == None )
 		A = Enemy;
-	if ( (A == None) || (Focus != A) )
-		return false;
+	if ( A == None || Focus != A )
+		Return False;
 
-	if(CanAttack(A))
-	{
+	if ( CanAttack(A) )  {
 		Target = A;
 		Monster(Pawn).RangedAttack(Target);
 	}
-	else
-	{
-		//TODO - base off land time rather than launch time?
-		if((LastPounceTime + (4.5 - (FRand() * 3.0))) < Level.TimeSeconds )
-		{
-			aFacing=Normal(Vector(Pawn.Rotation));
-			// Get the vector from A to B
-			aToB=A.Location-Pawn.Location;
-
-			RelativeDir = aFacing dot aToB;
-			
-			//Facing enemy
-			if ( RelativeDir > 0.85 && IsInPounceDist(A) && UM_ZombieCrawler(Pawn).DoPounce()==true )
-				LastPounceTime = Level.TimeSeconds;
-		}
+	else if ( (LastPounceTime + (4.5 - FRand() * 3.0)) < Level.TimeSeconds )  {
+		aFacing = Normal(Vector(Pawn.Rotation));
+		// Get the vector from A to B
+		aToB = A.Location - Pawn.Location;
+		RelativeDir = aFacing dot aToB;
+		//Facing enemy
+		if ( RelativeDir > 0.85 && IsInPounceDist(A) && UM_BaseMonster_Crawler(Pawn).DoPounce() )
+			LastPounceTime = Level.TimeSeconds;
 	}
 
-	return false;
+	Return False;
 }
 
 function bool NotifyLanded(vector HitNormal)
 {
-	if( UM_ZombieCrawler(pawn).bPouncing )
-	{
+	if ( UM_BaseMonster_Crawler(Pawn).bPouncing )  {
 		// restart pathfinding from landing location
 		GotoState('hunting');
-		return false;
+		Return False;
 	}
 	else
-		return super.NotifyLanded(HitNormal);
+		Return Super.NotifyLanded(HitNormal);
 }
 
 defaultproperties

@@ -20,7 +20,7 @@ class UM_BaseShotgunFire extends UM_BaseProjectileWeaponFire
 
 
 // Calculate modifications to spread
-// Shotguns doesn't have any spread bonuses, just return incoming Spread
+// Shotguns doesn't have any spread bonuses, just Return incoming Spread
 function float UpdateSpread(float NewSpread)
 {
 	Return NewSpread;

@@ -17,28 +17,187 @@ class UM_BaseMonster_Crawler extends UM_BaseMonster
 
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 
-var() float PounceSpeed;
-var bool bPouncing;
+//========================================================================
+//[block] Variables
 
-var(Anims)		name				MeleeAirAnims[3]; // Attack anims for when flying through the air
+var()			float						PounceSpeed;
+var				bool						bPouncing;
 
-var				bool				bPoisonous;
-var				float				PoisonousChance;
-var(Display)	Material			PoisonousMaterial;
+var(Anims)		name						MeleeAirAnims[3]; // Attack anims for when flying through the air
+
+var				bool						bPoisonous;
+var				float						PoisonousChance;
+var(Display)	Material					PoisonousMaterial;
 var				class<DamTypeZombieAttack>	PoisonDamageType;
-var				range				PoisonDamageRandRange;
+var				range						PoisonDamageRandRange;
 
+//[end] Varibles
+//====================================================================
+
+//========================================================================
+//[block] Replication
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetInitial )
 		bPoisonous;
 }
 
-//-------------------------------------------------------------------------------
-// NOTE: All Code resides in the child class(this class was only created to
-//         eliminate hitching caused by loading default properties during play)
-//-------------------------------------------------------------------------------
+//[end] Replication
+//====================================================================
+
+//========================================================================
+//[block] Functions
+
+simulated event PostBeginPlay()
+{
+	// Randomizing PounceSpeed
+	if ( Level.Game != None && !bDiffAdjusted )
+		PounceSpeed *= Lerp( FRand(), 0.9, 1.1 );
+	
+	Super.PostBeginPlay();
+	
+	// Server only next
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	if ( FRand() <= PoisonousChance )  {
+		bPoisonous = True;
+		CurrentDamtype = PoisonDamageType;
+		PoisonDamageRandRange.Min *= DifficultyDamageModifer();
+		PoisonDamageRandRange.Max *= DifficultyDamageModifer();
+		SetOverlayMaterial(PoisonousMaterial, 1800.0, False); // 30 minutes
+	}
+	else
+		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+}
+
+simulated event PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+	
+	if ( bPoisonous )
+		MenuName = "Poisonous" @ MenuName;
+}
+
+function bool DoPounce()
+{
+	if ( bZapped || bIsCrouched || bWantsToCrouch || Physics != PHYS_Walking || 
+		 VSize(Location - Controller.Target.Location) > (MeleeRange * 5.0) )
+		Return False;
+
+	bPouncing = True;
+	Velocity = Normal(Controller.Target.Location - Location) * PounceSpeed;
+	Velocity.Z = JumpZ;
+	SetPhysics(PHYS_Falling);
+	ZombieSpringAnim();
+	
+	Return True;
+}
+
+simulated function ZombieSpringAnim()
+{
+	SetAnimAction('ZombieSpring');
+}
+
+event Landed(vector HitNormal)
+{
+	Super.Landed(HitNormal);
+	bPouncing = False;
+}
+
+event Bump(actor Other)
+{
+	if ( bPouncing && KFHumanPawn(Other) != None )  {
+		if ( bPoisonous )
+			KFHumanPawn(Other).TakeDamage( Lerp(FRand(), PoisonDamageRandRange.Min, PoisonDamageRandRange.Max), self, Location, Velocity, PoisonDamageType );
+		else if ( CurrentDamtype != None )
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
+		else
+			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(ArrayCount(ZombieDamType))] );
+		//TODO - move this to humanpawn.takedamage? Also see KFMonster.MeleeDamageTarget
+		if ( KFHumanPawn(Other).Health <= 0 )
+			KFHumanPawn(Other).SpawnGibs(Rotation, 1);
+		//After impact, there'll be no momentum for further bumps
+		bPouncing = True;
+	}
+}
+
+// Blend his attacks so he can hit you in mid air.
+simulated function int DoAnimAction( name AnimName )
+{
+    if ( AnimName == 'InAir_Attack1' || AnimName == 'InAir_Attack2' )  {
+		AnimBlendParams(1, 1.0, 0.0,, FireRootBone);
+		PlayAnim(AnimName,, 0.0, 1);
+		Return 1;
+	}
+	
+    if ( AnimName == 'HitF' )  {
+		AnimBlendParams(1, 1.0, 0.0,, NeckBone);
+		PlayAnim(AnimName,, 0.0, 1);
+		Return 1;
+	}
+
+	if ( AnimName == 'ZombieSpring' )  {
+        PlayAnim(AnimName,,0.02);
+        Return 0;
+	}
+
+	Return Super.DoAnimAction(AnimName);
+}
+
+simulated event SetAnimAction(name NewAction)
+{
+	if ( NewAction == '' )
+		Return;
+
+	if ( NewAction == 'DoorBash' )  {
+		if ( bPoisonous )
+			CurrentDamtype = PoisonDamageType;
+		else
+			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+	}
+	else if ( NewAction == 'Claw' )  {
+		if ( bPoisonous )
+			CurrentDamtype = PoisonDamageType;
+		else
+			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
+		if ( Physics == PHYS_Falling )
+			NewAction = MeleeAirAnims[Rand(ArrayCount(MeleeAirAnims))];
+		else
+			NewAction = MeleeAnims[Rand(ArrayCount(MeleeAnims))];
+	}
+	
+	ExpectingChannel = DoAnimAction(NewAction);
+
+	if ( AnimNeedsWait(NewAction) )
+		bWaitForAnim = True;
+	else
+		bWaitForAnim = False;
+
+	if ( Level.NetMode != NM_Client )  {
+		AnimAction = NewAction;
+		bResetAnimAct = True;
+		ResetAnimActTime = Level.TimeSeconds + 0.3;
+	}
+}
+
+// The animation is full body and should set the bWaitForAnim flag
+simulated function bool AnimNeedsWait(name TestAnim)
+{
+    if ( TestAnim == 'ZombieSpring' || TestAnim == 'DoorBash' )
+        Return True;
+
+    Return True;
+}
+
+function bool FlipOver()
+{
+	Return False;
+}
+
+//[end] Functions
+//====================================================================
 
 defaultproperties
 {
@@ -71,7 +230,6 @@ defaultproperties
      HitAnims(0)="HitF"
      HitAnims(1)="HitF"
 	 HitAnims(2)="HitF"
-     MoanVoice=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Talk'
      KFHitFront="HitF"
      KFHitBack="HitF"
      KFHitLeft="HitF"
@@ -82,20 +240,12 @@ defaultproperties
      MeleeDamage=6
      damageForce=5000
      KFRagdollName="Crawler_Trip"
-     MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_HitPlayer'
-     JumpSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Jump'
      CrispUpThreshhold=10
      Intelligence=BRAINS_Mammal
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.850000
      SeveredHeadAttachScale=1.100000
      MotionDetectorThreat=0.340000
-     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Death'
-     ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
      ScoringValue=10
      IdleHeavyAnim="ZombieLeapIdle"
      IdleRifleAnim="ZombieLeapIdle"
@@ -103,8 +253,6 @@ defaultproperties
      GroundSpeed=140.000000
      WaterSpeed=130.000000
      JumpZ=350.000000
-     HealthMax=70.000000
-     Health=70
      HeadHeight=2.500000
      HeadScale=1.050000
      MenuName="Crawler"
@@ -135,33 +283,13 @@ defaultproperties
      IdleWeaponAnim="ZombieLeapIdle"
      IdleRestAnim="ZombieLeapIdle"
      bOrientOnSlope=True
-     AmbientSound=Sound'KF_BaseCrawler.Crawler_Idle'
-     
-	 Skins(0)=Combiner'KF_Specimens_Trip_T.crawler_cmb'
-	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
 	 
-	 MeshTestCollisionHeight=20.0
-	 MeshTestCollisionRadius=36.0
-	 
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionHeight=27.0
-	 //CollisionRadius=52.0
-	 
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
-	 CollisionHeight=22.0
-	 CollisionRadius=39.6
-	 
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.4,AreaHeight=7.5,AreaSizeScale=1.05,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
-	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=20.0,AreaImpactStrength=6.6)
-	 BaseEyeHeight=8.0
-	 EyeHeight=8.0
-	 // DrawScale
-	 DrawScale=1.100000
-	 
-	 //OnlineHeadshotOffset=(X=28.000000,Z=7.000000)
-	 OnlineHeadshotOffset=(X=30.000000,Z=5.000000)
-     OnlineHeadshotScale=1.200000
+	 HealthMax=70.0
+	 Health=70
+	 HeadHealth=25.0
+	 //PlayerCountHealthScale=0.0
+     PlayerCountHealthScale=0.0
+	 //PlayerNumHeadHealthScale=0.0
+	 PlayerNumHeadHealthScale=0.0
+	 Mass=100.000000
 }

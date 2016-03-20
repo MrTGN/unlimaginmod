@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieCrawler_HALLOWEEN
-//	Parent class:	 UM_ZombieCrawler
+//	Parent class:	 UM_BaseMonster_Crawler
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:14
 //================================================================================
-class UM_ZombieCrawler_HALLOWEEN extends UM_ZombieCrawler;
+class UM_ZombieCrawler_HALLOWEEN extends UM_BaseMonster_Crawler;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 
@@ -36,7 +36,7 @@ simulated function HideBone(name boneName)
 	}
 	else if ( boneName == LeftFArmBone )  {
 		boneScaleSlot = 3;
-		bValidBoneToHide = true;
+		bValidBoneToHide = True;
 		if ( SeveredLeftArm == None )  {
 			SeveredLeftArm = Spawn(SeveredArmAttachClass,self);
 			SeveredLeftArm.SetDrawScale(SeveredArmAttachScale);
@@ -47,8 +47,8 @@ simulated function HideBone(name boneName)
 	}
 	else if ( boneName == HeadBone )  {
 		// Only scale the bone down once
-		if ( SeveredHead == none )  {
-			bValidBoneToHide = true;
+		if ( SeveredHead == None )  {
+			bValidBoneToHide = True;
 			boneScaleSlot = 4;
 			SeveredHead = Spawn(SeveredHeadAttachClass,self);
 			SeveredHead.SetDrawScale(SeveredHeadAttachScale);
@@ -60,7 +60,7 @@ simulated function HideBone(name boneName)
 			Return;
 	}
 	else if ( boneName == 'spine' )  {
-	    bValidBoneToHide = true;
+	    bValidBoneToHide = True;
 		boneScaleSlot = 5;
 	}
 

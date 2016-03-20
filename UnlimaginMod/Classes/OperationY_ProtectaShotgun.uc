@@ -4,7 +4,7 @@ class OperationY_ProtectaShotgun extends UM_BaseShotgun;
 
 function byte BestMode()
 {
-	return 0;
+	Return 0;
 }
 
 simulated function BringUp(optional Weapon PrevWeapon)
@@ -17,7 +17,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	// Hint check
 	Player = KFPlayerController(Instigator.Controller);
 
-	if ( Player != none && ClientGrenadeState != GN_BringUp )
+	if ( Player != None && ClientGrenadeState != GN_BringUp )
 	{
 		if ( class == class'OperationY_ProtectaShotgun' )
 		{
@@ -25,21 +25,21 @@ simulated function BringUp(optional Weapon PrevWeapon)
 			Player.WeaponPulloutRemark(23);
 		}
 
-		bShowPullOutHint = true;
+		bShowPullOutHint = True;
 	}
 
-	if ( KFHumanPawn(Instigator) != none )
-		KFHumanPawn(Instigator).SetAiming(false);
+	if ( KFHumanPawn(Instigator) != None )
+		KFHumanPawn(Instigator).SetAiming(False);
 
-	bAimingRifle = false;
-	bIsReloading = false;
+	bAimingRifle = False;
+	bIsReloading = False;
 	IdleAnim = default.IdleAnim;
 	//Super.BringUp(PrevWeapon);
 
 	// From Weapon.uc
     if ( ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )
 	{
-		PlayOwnedSound(SelectSound, SLOT_Interact,,,,, false);
+		PlayOwnedSound(SelectSound, SLOT_Interact,,,,, False);
 		ClientPlayForceFeedback(SelectForce);  // jdf
 
 		if ( Instigator.IsLocallyControlled() )
@@ -61,21 +61,21 @@ simulated function BringUp(optional Weapon PrevWeapon)
         if( ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )
 		{
 			ClientGrenadeState = GN_None;
-			SetTimer(QuickBringUpTime, false);
+			SetTimer(QuickBringUpTime, False);
 		}
 		else
 		{
-			SetTimer(BringUpTime, false);
+			SetTimer(BringUpTime, False);
 		}
 	}
 
 	for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
 	{
-		FireMode[Mode].bIsFiring = false;
+		FireMode[Mode].bIsFiring = False;
 		FireMode[Mode].HoldTime = 0.0;
-		FireMode[Mode].bServerDelayStartFire = false;
-		FireMode[Mode].bServerDelayStopFire = false;
-		FireMode[Mode].bInstantStop = false;
+		FireMode[Mode].bServerDelayStartFire = False;
+		FireMode[Mode].bServerDelayStopFire = False;
+		FireMode[Mode].bInstantStop = False;
 	}
 
 	if ( (PrevWeapon != None) && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch )

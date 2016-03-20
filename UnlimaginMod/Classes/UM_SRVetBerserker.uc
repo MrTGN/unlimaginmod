@@ -22,40 +22,40 @@ static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int 
 		case 0:
 			// FinalInt = 10000;
 			FinalInt = 0;
-			break;
+			Break;
 		case 1:
 			FinalInt = 150000;
-			break;
+			Break;
 		case 2:
 			FinalInt = 600000;
-			break;
+			Break;
 		case 3:
 			FinalInt = 1350000;
-			break;
+			Break;
 		case 4:
 			FinalInt = 2400000;
-			break;
+			Break;
 		case 5:
 			FinalInt = 3750000;
-			break;
+			Break;
 		case 6:
 			FinalInt = 5400000;
-			break;
+			Break;
 		case 7:
 			FinalInt = 7350000;
-			break;
+			Break;
 		case 8:
 			FinalInt = 9600000;
-			break;
+			Break;
 		case 9:
 			FinalInt = 12150000;
-			break;
+			Break;
 		case 10:
 			FinalInt = 15000000;
-			break;
+			Break;
 		default:
 			FinalInt = (50000 * (CurLevel + 1)) + ((CurLevel - 1) * 250000 + 50000) + (50000 * CurLevel) + ((CurLevel - 2) * 250000 + 50000);
-			break;
+			Break;
 		/*default:
 			FinalInt = 5500000+GetDoubleScaling(CurLevel,500000);*/
 	}
@@ -75,7 +75,7 @@ static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, 
 {
 	local float ret;
 
-	if ( DmgType == Class'UM_DamTypeM79BouncingBall' || (class<KFWeaponDamageType>(DmgType) != none && class<KFWeaponDamageType>(DmgType).default.bIsMeleeDamage) )  {
+	if ( DmgType == Class'UM_DamTypeM79BouncingBall' || (class<KFWeaponDamageType>(DmgType) != None && class<KFWeaponDamageType>(DmgType).default.bIsMeleeDamage) )  {
 		if ( KFPRI.ClientVeteranSkillLevel == 0 )
 			ret = float(InDamage) * 1.10;
 		// Up to 100% increase in Melee Damage
@@ -96,7 +96,7 @@ static function float GetOverhealedHealthMaxModifier( UM_PlayerReplicationInfo P
 
 static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Other)
 {
-	if ( (KFMeleeGun(Other) != none || Crossbuzzsaw(Other) != none)
+	if ( (KFMeleeGun(Other) != None || Crossbuzzsaw(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.04 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 40% melee FireSpeed
 
@@ -135,7 +135,7 @@ static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI,
 	Return 1.0 - 0.06 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 65% reduced Bloat Bile damage
 }
 
-// Added in Balance Round 1(returned false then, by accident, fixed in Balance Round 2)
+// Added in Balance Round 1(returned False then, by accident, fixed in Balance Round 2)
 static function bool CanMeleeStun()
 {
 	Return True;
@@ -188,7 +188,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
 	ReplaceText(S,"%r",GetPercentStr(0.7 + 0.05*float(Level)));
 	ReplaceText(S,"%l",GetPercentStr(FMin(0.05*float(Level),0.65f)));
-	return S;
+	Return S;
 }
 
 // Projectile Penetration Bonus

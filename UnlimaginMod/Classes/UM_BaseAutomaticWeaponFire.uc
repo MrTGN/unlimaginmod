@@ -64,15 +64,15 @@ simulated static function PreloadAssets(LevelInfo LevelInfo, optional KFShotgunF
 	if ( default.bHighRateOfFire )  {
 		//[block] Loading Defaults
 		if ( default.FireEndSoundRef != "" )
-			default.FireEndSound = sound(DynamicLoadObject(default.FireEndSoundRef, class'sound', true));
+			default.FireEndSound = sound(DynamicLoadObject(default.FireEndSoundRef, class'sound', True));
 
 		if ( LevelInfo.bLowSoundDetail || (default.FireEndStereoSoundRef == "" && default.FireEndStereoSound == None) )
 			default.FireEndStereoSound = default.FireEndSound;
 		else if ( default.FireEndStereoSoundRef != "" )
-			default.FireEndStereoSound = sound(DynamicLoadObject(default.FireEndStereoSoundRef, class'Sound', true));
+			default.FireEndStereoSound = sound(DynamicLoadObject(default.FireEndStereoSoundRef, class'Sound', True));
 
 		if ( default.AmbientFireSoundRef != "" )
-			default.AmbientFireSound = sound(DynamicLoadObject(default.AmbientFireSoundRef, class'sound', true));
+			default.AmbientFireSound = sound(DynamicLoadObject(default.AmbientFireSoundRef, class'sound', True));
 				
 		if ( UM_BaseAutomaticWeaponFire(Spawned) != None )   {
 			if ( default.FireEndSound != None )
@@ -326,7 +326,7 @@ state FireLoop
 		
 		if ( Weapon.Instigator != None && Weapon.Instigator.IsLocallyControlled() &&
 			 Weapon.Instigator.IsFirstPerson() && StereoFireSound != None )
-			Weapon.PlayOwnedSound(FireEndStereoSound, SLOT_None, (AmbientFireVolume / 127),, AmbientFireSoundRadius,, false);
+			Weapon.PlayOwnedSound(FireEndStereoSound, SLOT_None, (AmbientFireVolume / 127),, AmbientFireSoundRadius,, False);
 		else
 			Weapon.PlayOwnedSound(FireEndSound, SLOT_None, (AmbientFireVolume / 127),, AmbientFireSoundRadius);
 			

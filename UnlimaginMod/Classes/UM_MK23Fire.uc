@@ -23,7 +23,7 @@ var		bool	bBursting;
 event ModeDoFire()
 {
 	//[block] Switching DamageType for the Firebug
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none )
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 	{
 		// -- Switching DamageType for the Firebug --
 		if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )
@@ -41,20 +41,20 @@ event ModeDoFire()
 			RoundsToFire--;
 			if ( RoundsToFire < 1 )
 			{
-				SetTimer(0, false);
+				SetTimer(0, False);
 				RoundsToFire = 0;
-				bBursting = false;
+				bBursting = False;
 				Return;
 			}
 		}
 		else if ( !bBursting && AllowFire() ) //If not already firing, start a burst.
 		{
-			bBursting = true;
+			bBursting = True;
 			if (KFWeapon(Weapon).MagAmmoRemaining >= Burstlength)
 				RoundsToFire = BurstLength;
 			else
 				RoundsToFire = KFWeapon(Weapon).MagAmmoRemaining;
-			SetTimer(Burstrate, true);
+			SetTimer(Burstrate, True);
 		}
 	}
 	
@@ -65,7 +65,7 @@ simulated event Timer()
 {
 	if (bBursting)
 		ModeDoFire();
-	else SetTimer(0, false);
+	else SetTimer(0, False);
 }
 
 defaultproperties

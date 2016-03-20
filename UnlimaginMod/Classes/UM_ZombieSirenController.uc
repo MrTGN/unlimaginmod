@@ -20,7 +20,7 @@ state ZombieHunt
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
+		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != None )
 		{
 			// 25% chance of first player to see this Siren saying something
 			if ( UM_InvasionGame(Level.Game) != None )
@@ -28,7 +28,7 @@ state ZombieHunt
 				if ( !UM_InvasionGame(Level.Game).bDidSpottedSirenMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 15, "");
-					UM_InvasionGame(Level.Game).bDidSpottedSirenMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedSirenMessage = True;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )
@@ -36,11 +36,11 @@ state ZombieHunt
 				if ( !KFGameType(Level.Game).bDidSpottedSirenMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 15, "");
-					KFGameType(Level.Game).bDidSpottedSirenMessage = true;
+					KFGameType(Level.Game).bDidSpottedSirenMessage = True;
 				}
 			}
 
-			bDoneSpottedCheck = true;
+			bDoneSpottedCheck = True;
 		}
 
 		super.SeePlayer(SeenPlayer);

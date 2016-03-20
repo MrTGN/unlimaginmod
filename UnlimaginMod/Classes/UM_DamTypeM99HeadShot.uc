@@ -17,13 +17,8 @@ class UM_DamTypeM99HeadShot extends UM_DamTypeM99SniperRifle
 
 /*static function AwardKill(KFSteamStatsAndAchievements KFStatsAndAchievements, KFPlayerController Killer, KFMonster Killed )
 {
-	if ( KFStatsAndAchievements != none )
-	{
-		if ( Killed.IsA('ZombieScrake') || Killed.IsA('UM_ZombieScrake'))
-		{
-			KFStatsAndAchievements.AddM99Kill();
-		}
-	}
+	if ( KFStatsAndAchievements != None && UM_BaseMonster_Scrake(Killed) != None )
+		KFStatsAndAchievements.AddM99Kill();
 }*/
 
 defaultproperties

@@ -19,7 +19,7 @@ class UM_BaseGrenadeLauncherFire extends UM_BaseProjectileWeaponFire
 
 
 // Calculate modifications to spread
-// GrenadeLaunchers doesn't have any spread bonuses, just return incoming Spread
+// GrenadeLaunchers doesn't have any spread bonuses, just Return incoming Spread
 function float UpdateSpread(float NewSpread)
 {
 	Return NewSpread;

@@ -149,7 +149,7 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
         }
 	}
 
-	bHurtEntry = false;
+	bHurtEntry = False;
 }
 
 event Timer()

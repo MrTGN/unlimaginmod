@@ -39,11 +39,11 @@ static function bool UnloadAssets()
 {
 	if ( super.UnloadAssets() )
 	{
-		default.SelectSound = none;
-		default.FireModeSwitchSound = none;
+		default.SelectSound = None;
+		default.FireModeSwitchSound = None;
 	}
 
-	return true;
+	Return True;
 }
 //[end]
 
@@ -61,7 +61,7 @@ simulated function DoToggle ()
 	Player = Level.GetLocalPlayerController();
 	if ( Player!=None )
 	{
-		PlayOwnedSound(FireModeSwitchSound,SLOT_None,2.2,,,,false);
+		PlayOwnedSound(FireModeSwitchSound,SLOT_None,2.2,,,,False);
 		UM_DualMK23Fire(FireMode[0]).bSetToBurst = !UM_DualMK23Fire(FireMode[0]).bSetToBurst;
 		if ( UM_DualMK23Fire(FireMode[0]).bSetToBurst )
 			Player.ReceiveLocalizedMessage(class'UnlimaginMod.UM_MK23SwitchMessage',0);
@@ -87,16 +87,16 @@ function bool HandlePickupQuery( pickup Item )
 {
 	if ( Item.InventoryType==Class'UM_MK23Pistol' )
 	{
-		if( LastHasGunMsgTime < Level.TimeSeconds && PlayerController(Instigator.Controller) != none )
+		if( LastHasGunMsgTime < Level.TimeSeconds && PlayerController(Instigator.Controller) != None )
 		{
 			LastHasGunMsgTime = Level.TimeSeconds + 0.5;
 			PlayerController(Instigator.Controller).ReceiveLocalizedMessage(Class'KFMainMessages', 1);
 		}
 
-		return True;
+		Return True;
 	}
 
-	return Super(Dualies).HandlePickupQuery(Item);
+	Return Super(Dualies).HandlePickupQuery(Item);
 }
 
 function GiveTo( pawn Other, optional Pickup Pickup )
@@ -109,16 +109,16 @@ function GiveTo( pawn Other, optional Pickup Pickup )
 
 	For( I = Other.Inventory; I != None; I =I.Inventory )
 	{
-		if ( UM_MK23Pistol(I) != none )
+		if ( UM_MK23Pistol(I) != None )
 		{
-			if( WeaponPickup(Pickup)!= none )
+			if( WeaponPickup(Pickup)!= None )
 			{
 				WeaponPickup(Pickup).AmmoAmount[0] += Weapon(I).AmmoAmount(0);
 			}
 			else
 			{
 				OldAmmo = Weapon(I).AmmoAmount(0);
-				bNoPickup = true;
+				bNoPickup = True;
 			}
 
 			MagAmmoRemaining = UM_MK23Pistol(I).MagAmmoRemaining;
@@ -156,7 +156,7 @@ function DropFrom(vector StartLocation)
 	local int AmmoThrown, OtherAmmo;
 
 	if( !bCanThrow )
-		return;
+		Return;
 
 	AmmoThrown = AmmoAmount(0);
 	ClientWeaponThrown();
@@ -191,7 +191,7 @@ function DropFrom(vector StartLocation)
 		if( KFWeaponPickup(Pickup)!=None )
 			KFWeaponPickup(Pickup).MagAmmoRemaining = MagAmmoRemaining;
 		if (Instigator.Health > 0)
-			WeaponPickup(Pickup).bThrown = true;
+			WeaponPickup(Pickup).bThrown = True;
 	}
 
     Destroyed();
@@ -202,10 +202,10 @@ simulated function bool PutDown()
 {
 	if ( Instigator.PendingWeapon.class == class'UM_MK23Pistol' )
 	{
-		bIsReloading = false;
+		bIsReloading = False;
 	}
 
-	return Super(Dualies).PutDown();
+	Return Super(Dualies).PutDown();
 }
 
 defaultproperties

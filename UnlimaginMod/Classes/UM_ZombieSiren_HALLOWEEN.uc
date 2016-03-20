@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieSiren_HALLOWEEN
-//	Parent class:	 UM_ZombieSiren
+//	Parent class:	 UM_BaseMonster_Siren
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:18
 //================================================================================
-class UM_ZombieSiren_HALLOWEEN extends UM_ZombieSiren;
+class UM_ZombieSiren_HALLOWEEN extends UM_BaseMonster_Siren;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 

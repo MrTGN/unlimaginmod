@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieStalker_HALLOWEEN
-//	Parent class:	 UM_ZombieStalker
+//	Parent class:	 UM_BaseMonster_Stalker
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:08
 //================================================================================
-class UM_ZombieStalker_HALLOWEEN extends UM_ZombieStalker;
+class UM_ZombieStalker_HALLOWEEN extends UM_BaseMonster_Stalker;
 
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
@@ -34,7 +34,7 @@ simulated event Tick( float DeltaTime )
 			 && VSizeSquared(Location - LocalKFHumanPawn.Location) < (LocalKFHumanPawn.GetStalkerViewDistanceMulti() * 640000.0) ) // 640000 = 800 Units
 			bSpotted = True;
 		else
-			bSpotted = false;
+			bSpotted = False;
 
 		if ( !bSpotted && !bCloaked && Skins[0] != Combiner'KF_Specimens_Trip_HALLOWEEN_T.stalker.stalker_RedneckZombie_CMB' )
 			UncloakStalker();
@@ -86,7 +86,7 @@ simulated function CloakStalker()
 		// Remove/disallow projectors on invisible people
 		Projectors.Remove(0, Projectors.Length);
 		bAcceptsProjectors = False;
-		SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, true);
+		SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
 	}
 }
 
@@ -102,7 +102,7 @@ simulated function UnCloakStalker()
 		if ( KFGameType(Level.Game) != None && Level.NetMode != NM_Client && !KFGameType(Level.Game).bDidStalkerInvisibleMessage 
 			 && FRand() < 0.25 && Controller.Enemy != None && PlayerController(Controller.Enemy.Controller) != None )  {
 				PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
-				KFGameType(Level.Game).bDidStalkerInvisibleMessage = true;
+				KFGameType(Level.Game).bDidStalkerInvisibleMessage = True;
 		}
 		
 		if ( Level.NetMode == NM_DedicatedServer )
@@ -113,10 +113,10 @@ simulated function UnCloakStalker()
             Skins[1] = Combiner'KF_Specimens_Trip_HALLOWEEN_T.stalker.stalker_RedneckZombie_CMB';
 
 			if ( PlayerShadow != None )
-				PlayerShadow.bShadowActive = true;
+				PlayerShadow.bShadowActive = True;
 
-			bAcceptsProjectors = true;
-			SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, true);
+			bAcceptsProjectors = True;
+			SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
 		}
 	}
 }

@@ -66,10 +66,10 @@ static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWe
 {
 	if ( UM_BaseGrenadeLauncher(Other) != None )
 		Return 1.00 + (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 40% faster reload speed
-	else if ( LAW(Other) != none && KFPRI.ClientVeteranSkillLevel > 0 )
+	else if ( LAW(Other) != None && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 60% faster reload speed LAW
-	else if ( (M79GrenadeLauncher(Other) != none || M32GrenadeLauncher(Other) != none ||
-			 GoldenM79GrenadeLauncher(Other) != none) && KFPRI.ClientVeteranSkillLevel > 0 )
+	else if ( (M79GrenadeLauncher(Other) != None || M32GrenadeLauncher(Other) != None ||
+			 GoldenM79GrenadeLauncher(Other) != None) && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.04 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 40% faster reload speed M4203/M79/M32
 	
 	Return 1.00;
@@ -108,11 +108,11 @@ static function float AddExtraAmmoFor(KFPlayerReplicationInfo KFPRI, Class<Ammun
 
 static function int AddDamage(KFPlayerReplicationInfo KFPRI, KFMonster Injured, KFPawn Instigator, int InDamage, class<DamageType> DmgType)
 {
-	if ( class<DamTypeFrag>(DmgType) != none || class<DamTypePipeBomb>(DmgType) != none ||
-		 class<DamTypeM79Grenade>(DmgType) != none || class<DamTypeM32Grenade>(DmgType) != none ||
-		 class<DamTypeM203Grenade>(DmgType) != none || class<DamTypeRocketImpact>(DmgType) != none ||
+	if ( class<DamTypeFrag>(DmgType) != None || class<DamTypePipeBomb>(DmgType) != None ||
+		 class<DamTypeM79Grenade>(DmgType) != None || class<DamTypeM32Grenade>(DmgType) != None ||
+		 class<DamTypeM203Grenade>(DmgType) != None || class<DamTypeRocketImpact>(DmgType) != None ||
 		 Class<UM_BaseDamType_Explosive>(DmgType) != None || Class<UM_BaseDamType_ExplosiveProjImpact>(DmgType) != None ||
-		 class<DamTypeSPGrenade>(DmgType) != none )
+		 class<DamTypeSPGrenade>(DmgType) != None )
 		Return float(InDamage) * (1.10 + (0.10 * float(Min(KFPRI.ClientVeteranSkillLevel,6)))); //  Up to 70% extra damage
 
 	Return InDamage;
@@ -199,7 +199,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%d",GetPercentStr(0.75+FMin(0.03 * float(Level),0.24f)));
 	ReplaceText(S,"%x",string(2+Level));
 	ReplaceText(S,"%y",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
-	return S;
+	Return S;
 }
 
 defaultproperties

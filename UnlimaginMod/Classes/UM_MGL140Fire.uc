@@ -28,7 +28,7 @@ function PostSpawnProjectile(Projectile P)
 
 function float MaxRange()
 {
-    return 3000;
+    Return 3000;
 }
 
 defaultproperties

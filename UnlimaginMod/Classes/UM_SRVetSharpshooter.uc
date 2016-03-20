@@ -121,20 +121,20 @@ static function float ModifyRecoilSpread(KFPlayerReplicationInfo KFPRI, WeaponFi
 		 UM_BaseHandgunFire(Other) != None ||
 		 UM_BaseSniperRifleFire(Other) != None )
 		Recoil = 0.90 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 80% recoil reduction with Crossbow/Winchester/Handcannon
-	else if ( Crossbow(Other.Weapon) != none || Winchester(Other.Weapon) != none ||
-		 Single(Other.Weapon) != none || Dualies(Other.Weapon) != none ||
-		 Deagle(Other.Weapon) != none || DualDeagle(Other.Weapon) != none ||
-		 M14EBRBattleRifle(Other.Weapon) != none || M99SniperRifle(Other.Weapon) != none ||
-		 Magnum44Pistol(Other.Weapon) != none || Dual44Magnum(Other.Weapon) != none ||
-		 MK23Pistol(Other.Weapon) != none || DualMK23Pistol(Other.Weapon) != none ||
-		 UM_MK23Pistol(Other.Weapon) != none ||
-		 UM_DualMK23Pistol(Other.Weapon) != none || Braindead_HuntingRifle(Other.Weapon) != none ||
-		 UM_M99SniperRifle(Other.Weapon) != none || UM_Crossbow(Other.Weapon) != none ||
-		 OperationY_SVDLLI(Other.Weapon) != none || OperationY_V94SniperRifle(Other.Weapon) != none ||
-		 OperationY_HK417BattleRifle(Other.Weapon) != none || 
-		 Whisky_ColtM1911Pistol(Other.Weapon) != none ||
-		 OperationY_VSSDT(Other.Weapon) != none || OperationY_G2ContenderPistol(Other.Weapon) != none ||
-		 SPSniperRifle(Other.Weapon) != none )
+	else if ( Crossbow(Other.Weapon) != None || Winchester(Other.Weapon) != None ||
+		 Single(Other.Weapon) != None || Dualies(Other.Weapon) != None ||
+		 Deagle(Other.Weapon) != None || DualDeagle(Other.Weapon) != None ||
+		 M14EBRBattleRifle(Other.Weapon) != None || M99SniperRifle(Other.Weapon) != None ||
+		 Magnum44Pistol(Other.Weapon) != None || Dual44Magnum(Other.Weapon) != None ||
+		 MK23Pistol(Other.Weapon) != None || DualMK23Pistol(Other.Weapon) != None ||
+		 UM_MK23Pistol(Other.Weapon) != None ||
+		 UM_DualMK23Pistol(Other.Weapon) != None || Braindead_HuntingRifle(Other.Weapon) != None ||
+		 UM_M99SniperRifle(Other.Weapon) != None || UM_Crossbow(Other.Weapon) != None ||
+		 OperationY_SVDLLI(Other.Weapon) != None || OperationY_V94SniperRifle(Other.Weapon) != None ||
+		 OperationY_HK417BattleRifle(Other.Weapon) != None || 
+		 Whisky_ColtM1911Pistol(Other.Weapon) != None ||
+		 OperationY_VSSDT(Other.Weapon) != None || OperationY_G2ContenderPistol(Other.Weapon) != None ||
+		 SPSniperRifle(Other.Weapon) != None )
 		Recoil = 0.90 - (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 80% recoil reduction with Crossbow/Winchester/Handcannon
 	else
 		Recoil = 1.00;
@@ -146,10 +146,10 @@ static function float ModifyRecoilSpread(KFPlayerReplicationInfo KFPRI, WeaponFi
 static function float GetFireSpeedMod(KFPlayerReplicationInfo KFPRI, Weapon Other)
 {
 	if ( (UM_BaseBoltActSniperRifle(Other) != None ||
-			Winchester(Other) != none || Crossbow(Other) != none ||
-			M99SniperRifle(Other) != none || Braindead_HuntingRifle(Other) != none ||
-			UM_M99SniperRifle(Other) != none || UM_Crossbow(Other) != none ||
-			OperationY_G2ContenderPistol(Other) != none || SPSniperRifle(Other) != none)
+			Winchester(Other) != None || Crossbow(Other) != None ||
+			M99SniperRifle(Other) != None || Braindead_HuntingRifle(Other) != None ||
+			UM_M99SniperRifle(Other) != None || UM_Crossbow(Other) != None ||
+			OperationY_G2ContenderPistol(Other) != None || SPSniperRifle(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster fire rate with Winchester
 
@@ -164,19 +164,19 @@ static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWe
 			 UM_BaseSniperRifle(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		 Return 1.00 + (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster reload with Crossbow/Winchester/Handcannon
-	else if ( (Crossbow(Other) != none || Winchester(Other) != none ||
-			 Single(Other) != none || Dualies(Other) != none ||
-			 Deagle(Other) != none || DualDeagle(Other) != none ||
-			 MK23Pistol(Other) != none || DualMK23Pistol(Other) != none ||
-			 M14EBRBattleRifle(Other) != none || Magnum44Pistol(Other) != none ||
-			 Dual44Magnum(Other) != none || UM_MK23Pistol(Other) != none ||
-			 UM_DualMK23Pistol(Other) != none || Braindead_HuntingRifle(Other) != none ||
-			 UM_M99SniperRifle(Other) != none || UM_Crossbow(Other) != none ||
-			 OperationY_SVDLLI(Other) != none || OperationY_V94SniperRifle(Other) != none ||
-			 OperationY_HK417BattleRifle(Other) != none || 
-			 Whisky_ColtM1911Pistol(Other) != none ||
-			 OperationY_VSSDT(Other) != none || OperationY_G2ContenderPistol(Other) != none ||
-			 SPSniperRifle(Other) != none)
+	else if ( (Crossbow(Other) != None || Winchester(Other) != None ||
+			 Single(Other) != None || Dualies(Other) != None ||
+			 Deagle(Other) != None || DualDeagle(Other) != None ||
+			 MK23Pistol(Other) != None || DualMK23Pistol(Other) != None ||
+			 M14EBRBattleRifle(Other) != None || Magnum44Pistol(Other) != None ||
+			 Dual44Magnum(Other) != None || UM_MK23Pistol(Other) != None ||
+			 UM_DualMK23Pistol(Other) != None || Braindead_HuntingRifle(Other) != None ||
+			 UM_M99SniperRifle(Other) != None || UM_Crossbow(Other) != None ||
+			 OperationY_SVDLLI(Other) != None || OperationY_V94SniperRifle(Other) != None ||
+			 OperationY_HK417BattleRifle(Other) != None || 
+			 Whisky_ColtM1911Pistol(Other) != None ||
+			 OperationY_VSSDT(Other) != None || OperationY_G2ContenderPistol(Other) != None ||
+			 SPSniperRifle(Other) != None)
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + (0.07 * float(Min(KFPRI.ClientVeteranSkillLevel,10))); // Up to 70% faster reload with Crossbow/Winchester/Handcannon
 
@@ -193,9 +193,9 @@ static function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 /*static function class<Grenade> GetNadeType(KFPlayerReplicationInfo KFPRI)
 {
 	if ( KFPRI.ClientVeteranSkillLevel >= 3 )
-		return class'UM_StunGrenade'; // Cluster Grenade
+		Return class'UM_StunGrenade'; // Cluster Grenade
 
-	return super.GetNadeType(KFPRI);
+	Return super.GetNadeType(KFPRI);
 }*/
 
 // Change the cost of particular items
@@ -320,7 +320,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%s",GetPercentStr((1.1 + (0.05 * float(Level)))));
 	ReplaceText(S,"%p",GetPercentStr(0.1 * float(Level)));
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
-	return S;
+	Return S;
 }
 
 defaultproperties

@@ -22,7 +22,7 @@ state ZombieHunt
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
+		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != None )
 		{
 			// 25% chance of first player to see this Scrake saying something
 			if ( UM_InvasionGame(Level.Game) != None )
@@ -30,7 +30,7 @@ state ZombieHunt
 				if ( !UM_InvasionGame(Level.Game).bDidSpottedScrakeMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 14, "");
-					UM_InvasionGame(Level.Game).bDidSpottedScrakeMessage = true;
+					UM_InvasionGame(Level.Game).bDidSpottedScrakeMessage = True;
 				}
 			}
 			else if ( KFGameType(Level.Game) != None )
@@ -38,11 +38,11 @@ state ZombieHunt
 				if ( !KFGameType(Level.Game).bDidSpottedScrakeMessage && FRand() < 0.25 )
 				{
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 14, "");
-					KFGameType(Level.Game).bDidSpottedScrakeMessage = true;
+					KFGameType(Level.Game).bDidSpottedScrakeMessage = True;
 				}
 			}
 
-			bDoneSpottedCheck = true;
+			bDoneSpottedCheck = True;
 		}
 
 		super.SeePlayer(SeenPlayer);
@@ -63,11 +63,11 @@ state ZombieCharge
 
 	function bool StrafeFromDamage(float Damage, class<DamageType> DamageType, bool bFindDest)
 	{
-		return false;
+		Return False;
 	}
 	function bool TryStrafe(vector sideDir)
 	{
-		return false;
+		Return False;
 	}
 	event Timer()
 	{
@@ -80,7 +80,7 @@ WaitForAnim:
 
 	While( Monster(Pawn).bShotAnim )
 		Sleep(0.25);
-	if ( !FindBestPathToward(Enemy, false,true) )
+	if ( !FindBestPathToward(Enemy, False,True) )
 		GotoState('ZombieRestFormation');
 Moving:
 	MoveToward(Enemy);

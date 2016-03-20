@@ -22,7 +22,7 @@ static function GetHitEffects(out class<xEmitter> HitEffects[4], int VictimHealt
 
 /*static function AwardKill(KFSteamStatsAndAchievements KFStatsAndAchievements, KFPlayerController Killer, KFMonster Killed )
 {
-	if ( KFStatsAndAchievements != none )
+	if ( KFStatsAndAchievements != None )
 	{
 		if ( Killed.IsA('ZombieScrake'))
 		{

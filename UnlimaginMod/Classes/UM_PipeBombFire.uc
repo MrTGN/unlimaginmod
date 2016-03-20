@@ -21,28 +21,28 @@ function projectile SpawnProjectile(Vector Start, Rotator Dir)
 	local Projectile p;
 	 
 	// -- Switch damage types for the firebug --
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none 
-		&& KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none 
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None 
+		&& KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None 
 		&& KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )
 		p = Weapon.Spawn(Class'UnlimaginMod.UM_NapalmPipeBombProj',,, Start, Dir);
 	else
 		p = Weapon.Spawn(default.ProjectileClass,,, Start, Dir);
 
 	if( p == None )
-		return None;
+		Return None;
 
 	p.Damage *= DamageAtten;
 
-	if( PipeBombProjectile(p) != none && Instigator != none )
+	if( PipeBombProjectile(p) != None && Instigator != None )
 		PipeBombProjectile(p).PlacedTeam = Instigator.PlayerReplicationInfo.Team.TeamIndex;
 
-	return p;
+	Return p;
 }
 
 /*
 event ModeDoFire()
 {
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none )
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 	{
 		// -- Switch damage types for the firebug --
 		if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )

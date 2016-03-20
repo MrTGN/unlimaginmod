@@ -103,13 +103,13 @@ static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int 
 			Break; */
 	}
 	if( ReqNum==0 )
-		return Min(StatOther.RWeldingPointsStat,FinalInt);
-	return Min(StatOther.RShotgunDamageStat,FinalInt);
+		Return Min(StatOther.RWeldingPointsStat,FinalInt);
+	Return Min(StatOther.RShotgunDamageStat,FinalInt);
 }
 
 static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
-	if ( UM_AA12AutoShotgun(Other) != none && KFPRI.ClientVeteranSkillLevel > 0 )
+	if ( UM_AA12AutoShotgun(Other) != None && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.06 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 60% larger fuel canister
 	
 	Return 1.0;
@@ -119,10 +119,10 @@ static function float GetMagCapacityMod(KFPlayerReplicationInfo KFPRI, KFWeapon 
 static function float GetReloadSpeedModifier(KFPlayerReplicationInfo KFPRI, KFWeapon Other)
 {
 	if ( (UM_BaseShotgun(Other) != None || 
-			BenelliShotgun(Other) != none || Shotgun(Other) != none || 
-			 Trenchgun(Other) != none || UM_M32Shotgun(Other) != none ||
-			 GoldenBenelliShotgun(Other) != none || Hemi_Braindead_Moss12Shotgun(Other) != none ||
-			 Maria_M37IthacaShotgun(Other) != none || BoomStick(Other) != none ) 
+			BenelliShotgun(Other) != None || Shotgun(Other) != None || 
+			 Trenchgun(Other) != None || UM_M32Shotgun(Other) != None ||
+			 GoldenBenelliShotgun(Other) != None || Hemi_Braindead_Moss12Shotgun(Other) != None ||
+			 Maria_M37IthacaShotgun(Other) != None || BoomStick(Other) != None ) 
 		 && KFPRI.ClientVeteranSkillLevel > 0 )
 		Return 1.00 + 0.03 * float(Min(KFPRI.ClientVeteranSkillLevel, 10)); // Up to 30% faster BenelliShotgun/Shotgun/BoomStick reload speed
 	
@@ -274,7 +274,7 @@ static function string GetCustomLevelInfo( byte Level )
 	ReplaceText(S,"%s",GetPercentStr(0.1 * float(Level)));
 	ReplaceText(S,"%g",GetPercentStr(0.1*float(Level)-0.1f));
 	ReplaceText(S,"%d",GetPercentStr(0.1+FMin(0.1 * float(Level),0.8f)));
-	return S;
+	Return S;
 }
 
 defaultproperties

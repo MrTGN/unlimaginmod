@@ -144,7 +144,7 @@ simulated event Tick(float dt)
 				// Проигрывается звук остановки вращения ствола
 				// PlaySound(Sound, Slot, Volume, bNoOverride, Radius, Pitch, Attenuate)
 				// Attenuate - ослоблять, т.е. звук постепенно становится тише
-				PlayOwnedSound(BarrelStopSound, SLOT_None, 1.0,, SoundRadius, 1.00, true);
+				PlayOwnedSound(BarrelStopSound, SLOT_None, 1.0,, SoundRadius, 1.00, True);
 			}
 		}
 	}
@@ -175,7 +175,7 @@ simulated function bool PutDown()
 	if ( BarrelSpeed > 0.03 )
 	{
 		BarrelSpeed = 0.00;
-		PlayOwnedSound(BarrelStopSound, SLOT_None, 1.0,, SoundRadius, 1.00, true);
+		PlayOwnedSound(BarrelStopSound, SLOT_None, 1.0,, SoundRadius, 1.00, True);
 		BarrelTurn = int( float( int( float(BarrelTurn) / 10922.67 ) ) * 10922.67 );
 	}
 	

@@ -161,9 +161,9 @@ function UnlockObjectiveAchievement( int Index );
 
 defaultproperties
 {
-	bNetNotify=false
-	bUsedCheats=true
-	bFlushStatsToClient=false
-	bInitialized=true
+	bNetNotify=False
+	bUsedCheats=True
+	bFlushStatsToClient=False
+	bInitialized=True
 	RemoteRole=ROLE_None
 }

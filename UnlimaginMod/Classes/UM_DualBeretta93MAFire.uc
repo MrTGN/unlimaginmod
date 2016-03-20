@@ -22,7 +22,7 @@ event ModeDoFire()
 {
 	local name bn;
 	
-	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none )
+	if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None )
 	{
 		// -- Switch damage types for the firebug --
 		if ( KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.default.PerkIndex == 5 )
@@ -41,7 +41,7 @@ event ModeDoFire()
 	//If not already firing, start a burst.
 	if (!bBursting && AllowFire())
 	{
-		bBursting = true;
+		bBursting = True;
 		bn = Dualies(Weapon).altFlashBoneName;
 		Dualies(Weapon).altFlashBoneName = Dualies(Weapon).FlashBoneName;
 		Dualies(Weapon).FlashBoneName = bn;
@@ -65,8 +65,8 @@ event ModeDoFire()
 	if (RoundsToFire < 1)
 	{
 		RoundsToFire = 0;
-		bBursting = false;
-		return;
+		bBursting = False;
+		Return;
 	}
 	
 	Super(KFFire).ModeDoFire();

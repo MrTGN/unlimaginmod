@@ -23,36 +23,21 @@ state ZombieHunt
 {
 	event SeePlayer(Pawn SeenPlayer)
 	{
-		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != none )
-		{
+		if ( !bDoneSpottedCheck && PlayerController(SeenPlayer.Controller) != None )  {
 			// 25% chance of first player to see this Fleshpound saying something
-			if ( UM_InvasionGame(Level.Game) != None )
-			{
-				if ( !UM_InvasionGame(Level.Game).bDidSpottedFleshpoundMessage && FRand() < 0.25 )
-				{
+			if ( KFGameType(Level.Game) != None && !KFGameType(Level.Game).bDidSpottedFleshpoundMessage && FRand() < 0.25 )  {
 					PlayerController(SeenPlayer.Controller).Speech('AUTO', 12, "");
-					UM_InvasionGame(Level.Game).bDidSpottedFleshpoundMessage = true;
-				}
+					KFGameType(Level.Game).bDidSpottedFleshpoundMessage = True;
 			}
-			else if ( KFGameType(Level.Game) != None )
-			{
-				if ( !KFGameType(Level.Game).bDidSpottedFleshpoundMessage && FRand() < 0.25 )
-				{
-					PlayerController(SeenPlayer.Controller).Speech('AUTO', 12, "");
-					KFGameType(Level.Game).bDidSpottedFleshpoundMessage = true;
-				}
-			}
-
-			bDoneSpottedCheck = true;
+			bDoneSpottedCheck = True;
 		}
-
-		super.SeePlayer(SeenPlayer);
+		Super.SeePlayer(SeenPlayer);
 	}
 }
 
 function TimedFireWeaponAtEnemy()
 {
-	if ( (Enemy == None) || FireWeaponAt(Enemy) )
+	if ( Enemy == None || FireWeaponAt(Enemy) )
 		SetCombatTimer();
 	else
 		SetTimer(0.01, True);
@@ -62,16 +47,16 @@ state SpinAttack
 {
 ignores EnemyNotVisible;
 
-    // Don't do this in this state
-    function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
+	// Don't do this in this state
+	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
 
 	function DoSpinDamage()
 	{
 		local Actor A;
 
 		//log("FLESHPOUND DOSPINDAMAGE!");
-		foreach CollidingActors(class'actor', A, (UM_ZombieFleshPound(pawn).MeleeRange * 1.5)+pawn.CollisionRadius, pawn.Location)
-			UM_ZombieFleshPound(pawn).SpinDamage(A);
+		foreach CollidingActors(class'actor', A, (UM_BaseMonster_FleshPound(Pawn).MeleeRange * 1.5 + Pawn.CollisionRadius), Pawn.Location)
+			UM_BaseMonster_FleshPound(Pawn).SpinDamage(A);
 	}
 
 Begin:
@@ -92,61 +77,55 @@ state ZombieCharge
 {
 	event Tick( float Delta )
 	{
-		local UM_ZombieFleshPound ZFP;
-        Global.Tick(Delta);
+		local	UM_BaseMonster_FleshPound	ZFP;
+		
+		Global.Tick(Delta);
 
-        // Make the FP rage if we haven't reached our enemy after a certain amount of time
-		if( RageFrustrationTimer < RageFrustrationThreshhold )
-		{
-            RageFrustrationTimer += Delta;
-
-            if( RageFrustrationTimer >= RageFrustrationThreshhold )
-            {
-                ZFP = UM_ZombieFleshPound(Pawn);
-
-                if( ZFP != none && !ZFP.bChargingPlayer )
-                {
-                    ZFP.StartCharging();
-                    ZFP.bFrustrated = true;
-                }
-            }
+		// Make the FP rage if we haven't reached our enemy after a certain amount of time
+		if ( RageFrustrationTimer < RageFrustrationThreshhold )  {
+			RageFrustrationTimer += Delta;
+			if ( RageFrustrationTimer >= RageFrustrationThreshhold )  {
+				ZFP = UM_BaseMonster_FleshPound(Pawn);
+				if ( ZFP != None && !ZFP.bChargingPlayer )  {
+					ZFP.StartCharging();
+					ZFP.bFrustrated = True;
+				}
+			}
 		}
 	}
 
 
 	function bool StrafeFromDamage(float Damage, class<DamageType> DamageType, bool bFindDest)
 	{
-		return false;
+		Return False;
 	}
 
 	// I suspect this function causes bloats to get confused
 	function bool TryStrafe(vector sideDir)
 	{
-		return false;
+		Return False;
 	}
 
 	event Timer()
 	{
-        Disable('NotifyBump');
+		Disable('NotifyBump');
 		Target = Enemy;
 		TimedFireWeaponAtEnemy();
 	}
 
 	event BeginState()
 	{
-        super.BeginState();
+		super.BeginState();
 
-        RageFrustrationThreshhold = default.RageFrustrationThreshhold + (Frand() * 5);
-        RageFrustrationTimer = 0;
+		RageFrustrationThreshhold = default.RageFrustrationThreshhold + (Frand() * 5);
+		RageFrustrationTimer = 0;
 	}
 
 WaitForAnim:
 
 	if ( Monster(Pawn).bShotAnim )
-	{
 		Goto('Moving');
-	}
-	if ( !FindBestPathToward(Enemy, false,true) )
+	if ( !FindBestPathToward(Enemy, False,True) )
 		GotoState('ZombieRestFormation');
 Moving:
 	MoveToward(Enemy);
@@ -163,33 +142,31 @@ Moving:
 // probably take this out in the future. But for now the fix works - Ramm
 function SetPoundRageTimout(float NewRageTimeOut)
 {
-    RageAnimTimeout = NewRageTimeOut;
+	RageAnimTimeout = NewRageTimeOut;
 }
 
 state WaitForAnim
 {
 Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 
-    // Don't do this in this state
-    function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
+	// Don't do this in this state
+	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
 
 	event BeginState()
 	{
-        bUseFreezeHack = False;
+		bUseFreezeHack = False;
 	}
 
 	// The rage anim has ended, clear the flags and let the AI do its thing
-    function RageTimeout()
+	function RageTimeout()
 	{
-        if( bUseFreezeHack )
-		{
-            if( Pawn!=None )
-    		{
-    			Pawn.AccelRate = Pawn.Default.AccelRate;
-    			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-    		}
-    		bUseFreezeHack = False;
-    		AnimEnd(0);
+		if ( bUseFreezeHack )  {
+			if ( Pawn != None )  {
+				Pawn.AccelRate = Pawn.Default.AccelRate;
+				Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
+			}
+			bUseFreezeHack = False;
+			AnimEnd(0);
 		}
 	}
 
@@ -197,19 +174,16 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 	{
 		Global.Tick(Delta);
 
-		if( RageAnimTimeout > 0 )
-		{
-            RageAnimTimeout -= Delta;
+		if ( RageAnimTimeout > 0 )  {
+			RageAnimTimeout -= Delta;
 
-            if( RageAnimTimeout <= 0 )
-            {
-                RageAnimTimeout = 0;
-                RageTimeout();
-            }
+			if ( RageAnimTimeout <= 0 )  {
+				RageAnimTimeout = 0;
+				RageTimeout();
+			}
 		}
 
-		if( bUseFreezeHack )
-		{
+		if ( bUseFreezeHack )  {
 			MoveTarget = None;
 			MoveTimer = -1;
 			Pawn.Acceleration = vect(0,0,0);
@@ -219,8 +193,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 	}
 	event EndState()
 	{
-        if( Pawn!=None )
-		{
+		if ( Pawn != None )  {
 			Pawn.AccelRate = Pawn.Default.AccelRate;
 			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
 		}
@@ -230,12 +203,12 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump;
 Begin:
 	While( KFM.bShotAnim )
 	{
-    	Sleep(0.15);
+		Sleep(0.15);
 	}
 	WhatToDoNext(99);
 }
 
 defaultproperties
 {
-     RageFrustrationThreshhold=10.000000
+	 RageFrustrationThreshhold=10.000000
 }

@@ -143,10 +143,10 @@ function InitChatManager()
 simulated function PrecacheAnnouncements()
 {
 	if ( RewardAnnouncer != None )
-		RewardAnnouncer.PrecacheAnnouncements(true);
+		RewardAnnouncer.PrecacheAnnouncements(True);
 	
 	if ( StatusAnnouncer != None )
-		StatusAnnouncer.PrecacheAnnouncements(false);
+		StatusAnnouncer.PrecacheAnnouncements(False);
 }
 
 // Spawn VoiceAnnouncers on the clients
@@ -272,7 +272,7 @@ simulated function ClientResetViewTarget()
 		bBehindView = Pawn.PointOfView();
 		BehindView( bBehindView );
 		if ( bNewViewTarget )
-			Pawn.POVChanged(self, false);
+			Pawn.POVChanged(self, False);
 	}
 	else  {
 		SetViewTarget( self );
@@ -664,7 +664,7 @@ function ServerSpectate()
 
 function ClientBecameSpectator()
 {
-	UpdateURL("SpectatorOnly", "1", false);
+	UpdateURL("SpectatorOnly", "1", False);
 }
 
 // Active player wants to become a spectator
@@ -708,7 +708,7 @@ function JoinedAsSpectatorOnly()
 
 function ClientBecameActivePlayer()
 {
-	UpdateURL("SpectatorOnly","",true);
+	UpdateURL("SpectatorOnly","",True);
 }
 
 // Spectating player wants to become active and join the game
@@ -737,7 +737,7 @@ function BecomeActivePlayer()
 		if ( KFGameType(Level.Game) != None )
 			PlayerReplicationInfo.Score = KFGameType(Level.Game).StartingCash;
 		if ( Level.Game.bTeamGame )
-			Level.Game.ChangeTeam(self, Level.Game.PickTeam(int(GetURLOption("Team")), None), false);
+			Level.Game.ChangeTeam(self, Level.Game.PickTeam(int(GetURLOption("Team")), None), False);
 	}
 	
 	BroadcastLocalizedMessage(Level.Game.GameMessageClass, 1, PlayerReplicationInfo);
@@ -767,7 +767,7 @@ auto state PlayerWaiting
 
 		bRequestedSteamData = False;
 		if ( Level.NetMode != NM_DedicatedServer && bPendingLobbyDisplay )  {
-			SetTimer(0.1, true);
+			SetTimer(0.1, True);
 			Timer();
 		}
 	}
@@ -796,7 +796,7 @@ auto state PlayerWaiting
 	simulated event Timer()
 	{
 		if ( !bPendingLobbyDisplay || bDemoOwner || (PlayerReplicationInfo != None && PlayerReplicationInfo.bReadyToPlay) )
-			SetTimer(0.0, false);
+			SetTimer(0.0, False);
 		else if ( !bRequestedSteamData && SteamStatsAndAchievements == None )  {
 			if ( Level.NetMode == NM_Standalone )  {
 				if ( SpawnStatObject() && !SteamStatsAndAchievements.Initialize(self) )  {
@@ -819,7 +819,7 @@ auto state PlayerWaiting
 			// Spawn hint manager (if needed)
 		    UpdateHintManagement(bShowHints);
 			ShowLobbyMenu();
-			SetTimer(0.0, false);
+			SetTimer(0.0, False);
 		}
 	}
 
@@ -1110,7 +1110,7 @@ simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
 	Pos = Other.Location + Other.EyePosition();
 	CamPos = vect(-40, 20, 10) >> Rotation;
 	
-	if ( Pawn.Trace(HL, HN, (Pos + Normal(CamPos) * (VSize(CamPos) + 10.f)), Pos, false) != None )
+	if ( Pawn.Trace(HL, HN, (Pos + Normal(CamPos) * (VSize(CamPos) + 10.f)), Pos, False) != None )
 		Pos = Pos + Normal(CamPos) * (VSize(HL - Pos) -10.f);
 	else 
 		Pos += CamPos;
@@ -1134,7 +1134,7 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 	}
 
 	// If desired, call the pawn's own special callview
-	// try the 'special' calcview. This may return false if its not applicable, and we do the usual.
+	// try the 'special' calcview. This may Return False if its not applicable, and we do the usual.
 	if ( Pawn != None && Pawn.bSpecialCalcView && ViewTarget == Pawn
 		 && (Pawn.SpecialCalcView(ViewActor, CameraLocation, CameraRotation)) )  {
 		CacheCalcView(ViewActor, CameraLocation, CameraRotation);
@@ -1560,7 +1560,7 @@ state Dead
 			Return;
 		}
 		
-		// try the 'special' calcview. This may return false if its not applicable, and we do the usual.
+		// try the 'special' calcview. This may Return False if its not applicable, and we do the usual.
 		if ( Pawn(ViewTarget) != None && Pawn(ViewTarget).bSpecialCalcView && Pawn(ViewTarget).SpecialCalcView(ViewActor, CameraLocation, CameraRotation) )  {
 			CacheCalcView(ViewActor,CameraLocation,CameraRotation);
 			Return;
@@ -1647,7 +1647,7 @@ state GameEnded
 		bFrozen = True;
 		FindGoodView();
 		bBehindView = True;
-		SetTimer(5.0, false);
+		SetTimer(5.0, False);
 	}
 }
 

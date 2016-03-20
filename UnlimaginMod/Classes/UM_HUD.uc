@@ -388,9 +388,9 @@ simulated function DrawSpectatingHud(Canvas C)
 	DrawModOverlay(C);
 
 	if( bHideHud )
-		return;
+		Return;
 
-	PlayerOwner.PostFX_SetActive(0, false);
+	PlayerOwner.PostFX_SetActive(0, False);
 
 	// Grab our View Direction
 	C.GetCameraLocation(CamPos, CamRot);
@@ -399,7 +399,7 @@ simulated function DrawSpectatingHud(Canvas C)
 	// Draw the Name, Health, Armor, and Veterancy above other players (using this way to fix portal's beacon errors).
 	foreach VisibleCollidingActors(Class'KFPawn',KFBuddy,1000.f,CamPos)
 	{
-		KFBuddy.bNoTeamBeacon = true;
+		KFBuddy.bNoTeamBeacon = True;
 		if ( KFBuddy.PlayerReplicationInfo!=None && KFBuddy.Health>0 && ((KFBuddy.Location - CamPos) Dot ViewDir)>0.8 )
 		{
 			ScreenPos = C.WorldToScreen(KFBuddy.Location+vect(0,0,1)*KFBuddy.CollisionHeight);
@@ -413,7 +413,7 @@ simulated function DrawSpectatingHud(Canvas C)
 	if ( KFPlayerController(PlayerOwner) != None && KFPlayerController(PlayerOwner).ActiveNote != None )
 		KFPlayerController(PlayerOwner).ActiveNote = None;
 
-	if( KFGameReplicationInfo(Level.GRI) != none && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )
+	if( KFGameReplicationInfo(Level.GRI) != None && KFGameReplicationInfo(Level.GRI).EndGameType > 0 )
 	{
 		if( KFGameReplicationInfo(Level.GRI).EndGameType == 2 )
 		{
@@ -455,7 +455,7 @@ simulated function DrawHud(Canvas C)
 	DrawModOverlay(C);
 
 	if ( bUseBloom )
-		PlayerOwner.PostFX_SetActive(0, true);
+		PlayerOwner.PostFX_SetActive(0, True);
 
 	if ( bHideHud )  {
 		// Draw fade effects even if the hud is hidden so poeple can't just turn off thier hud
@@ -475,7 +475,7 @@ simulated function DrawHud(Canvas C)
 		// Draw the Name, Health, Armor, and Veterancy above other players (using this way to fix portal's beacon errors).
 		foreach VisibleCollidingActors(Class'KFPawn',KFBuddy,1000.f,CamPos)
 		{
-			KFBuddy.bNoTeamBeacon = true;
+			KFBuddy.bNoTeamBeacon = True;
 			if ( KFBuddy!=PawnOwner && KFBuddy.PlayerReplicationInfo!=None && KFBuddy.Health>0 && ((KFBuddy.Location - CamPos) Dot ViewDir)>0.8 )
 			{
 				ScreenPos = C.WorldToScreen(KFBuddy.Location+vect(0,0,1)*KFBuddy.CollisionHeight);
@@ -491,7 +491,7 @@ simulated function DrawHud(Canvas C)
 
 		if ( KFPlayerController(PlayerOwner)!= None && KFPlayerController(PlayerOwner).ActiveNote!=None )
 		{
-			if( PlayerOwner.Pawn == none )
+			if( PlayerOwner.Pawn == None )
 				KFPlayerController(PlayerOwner).ActiveNote = None;
 			else KFPlayerController(PlayerOwner).ActiveNote.RenderNote(C);
 		}
@@ -506,7 +506,7 @@ simulated function DrawHud(Canvas C)
 		if ( CurrentGame!=None && CurrentGame.EndGameType > 0 )
 		{
 			DrawEndGameHUD(C, (CurrentGame.EndGameType==2));
-			return;
+			Return;
 		}
 
 		RenderFlash(C);
@@ -532,9 +532,9 @@ function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 	local Material TempMaterial, TempStarMaterial;
 	local byte i, TempLevel;
 
-	if ( KFPlayerReplicationInfo(P.PlayerReplicationInfo) == none || KFPRI == none || KFPRI.bViewingMatineeCinematic )
+	if ( KFPlayerReplicationInfo(P.PlayerReplicationInfo) == None || KFPRI == None || KFPRI.bViewingMatineeCinematic )
 	{
-		return;
+		Return;
 	}
 
 	Dist = vsize(P.Location - PlayerOwner.CalcViewLocation);
@@ -545,7 +545,7 @@ function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 
 	if ( BeaconAlpha == 0 )
 	{
-		return;
+		Return;
 	}
 
 	OldZ = C.Z;
@@ -560,8 +560,8 @@ function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 
 	OffsetX = (36.f * VeterancyMatScaleFactor * 0.6) - (HealthIconSize + 2.0);
 
-	if ( Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill)!=none &&
-		 KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill.default.OnHUDIcon!=none )
+	if ( Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill)!=None &&
+		 KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill.default.OnHUDIcon!=None )
 	{
 		TempLevel = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill).Static.PreDrawPerk(C,
 					KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkillLevel,
@@ -596,7 +596,7 @@ function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 
 	// Armor
 	if ( P.ShieldStrength > 0 )
-		DrawKFBar(C, ScreenLocX - OffsetX, (ScreenLocY - YL) - 1.5 * BarHeight, FClamp(P.ShieldStrength / 100.f, 0, 1), BeaconAlpha, true);
+		DrawKFBar(C, ScreenLocX - OffsetX, (ScreenLocY - YL) - 1.5 * BarHeight, FClamp(P.ShieldStrength / 100.f, 0, 1), BeaconAlpha, True);
 
 	C.Z = OldZ;
 }
@@ -620,8 +620,8 @@ simulated function DrawModOverlay( Canvas C )
 			LastZone = None;
 			CurrentVolume = None;
 			LastVolume = None;
-			bZoneChanged = false;
-			SetTimer(0.f, false);
+			bZoneChanged = False;
+			SetTimer(0.f, False);
 		}
 		VisionOverlay = default.VisionOverlay;
 
@@ -631,7 +631,7 @@ simulated function DrawModOverlay( Canvas C )
 			C.SetDrawColor(255, 255, 255, GrainAlpha);
 			C.DrawTile(SpectatorOverlay, C.SizeX, C.SizeY, 0, 0, 1024, 1024);
 		}
-		return;
+		Return;
 	}
 
 	C.SetPos(0, 0);
@@ -642,10 +642,10 @@ simulated function DrawModOverlay( Canvas C )
 	else VisionOverlay = default.VisionOverlay;
 
 	// Players can choose to turn this feature off completely.
-	// conversely, setting bDistanceFog = false in a Zone
+	// conversely, setting bDistanceFog = False in a Zone
 	//will cause the code to ignore that zone for a shift in RGB tint
-	if ( KFLevelRule != none && !KFLevelRule.bUseVisionOverlay )
-		return;
+	if ( KFLevelRule != None && !KFLevelRule.bUseVisionOverlay )
+		Return;
 
 	// here we determine the maximum "brighten" amounts for each value.  CANNOT exceed 255
 	MaxRBrighten = Round(LastR* (1.0 - (LastR / 255)) - 2) ;
@@ -663,7 +663,7 @@ simulated function DrawModOverlay( Canvas C )
 
 	// if we're in a new zone or volume without distance fog...just , dont touch anything.
 	// the physicsvolume check is abit screwy because the player is always in a volume called "DefaultPhyicsVolume"
-	// so we've gotta make sure that the return checks take this into consideration.
+	// so we've gotta make sure that the Return checks take this into consideration.
 
 	// This block of code here just makes sure that if we've already got a tint, and we step into a zone/volume without
 	// bDistanceFog, our current tint is not affected.
@@ -671,41 +671,41 @@ simulated function DrawModOverlay( Canvas C )
 	// b.  If I'm in a Volume
 	if ( !PawnOwner.Region.Zone.bDistanceFog &&
 		 DefaultPhysicsVolume(PawnOwner.PhysicsVolume)==None && !PawnOwner.PhysicsVolume.bDistanceFog )
-		return;
+		Return;
 
 	if ( !bZoneChanged )
 	{
 		// Grab the most recent zone info from our PRI
 		// Only update if it's different
-		// EDIT:  AND HAS bDISTANCEFOG true
+		// EDIT:  AND HAS bDISTANCEFOG True
 		if ( CurrentZone!=PawnOwner.Region.Zone || (DefaultPhysicsVolume(PawnOwner.PhysicsVolume) == None &&
 			 CurrentVolume != PawnOwner.PhysicsVolume) )
 		{
-			if ( CurrentZone != none )
+			if ( CurrentZone != None )
 				LastZone = CurrentZone;
-			else if ( CurrentVolume != none )
+			else if ( CurrentVolume != None )
 				LastVolume = CurrentVolume;
 
 			// This is for all occasions where we're either in a Levelinfo handled zone
 			// Or a zoneinfo.
 			// If we're in a LevelInfo / ZoneInfo  and NOT touching a Volume.  Set current Zone
-			if ( PawnOwner.Region.Zone.bDistanceFog && DefaultPhysicsVolume(PawnOwner.PhysicsVolume)!= none && !PawnOwner.Region.Zone.bNoKFColorCorrection )
+			if ( PawnOwner.Region.Zone.bDistanceFog && DefaultPhysicsVolume(PawnOwner.PhysicsVolume)!= None && !PawnOwner.Region.Zone.bNoKFColorCorrection )
 			{
-				CurrentVolume = none;
+				CurrentVolume = None;
 				CurrentZone = PawnOwner.Region.Zone;
 			}
 			else if ( DefaultPhysicsVolume(PawnOwner.PhysicsVolume) == None && PawnOwner.PhysicsVolume.bDistanceFog && !PawnOwner.PhysicsVolume.bNoKFColorCorrection)
 			{
-				CurrentZone = none;
+				CurrentZone = None;
 				CurrentVolume = PawnOwner.PhysicsVolume;
 			}
 
-			if ( CurrentVolume != none )
-				LastZone = none;
-			else if ( CurrentZone != none )
-				LastVolume = none;
+			if ( CurrentVolume != None )
+				LastZone = None;
+			else if ( CurrentZone != None )
+				LastVolume = None;
 
-			if ( LastZone != none )
+			if ( LastZone != None )
 			{
 				if( LastZone.bNewKFColorCorrection )
 				{
@@ -720,7 +720,7 @@ simulated function DrawModOverlay( Canvas C )
 						LastB = LastZone.DistanceFogColor.B;
 				}
 			}
-			else if ( LastVolume != none )
+			else if ( LastVolume != None )
 			{
 				if( LastVolume.bNewKFColorCorrection )
 				{
@@ -735,26 +735,26 @@ simulated function DrawModOverlay( Canvas C )
 						LastB = LastVolume.DistanceFogColor.B;
 				}
 			}
-			else if ( LastZone != none && LastVolume != none )
-				return;
+			else if ( LastZone != None && LastVolume != None )
+				Return;
 
 			if ( LastZone != CurrentZone || LastVolume != CurrentVolume )
 			{
-				bZoneChanged = true;
-				SetTimer(OverlayFadeSpeed, false);
+				bZoneChanged = True;
+				SetTimer(OverlayFadeSpeed, False);
 			}
 		}
 	}
 	if ( !bTicksTurn && bZoneChanged )
 	{
 		// Pass it off to the tick now
-		// valueCheckout signifies that none of the three values have been
+		// valueCheckout signifies that None of the three values have been
 		// altered by Tick() yet.
 
 		// BOUNCE IT BACK! :D
 		ValueCheckOut = 0;
-		bTicksTurn = true;
-		SetTimer(OverlayFadeSpeed, false);
+		bTicksTurn = True;
+		SetTimer(OverlayFadeSpeed, False);
 	}
 }
 
@@ -851,9 +851,9 @@ simulated function DrawHudPassA(Canvas C)
 	DrawSpriteWidget(C, GrenadeIcon);
 	DrawNumericWidget(C, GrenadeDigits, DigitsSmall);
 
-	if ( PawnOwner != none && PawnOwner.Weapon != none )
+	if ( PawnOwner != None && PawnOwner.Weapon != None )
 	{
-		if ( Syringe(PawnOwner.Weapon) != none )
+		if ( Syringe(PawnOwner.Weapon) != None )
 		{
 			if ( !bLightHud )
 			{
@@ -908,13 +908,13 @@ simulated function DrawHudPassA(Canvas C)
 				}
 				else
 				{
-					bDisplayQuickSyringe = false;
+					bDisplayQuickSyringe = False;
 				}
 			}
 
-			if ( MP7MMedicGun(PawnOwner.Weapon) != none || MP5MMedicGun(PawnOwner.Weapon) != none )
+			if ( MP7MMedicGun(PawnOwner.Weapon) != None || MP5MMedicGun(PawnOwner.Weapon) != None )
 			{
-				if( MP7MMedicGun(PawnOwner.Weapon) != none )
+				if( MP7MMedicGun(PawnOwner.Weapon) != None )
 				{
 					MedicGunDigits.Value = MP7MMedicGun(PawnOwner.Weapon).ChargeBar() * 100;
 				}
@@ -957,7 +957,7 @@ simulated function DrawHudPassA(Canvas C)
 				DrawNumericWidget(C, MedicGunDigits, DigitsSmall);
 			}
 
-			if ( Welder(PawnOwner.Weapon) != none )
+			if ( Welder(PawnOwner.Weapon) != None )
 			{
 				if ( !bLightHud )
 				{
@@ -967,14 +967,14 @@ simulated function DrawHudPassA(Canvas C)
 				DrawSpriteWidget(C, WelderIcon);
 				DrawNumericWidget(C, WelderDigits, DigitsSmall);
 			}
-			else if ( PawnOwner.Weapon.GetAmmoClass(0) != none )
+			else if ( PawnOwner.Weapon.GetAmmoClass(0) != None )
 			{
 				if ( !bLightHud )
 				{
 					DrawSpriteWidget(C, ClipsBG);
 				}
 
-				if ( HuskGun(PawnOwner.Weapon) != none )
+				if ( HuskGun(PawnOwner.Weapon) != None )
 				{
 					ClipsDigits.PosX = 0.873;
 					DrawNumericWidget(C, ClipsDigits, DigitsSmall);
@@ -985,23 +985,23 @@ simulated function DrawHudPassA(Canvas C)
 				    DrawNumericWidget(C, ClipsDigits, DigitsSmall);
 				}
 
-				if ( LAW(PawnOwner.Weapon) != none )
+				if ( LAW(PawnOwner.Weapon) != None )
 				{
 					DrawSpriteWidget(C, LawRocketIcon);
 				}
-				else if ( Crossbow(PawnOwner.Weapon) != none )
+				else if ( Crossbow(PawnOwner.Weapon) != None )
 				{
 					DrawSpriteWidget(C, ArrowheadIcon);
 				}
-				else if ( PipeBombExplosive(PawnOwner.Weapon) != none )
+				else if ( PipeBombExplosive(PawnOwner.Weapon) != None )
 				{
 					DrawSpriteWidget(C, PipeBombIcon);
 				}
-				else if ( M79GrenadeLauncher(PawnOwner.Weapon) != none )
+				else if ( M79GrenadeLauncher(PawnOwner.Weapon) != None )
 				{
 					DrawSpriteWidget(C, M79Icon);
 				}
-				else if ( HuskGun(PawnOwner.Weapon) != none )
+				else if ( HuskGun(PawnOwner.Weapon) != None )
 				{
 					DrawSpriteWidget(C, HuskAmmoIcon);
 				}
@@ -1014,13 +1014,13 @@ simulated function DrawHudPassA(Canvas C)
 
 					DrawNumericWidget(C, BulletsInClipDigits, DigitsSmall);
 
-					if ( Flamethrower(PawnOwner.Weapon) != none )
+					if ( Flamethrower(PawnOwner.Weapon) != None )
 					{
 						DrawSpriteWidget(C, FlameIcon);
 						DrawSpriteWidget(C, FlameTankIcon);
 					}
-					else if ( Shotgun(PawnOwner.Weapon) != none || BoomStick(PawnOwner.Weapon) != none || Winchester(PawnOwner.Weapon) != none
-					 || BenelliShotgun(PawnOwner.Weapon) != none )
+					else if ( Shotgun(PawnOwner.Weapon) != None || BoomStick(PawnOwner.Weapon) != None || Winchester(PawnOwner.Weapon) != None
+					 || BenelliShotgun(PawnOwner.Weapon) != None )
 					{
 						DrawSpriteWidget(C, SingleBulletIcon);
 						DrawSpriteWidget(C, BulletsInClipIcon);
@@ -1032,7 +1032,7 @@ simulated function DrawHudPassA(Canvas C)
 					}
 				}
 
-				if ( KFWeapon(PawnOwner.Weapon) != none && KFWeapon(PawnOwner.Weapon).bTorchEnabled )
+				if ( KFWeapon(PawnOwner.Weapon) != None && KFWeapon(PawnOwner.Weapon).bTorchEnabled )
 				{
 					if ( !bLightHud )
 					{
@@ -1041,7 +1041,7 @@ simulated function DrawHudPassA(Canvas C)
 
 					DrawNumericWidget(C, FlashlightDigits, DigitsSmall);
 
-					if ( KFWeapon(PawnOwner.Weapon).FlashLight != none && KFWeapon(PawnOwner.Weapon).FlashLight.bHasLight )
+					if ( KFWeapon(PawnOwner.Weapon).FlashLight != None && KFWeapon(PawnOwner.Weapon).FlashLight.bHasLight )
 					{
 						DrawSpriteWidget(C, FlashlightIcon);
 					}
@@ -1053,7 +1053,7 @@ simulated function DrawHudPassA(Canvas C)
 			}
 
 			// Secondary ammo
-			if ( KFWeapon(PawnOwner.Weapon) != none && KFWeapon(PawnOwner.Weapon).bHasSecondaryAmmo )
+			if ( KFWeapon(PawnOwner.Weapon) != None && KFWeapon(PawnOwner.Weapon).bHasSecondaryAmmo )
 			{
 				if ( !bLightHud )
 				{
@@ -1069,10 +1069,10 @@ simulated function DrawHudPassA(Canvas C)
 	if( KFPlayerReplicationInfo(PawnOwnerPRI)!=None )
 		SV = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(PawnOwnerPRI).ClientVeteranSkill);
 
-	if ( SV!=none )
+	if ( SV!=None )
 		SV.Static.SpecialHUDInfo(KFPlayerReplicationInfo(PawnOwnerPRI), C);
 
-	if ( KFSGameReplicationInfo(PlayerOwner.GameReplicationInfo) == none || KFSGameReplicationInfo(PlayerOwner.GameReplicationInfo).bHUDShowCash )
+	if ( KFSGameReplicationInfo(PlayerOwner.GameReplicationInfo) == None || KFSGameReplicationInfo(PlayerOwner.GameReplicationInfo).bHUDShowCash )
 	{
 		DrawSpriteWidget(C, CashIcon);
 		DrawNumericWidget(C, CashDigits, DigitsBig);
@@ -1089,7 +1089,7 @@ simulated function DrawHudPassA(Canvas C)
 		if( ClientRep!=None && (TempLevel+1)<ClientRep.MaximumLevel )
 		{
 			// Draw progress bar.
-			bDisplayingProgress = true;
+			bDisplayingProgress = True;
 			if( NextLevelTimer<Level.TimeSeconds )
 			{
 				NextLevelTimer = Level.TimeSeconds+3.f;
@@ -1133,7 +1133,7 @@ simulated function DrawHudPassA(Canvas C)
 		if ( !bUsingVOIP && PlayerOwner != None && PlayerOwner.ActiveRoom != None &&
 			 PlayerOwner.ActiveRoom.GetTitle() == "Team" )
 		{
-			bUsingVOIP = true;
+			bUsingVOIP = True;
 			PlayerOwner.NotifySpeakingInTeamChannel();
 		}
 
@@ -1141,7 +1141,7 @@ simulated function DrawHudPassA(Canvas C)
 	}
 	else
 	{
-		bUsingVOIP = false;
+		bUsingVOIP = False;
 	}
 
 	if ( bDisplayInventory || bInventoryFadingOut )
@@ -1174,9 +1174,9 @@ function DrawDoorHealthBars(Canvas C)
 	local int i;
 
 	if( PawnOwner==None )
-		return;
+		Return;
 
-	if ( (Level.TimeSeconds>LastDoorBarHealthUpdate) || (Welder(PawnOwner.Weapon)!=none && PlayerOwner.bFire==1) )
+	if ( (Level.TimeSeconds>LastDoorBarHealthUpdate) || (Welder(PawnOwner.Weapon)!=None && PlayerOwner.bFire==1) )
 	{
 		DoorCache.Length = 0;
 
@@ -1246,7 +1246,7 @@ simulated event Tick( float Delta )
 	}
 	if( bDisplayingProgress )
 	{
-		bDisplayingProgress = false;
+		bDisplayingProgress = False;
 		if( VisualProgressBar<LevelProgressBar )
 			VisualProgressBar = FMin(VisualProgressBar+Delta,LevelProgressBar);
 		else if( VisualProgressBar>LevelProgressBar )
@@ -1266,7 +1266,7 @@ simulated event Tick( float Delta )
 		}
 		else KFPlayerController(PlayerOwner).postfxoff(2);
 		if( CurrentBW==DesiredBW )
-			bFadeBW = false;
+			bFadeBW = False;
 	}
 	Super.Tick(Delta);
 }
@@ -1286,7 +1286,7 @@ final function DrawSelectionIcon( Canvas C, bool bSelected, KFWeapon I, float Wi
 		RY = C.CurY;
 		C.DrawTile(M, Width, Height, 0, 0, 256, 192);
 		if( !bSelected )
-			return;
+			Return;
 		C.CurX = RX;
 		C.CurY = RY;
 	}
@@ -1302,7 +1302,7 @@ final function DrawSelectionIcon( Canvas C, bool bSelected, KFWeapon I, float Wi
 	C.CurX = 0;
 	C.ClipX = Width;
 	C.ClipY = C.CurY+Height;
-	C.DrawText(I.ItemName,false);
+	C.DrawText(I.ItemName,False);
 	C.OrgX = 0;
 	C.ClipX = RX;
 	C.ClipY = RY;
@@ -1334,8 +1334,8 @@ function DrawInventory( Canvas C )
 		if ( Level.TimeSeconds < (InventoryFadeStartTime + InventoryFadeTime) )
 			C.SetDrawColor(255, 255, 255, byte((1.0 - ((Level.TimeSeconds - InventoryFadeStartTime) / InventoryFadeTime)) * 255.0));
 		else  {
-			bInventoryFadingOut = false;
-			return;
+			bInventoryFadingOut = False;
+			Return;
 		}
 	}
 	else
@@ -1536,7 +1536,7 @@ function DisplayMessages(Canvas C)
 	for( i = 0; i < ConsoleMessageCount; i++ )
 	{
 		if ( TextMessages[i].Text == "" )
-			break;
+			Break;
 		else if( TextMessages[i].MessageLife < Level.TimeSeconds )
 		{
 			TextMessages[i].Text = "";
@@ -1547,14 +1547,14 @@ function DisplayMessages(Canvas C)
 					TextMessages[j] = TextMessages[j+1];
 			}
 			TextMessages[j].Text = "";
-			break;
+			Break;
 		}
 		else
 			MessageCount++;
 	}
 
 	YPos = (ConsoleMessagePosY * HudCanvasScale * C.SizeY) + (((1.0 - HudCanvasScale) / 2.0) * C.SizeY);
-	if ( PlayerOwner == none || PlayerOwner.PlayerReplicationInfo == none || !PlayerOwner.PlayerReplicationInfo.bWaitingPlayer )
+	if ( PlayerOwner == None || PlayerOwner.PlayerReplicationInfo == None || !PlayerOwner.PlayerReplicationInfo.bWaitingPlayer )
 	{
 		XPos = (ConsoleMessagePosX * HudCanvasScale * C.SizeX) + (((1.0 - HudCanvasScale) / 2.0) * C.SizeX);
 	}
@@ -1574,7 +1574,7 @@ function DisplayMessages(Canvas C)
 	for( i=0; i<MessageCount; i++ )
 	{
 		if ( TextMessages[i].Text == "" )
-			break;
+			Break;
 
 		C.SetPos( XPos, YPos );
 		C.DrawColor = TextMessages[i].TextColor;
@@ -1588,7 +1588,7 @@ function DisplayMessages(Canvas C)
 		}
 		if( SmileyMsgs.Length!=0 )
 			DrawSmileyText(TextMessages[i].Text,C,,YYL);
-		else C.DrawText(TextMessages[i].Text,false);
+		else C.DrawText(TextMessages[i].Text,False);
 		YPos += (YL+YYL);
 	}
 }
@@ -1603,7 +1603,7 @@ function AddTextMessage(string M, class<LocalMessage> MessageClass, PlayerReplic
 	for( i=0; i<ConsoleMessageCount; i++ )
 	{
 		if ( TextMessages[i].Text == "" )
-			break;
+			Break;
 	}
 	if( i == ConsoleMessageCount )
 	{
@@ -1633,29 +1633,29 @@ simulated function Message(PlayerReplicationInfo PRI, coerce string Msg, name Ms
 			Msg = TraderString$":" @ Msg;
 			LocalMessageClass = class'SayMessagePlus';
 			PRI = None;
-			break;
+			Break;
 		case 'Voice':
 		case 'Say':
 			if ( PRI == None )
-				return;
+				Return;
 			LocalMessageClass = class'SayMessagePlus';
-			break;
+			Break;
 		case 'TeamSay':
 			if ( PRI == None )
-				return;
+				Return;
 			Msg = PRI.PlayerName $ " (" $ PRI.GetLocationName() $ "): " $ Msg;
 			LocalMessageClass = class'TeamSayMessagePlus';
-			break;
+			Break;
 		case 'CriticalEvent':
 			LocalMessageClass = class'KFCriticalEventPlus';
 			LocalizedMessage(LocalMessageClass, 0, None, None, None, Msg);
-			return;
+			Return;
 		case 'DeathMessage':
 			LocalMessageClass = class'xDeathMessage';
-			break;
+			Break;
 		default:
 			LocalMessageClass = class'StringMessagePlus';
-			break;
+			Break;
 	}
 	AddTextMessage(Msg, LocalMessageClass, PRI);
 }
@@ -1769,7 +1769,7 @@ static final function string StripColorForTTS(string s) // Strip color codes.
 		s = left(s,p)$mid(S,p+4);
 		p = InStr(s,Chr(27));
 	}
-	return s;
+	Return s;
 }
 
 defaultproperties

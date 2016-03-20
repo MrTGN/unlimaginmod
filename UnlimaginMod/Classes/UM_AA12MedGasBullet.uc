@@ -53,7 +53,7 @@ simulated event PostNetReceive()
 	
 	if( !bHasExploded && bNeedToPlayEffects )
     {
-        bNeedToPlayEffects = false;
+        bNeedToPlayEffects = False;
         Explode(Location, vect(0,0,1));
     }
 }
@@ -68,11 +68,11 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 	
 	if( Role == ROLE_Authority )
 	{
-        bNeedToPlayEffects = true;
+        bNeedToPlayEffects = True;
         AmbientSound=Sound'Inf_WeaponsTwo.smoke_loop';
 	}
 	
-	if ( EffectIsRelevant(Location,false) )
+	if ( EffectIsRelevant(Location,False) )
 	{
 		Spawn(ExplosionEmitter,,, HitLocation + HitNormal, rotator(vect(0,0,1)));
 		Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
@@ -119,7 +119,7 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector M
 
 simulated function Destroyed()
 {
-	if ( xEmitterTrail != none )
+	if ( xEmitterTrail != None )
 	{
 		xEmitterTrail.mRegen=False;
 		xEmitterTrail.SetPhysics(PHYS_None);
@@ -168,7 +168,7 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
     NextHealTime = Level.TimeSeconds + HealInterval;
 
-	bHurtEntry = true;
+	bHurtEntry = True;
 
 	foreach CollidingActors (class 'Actor', Victims, DamageRadius, HitLocation)
 	{
@@ -191,38 +191,38 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
 			P = Pawn(Victims);
 
-			if( P != none )
+			if( P != None )
 			{
 		        for (i = 0; i < CheckedPawns.Length; i++)
 				{
 		        	if (CheckedPawns[i] == P)
 					{
-						bAlreadyChecked = true;
-						break;
+						bAlreadyChecked = True;
+						Break;
 					}
 				}
 
 				if( bAlreadyChecked )
 				{
-					bAlreadyChecked = false;
-					P = none;
+					bAlreadyChecked = False;
+					P = None;
 					continue;
 				}
 
                 KFMonsterVictim = KFMonster(Victims);
 
-    			if( KFMonsterVictim != none && KFMonsterVictim.Health <= 0 )
+    			if( KFMonsterVictim != None && KFMonsterVictim.Health <= 0 )
     			{
-                    KFMonsterVictim = none;
+                    KFMonsterVictim = None;
     			}
 
                 KFP = KFPawn(Victims);
 
-                if( KFMonsterVictim != none )
+                if( KFMonsterVictim != None )
                 {
                     damageScale *= KFMonsterVictim.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
                 }
-                else if( KFP != none )
+                else if( KFP != None )
                 {
 				    damageScale *= KFP.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
                 }
@@ -231,13 +231,13 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
 				if ( damageScale <= 0)
 				{
-					P = none;
+					P = None;
 					continue;
 				}
 				else
 				{
 					//Victims = P;
-					P = none;
+					P = None;
 				}
 			}
 			else
@@ -245,16 +245,16 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
                 continue;
 			}
 
-            if( KFP == none )
+            if( KFP == None )
             {
     			//log(Level.TimeSeconds@"Hurting "$Victims$" for "$(damageScale * DamageAmount)$" damage");
 
-    			if( Pawn(Victims) != none && Pawn(Victims).Health > 0 )
+    			if( Pawn(Victims) != None && Pawn(Victims).Health > 0 )
     			{
                     Victims.TakeDamage(damageScale * DamageAmount,Instigator,Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius)
         			 * dirs,(damageScale * Momentum * dirs),DamageType);
 
-        			if( Role == ROLE_Authority && KFMonsterVictim != none && KFMonsterVictim.Health <= 0 )
+        			if( Role == ROLE_Authority && KFMonsterVictim != None && KFMonsterVictim.Health <= 0 )
                     {
                         NumKilled++;
                     }
@@ -262,14 +262,14 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 			}
 			else
 			{
-                if( Instigator != none && KFP.Health > 0 && KFP.Health < KFP.HealthMax )
+                if( Instigator != None && KFP.Health > 0 && KFP.Health < KFP.HealthMax )
                 {
 					PlayersHealed += 1;
             		MedicReward = HealBoostAmount;
 
             		PRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
 
-            		if ( PRI != none && PRI.ClientVeteranSkill != none )
+            		if ( PRI != None && PRI.ClientVeteranSkill != None )
             		{
             			MedicReward *= PRI.ClientVeteranSkill.Static.GetHealPotency(PRI);
             		}
@@ -290,9 +290,9 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
              		if ( PRI != None )
             		{
-            			if ( MedicReward > 0 && KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != none )
+            			if ( MedicReward > 0 && KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements) != None )
             			{
-            				KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward, false, true);
+            				KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).AddDamageHealed(MedicReward, False, True);
             			}
 
                         // Give the medic reward money as a percentage of how much of the person's health they healed
@@ -303,12 +303,12 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
             			PRI.Team.Score += MedicReward;
 
-            			if ( KFHumanPawn(Instigator) != none )
+            			if ( KFHumanPawn(Instigator) != None )
             			{
             				KFHumanPawn(Instigator).AlphaAmount = 255;
             			}
 
-                        if( PlayerController(Instigator.Controller) != none )
+                        if( PlayerController(Instigator.Controller) != None )
                         {
                             PlayerController(Instigator.Controller).ClientMessage(SuccessfulHealMessage@KFP.PlayerReplicationInfo.PlayerName, 'CriticalEvent');
                         }
@@ -316,19 +316,19 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
                 }
 			}
 
-			KFP = none;
+			KFP = None;
         }
 
 		if (PlayersHealed >= MaxNumberOfPlayers)
 		{
-			if (PRI != none)
+			if (PRI != None)
 			{
         		KFSteamStatsAndAchievements(PRI.SteamStatsAndAchievements).HealedTeamWithMedicGrenade();
 			}
 		}
 	}
 
-	bHurtEntry = false;
+	bHurtEntry = False;
 }
 
 simulated function ProcessTouch(Actor Other, Vector HitLocation)
@@ -343,38 +343,38 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 		// Don't let it hit this player, or blow up on another player
 		// Don't collide with bullet whip attachments
 		// Don't allow hits on poeple on the same team
-		if ( Other == none || Other == Instigator || Other.Base == Instigator ||
-			KFBulletWhipAttachment(Other) != none || (KFHumanPawn(Other) != none && Instigator != none
+		if ( Other == None || Other == Instigator || Other.Base == Instigator ||
+			KFBulletWhipAttachment(Other) != None || (KFHumanPawn(Other) != None && Instigator != None
 			&& KFHumanPawn(Other).PlayerReplicationInfo.Team.TeamIndex == Instigator.PlayerReplicationInfo.Team.TeamIndex) )
 			Return;
 
 		if( Role == ROLE_Authority )
 		{
-			if( ROBulletWhipAttachment(Other) != none )
+			if( ROBulletWhipAttachment(Other) != None )
 			{
 				if(!Other.Base.bDeleteMe)
 				{
 					Other = Instigator.HitPointTrace(TempHitLocation, HitNormal, HitLocation + (200 * X), HitPoints, HitLocation,, 1);
 
-					if( Other == none || HitPoints.Length == 0 )
+					if( Other == None || HitPoints.Length == 0 )
 						Return;
 
 					HitPawn = KFPawn(Other);
 
-					if (Role == ROLE_Authority && HitPawn != none && !HitPawn.bDeleteMe)
+					if (Role == ROLE_Authority && HitPawn != None && !HitPawn.bDeleteMe)
 						HitPawn.ProcessLocationalDamage(ImpactDamage, Instigator, TempHitLocation, MomentumTransfer * Normal(Velocity), ImpactDamageType,HitPoints);
 				}
 			}
 			else
 			{
-				if (Pawn(Other) != none && Pawn(Other).IsHeadShot(HitLocation, X, 1.0))
+				if (Pawn(Other) != None && Pawn(Other).IsHeadShot(HitLocation, X, 1.0))
 					Pawn(Other).TakeDamage(ImpactDamage * HeadShotDamageMult, Instigator, HitLocation, MomentumTransfer * Normal(Velocity), ImpactDamageType);
 				else
 					Other.TakeDamage(ImpactDamage, Instigator, HitLocation, MomentumTransfer * Normal(Velocity), ImpactDamageType);
 			}
 		}
 		
-		if ( xEmitterTrail != none )
+		if ( xEmitterTrail != None )
 		{
 			xEmitterTrail.mRegen=False;
 			xEmitterTrail.SetPhysics(PHYS_None);
@@ -411,7 +411,7 @@ event Tick( float DeltaTime )
 
 defaultproperties
 {
-     //bInitialAcceleration - if this is true and bTrueBallistics is true, the projectile will accellerate 
+     //bInitialAcceleration - if this is True and bTrueBallistics is True, the projectile will accellerate 
 	 // to full speed over .1 seconds. 
 	 // This prevents the problem where a just spawned projectile passes right through something without colliding
 	 HealBoostAmount=10

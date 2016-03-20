@@ -56,7 +56,7 @@ final function UM_ClientRepInfoLink FindStatsFor( Controller C )
 			Return UM_ClientRepInfoLink(L);
 	}
 	
-	return None;
+	Return None;
 }
 
 defaultproperties

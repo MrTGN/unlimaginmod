@@ -191,7 +191,7 @@ simulated event PostBeginPlay()
 	local	int		m;
 	
 	if ( !default.bAssetsLoaded )
-		PreloadAssets(self, true);
+		PreloadAssets(self, True);
 
 	//[block] Copied from the Weapon class to add some changes
 	// Creating the FireMode objects
@@ -346,7 +346,7 @@ state TogglingTacticalModule
 	
 	simulated event Timer()
 	{		
-		SetTimer(0.0, false);
+		SetTimer(0.0, False);
 		GotoState(InitialState);
 	}
 }
@@ -386,10 +386,10 @@ simulated exec function ToggleIronSights()
 {
 	if ( bHasAimingMode )  {
 		if ( bAimingRifle )
-			PerformZoom(false);
+			PerformZoom(False);
 		else  {
 			/*
-			if ( Owner != none && Owner.Physics == PHYS_Falling &&
+			if ( Owner != None && Owner.Physics == PHYS_Falling &&
 				Owner.PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
 				Return;
 			*/
@@ -408,7 +408,7 @@ simulated exec function IronSightZoomIn()
 {
 	if ( bHasAimingMode )  {
 		/*
-		if ( Owner != none && Owner.Physics == PHYS_Falling &&
+		if ( Owner != None && Owner.Physics == PHYS_Falling &&
 			Owner.PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
 			Return;
 		*/
@@ -495,7 +495,7 @@ simulated function Vector GetFireModeEffectStart(int ModeNum)
 
 //
 // Function which lets existing items in a pawn's inventory
-// prevent the pawn from picking something up. Return true to abort pickup
+// prevent the pawn from picking something up. Return True to abort pickup
 // or if item handles pickup, otherwise keep going through inventory list.
 //
 function bool HandlePickupQuery( Pickup Item )
@@ -594,7 +594,7 @@ simulated event RenderOverlays( Canvas Canvas )
 	//PreDrawFPWeapon();	// Laurent -- Hook to override things before render (like rotation if using a staticmesh)
 
 	bDrawingFirstPerson = True;
-	Canvas.DrawActor(self, false, false, DisplayFOV);
+	Canvas.DrawActor(self, False, False, DisplayFOV);
 	bDrawingFirstPerson = False;
 }
 
@@ -816,7 +816,7 @@ simulated event WeaponTick(float dt)
 	if ( bHasAimingMode )  {
 		if ( bForceLeaveIronsights )  {
 			if ( bAimingRifle )  {
-				ZoomOut(true);
+				ZoomOut(True);
 				if ( Role < ROLE_Authority )
 					ServerZoomOut(False);
 			}
@@ -945,7 +945,7 @@ exec function ReloadMeNow()
 			else if ( FireMode[Mode].bIsFiring )
 				ServerStopFire(Mode);
 		}
-		ZoomOut(false);
+		ZoomOut(False);
 	}
 	
 	CVS = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill;
@@ -1073,7 +1073,7 @@ simulated event Timer()
 			else
 				ClientStartFire(1);
 
-			bPendingFlashlight = false;
+			bPendingFlashlight = False;
 		}
 	}
 	else if ( ClientState == WS_PutDown )  {
@@ -1084,7 +1084,7 @@ simulated event Timer()
 				else if ( HasAnim(PutDownAnim) )
 					PlayAnim(PutDownAnim, PutDownAnimRate, 0.0);
 			}
-			SetTimer(PutDownTime, false);
+			SetTimer(PutDownTime, False);
 			Return;
 		}
 
@@ -1132,7 +1132,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	// Hint check
 	Player = KFPlayerController(Instigator.Controller);
 
-	if ( Player != none && ClientGrenadeState != GN_BringUp )
+	if ( Player != None && ClientGrenadeState != GN_BringUp )
 	{
 		if ( class == class'Single' )
 			Player.CheckForHint(10);
@@ -1169,11 +1169,11 @@ simulated function BringUp(optional Weapon PrevWeapon)
 		else if ( class == class'DualDeagle' || class == class'GoldenDualDeagle' )
 			Player.WeaponPulloutRemark(22);
 
-		bShowPullOutHint = true;
+		bShowPullOutHint = True;
 	}
 
 	if ( KFHumanPawn(Instigator) != None )
-		KFHumanPawn(Instigator).SetAiming(false);
+		KFHumanPawn(Instigator).SetAiming(False);
 
 	bAimingRifle = False;
 	bIsReloading = False;
@@ -1181,7 +1181,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 	// From Weapon.uc
     if ( ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
-		PlayOwnedSound(SelectSound, SLOT_Interact,,,,, false);
+		PlayOwnedSound(SelectSound, SLOT_Interact,,,,, False);
 		ClientPlayForceFeedback(SelectForce);  // jdf
 
 		if ( Instigator.IsLocallyControlled() && Mesh != None )  {
@@ -1200,18 +1200,18 @@ simulated function BringUp(optional Weapon PrevWeapon)
         if ( ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0 )  {
 			bQuickBringUp = True;
 			ClientGrenadeState = GN_None;
-			SetTimer(QuickBringUpTime, false);
+			SetTimer(QuickBringUpTime, False);
 		}
 		else
-			SetTimer(BringUpTime, false);
+			SetTimer(BringUpTime, False);
 	}
 
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; Mode++ )  {
-		FireMode[Mode].bIsFiring = false;
+		FireMode[Mode].bIsFiring = False;
 		FireMode[Mode].HoldTime = 0.0;
-		FireMode[Mode].bServerDelayStartFire = false;
-		FireMode[Mode].bServerDelayStopFire = false;
-		FireMode[Mode].bInstantStop = false;
+		FireMode[Mode].bServerDelayStartFire = False;
+		FireMode[Mode].bServerDelayStopFire = False;
+		FireMode[Mode].bInstantStop = False;
 	}
 
 	if ( PrevWeapon != None && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch )
@@ -1240,7 +1240,7 @@ simulated function bool PutDown()
 		if ( Instigator.PendingWeapon != None && !Instigator.PendingWeapon.bForceSwitch )  {
 			for ( Mode = 0; Mode < NUM_FIRE_MODES; Mode++ )  {
 		    	// if _RO_
-				if( FireMode[Mode] == none )
+				if( FireMode[Mode] == None )
 					Continue;
 				// End _RO_
 
@@ -1286,30 +1286,30 @@ simulated function bool PutDown()
 			DownDelay = 0;
 		
 		if ( DownDelay > 0 )
-			SetTimer(DownDelay, false);
+			SetTimer(DownDelay, False);
 		else if ( ClientGrenadeState == GN_TempDown || KFPawn(Instigator).bIsQuickHealing > 0 )  {
 			bQuickPutDown = True;
-			SetTimer(QuickPutDownTime, false);
+			SetTimer(QuickPutDownTime, False);
 		}
 		else
-			SetTimer(PutDownTime, false);
+			SetTimer(PutDownTime, False);
 	}
 	
 	for ( Mode = 0; Mode < NUM_FIRE_MODES; Mode++ )  {
 		// if _RO_
-		if( FireMode[Mode] == none )
+		if( FireMode[Mode] == None )
 			continue;
 		// End _RO_
 
-		FireMode[Mode].bServerDelayStartFire = false;
-		FireMode[Mode].bServerDelayStopFire = false;
+		FireMode[Mode].bServerDelayStartFire = False;
+		FireMode[Mode].bServerDelayStopFire = False;
 	}
 	
 	Instigator.AmbientSound = None;
 	if ( !bQuickPutDown )
 		OldWeapon = None;
 	
-	Return True; // return false if preventing weapon switch
+	Return True; // Return False if preventing weapon switch
 }
 
 simulated function AnimEnd(int channel)
@@ -1566,7 +1566,7 @@ state PendingClientWeaponSet
 {
 	simulated event BeginState()
 	{
-		SetTimer(0.05, false);
+		SetTimer(0.05, False);
 	}
 
 	simulated event Timer()
@@ -1575,7 +1575,7 @@ state PendingClientWeaponSet
 			ClientWeaponSet(bPendingSwitch);
 		// Not all data was replicated. Waiting.
 		if ( IsInState('PendingClientWeaponSet') )
-			SetTimer(0.05, false);
+			SetTimer(0.05, False);
 	}
 
 	simulated event EndState()
@@ -1633,7 +1633,7 @@ function GiveTo( Pawn Other, optional Pickup Pickup )
 		SetOwner(Other);
 	Instigator = Other;
 	W = Weapon( Instigator.FindInventoryType(Class) );
-	// added class check because somebody made FindInventoryType() return subclasses for some reason
+	// added class check because somebody made FindInventoryType() Return subclasses for some reason
 	// Don't have a single weapon
 	if ( W == None || W.Class != Class )  {
 		//bJustSpawned = Instigator.AddInventory( Self );
@@ -1685,7 +1685,7 @@ function SilentGiveTo(Pawn Other, optional Pickup Pickup)
 		SetOwner(Other);
 	Instigator = Other;
 	W = Weapon( Instigator.FindInventoryType(Class) );
-	// added class check because somebody made FindInventoryType() return subclasses for some reason
+	// added class check because somebody made FindInventoryType() Return subclasses for some reason
 	if ( W == None || W.Class != Class )  {
 		bJustSpawned = Instigator.AddInventory( Self );
 		//Super(Inventory).GiveTo(Other);

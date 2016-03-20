@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieBloat_HALLOWEEN
-//	Parent class:	 UM_ZombieBloat
+//	Parent class:	 UM_BaseMonster_Bloat
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.10.2012 1:12
 //================================================================================
-class UM_ZombieBloat_HALLOWEEN extends UM_ZombieBloat;
+class UM_ZombieBloat_HALLOWEEN extends UM_BaseMonster_Bloat;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 
@@ -20,14 +20,14 @@ function PlayDyingSound()
 {
 	if ( Level.NetMode != NM_Client )  {
 		if ( bGibbed )  {
-			PlaySound(sound'KF_EnemiesFinalSnd_HALLOWEEN.Bloat_DeathPop', SLOT_Pain,2.0,true,525);
+			PlaySound(sound'KF_EnemiesFinalSnd_HALLOWEEN.Bloat_DeathPop', SLOT_Pain,2.0,True,525);
 			Return;
 		}
 
 		if ( bDecapitated )
-			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,true,525);
+			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,True,525);
 		else
-			PlaySound(sound'KF_EnemiesFinalSnd_HALLOWEEN.Bloat_DeathPop', SLOT_Pain,2.0,true,525);
+			PlaySound(sound'KF_EnemiesFinalSnd_HALLOWEEN.Bloat_DeathPop', SLOT_Pain,2.0,True,525);
 	}
 }
 

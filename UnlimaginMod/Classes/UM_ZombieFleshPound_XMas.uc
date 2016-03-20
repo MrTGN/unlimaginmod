@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ZombieFleshPound_XMas
-//	Parent class:	 UM_ZombieFleshPound
+//	Parent class:	 UM_BaseMonster_FleshPound
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 13.12.2012 22:47
 //================================================================================
-class UM_ZombieFleshPound_XMas extends UM_ZombieFleshPound;
+class UM_ZombieFleshPound_XMas extends UM_BaseMonster_FleshPound;
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_Xmas.uax
 

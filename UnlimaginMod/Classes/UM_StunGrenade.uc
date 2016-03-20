@@ -27,7 +27,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 
 	PlaySound(ExplosionSound,,2.0);
 
-	if ( EffectIsRelevant(Location,false) )
+	if ( EffectIsRelevant(Location,False) )
 	{
 		Spawn(Class'KFmod.KFNadeExplosion',,, HitLocation, rotator(vect(0,0,1)));
 		Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
@@ -56,9 +56,9 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 
 
 	if ( bHurtEntry )
-		return;
+		Return;
 
-	bHurtEntry = true;
+	bHurtEntry = True;
 
 	foreach CollidingActors (class 'Actor', Victims, DamageRadius, HitLocation)
 	{
@@ -80,21 +80,21 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 
 			P = Pawn(Victims);
 
-			if( P != none )
+			if( P != None )
 			{
 		        for (i = 0; i < CheckedPawns.Length; i++)
 				{
 		        	if (CheckedPawns[i] == P)
 					{
-						bAlreadyChecked = true;
-						break;
+						bAlreadyChecked = True;
+						Break;
 					}
 				}
 
 				if( bAlreadyChecked )
 				{
-					bAlreadyChecked = false;
-					P = none;
+					bAlreadyChecked = False;
+					P = None;
 					continue;
 				}
 
@@ -102,18 +102,18 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 				KFMVictimController = KFMonsterVictim.Controller;
 				UM_KFMonsterVictim = UM_BaseMonster(Victims);
 
-    			if( KFMonsterVictim != none && KFMonsterVictim.Health <= 0 )
+    			if( KFMonsterVictim != None && KFMonsterVictim.Health <= 0 )
     			{
-                    KFMonsterVictim = none;
+                    KFMonsterVictim = None;
     			}
 
                 //KFP = KFPawn(Victims);
 
-                if( KFMonsterVictim != none )
+                if( KFMonsterVictim != None )
                 {
                     damageScale *= KFMonsterVictim.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
                 }
-                /*else if( KFP != none )
+                /*else if( KFP != None )
 				{
 					damageScale *= KFP.GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
 				}*/
@@ -122,19 +122,19 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
 
 				if ( damageScale <= 0)
 				{
-					P = none;
+					P = None;
 					continue;
 				}
 				else
 				{
 					//Victims = P;
-					P = none;
+					P = None;
 				}
 			}
 
 			UM_KFMonsterVictim.Dazzle(damageScale);
 			 
-			if( Role == ROLE_Authority && KFMonsterVictim != none && KFMVictimController.IsInState('IamDazzled') )
+			if( Role == ROLE_Authority && KFMonsterVictim != None && KFMVictimController.IsInState('IamDazzled') )
                 NumDazzled++;
 
 			/*if (Vehicle(Victims) != None && Vehicle(Victims).Health > 0)
@@ -156,7 +156,7 @@ simulated function HurtRadius( float DamageAmount, float DamageRadius, class<Dam
         }
     }
 
-	bHurtEntry = false;
+	bHurtEntry = False;
 }
 
 defaultproperties

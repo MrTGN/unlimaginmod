@@ -26,7 +26,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
             Wall.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 		}
         Destroy();
-        return;
+        Return;
     }
 
     SetRotation(rotator(Normal(Velocity)));
@@ -57,7 +57,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
         LifeSpan = 5.0;
     }
 	
-	bBounce = false;
+	bBounce = False;
 	if (Trail != None)
     {
         Trail.mRegen=False;

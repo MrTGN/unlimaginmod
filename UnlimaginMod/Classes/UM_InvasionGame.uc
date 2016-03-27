@@ -1711,7 +1711,7 @@ defaultproperties
 	 BossWaveMinRespawnCash=(Min=340,Max=380)
 	 
 	 // Bloat
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieBloatData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterBloatData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.15,Max=0.25)
@@ -1745,10 +1745,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=2,Max=8)
 		 BossWaveDeltaLimit=(Min=2,MinTime=30.0,Max=16,MaxTime=60.0)
 	 End Object
-	 Monsters(0)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieBloatData'
+	 Monsters(0)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterBloatData'
 	 
 	 // Clot
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieClotData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterClotData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_Standard"
 		 bNoWaveRestrictions=True
 		 // BossWave
@@ -1756,10 +1756,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=12,Max=48)
 		 BossWaveDeltaLimit=(Min=12,MinTime=10.0,Max=48,MaxTime=20.0)
 	 End Object
-	 Monsters(1)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieClotData'
+	 Monsters(1)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterClotData'
 	 
 	 // Crawler
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieCrawlerData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterCrawlerData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Crawler_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.1,Max=0.2)
@@ -1790,10 +1790,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=2,Max=6)
 		 BossWaveDeltaLimit=(Min=2,MinTime=40.0,Max=6,MaxTime=30.0)
 	 End Object
-	 Monsters(2)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieCrawlerData'
+	 Monsters(2)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterCrawlerData'
 	 
 	 // FleshPound
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieFleshPoundData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterFleshPoundData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_FleshPound_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.0,Max=0.0)
@@ -1824,10 +1824,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=1,Max=1)
 		 BossWaveDeltaLimit=(Min=1,MinTime=120.0,Max=1,MaxTime=60.0)
 	 End Object
-	 Monsters(3)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieFleshPoundData'
+	 Monsters(3)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterFleshPoundData'
 	 
 	 // GoreFast
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieGoreFastData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterGoreFastData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_GoreFast_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.25,Max=0.35)
@@ -1861,10 +1861,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=3,Max=10)
 		 BossWaveDeltaLimit=(Min=3,MinTime=20.0,Max=20,MaxTime=30.0)
 	 End Object
-	 Monsters(4)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieGoreFastData'
+	 Monsters(4)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterGoreFastData'
 	 
 	 // Husk
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieHuskData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterHuskData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_FireBallHusk_Standard"
 		 MonsterClassNames(1)="UnlimaginMod.UM_Monster_RocketHusk_Standard"
 		 // WaveSpawnChance
@@ -1896,10 +1896,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=1,Max=2)
 		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=4,MaxTime=60.0)
 	 End Object
-	 Monsters(5)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieHuskData'
+	 Monsters(5)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterHuskData'
 	 
 	 // Scrake
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieScrakeData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterScrakeData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Scrake_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.0,Max=0.05)
@@ -1930,10 +1930,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=1,Max=2)
 		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=2,MaxTime=60.0)
 	 End Object
-	 Monsters(6)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieScrakeData'
+	 Monsters(6)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterScrakeData'
 	 
 	 // Siren
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieSirenData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterSirenData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Siren_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.0,Max=0.1)
@@ -1964,10 +1964,10 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=1,Max=3)
 		 BossWaveDeltaLimit=(Min=1,MinTime=60.0,Max=3,MaxTime=60.0)
 	 End Object
-	 Monsters(7)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieSirenData'
+	 Monsters(7)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterSirenData'
 	 
 	 // Stalker
-	 Begin Object Class=UM_InvasionMonsterData Name=UM_ZombieStalkerData
+	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterStalkerData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Stalker_Standard"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.1,Max=0.2)
@@ -2001,7 +2001,7 @@ defaultproperties
 		 BossWaveSquadLimit=(Min=3,Max=8)
 		 BossWaveDeltaLimit=(Min=6,MinTime=60.0,Max=12,MaxTime=30.0)
 	 End Object
-	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_ZombieStalkerData'
+	 Monsters(8)=UM_InvasionMonsterData'UnlimaginMod.UM_InvasionGame.UM_MonsterStalkerData'
  
 	 MutatorClass="UnlimaginServer.UnlimaginMutator"
 	 

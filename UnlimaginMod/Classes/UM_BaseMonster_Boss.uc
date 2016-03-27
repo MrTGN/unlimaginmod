@@ -95,7 +95,7 @@ replication
 		TraceHitPos;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bChargingPlayer, SyringeCount, TraceHitPos, bMinigunning, bIsBossView;
+		bChargingPlayer, SyringeCount, bMinigunning, bIsBossView;
 }
 
 //[end] Replication
@@ -753,7 +753,7 @@ state FireChaingun
 				SetAnimAction('transition');
 				//log("Frak this shizz, Charging!!!!");
 				GoToState('Charging');
-				Return;
+				Return 0;
 			}
 		}
 
@@ -1558,13 +1558,13 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 				ChargeDamage = 0;
 				LastForceChargeTime = Level.TimeSeconds;
 				GoToState('Charging');
-				Return;
+				Return 0;
 			}
 		}
 	}
 
-	if ( Health <= 0 || SyringeCount == 3 || IsInState('Escaping') || IsInState('KnockDown') || IsInState('RadialAttack') || bDidRadialAttack )
-		Return;
+	if ( Health < 1 || SyringeCount == 3 || IsInState('Escaping') || IsInState('KnockDown') || IsInState('RadialAttack') || bDidRadialAttack )
+		Return 0;
 
 	if ( (SyringeCount == 0 && Health < HealingLevels[0]) || (SyringeCount == 1 && Health < HealingLevels[1]) || (SyringeCount == 2 && Health < HealingLevels[2]) )  {
 	    //log(GetStateName()$" Took damage and want to heal!!! Health="$Health$" HealingLevels "$HealingLevels[SyringeCount]);

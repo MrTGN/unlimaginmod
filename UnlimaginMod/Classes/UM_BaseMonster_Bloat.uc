@@ -437,7 +437,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( damageType == class 'DamTypeBurned' )
 		Damage *= 1.5;
 	else if ( damageType == Class'DamTypeVomit' )
-		Return;
+		Return 0;
 	else if ( damageType == class 'DamTypeBlowerThrower' )
 		Damage = Round( float(Damage) * 0.25 );	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
 	
@@ -639,7 +639,7 @@ defaultproperties
 	 
 	 HealthMax=525.0
 	 Health=525
-	 HeadHealth=30.0
+	 HeadHealth=35.0
 	 //PlayerCountHealthScale=0.25
 	 PlayerCountHealthScale=0.15
 	 //PlayerNumHeadHealthScale=0.0

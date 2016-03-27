@@ -302,9 +302,10 @@ event PreBeginPlay()
 {
 	LastSeenCheckTime = Level.TimeSeconds;
 	
+	/*
 	if ( !bRandomSizeAdjusted )
 		RandomizeMonsterSizes();
-	
+	*/
 	Super.PreBeginPlay();
 }
 
@@ -382,13 +383,13 @@ simulated event PostBeginPlay()
 				HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
 
 			if( Level.Game.GameDifficulty < 2.0 )
-				MovementSpeedDifficultyScale = 0.95;
+				MovementSpeedDifficultyScale = 0.9;
 			else if( Level.Game.GameDifficulty < 4.0 )
 				MovementSpeedDifficultyScale = 1.0;
 			else if( Level.Game.GameDifficulty < 5.0 )
-				MovementSpeedDifficultyScale = 1.15;
+				MovementSpeedDifficultyScale = 1.1;
 			else if( Level.Game.GameDifficulty < 7.0 )
-				MovementSpeedDifficultyScale = 1.22;
+				MovementSpeedDifficultyScale = 1.2;
 			else // Hardest difficulty
 				MovementSpeedDifficultyScale = 1.3;
 
@@ -1540,13 +1541,13 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 			Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
 		
 		if ( Damage >= 15 )
-			HeatAmount = 5;
+			HeatAmount = 4;
 		else
 			++HeatAmount;
 		
 		// if enough Heat
-		if ( HeatAmount > 4 )  {
-			HeatAmount = 4;
+		if ( HeatAmount > 3 )  {
+			HeatAmount = 3;
 			BurnDown = 10; // Inits burn tick count to 10
 			if ( !bBurnified )  {
 				bBurnified = True;
@@ -1642,7 +1643,7 @@ simulated event Timer()
 	
 	if ( BurnDown > 0 )  {
 		--BurnDown;
-		LastBurnDamage = Round( Lerp(FRand(), float(LastBurnDamage) * 0.9, float(LastBurnDamage) );
+		LastBurnDamage = Round( Lerp(FRand(), float(LastBurnDamage) * 0.9, float(LastBurnDamage)) );
 		ProcessTakeDamage( LastBurnDamage, BurnInstigator, Vect(0.0, 0.0, 0.0), Vect(0.0, 0.0, 0.0), FireDamageClass );
 		// Melt em' :)
 		if ( BurnDown < CrispUpThreshhold )

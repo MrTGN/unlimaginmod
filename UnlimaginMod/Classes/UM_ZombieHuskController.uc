@@ -25,7 +25,7 @@ function bool FireWeaponAt(Actor A)
 	
 	Target = A;
 
-	if ( (VSize(A.Location - Pawn.Location) >= UM_BaseMonster_Husk(Pawn).MeleeRange + Pawn.CollisionRadius + Target.CollisionRadius) && UM_BaseMonster_Husk(Pawn).(NextFireProjectileTime - Level.TimeSeconds) > 0.0 )
+	if ( (VSize(A.Location - Pawn.Location) >= UM_BaseMonster_Husk(Pawn).MeleeRange + Pawn.CollisionRadius + Target.CollisionRadius) && (UM_BaseMonster_Husk(Pawn).NextFireProjectileTime - Level.TimeSeconds) > 0.0 )
 		Return False;
 
 	Monster(Pawn).RangedAttack(Target);

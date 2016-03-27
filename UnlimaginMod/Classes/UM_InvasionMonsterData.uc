@@ -34,7 +34,7 @@ struct DeltaData
 var					bool							bDisabled;			//
 
 var()				array<string>					MonsterClassNames;	// Dynamic MonsterClasses Load
-var()	transient	array<class<UM_BaseMonster>>	MonsterClasses;		// Class of the current Monster
+var					array< class<UM_BaseMonster> >	MonsterClasses;		// Class of the current Monster
 
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
@@ -85,9 +85,11 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
-	for ( i = 0; i < MonsterClassNames.Length; ++i )  {
-		if ( MonsterClassNames[i] != "" )
-			MonsterClasses[MonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassNames[i], Class'Class') );
+	if ( MonsterClasses.Length < 1 )  {
+		for ( i = 0; i < MonsterClassNames.Length; ++i )  {
+			if ( MonsterClassNames[i] != "" )
+				MonsterClasses[MonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassNames[i], Class'Class') );
+		}
 	}
 	
 	InvasionGame = IG;
@@ -109,7 +111,8 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
-	Log( "GameData Object for the Monster Class"@MonsterClassNames@"initialized.", Name );
+	//Log( "GameData Object for the Monster Class"@MonsterClassNames@"initialized.", Name );
+	Log( "GameData Object" @string(Name) @"initialized.", Name );
 	Return True;
 }
 

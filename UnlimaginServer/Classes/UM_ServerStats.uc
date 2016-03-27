@@ -354,23 +354,23 @@ function NotifyKilled( Controller Killed, Pawn KilledPawn, class<DamageType> Dam
 			AddMonsterKillsWithBileOrFlame( KilledPawn.Class );
 		
 		// Bloat
-		if ( UM_ZombieBloat(KilledPawn) != None )
+		if ( UM_BaseMonster_Bloat(KilledPawn) != None )
 			AddBloatKill( Class<DamTypeBullpup>(DamageType) != None );
 		// Siren
-		else if ( UM_ZombieSiren(KilledPawn) != None )
+		else if ( UM_BaseMonster_Siren(KilledPawn) != None )
 			AddSirenKill( Class<DamTypeLawRocketImpact>(DamageType) != None );
 		// Stalker
-		else if ( UM_ZombieStalker(KilledPawn) != None )  {
+		else if ( UM_BaseMonster_Stalker(KilledPawn) != None )  {
 			if ( Class<DamTypeFrag>(DamageType) != None || Class<UM_BaseDamType_Explosive>(DamageType) != None )
 				AddStalkerKillWithExplosives();
 		}
 		// Scrake
-		else if ( UM_ZombieScrake(KilledPawn) != None )  {
+		else if ( UM_BaseMonster_Scrake(KilledPawn) != None )  {
 			if ( Class<DamTypeChainsaw>(DamageType) != None )
 				AddChainsawScrakeKill();
 		}
 		// Clot
-		else if ( UM_ZombieClot(KilledPawn) != None )
+		else if ( UM_BaseMonster_Clot(KilledPawn) != None )
 			AddClotKill();
 		
 		if ( Class<KFWeaponDamageType>(DamageType) != None )

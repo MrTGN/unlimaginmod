@@ -377,6 +377,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		        Stats.CheckAndSetAchievementComplete( Stats.KFACHIEVEMENT_PushScrakeSPJ );
 		}
 	} */
+	Return Damage;
 }
 
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)

@@ -214,7 +214,7 @@ defaultproperties
 	 ExtraSpeedChance=0.200000
 	 ExtraSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // JumpZ
-	 JumpZScaleRange=(Min=0.85,Max=1.2)
+	 JumpZScaleRange=(Min=0.9,Max=1.2)
 	 // Extra Sizes
 	 ExtraSizeScaleRange=(Min=0.52,Max=1.3)
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'

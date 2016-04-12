@@ -1785,7 +1785,7 @@ defaultproperties
 	 //MeshTestCollisionRadius=25.0
 	 CollisionHeight=50.0
 	 CollisionRadius=25.0
-	 CrouchHeight=34.0
+	 CrouchHeight=32.0
 	 CrouchRadius=25.0
 	 
 	 PrePivot=(X=0.0,Y=0.0,Z=0.0)

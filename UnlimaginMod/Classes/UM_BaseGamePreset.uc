@@ -12,7 +12,7 @@
 	This program is free software; you can redistribute and/or modify
 	it under the terms of the Open Unreal Mod License version 1.1.
 ----------------------------------------------------------------------------------
-	GitHub:			 github.com/unlimagin/unlimaginmod
+	GitHub:			 github.com/MrTGN/unlimaginmod
 ----------------------------------------------------------------------------------
 	Comment:		 This is a base game settings profile class. 
 	You can create as many game settings profiles as you want and switches between them. 

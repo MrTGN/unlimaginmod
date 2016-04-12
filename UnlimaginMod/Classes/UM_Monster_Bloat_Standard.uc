@@ -41,27 +41,32 @@ defaultproperties
 	 ControllerClass=Class'UnlimaginMod.UM_ZombieBloatController'
 	 // Mesh
 	 Mesh=SkeletalMesh'UM_Bloat_A.Bloat_Mesh'
+	 // DrawScale
+	 DrawScale=1.075000
 	 // Collision
 	 MeshTestCollisionHeight=62.0
 	 MeshTestCollisionRadius=25.0
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionHeight=84.0
-	 //CollisionRadius=34.0
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
 	 CollisionHeight=66.65
 	 CollisionRadius=26.875
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)
-	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=44.0,AreaSizeScale=1.05,AreaImpactStrength=14.6)
-	 BaseEyeHeight=56.0
-	 EyeHeight=56.0
-	 // DrawScale
-	 DrawScale=1.075000
-	 //OnlineHeadshotOffset=(X=5.000000,Z=70.000000)
-	 OnlineHeadshotOffset=(X=5.000000,Z=54.000000)
-	 OnlineHeadshotScale=1.500000
+	 // EyeHeight
+	 // MeshTestEyeHeight=56.0
+	 BaseEyeHeight=60.2
+	 EyeHeight=60.2
+	 // CrouchHeight = MeshTestCollisionHeight / 1.5625 * DrawScale;
+	 // CrouchRadius = MeshTestCollisionRadius * DrawScale;
+	 CrouchHeight=42.656
+	 CrouchRadius=26.875
+	 // OnlineHeadshotOffset=(X=5.0,Z=54.0)
+	 OnlineHeadshotOffset=(X=5.0,Z=58.0)
+	 OnlineHeadshotScale=1.5
+	 // Health
+	 HealthMax=525.0
+	 Health=525
+	 HeadHealth=35.0
+	 // Mass
+	 Mass=460.000000
 	 // Skins
 	 Skins(0)=Combiner'KF_Specimens_Trip_T.bloat_cmb'
 	 // Sounds

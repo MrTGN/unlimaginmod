@@ -12,7 +12,7 @@
 	This program is free software; you can redistribute and/or modify
 	it under the terms of the Open Unreal Mod License version 1.1.
 ----------------------------------------------------------------------------------
-	GitHub:			 github.com/unlimagin/unlimaginmod
+	GitHub:			 github.com/MrTGN/unlimaginmod
 ----------------------------------------------------------------------------------
 	Comment:		 This GUI object is automated. It will be automatically added.
 ==================================================================================*/

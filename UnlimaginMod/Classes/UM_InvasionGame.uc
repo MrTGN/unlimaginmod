@@ -12,7 +12,7 @@
 	This program is free software; you can redistribute and/or modify
 	it under the terms of the Open Unreal Mod License version 1.1.
 ----------------------------------------------------------------------------------
-	GitHub:			 github.com/unlimagin/unlimaginmod
+	GitHub:			 github.com/MrTGN/unlimaginmod
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
@@ -1720,6 +1720,14 @@ defaultproperties
 	 // Bloat
 	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterBloatData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_Standard"
+		 MonsterClassNames(1)="UnlimaginMod.UM_Monster_Bloat_XXSmall"
+		 MonsterClassNames(2)="UnlimaginMod.UM_Monster_Bloat_XSmall"
+		 MonsterClassNames(3)="UnlimaginMod.UM_Monster_Bloat_Small"
+		 MonsterClassNames(4)="UnlimaginMod.UM_Monster_Bloat_Large"
+		 MonsterClassNames(5)="UnlimaginMod.UM_Monster_Bloat_XLarge"
+		 MonsterClassNames(6)="UnlimaginMod.UM_Monster_Bloat_XXLarge"
+		 SpecialMonsterChance=0.15
+		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_XXXLarge"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.15,Max=0.25)
 		 WaveSpawnChance(1)=(Min=0.2,Max=0.3)

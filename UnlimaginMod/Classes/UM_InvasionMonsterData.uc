@@ -12,7 +12,7 @@
 	This program is free software; you can redistribute and/or modify
 	it under the terms of the Open Unreal Mod License version 1.1.
 ----------------------------------------------------------------------------------
-	GitHub:			 github.com/unlimagin/unlimaginmod
+	GitHub:			 github.com/MrTGN/unlimaginmod
 ----------------------------------------------------------------------------------
 	Comment:		 Template class. This object contains all data about monster 
 					 spawn time, wave limits and restrictions.
@@ -36,6 +36,7 @@ var					bool							bDisabled;			//
 var()				array<string>					MonsterClassNames;	// Dynamic MonsterClasses Load
 var					array< class<UM_BaseMonster> >	MonsterClasses;		// Class of the current Monster
 
+var					bool							bNoSpecialMonster;
 var					float							SpecialMonsterChance;
 var()				array<string>					SpecialMonsterClassNames;	// Dynamic MonsterClasses Load
 var					array< class<UM_BaseMonster> >	SpecialMonsterClasses;		// Class of the current Monster
@@ -84,23 +85,18 @@ function bool InitDataFor( UM_InvasionGame IG )
 	if ( IG == None || bDisabled )
 		Return False;
 	
-	if ( MonsterClassNames.Length < 1 )  {
-		Log( "Error: MonsterClassNames not specified!", Name );
-		Return False;
-	}
-	
-	if ( MonsterClasses.Length < 1 )  {
-		for ( i = 0; i < MonsterClassNames.Length; ++i )  {
-			if ( MonsterClassNames[i] != "" )
-				MonsterClasses[MonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassNames[i], Class'Class') );
-		}
-	}
-	
 	InvasionGame = IG;
 	Level = InvasionGame.Level;
 	if ( Level == None )  {
 		Log( "Error: Level variable is None!", Name );
 		Return False;
+	}
+	
+	if ( MonsterClasses.Length < 1 && MonsterClassNames.Length > 0 )  {
+		for ( i = 0; i < MonsterClassNames.Length; ++i )  {
+			if ( MonsterClassNames[i] != "" )
+				MonsterClasses[MonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(MonsterClassNames[i], Class'Class') );
+		}
 	}
 	
 	for ( i = 0; i < MonsterClasses.Length; ++i )  {
@@ -115,13 +111,36 @@ function bool InitDataFor( UM_InvasionGame IG )
 		Return False;
 	}
 	
+	if ( SpecialMonsterClasses.Length < 1 && SpecialMonsterClassNames.Length > 0 )  {
+		for ( i = 0; i < SpecialMonsterClassNames.Length; ++i )  {
+			if ( SpecialMonsterClassNames[i] != "" )
+				SpecialMonsterClasses[SpecialMonsterClasses.Length] = Class<UM_BaseMonster>( DynamicLoadObject(SpecialMonsterClassNames[i], Class'Class') );
+		}
+	}
+	
+	for ( i = 0; i < SpecialMonsterClasses.Length; ++i )  {
+		if ( SpecialMonsterClasses[i] != None )
+			SpecialMonsterClasses[i].static.PreCacheAssets( Level );
+		else
+			SpecialMonsterClasses.Remove(i, 1);
+	}
+	
+	bNoSpecialMonster = SpecialMonsterClasses.Length < 1;
+	
 	//Log( "GameData Object for the Monster Class"@MonsterClassNames@"initialized.", Name );
-	Log( "GameData Object" @string(Name) @"initialized.", Name );
+	Log( string(Name) @"initialized.", Name );
 	Return True;
 }
 
 function Class<UM_BaseMonster> GetMonsterClass()
 {
+	if ( !bNoSpecialMonster && FRand() <= SpecialMonsterChance )  {
+		if ( SpecialMonsterClasses.Length < 2 )
+			Return SpecialMonsterClasses[0];
+		
+		Return SpecialMonsterClasses[ Rand(SpecialMonsterClasses.Length) ];
+	}
+	
 	if ( MonsterClasses.Length < 2 )
 		Return MonsterClasses[0];
 	
@@ -204,4 +223,5 @@ function bool CanSpawn()
 
 defaultproperties
 {
+     SpecialMonsterChance=0.15
 }

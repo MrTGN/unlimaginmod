@@ -1,9 +1,9 @@
 /*==================================================================================
 	Package:		 UnlimaginMod
-	Class name:		 UM_PawnBodyCollision
-	Creation date:	 02.12.2014 13:14
+	Class name:		 UM_Monster_Bloat_XXXLarge
+	Creation date:	 12.04.2016 23:21
 ----------------------------------------------------------------------------------
-	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
@@ -16,12 +16,21 @@
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
-class UM_PawnBodyCollision extends UM_BallisticCollision;
+class UM_Monster_Bloat_XXXLarge extends UM_Monster_Bloat_Standard;
 
 
 defaultproperties
 {
-     // if ImpactStrength < 6.2 standard 19x9mm bullet can penetrate this area
-	 // ImpactStrength * ProjectileCrossSectionalArea = Energy to penetrate this area
-	 ImpactStrength=7.5
+     // DrawScale
+	 DrawScale=1.254
+	 CollisionHeight=77.758
+	 CollisionRadius=31.354
+	 BaseEyeHeight=70.23
+	 EyeHeight=70.23
+	 CrouchHeight=49.765
+	 CrouchRadius=31.354
+	 OnlineHeadshotOffset=(X=5.834,Z=67.67)
+	 OnlineHeadshotScale=1.75
+	 // Mass
+	 Mass=537.0
 }

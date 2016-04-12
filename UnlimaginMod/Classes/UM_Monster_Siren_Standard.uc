@@ -43,9 +43,6 @@ defaultproperties
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
 	 CollisionHeight=52.5
 	 CollisionRadius=14.7
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=7.6,AreaSizeScale=1.05,AreaBone="CHR_Head",AreaOffset=(X=0.6,Y=-2.0,Z=0.0),AreaImpactStrength=5.6)
-	 //ToDo: UM_PawnBodyCollision - это временная колизия туловища. В дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=34.8,AreaImpactStrength=6.9)
 	 BaseEyeHeight=44.0
 	 EyeHeight=44.0
 	 // DrawScale
@@ -53,6 +50,8 @@ defaultproperties
 	 //OnlineHeadshotOffset=(X=6.000000,Z=41.000000)
 	 OnlineHeadshotOffset=(X=6.000000,Z=42.000000)
 	 OnlineHeadshotScale=1.200000
+	 // Mass
+	 Mass=100.000000 // lb (фунт)
 	 // Skins
 	 Skins(0)=FinalBlend'KF_Specimens_Trip_T.siren_hair_fb'
 	 Skins(1)=Combiner'KF_Specimens_Trip_T.siren_cmb'

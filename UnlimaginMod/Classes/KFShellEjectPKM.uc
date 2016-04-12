@@ -1,6 +1,6 @@
 class KFShellEjectPKM extends KFShellEject;
 
-simulated function Trigger(Actor Other, Pawn EventInstigator)
+simulated event Trigger(Actor Other, Pawn EventInstigator)
 {
 	Emitters[0].SpawnParticle(6);
 	Emitters[1].SpawnParticle(6);

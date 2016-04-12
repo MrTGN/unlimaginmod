@@ -1312,7 +1312,7 @@ simulated function bool PutDown()
 	Return True; // Return False if preventing weapon switch
 }
 
-simulated function AnimEnd(int channel)
+simulated event AnimEnd(int channel)
 {
 	local	name	anim;
 	local	float	frame, rate;

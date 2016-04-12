@@ -1,7 +1,7 @@
 // Because this is most likely going to fail on init, spawn the real stats actor here...
 Class UM_ServerTempStats extends KFSteamStatsAndAchievements;
 
-function PostBeginPlay()
+event PostBeginPlay()
 {
 	local KFPlayerController PlayerOwner;
 
@@ -14,7 +14,7 @@ function PostBeginPlay()
 defaultproperties
 {
 	bNetNotify=false
-	bUsedCheats=true
+	bUsedCheats=True
 	bFlushStatsToClient=false
 	RemoteRole=ROLE_None
 	LifeSpan=0.1

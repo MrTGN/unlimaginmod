@@ -69,7 +69,7 @@ state OnGround
 			BlowUp(Location);
 	}
 
-	function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+	event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 	{
 		if ( DamageType.default.bDetonatesGoop )
 		{
@@ -78,7 +78,7 @@ state OnGround
 		}
 	}
 	
-	simulated function AnimEnd(int Channel)
+	simulated event AnimEnd(int Channel)
 	{
 		local float DotProduct;
 

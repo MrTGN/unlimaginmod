@@ -22,7 +22,7 @@ function NotifyKilled( Controller Killed, Pawn KilledPawn, class<DamageType> Dam
 
 // Allow no default functionality with the stats.
 function OnStatsAndAchievementsReady();
-function PostNetBeginPlay();
+event PostNetBeginPlay();
 function InitializeSteamStatInt(int Index, int Value);
 function SetSteamAchievementCompleted(int Index);
 simulated event SetLocalAchievementCompleted(int Index);
@@ -141,7 +141,7 @@ function AddScrakeAndFPOneShotKill(bool ScrakeKill, bool FPKill);
 function AddHeadshotsWithSPSOrM14( class<Actor> MonsterClass );
 function AddMonsterKillsWithBileOrFlame( class<Actor> MonsterClass );
 simulated function CheckEvents( Name EventName );
-function Trigger(actor Other, pawn EventInstigator );
+event Trigger(actor Other, pawn EventInstigator );
 function OnWeaponReloaded();
 function AddBurningDecapKill(string MapName);
 function AddScrakeKill(string MapName);

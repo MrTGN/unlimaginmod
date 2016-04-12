@@ -246,7 +246,8 @@ defaultproperties
 	// StandardEquipment
 	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=5)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_MAC10MP",MinLevel=5,MaxLevel=7)
+	//AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_MAC10MP",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_MAC10MP",MaxLevel=7)
 	AdditionalEquipment(1)=(ClassName="KFMod.FlareRevolver",MinLevel=6)
 	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_FlameThrower",MinLevel=8,MaxLevel=9)
 	AdditionalEquipment(3)=(ClassName="UnlimaginMod.UM_GoldenFlameThrower",MinLevel=10)

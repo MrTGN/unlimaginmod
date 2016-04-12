@@ -970,7 +970,7 @@ function KickActor()
 // High damage was taken, make em fall over.
 function bool FlipOver()
 {
-	if ( Physics==PHYS_Falling )
+	if ( Physics == PHYS_Falling )
 		SetPhysics(PHYS_Walking);
 
 	bShotAnim = True;
@@ -1384,7 +1384,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( InstigatedBy == self )
 		Momentum *= 0.75;
 	
-	Momentum /= Mass;
+	Momentum = Momentum / Mass * FMin(float(Damage) / float(Health), 1.0);
 	
 	//[block] Damage modifiers
 	// Scale damage if the Zed has been zapped
@@ -1399,10 +1399,12 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( DrivenVehicle != None )
 		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 	
-	if ( InstigatedBy != None && InstigatedBy.HasUDamage() )
-		Damage *= 2;
+	if ( InstigatedBy != None )  {
+		if ( InstigatedBy.HasUDamage() )
+			Damage *= 2;
+		KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
+	}
 	
-	KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
 	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )  {
 		// Do larger headshot checks if it is a melee attach
 		if ( class<DamTypeMelee>(DamageType) != None )
@@ -1418,7 +1420,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult );
 		}
 		
-		bLaserSightedEBRM14Headshotted = bIsHeadshot && M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
+		bLaserSightedEBRM14Headshotted = bIsHeadshot && instigatedBy != None && M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
 	}
 	else
 		bLaserSightedEBRM14Headshotted = bLaserSightedEBRM14Headshotted && bDecapitated;
@@ -1458,12 +1460,13 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 			HeadHealth = Max( (HeadHealth - Damage), 0 );
 			if ( HeadHealth < 1 || Damage > Health )  {
 				RemoveHead();
-				if ( UM_HumanPawn(instigatedBy) != None )
+				if ( UM_HumanPawn(instigatedBy) != None )  {
 					UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
+					// ImpressiveKill
+					if ( Damage > Health )
+						CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
+				}
 			}
-			// ImpressiveKill
-			if ( Damage > Health )
-				CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
 		}
 		// Award headshot here, not when zombie died.
 		if ( bDecapitated && Class<KFWeaponDamageType>(DamageType) != None && 
@@ -1475,8 +1478,11 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	
 		// Client check for Gore FX
 	//BodyPartRemoval(Damage,instigatedBy,Hitlocation,Momentum,DamageType);
+	/*
 	if ( Damage < Health && DamageType != class'DamTypeFrag' && DamageType != class'DamTypePipeBomb' && DamageType != class'DamTypeM79Grenade' && DamageType != class'DamTypeM32Grenade' && DamageType != class'DamTypeM203Grenade' && DamageType != class'DamTypeDwarfAxe' && DamageType != class'DamTypeSPGrenade' && DamageType != class'DamTypeSealSquealExplosion' && DamageType != class'DamTypeSeekerSixRocket' && Class<Whisky_DamTypeHammer>(DamageType) == None && Class<UM_BaseDamType_Explosive>(DamageType) == None )
 		Momentum *= float(Damage) / float(Health) * 0.75;
+	*/
+	
 
 	if ( HitLocation == vect(0.0, 0.0, 0.0) )
 		HitLocation = Location;

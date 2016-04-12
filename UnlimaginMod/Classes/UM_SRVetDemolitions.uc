@@ -227,7 +227,8 @@ defaultproperties
 	// StandardEquipment
 	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=7)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="KFMod.M79GrenadeLauncher",MinLevel=5,MaxLevel=7)
+	//AdditionalEquipment(0)=(ClassName="KFMod.M79GrenadeLauncher",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(0)=(ClassName="KFMod.M79GrenadeLauncher",MaxLevel=7)
 	AdditionalEquipment(1)=(ClassName="KFMod.PipeBombExplosive",MinLevel=6,MaxLevel=9)
 	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_M4203AssaultRifle",MinLevel=8)
 	AdditionalEquipment(3)=(ClassName="KFMod.GoldenM79GrenadeLauncher",MinLevel=10)

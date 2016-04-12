@@ -22,11 +22,11 @@ enum ENetID
 	ID_KeepAlive,
 };
 
-function PostBeginPlay()
+event PostBeginPlay()
 {
 	Disable('Tick');
 	ReceiveMode = RMODE_Event;
-	if( BindPort(Rand(8000)+8000,true)>0 )
+	if( BindPort(Rand(8000)+8000,True)>0 )
 		Resolve(Class'UnlimaginMutator'.Default.RemoteDatabaseURL);
 }
 event Resolved( IpAddr Addr )
@@ -37,7 +37,7 @@ event Resolved( IpAddr Addr )
 	Enable('Tick');
 	NextReqTimer = Level.TimeSeconds+5.f;
 }
-function Tick( float Delta ) // Every 5 seconds, try to open connection again.
+event Tick( float Delta ) // Every 5 seconds, try to open connection again.
 {
 	if( !bConnectionReady && NextReqTimer<Level.TimeSeconds )
 	{
@@ -67,7 +67,7 @@ event ReceivedText( IpAddr Addr, string Text )
 	switch( First )
 	{
 	case ENetID.ID_PasswordCorrect:
-		bConnectionReady = true;
+		bConnectionReady = True;
 		break;
 	case ENetID.ID_RequestPassword:
 		bConnectionReady = false;
@@ -87,7 +87,7 @@ event ReceivedText( IpAddr Addr, string Text )
 		if( Asc(Right(Text,1))!=10 )
 		{
 			PendingLine = Text;
-			bHasPendingLine = true;
+			bHasPendingLine = True;
 			break;
 		}
 		Mut.ReceivedPlayerData(Text);
@@ -112,15 +112,15 @@ final function SaveStats()
 
 State SaveAll
 {
-	function BeginState()
+	event BeginState()
 	{
-		SetTimer(0.05,true);
+		SetTimer(0.05,True);
 	}
-	function EndState()
+	event EndState()
 	{
 		SetTimer(0,false);
 	}
-	function Timer()
+	event Timer()
 	{
 		local UM_StatsObject S;
 		local string Line;

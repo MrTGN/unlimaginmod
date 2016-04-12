@@ -1,6 +1,6 @@
 class OperationY_KFShellEjectL96AWPLLI extends KFShellEject;
 
-simulated function Trigger(Actor Other, Pawn EventInstigator)
+simulated event Trigger(Actor Other, Pawn EventInstigator)
 {
 	Emitters[0].SpawnParticle(1);
 	Emitters[1].SpawnParticle(1);

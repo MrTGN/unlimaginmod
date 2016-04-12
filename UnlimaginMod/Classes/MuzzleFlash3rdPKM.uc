@@ -1,6 +1,6 @@
 class MuzzleFlash3rdPKM extends ROMuzzleFlash3rd;
 
-simulated function Trigger(Actor Other, Pawn EventInstigator)
+simulated event Trigger(Actor Other, Pawn EventInstigator)
 {
 	Emitters[0].SpawnParticle(2);
 	Emitters[1].SpawnParticle(2);

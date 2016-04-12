@@ -34,7 +34,7 @@ simulated function SetHUDAlpha()
 	SlowMoChargeDigits.Tints[1].A = KFHUDAlpha;
 }
 
-simulated function PostBeginPlay()
+simulated event PostBeginPlay()
 {
 	local Font MyFont;
 
@@ -279,14 +279,13 @@ simulated function DrawKFHUDTextElements(Canvas C)
 		if ( KFPlayerController(PlayerOwner) != None )  {
 			KFPlayerController(PlayerOwner).CheckForHint(30);
 			if ( !bHint_45_TimeSet && KFGRI.WaveNumber == 1 )  {
-				Hint_45_Time = Level.TimeSeconds + 5;
+				Hint_45_Time = Level.TimeSeconds + 5.0;
 				bHint_45_TimeSet = True;
 			}
 		}
-
+		C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
 		// Show monsters count if MaxMonsters is enabled
 		if ( KFGRI.MaxMonstersOn )  {
-			C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
 			S = string(KFGRI.MaxMonsters);
 			C.Font = LoadFont(1);
 			C.Strlen(S, XL, YL);
@@ -296,7 +295,6 @@ simulated function DrawKFHUDTextElements(Canvas C)
 		}
 		// Show time until the wave end
 		else  {
-			C.DrawTile(Material'KillingFloorHUD.HUD.Hud_Bio_Clock_Circle', CircleSize, CircleSize, 0, 0, 256, 256);
 			Mnt = KFGRI.TimeToNextWave / 60;
 			Sec = KFGRI.TimeToNextWave - Mnt * 60;
 			S = Eval( (Mnt > 9), string(Mnt), "0" $ string(Mnt) ) $ ":" $ Eval( (Sec > 9), string(Sec), "0" $ string(Sec) );

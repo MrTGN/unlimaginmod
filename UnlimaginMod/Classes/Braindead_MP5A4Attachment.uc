@@ -21,7 +21,7 @@ simulated event ThirdPersonEffects()
 	Super.ThirdPersonEffects();
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( TacShineCorona != None )
 		TacShineCorona.Destroy();

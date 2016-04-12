@@ -18,7 +18,7 @@ var Shader ClotSkins[5];
 
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd_HALLOWEEN.uax
 
-simulated function PostBeginPlay()
+simulated event PostBeginPlay()
 {
     Super.PostBeginPlay();
 

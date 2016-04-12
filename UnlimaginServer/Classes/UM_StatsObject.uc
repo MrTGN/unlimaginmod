@@ -77,7 +77,7 @@ final function GetCustomValues( UM_SRCustomProgress L )
 final function SetSelectedChar( string S )
 {
 	SelectedChar = S;
-	bStatsChanged = true;
+	bStatsChanged = True;
 }
 final function SetSelectedPerk( name S )
 {

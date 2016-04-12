@@ -19,7 +19,7 @@ function SetID( int ID )
 	MyStatsObject.ID = ID;
 }
 
-function PreBeginPlay()
+event PreBeginPlay()
 {
 	// Spawning the stat replication actor before the MutatorOwner check us by CheckReplacement function
 	if ( Rep == None )  {
@@ -30,13 +30,13 @@ function PreBeginPlay()
 	Super.PreBeginPlay();
 }
 
-function PostBeginPlay()
+event PostBeginPlay()
 {
 	if ( Rep != None )
 		Rep.SpawnCustomLinks();
 
-	bStatsReadyNow = !MutatorOwner.bUseRemoteDatabase;
 	OwnerController = UM_PlayerController(Owner);
+	bStatsReadyNow = !MutatorOwner.bUseRemoteDatabase;
 		
 	if ( !bStatsReadyNow || OwnerController == None )  {
 		Timer();
@@ -137,19 +137,19 @@ final function GetData( string D )
 	SetTimer(0.1,false);
 }
 
-function Timer()
+event Timer()
 {
 	if ( !bStatsReadyNow )  {
 		MutatorOwner.GetRemoteStatsForPlayer(Self);
 		Return;
 	}
 	
-	if ( !bStHasInit )  {
+	if ( !bStHasInit && OwnerController != None )  {
 		if ( OwnerController.SteamStatsAndAchievements != None && OwnerController.SteamStatsAndAchievements != Self )
 			OwnerController.SteamStatsAndAchievements.Destroy();
 		OwnerController.SteamStatsAndAchievements = Self;
 		OwnerController.PlayerReplicationInfo.SteamStatsAndAchievements = Self;
-		bStHasInit = true;
+		bStHasInit = True;
 		Rep.SendClientPerks();
 	}
 	
@@ -380,7 +380,7 @@ function NotifyKilled( Controller Killed, Pawn KilledPawn, class<DamageType> Dam
 
 function AddDamageHealed(int Amount, optional bool bMP7MHeal, optional bool bMP5MHeal)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RDamageHealedStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.DamageHealedStat+=Amount;
@@ -389,7 +389,7 @@ function AddDamageHealed(int Amount, optional bool bMP7MHeal, optional bool bMP5
 
 function AddWeldingPoints(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RWeldingPointsStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.WeldingPointsStat+=Amount;
@@ -398,7 +398,7 @@ function AddWeldingPoints(int Amount)
 
 function AddShotgunDamage(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RShotgunDamageStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.ShotgunDamageStat+=Amount;
@@ -407,7 +407,7 @@ function AddShotgunDamage(int Amount)
 
 function AddHeadshotKill(bool bLaserSightedEBRHeadshot)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RHeadshotKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.HeadshotKillsStat++;
@@ -416,7 +416,7 @@ function AddHeadshotKill(bool bLaserSightedEBRHeadshot)
 
 function AddStalkerKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RStalkerKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.StalkerKillsStat++;
@@ -425,7 +425,7 @@ function AddStalkerKill()
 
 function AddBullpupDamage(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RBullpupDamageStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.BullpupDamageStat+=Amount;
@@ -434,7 +434,7 @@ function AddBullpupDamage(int Amount)
 
 function AddMeleeDamage(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RMeleeDamageStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.MeleeDamageStat+=Amount;
@@ -443,7 +443,7 @@ function AddMeleeDamage(int Amount)
 
 function AddFlameThrowerDamage(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RFlameThrowerDamageStat+=Amount;
 	if ( MyStatsObject != None )
 		MyStatsObject.FlameThrowerDamageStat+=Amount;
@@ -469,7 +469,7 @@ function MatchStarting()
 
 function AddKill(bool bLaserSightedEBRM14Headshotted, bool bMeleeKill, bool bZEDTimeActive, bool bM4Kill, bool bBenelliKill, bool bRevolverKill, bool bMK23Kill, bool bFNFalKill, bool bBullpupKill, string MapName)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.KillsStat++;
@@ -478,7 +478,7 @@ function AddKill(bool bLaserSightedEBRM14Headshotted, bool bMeleeKill, bool bZED
 
 function AddClotKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.Unlimagin_ClotKills++;
 	if( MyStatsObject!=None )
 		MyStatsObject.ClotKills++;
@@ -487,7 +487,7 @@ function AddClotKill()
 
 function AddBloatKill(bool bWithBullpup)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RBloatKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.BloatKillsStat++;
@@ -496,7 +496,7 @@ function AddBloatKill(bool bWithBullpup)
 
 function AddSirenKill(bool bLawRocketImpact)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RSirenKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.SirenKillsStat++;
@@ -505,7 +505,7 @@ function AddSirenKill(bool bLawRocketImpact)
 
 function AddDemolitionsPipebombKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.Unlimagin_DemolitionsPipebombKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.DemolitionsPipebombKillsStat++;
@@ -514,7 +514,7 @@ function AddDemolitionsPipebombKill()
 
 function AddStalkerKillWithExplosives()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RStalkersKilledWithExplosivesStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.StalkersKilledWithExplosivesStat++;
@@ -523,7 +523,7 @@ function AddStalkerKillWithExplosives()
 
 function AddFireAxeKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.Unlimagin_FireAxeKills++;
 	if( MyStatsObject!=None )
 		MyStatsObject.FireAxeKills++;
@@ -532,7 +532,7 @@ function AddFireAxeKill()
 
 function AddChainsawScrakeKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.Unlimagin_ChainsawKills++;
 	if( MyStatsObject!=None )
 		MyStatsObject.ChainsawKills++;
@@ -541,7 +541,7 @@ function AddChainsawScrakeKill()
 
 function AddBurningCrossbowKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RBurningCrossbowKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.BurningCrossbowKillsStat++;
@@ -550,7 +550,7 @@ function AddBurningCrossbowKill()
 
 function AddFeedingKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RFeedingKillsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.FeedingKillsStat++;
@@ -559,7 +559,7 @@ function AddFeedingKill()
 
 function AddGibKill(bool bWithM79)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RGibbedEnemiesStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.GibbedEnemiesStat++;
@@ -568,7 +568,7 @@ function AddGibKill(bool bWithM79)
 
 function AddFleshpoundGibKill()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RGibbedFleshpoundsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.GibbedFleshpoundsStat++;
@@ -577,7 +577,7 @@ function AddFleshpoundGibKill()
 
 function AddSelfHeal()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RSelfHealsStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.SelfHealsStat++;
@@ -586,7 +586,7 @@ function AddSelfHeal()
 
 function AddOnlySurvivorOfWave()
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RSoleSurvivorWavesStat++;
 	if( MyStatsObject!=None )
 		MyStatsObject.SoleSurvivorWavesStat++;
@@ -595,7 +595,7 @@ function AddOnlySurvivorOfWave()
 
 function AddDonatedCash(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RCashDonatedStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.CashDonatedStat+=Amount;
@@ -604,7 +604,7 @@ function AddDonatedCash(int Amount)
 
 function AddZedTime(float Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RTotalZedTimeStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.TotalZedTimeStat+=Amount;
@@ -612,7 +612,7 @@ function AddZedTime(float Amount)
 
 function AddExplosivesDamage(int Amount)
 {
-	bHasChanged = true;
+	bHasChanged = True;
 	Rep.RExplosivesDamageStat+=Amount;
 	if( MyStatsObject!=None )
 		MyStatsObject.ExplosivesDamageStat+=Amount;
@@ -632,7 +632,7 @@ function WonLostGame( bool bDidWin )
 		if( MyStatsObject!=None )
 			++MyStatsObject.LostsCount;
 	}
-	bHasChanged = true;
+	bHasChanged = True;
 	DelayedStatCheck();
 	GoToState('');
 }
@@ -657,9 +657,9 @@ event Destroyed()
 Auto state PlaytimeTimer
 {
 Begin:
-	while( true )  {
-		Sleep(1.f);
-		if ( bStatsReadyNow && !OwnerController.PlayerReplicationInfo.bOnlySpectator )  {
+	while( True )  {
+		Sleep(1.0);
+		if ( OwnerController != None && bStatsReadyNow && !OwnerController.PlayerReplicationInfo.bOnlySpectator )  {
 			++Rep.TotalPlayTime;
 			if ( MyStatsObject != None )
 				++MyStatsObject.TotalPlayTime;

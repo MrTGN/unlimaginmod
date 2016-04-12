@@ -32,7 +32,7 @@ static function bool UnloadAssets()
 	Return True;
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if( !bHasExploded && !bHidden && bTriggered)
 		Explode(Location,vect(0,0,1));

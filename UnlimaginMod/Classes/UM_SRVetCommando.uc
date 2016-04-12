@@ -451,7 +451,8 @@ defaultproperties
 	// StandardEquipment
 	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=4)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="UnlimaginMod.Braindead_MP5A4SMG",MinLevel=5,MaxLevel=6)
+     //AdditionalEquipment(0)=(ClassName="UnlimaginMod.Braindead_MP5A4SMG",MinLevel=5,MaxLevel=6)
+	AdditionalEquipment(0)=(ClassName="UnlimaginMod.Braindead_MP5A4SMG",MaxLevel=6)
 	AdditionalEquipment(1)=(ClassName="UnlimaginMod.UM_M4AssaultRifle",MinLevel=7,MaxLevel=8)
 	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_AK47AssaultRifle",MinLevel=9,MaxLevel=9)
 	AdditionalEquipment(3)=(ClassName="UnlimaginMod.UM_GoldenAK47AssaultRifle",MinLevel=10)

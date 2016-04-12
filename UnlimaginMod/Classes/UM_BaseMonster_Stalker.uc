@@ -340,7 +340,7 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 		Skins = UnCloakedSkins;
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( DisabledPawn != None )  {
 		DisabledPawn.bMovementDisabled = False;

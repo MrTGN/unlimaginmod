@@ -229,7 +229,8 @@ defaultproperties
 	CustomLevelInfo="%s faster Syringe recharge|75% more potent medical injections|75% less damage from Bloat Bile|%r faster movement speed|100% larger MP7M Medic Gun clip|75% better Body Armor|%d discount on Body Armor||%m discount on MP7M Medic Guns| Spawn with Body Armor and Medic Gun"
 	
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="KFMod.MP7MMedicGun",MinLevel=5,MaxLevel=6)
+	//AdditionalEquipment(0)=(ClassName="KFMod.MP7MMedicGun",MinLevel=5,MaxLevel=6)
+	AdditionalEquipment(0)=(ClassName="KFMod.MP7MMedicGun",MaxLevel=6)
 	AdditionalEquipment(1)=(ClassName="KFMod.MP5MMedicGun",MinLevel=7,MaxLevel=8)
 	AdditionalEquipment(2)=(ClassName="KFMod.M7A3MMedicGun",MinLevel=9)
 }

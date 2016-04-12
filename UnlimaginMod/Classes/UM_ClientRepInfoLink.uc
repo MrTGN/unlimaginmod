@@ -60,7 +60,7 @@ replication
 		ServerSelectPerk,ServerRequestPerks,ServerAcnowledge,ServerSetCharacter,ServerAckSkin;
 }
 
-function Destroyed()
+event Destroyed()
 {
 	local UM_SRCustomProgress S,NS;
 

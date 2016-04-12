@@ -130,7 +130,7 @@ simulated function bool ShouldDrawPortal()
 		Return False;
 }
 
-simulated function PostBeginPlay()
+simulated event PostBeginPlay()
 {
 	super.PostBeginPlay();
 

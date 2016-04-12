@@ -232,9 +232,10 @@ defaultproperties
 	CustomLevelInfo="%r extra melee damage|%s faster melee attacks|20% faster melee movement|80% less damage from Bloat Bile|%l resistance to all damage|%d discount on Katana/Chainsaw/Sword|Spawn with a Chainsaw and Body Armor|Can't be grabbed by Clots|Up to 4 Zed-Time Extensions"
 	
 	// StandardEquipment
-	StandardEquipment(0)=(ClassName="KFMod.Knife",MaxLevel=4)
+	//StandardEquipment(0)=(ClassName="KFMod.Knife",MaxLevel=4)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="KFMod.Machete",MinLevel=5,MaxLevel=6)
+	//AdditionalEquipment(0)=(ClassName="KFMod.Machete",MinLevel=5,MaxLevel=6)
+	AdditionalEquipment(0)=(ClassName="KFMod.Machete",MaxLevel=6)
 	AdditionalEquipment(1)=(ClassName="KFMod.Axe",MinLevel=7,MaxLevel=8)
 	AdditionalEquipment(2)=(ClassName="KFMod.Katana",MinLevel=9,MaxLevel=9)
 	AdditionalEquipment(3)=(ClassName="KFMod.GoldenKatana",MinLevel=10)

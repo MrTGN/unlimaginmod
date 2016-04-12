@@ -424,6 +424,8 @@ function ClearMonsterList()
 {
 	while( AliveMonsterList.Length > 0 )
 		AliveMonsterList.Remove( (AliveMonsterList.Length - 1), 1 );
+	
+	NumMonsters = AliveMonsterList.Length;
 }
 
 exec function KillZeds()
@@ -1084,6 +1086,12 @@ function KillJammedMonsters()
 		else
 			AliveMonsterList[i].LifeSpan = FClamp( AliveMonsterList[i].LifeSpan, 5.0, 30.0 );
 	}
+	// Updating NumMonsters
+	NumMonsters = AliveMonsterList.Length;
+	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
+		KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = NumMonsters;
+		KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = True;
+	}
 }
 
 function DoWaveEnd()
@@ -1103,7 +1111,7 @@ function DoWaveEnd()
 	bWaveBossInProgress = False;
 	if ( KFGameReplicationInfo(GameReplicationInfo) != None )  {
 		KFGameReplicationInfo(GameReplicationInfo).bWaveInProgress = False;
-		//KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
+		KFGameReplicationInfo(GameReplicationInfo).MaxMonstersOn = False;
 	}
 	
 	// PlayerList
@@ -1421,7 +1429,6 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 		++ZombiesKilled;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = NumMonsters;
-			//KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = Max( (MaxMonsters + NumMonsters) , 0 );
 		
 		if ( PlayerController(Killer) != None )  {
 			if ( !bDidTraderMovingMessage )  {

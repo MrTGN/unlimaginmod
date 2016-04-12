@@ -384,7 +384,7 @@ Ignores StartCharging;
         Global.Tick( DeltaTime );
 	}
 
-	function Bump( Actor Other )
+	event Bump( Actor Other )
 	{
         local float RageBumpDamage;
         local KFMonster KFMonst;
@@ -603,7 +603,7 @@ function bool SameSpeciesAs(Pawn P)
 	Return ( UM_BaseMonster_FleshPound(P) != None );
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( AvoidArea != None )
 		AvoidArea.Destroy();

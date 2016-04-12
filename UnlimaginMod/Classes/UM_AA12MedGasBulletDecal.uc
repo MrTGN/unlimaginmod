@@ -16,7 +16,7 @@ class UM_AA12MedGasBulletDecal extends ProjectedDecal;
 
 #exec OBJ LOAD File=kf_fx_trip_t.utx
 
-simulated function BeginPlay()
+simulated event BeginPlay()
 {
     if ( !Level.bDropDetail && (FRand() < 0.5) )
         ProjTexture = Texture'kf_fx_trip_t.Misc.MedicNade_Stain';

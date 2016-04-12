@@ -17,7 +17,7 @@
 class UM_BenelliM3Attachment extends UM_BaseShotgunAttachment;
 
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( TacShineCorona != None )
 		TacShineCorona.Destroy();

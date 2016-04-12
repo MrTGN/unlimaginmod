@@ -155,7 +155,7 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	Super.Died(Killer, DamageType, HitLocation);
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( DisabledPawn != None )  {
 		DisabledPawn.bMovementDisabled = False;

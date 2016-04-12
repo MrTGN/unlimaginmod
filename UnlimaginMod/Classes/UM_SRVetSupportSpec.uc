@@ -303,7 +303,8 @@ defaultproperties
 	
 	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=6)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="KFMod.BoomStick",MinLevel=5)
+	//AdditionalEquipment(0)=(ClassName="KFMod.BoomStick",MinLevel=5)
+	AdditionalEquipment(0)=(ClassName="KFMod.BoomStick")
 	AdditionalEquipment(1)=(ClassName="UnlimaginMod.UM_BenelliM3Shotgun",MinLevel=7,MaxLevel=8)
 	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_BenelliM4Shotgun",MinLevel=9,MaxLevel=9)
 	AdditionalEquipment(3)=(ClassName="UnlimaginMod.UM_GoldenBenelliM4Shotgun",MinLevel=10)

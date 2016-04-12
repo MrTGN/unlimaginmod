@@ -348,7 +348,8 @@ defaultproperties
 	// StandardEquipment
 	StandardEquipment(1)=(ClassName="KFMod.Single",MaxLevel=6)
 	// AdditionalEquipment
-	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_WinchesterM1894Rifle",MinLevel=5,MaxLevel=7)
+	//AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_WinchesterM1894Rifle",MinLevel=5,MaxLevel=7)
+	AdditionalEquipment(0)=(ClassName="UnlimaginMod.UM_WinchesterM1894Rifle",MaxLevel=7)
 	AdditionalEquipment(1)=(ClassName="UnlimaginMod.UM_MK23Pistol",MinLevel=7)
 	AdditionalEquipment(2)=(ClassName="UnlimaginMod.UM_Crossbow",MinLevel=8)
 }

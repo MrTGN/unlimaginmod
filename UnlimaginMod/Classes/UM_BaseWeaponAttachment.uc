@@ -442,7 +442,7 @@ simulated event ThirdPersonEffects()
 	}
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	bNeedToInitEffects = False;
 	DestroyThirdPersonEffects();

@@ -36,6 +36,10 @@ var					bool							bDisabled;			//
 var()				array<string>					MonsterClassNames;	// Dynamic MonsterClasses Load
 var					array< class<UM_BaseMonster> >	MonsterClasses;		// Class of the current Monster
 
+var					float							SpecialMonsterChance;
+var()				array<string>					SpecialMonsterClassNames;	// Dynamic MonsterClasses Load
+var					array< class<UM_BaseMonster> >	SpecialMonsterClasses;		// Class of the current Monster
+
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
 var()				array<Range>					WaveSpawnChance;	// N wave spawn Chance (Min - , Max - )

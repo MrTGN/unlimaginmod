@@ -39,7 +39,7 @@ replication
         bNeedToPlayEffects;
 }
 
-simulated function HitWall(vector HitNormal, actor Wall)
+simulated event HitWall(vector HitNormal, actor Wall)
 {
 	Super(Projectile).HitWall(HitNormal,Wall);
 }
@@ -109,7 +109,7 @@ simulated event PostBeginPlay()
 	Super(Projectile).PostBeginPlay();
 }
 
-function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
+event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex)
 {
 	if( damageType == class'SirenScreamDamage')
 		Disintegrate(HitLocation, vect(0,0,1));
@@ -117,7 +117,7 @@ function TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector M
 		Explode(HitLocation, vect(0,0,0));
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( xEmitterTrail != None )
 	{

@@ -143,7 +143,7 @@ state MatchInProgress
 	function SelectShop();
 	function OpenShops();
 	function CloseShops();
-	function Timer();
+	event Timer();
 	function float CalcNextSquadSpawnTime();
 	function DoWaveEnd();
 	function InitMapWaveCfg();

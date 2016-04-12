@@ -3,7 +3,7 @@
 //=============================================================================
 class UM_SRGameRules extends GameRules;
 
-function PostBeginPlay()
+event PostBeginPlay()
 {
 	if ( Level.Game.GameRulesModifiers == None )
 		Level.Game.GameRulesModifiers = Self;

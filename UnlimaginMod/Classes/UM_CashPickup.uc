@@ -77,7 +77,7 @@ function GiveCashTo( Pawn Other )
 auto state Pickup
 {
 	// When touched by an actor.
-	function Touch( actor Other )
+	event Touch( actor Other )
 	{
 		// If touched by a player pawn, let him pick this up.
 		if ( ValidTouch(Other) )
@@ -101,7 +101,7 @@ auto state Pickup
 
 state FallingPickup
 {
-	function Touch( actor Other )
+	event Touch( actor Other )
 	{
 		if ( ValidTouch(Other) )
 			GiveCashTo(Pawn(Other));
@@ -116,7 +116,7 @@ state FallingPickup
 
 State FadeOut
 {
-	function Touch( actor Other )
+	event Touch( actor Other )
 	{
 		if ( ValidTouch(Other) )
 			GiveCashTo(Pawn(Other));
@@ -154,4 +154,5 @@ defaultproperties
 {
 	 RespawnTime=0.000000
 	 bPreventFadeOut=True
+	 LifeSpan=0.0
 }

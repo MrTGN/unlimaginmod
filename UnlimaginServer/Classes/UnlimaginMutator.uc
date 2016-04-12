@@ -46,7 +46,7 @@ var()	globalconfig	array< ChatIconType >	SmileyTags;
 var		array< byte >							LoadInvCategory;
 var		array< class<UM_SRVeterancyTypes> >		LoadPerks;
 var		array< class<Pickup> >					LoadInventory;
-var		array< UM_PlayerController >			PendingPlayers;
+//var		array< UM_PlayerController >			PendingPlayers;
 var		array<UM_StatsObject>					ActiveStats;
 var		localized		string					ServerPerksGroup;
 var		transient		UM_DatabaseUdpLink		Link;
@@ -159,12 +159,12 @@ event PostBeginPlay()
 		j = InStr(S,":");
 		if( j>=0 )
 			S = Mid(S,j+1);
-		PR = class<PlayerRecordClass>(DynamicLoadObject(S$"Mod."$S,class'Class',true));
+		PR = class<PlayerRecordClass>(DynamicLoadObject(S$"Mod."$S,class'Class',True));
 		if( PR!=None )
 		{
 			if( PR.Default.MeshName!="" ) // Add mesh package.
 			{
-				O = DynamicLoadObject(PR.Default.MeshName,class'Mesh',true);
+				O = DynamicLoadObject(PR.Default.MeshName,class'Mesh',True);
 				while( O!=None && O.Outer!=None )
 					O = O.Outer;
 				if( O!=None )
@@ -172,7 +172,7 @@ event PostBeginPlay()
 			}
 			if( PR.Default.BodySkinName!="" ) // Add skin package.
 			{
-				O = DynamicLoadObject(PR.Default.BodySkinName,class'Material',true);
+				O = DynamicLoadObject(PR.Default.BodySkinName,class'Material',True);
 				while( O!=None && O.Outer!=None )
 					O = O.Outer;
 				if( O!=None )
@@ -190,7 +190,7 @@ event PostBeginPlay()
 		{
 			if( SmileyTags[i].IconTexture=="" || SmileyTags[i].IconTag=="" )
 				continue;
-			T = Texture(DynamicLoadObject(SmileyTags[i].IconTexture,class'Texture',true));
+			T = Texture(DynamicLoadObject(SmileyTags[i].IconTexture,class'Texture',True));
 			if( T==None )
 				continue;
 			SmileyMsgs.Length = j+1;
@@ -616,9 +616,9 @@ defaultproperties
 	RemotePort=5000
 	RemoteDatabaseURL="192.168.1.33"
 	RemotePassword="Pass"
-	bUseEnhancedScoreboard=true
-	bEnableChatIcons=true
-	bEnhancedShoulderView=true
+	bUseEnhancedScoreboard=True
+	bEnableChatIcons=True
+	bEnhancedShoulderView=True
 	MidGameSaveWaves=1
 
 	ReplacedPickups(0)=(DefaultClass="KFMod.ShotgunPickup",ReplaceByClass="UnlimaginMod.UM_BenelliM3Pickup")
@@ -692,14 +692,14 @@ defaultproperties
 	SmileyTags(0)=(IconTag=">:(",IconTexture="UnlimaginMod_T.Smileys.Smileys_Mad")
 	SmileyTags(1)=(IconTag=":(",IconTexture="UnlimaginMod_T.Smileys.Smileys_Frown")
 	SmileyTags(2)=(IconTag=":)",IconTexture="UnlimaginMod_T.Smileys.Smileys_GreenLickB")
-	SmileyTags(3)=(IconTag=":P",IconTexture="UnlimaginMod_T.Smileys.Smileys_Tongue",bCaseInsensitive=true)
+	SmileyTags(3)=(IconTag=":P",IconTexture="UnlimaginMod_T.Smileys.Smileys_Tongue",bCaseInsensitive=True)
 	SmileyTags(4)=(IconTag=":d",IconTexture="UnlimaginMod_T.Smileys.Smileys_GreenLick")
 	SmileyTags(5)=(IconTag=":D",IconTexture="UnlimaginMod_T.Smileys.Smileys_BigGrin")
 	SmileyTags(6)=(IconTag=":|",IconTexture="UnlimaginMod_T.Smileys.Smileys_Indiffe")
 	SmileyTags(7)=(IconTag=":/",IconTexture="UnlimaginMod_T.Smileys.Smileys_Ohwell")
 	SmileyTags(8)=(IconTag=":*",IconTexture="UnlimaginMod_T.Smileys.Smileys_RedFace")
 	SmileyTags(9)=(IconTag=":-*",IconTexture="UnlimaginMod_T.Smileys.Smileys_RedFace")
-	SmileyTags(10)=(IconTag="Ban?",IconTexture="UnlimaginMod_T.Smileys.Smileys_Ban",bCaseInsensitive=true)
+	SmileyTags(10)=(IconTag="Ban?",IconTexture="UnlimaginMod_T.Smileys.Smileys_Ban",bCaseInsensitive=True)
 	SmileyTags(11)=(IconTag="B)",IconTexture="UnlimaginMod_T.Smileys.Smileys_Cool")
 	SmileyTags(12)=(IconTag="Hmm",IconTexture="UnlimaginMod_T.Smileys.Smileys_Hmm")
 	SmileyTags(13)=(IconTag="XD",IconTexture="UnlimaginMod_T.Smileys.Smileys_Scream")

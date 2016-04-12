@@ -34,6 +34,23 @@ replication
 		ServerStopShowingActor, ServerReadyPlayer;
 }
 
+function CheckSteamStatsAndAchievementsClass()
+{
+	if ( SteamStatsAndAchievementsClass != None || default.SteamStatsAndAchievementsClassName == "" )
+		Return;
+	
+	if ( default.SteamStatsAndAchievementsClass == None )
+		default.SteamStatsAndAchievementsClass = Class<SteamStatsAndAchievementsBase>( DynamicLoadObject(default.SteamStatsAndAchievementsClassName, Class'Class') );
+	
+	SteamStatsAndAchievementsClass = default.SteamStatsAndAchievementsClass;
+}
+
+event PreBeginPlay()
+{
+	CheckSteamStatsAndAchievementsClass();
+	Super.PreBeginPlay();
+}
+
 function bool SpawnStatObject()
 {
 	if ( Level.NetMode == NM_Client || SteamStatsAndAchievementsClassName == "" )

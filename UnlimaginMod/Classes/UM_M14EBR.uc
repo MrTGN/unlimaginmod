@@ -62,7 +62,7 @@ simulated event PostBeginPlay()
 		Beam = Spawn(BeamEffectClass);
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( Spot != None )
 		Spot.Destroy();

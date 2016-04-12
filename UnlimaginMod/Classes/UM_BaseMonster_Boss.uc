@@ -524,7 +524,7 @@ Begin:
 	GotoState('');
 }
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( mTracer != None )
 		mTracer.Destroy();
@@ -706,7 +706,7 @@ simulated function AddTraceHitFX( vector HitPos )
 		Spawn(class'ROBulletHitEffect',,, HitPos, Rotator(Normal(HitPos - Start)));
 }
 
-simulated function AnimEnd( int Channel )
+simulated event AnimEnd( int Channel )
 {
 	local name  Sequence;
 	local float Frame, Rate;
@@ -793,7 +793,7 @@ state FireChaingun
 		bMinigunning = True;
 	}
 
-	function AnimEnd( int Channel )
+	event AnimEnd( int Channel )
 	{
 		if ( MGFireCounter <= 0 )  {
 			bShotAnim = True;
@@ -941,7 +941,7 @@ Ignores RangedAttack;
 		Acceleration = vect(0,0,0);
 	}
 
-	function AnimEnd( int Channel )
+	event AnimEnd( int Channel )
 	{
 		local vector Start;
 		local Rotator R;

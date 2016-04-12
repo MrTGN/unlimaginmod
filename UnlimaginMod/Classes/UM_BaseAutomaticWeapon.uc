@@ -164,7 +164,7 @@ simulated function bool ReadyToFire(int Mode)
 	Return Super.ReadyToFire(Mode);
 }
 
-simulated function AnimEnd(int channel)
+simulated event AnimEnd(int channel)
 {
 	local name anim;
 	local float frame, rate;

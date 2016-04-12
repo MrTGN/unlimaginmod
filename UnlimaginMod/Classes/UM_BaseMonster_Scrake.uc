@@ -323,7 +323,7 @@ State SawingLoop
 			GoToState('');
 	}
 	
-	function AnimEnd( int Channel )
+	event AnimEnd( int Channel )
 	{
 		Super.AnimEnd(Channel);
 		if ( Controller != None && Controller.Enemy != None )
@@ -364,7 +364,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	Damage = Super.ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 
 	// Added in Balance Round 3 to make the Scrake "Rage" more reliably when his health gets low(limited to Suicidal and HoE in Round 7)
-	if ( Level.Game.GameDifficulty >= 5.0 && !IsInState('SawingLoop') && !IsInState('RunningState') && (float(Health) / HealthMax) < 0.75 )
+	if ( InstigatedBy != None && Level.Game.GameDifficulty >= 5.0 && !IsInState('SawingLoop') && !IsInState('RunningState') && (float(Health) / HealthMax) < 0.75 )
 		RangedAttack(InstigatedBy);
 
 	//No needed this block in UnlimaginMod

@@ -103,7 +103,7 @@ singular function SplashGlobs(int NumGloblings)
 
 auto state Flying
 {
-    simulated function Landed( Vector HitNormal )
+    simulated event Landed( Vector HitNormal )
     {
         local Rotator NewRot;
         local int CoreGoopLevel;
@@ -139,7 +139,7 @@ auto state Flying
         GotoState('OnGround');
     }
 
-	simulated function HitWall( Vector HitNormal, Actor Wall )
+	simulated event HitWall( Vector HitNormal, Actor Wall )
 	{
 		Landed(HitNormal);
 		if ( !Wall.bStatic && !Wall.bWorldGeometry )

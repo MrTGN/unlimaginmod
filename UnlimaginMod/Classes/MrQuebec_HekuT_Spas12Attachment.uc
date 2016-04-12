@@ -1,6 +1,6 @@
 class MrQuebec_HekuT_Spas12Attachment extends UM_BaseShotgunAttachment;
 
-simulated function Destroyed()
+simulated event Destroyed()
 {
 	if ( TacShineCorona != None )
 		TacShineCorona.Destroy();

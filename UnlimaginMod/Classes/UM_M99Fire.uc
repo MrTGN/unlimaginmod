@@ -54,7 +54,7 @@ defaultproperties
 	 bNoKickMomentum=False
 	 bOnlyLowGravKickMomentum=False
 	 KickMomentum=(X=-100.000000,Z=15.000000)
-     AimError=4.000000
+     AimError=2.000000
      Spread=0.001000
 	 MaxSpread=0.005000
 }

@@ -51,6 +51,6 @@ defaultproperties
      ShakeOffsetTime=3.000000
      ProjectileClass=Class'UnlimaginMod.UM_Spas12_000Buckshot'
      BotRefireRate=0.200000
-	 AimError=74.000000
+	 AimError=64.000000
 	 Spread=1125.000000
 }

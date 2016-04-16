@@ -20,7 +20,8 @@ class UM_BaseSniperRifleFire extends UM_BaseProjectileWeaponFire
 
 defaultproperties
 {
-     RecoilVelocityScale=3.0
+     AimError=8.000000
+	 RecoilVelocityScale=3.0
 	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.700000
 	 FireMovingSpeedScale=0.450000

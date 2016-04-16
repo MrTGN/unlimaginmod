@@ -35,7 +35,7 @@ defaultproperties
      ShakeOffsetTime=2.500000
 	 ProjectileClass=Class'UnlimaginMod.UM_MR96RevolverBullet'
      BotRefireRate=0.650000
-     AimError=60.000000
+     AimError=50.000000
      Spread=0.008000
 	 MaxSpread=0.040000
      SpreadStyle=SS_Random

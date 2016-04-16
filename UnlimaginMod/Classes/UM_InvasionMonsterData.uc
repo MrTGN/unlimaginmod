@@ -36,7 +36,7 @@ var					bool							bDisabled;			//
 var()				array<string>					MonsterClassNames;	// Dynamic MonsterClasses Load
 var					array< class<UM_BaseMonster> >	MonsterClasses;		// Class of the current Monster
 
-var					bool							bNoSpecialMonster;
+var					bool							bNoSpecialMonsters;
 var					float							SpecialMonsterChance;
 var()				array<string>					SpecialMonsterClassNames;	// Dynamic MonsterClasses Load
 var					array< class<UM_BaseMonster> >	SpecialMonsterClasses;		// Class of the current Monster
@@ -125,7 +125,7 @@ function bool InitDataFor( UM_InvasionGame IG )
 			SpecialMonsterClasses.Remove(i, 1);
 	}
 	
-	bNoSpecialMonster = SpecialMonsterClasses.Length < 1;
+	bNoSpecialMonsters = SpecialMonsterClasses.Length < 1;
 	
 	//Log( "GameData Object for the Monster Class"@MonsterClassNames@"initialized.", Name );
 	Log( string(Name) @"initialized.", Name );
@@ -134,15 +134,15 @@ function bool InitDataFor( UM_InvasionGame IG )
 
 function Class<UM_BaseMonster> GetMonsterClass()
 {
-	if ( !bNoSpecialMonster && FRand() <= SpecialMonsterChance )  {
-		if ( SpecialMonsterClasses.Length < 2 )
-			Return SpecialMonsterClasses[0];
+	if ( !bNoSpecialMonsters && FRand() <= SpecialMonsterChance )  {
+		//if ( SpecialMonsterClasses.Length < 2 )
+			//Return SpecialMonsterClasses[0];
 		
 		Return SpecialMonsterClasses[ Rand(SpecialMonsterClasses.Length) ];
 	}
 	
-	if ( MonsterClasses.Length < 2 )
-		Return MonsterClasses[0];
+	//if ( MonsterClasses.Length < 2 )
+		//Return MonsterClasses[0];
 	
 	Return MonsterClasses[ Rand(MonsterClasses.Length) ];
 }

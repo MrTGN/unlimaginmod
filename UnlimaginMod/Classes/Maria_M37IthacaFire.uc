@@ -50,6 +50,6 @@ defaultproperties
      ShakeOffsetTime=3.000000
      ProjectileClass=Class'UnlimaginMod.UM_M37Ithaca_00Buckshot'
      BotRefireRate=1.500000
-	 AimError=72.000000
+	 AimError=62.000000
      Spread=1175.000000
 }

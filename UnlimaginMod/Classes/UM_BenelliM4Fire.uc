@@ -59,6 +59,6 @@ defaultproperties
 	 PerkProjsInfo(6)=(PerkProjClass=Class'UnlimaginMod.UM_BenelliM4FragBullet',PerkProjPerFire=1,PerkProjSpread=0.013000)
 	 //[end]
      BotRefireRate=0.200000
-     AimError=62.000000
+     AimError=56.000000
 	 Spread=1400.000000
 }

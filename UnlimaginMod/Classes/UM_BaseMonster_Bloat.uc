@@ -645,8 +645,4 @@ defaultproperties
 	 //PlayerNumHeadHealthScale=0.0
 	 PlayerNumHeadHealthScale=0.05
 	 Mass=460.000000
-	 
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)
-	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=44.0,AreaSizeScale=1.05,AreaImpactStrength=14.6)
 }

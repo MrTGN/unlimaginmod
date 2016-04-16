@@ -22,15 +22,15 @@ class UM_Monster_Bloat_XXSmall extends UM_Monster_Bloat_Standard;
 defaultproperties
 {
      // DrawScale
-	 DrawScale=0.94
-	 CollisionHeight=58.318
-	 CollisionRadius=23.515
-	 BaseEyeHeight=52.675
-	 EyeHeight=52.675
-	 CrouchHeight=37.324
-	 CrouchRadius=23.515
-	 OnlineHeadshotOffset=(X=4.375,Z=50.75)
-	 OnlineHeadshotScale=1.3125
+	 DrawScale=0.9138
+	 CollisionHeight=57.5663
+	 CollisionRadius=22.8438
+	 BaseEyeHeight=50.2563
+	 EyeHeight=50.2563
+	 CrouchHeight=36.8424
+	 CrouchRadius=22.8438
+	 OnlineHeadshotOffset=(X=0.0,Y=1.8275,Z=52.9975)
+	 OnlineHeadshotScale=1.275
 	 // Mass
-	 Mass=402.0
+	 Mass=391.0
 }

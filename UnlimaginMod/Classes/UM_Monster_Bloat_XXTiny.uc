@@ -1,7 +1,7 @@
 /*==================================================================================
 	Package:		 UnlimaginMod
-	Class name:		 UM_Monster_Bloat_Small
-	Creation date:	 12.04.2016 23:23
+	Class name:		 UM_Monster_Bloat_XXTiny
+	Creation date:	 16.04.2016 03:09
 ----------------------------------------------------------------------------------
 	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
 
@@ -16,21 +16,21 @@
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
-class UM_Monster_Bloat_Small extends UM_Monster_Bloat_Standard;
+class UM_Monster_Bloat_XXTiny extends UM_Monster_Bloat_Standard;
 
 
 defaultproperties
 {
      // DrawScale
-	 DrawScale=1.0213
-	 CollisionHeight=64.3388
-	 CollisionRadius=25.5313
-	 BaseEyeHeight=56.1688
-	 EyeHeight=56.1688
-	 CrouchHeight=41.1768
-	 CrouchRadius=25.5313
-	 OnlineHeadshotOffset=(X=0.0,Y=2.0425,Z=59.2325)
-	 OnlineHeadshotScale=1.425
+	 DrawScale=0.7525
+	 CollisionHeight=47.4075
+	 CollisionRadius=18.8125
+	 BaseEyeHeight=41.3875
+	 EyeHeight=41.3875
+	 CrouchHeight=30.3408
+	 CrouchRadius=18.8125
+	 OnlineHeadshotOffset=(X=0.0,Y=1.505,Z=43.645)
+	 OnlineHeadshotScale=1.05
 	 // Mass
-	 Mass=437.0
+	 Mass=322.0
 }

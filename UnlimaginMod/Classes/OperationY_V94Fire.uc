@@ -49,7 +49,7 @@ defaultproperties
 	 LowGravKickMomentumScale=7.000000
 	 ProjectileClass=Class'UnlimaginMod.UM_V94Bullet'
      BotRefireRate=3.750000
-     AimError=6.000000
+     AimError=4.000000
      Spread=0.001000
 	 MaxSpread=0.010000
 }

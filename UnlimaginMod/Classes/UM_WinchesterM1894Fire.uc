@@ -57,7 +57,7 @@ defaultproperties
      ShakeOffsetTime=2.000000
 	 ProjectileClass=Class'UnlimaginMod.UM_WinchesterM1894Bullet'
      BotRefireRate=0.650000
-     AimError=60.000000
+     AimError=40.000000
      Spread=0.007000
 	 MaxSpread=0.026000
 }

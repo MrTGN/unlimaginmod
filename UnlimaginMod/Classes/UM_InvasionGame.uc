@@ -1601,7 +1601,7 @@ defaultproperties
 	 BotAtHumanFriendlyFireScale=0.5
 
 	 MinHumanPlayers=1
-	 MaxHumanPlayers=10
+	 MaxHumanPlayers=12
 	 
 	 bBeginMatchWithShopping=True
 	 InitialShoppingTime=(Min=90.0,Max=110.0)
@@ -1727,7 +1727,12 @@ defaultproperties
 		 MonsterClassNames(5)="UnlimaginMod.UM_Monster_Bloat_XLarge"
 		 MonsterClassNames(6)="UnlimaginMod.UM_Monster_Bloat_XXLarge"
 		 SpecialMonsterChance=0.15
-		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_XXXLarge"
+		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_Midget"
+		 SpecialMonsterClassNames(1)="UnlimaginMod.UM_Monster_Bloat_XXTiny"
+		 SpecialMonsterClassNames(2)="UnlimaginMod.UM_Monster_Bloat_XTiny"
+		 SpecialMonsterClassNames(3)="UnlimaginMod.UM_Monster_Bloat_Tiny"
+		 SpecialMonsterClassNames(4)="UnlimaginMod.UM_Monster_Bloat_Huge"
+		 SpecialMonsterClassNames(5)="UnlimaginMod.UM_Monster_Bloat_XHuge"
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.15,Max=0.25)
 		 WaveSpawnChance(1)=(Min=0.2,Max=0.3)
@@ -1764,7 +1769,21 @@ defaultproperties
 	 
 	 // Clot
 	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterClotData
+		 // MonsterClassNames
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_Standard"
+		 MonsterClassNames(1)="UnlimaginMod.UM_Monster_Clot_XXSmall"
+		 MonsterClassNames(2)="UnlimaginMod.UM_Monster_Clot_XSmall"
+		 MonsterClassNames(3)="UnlimaginMod.UM_Monster_Clot_Small"
+		 MonsterClassNames(4)="UnlimaginMod.UM_Monster_Clot_Large"
+		 MonsterClassNames(5)="UnlimaginMod.UM_Monster_Clot_XLarge"
+		 MonsterClassNames(6)="UnlimaginMod.UM_Monster_Clot_XXLarge"
+		 // SpecialMonsterChance
+		 SpecialMonsterChance=0.15
+		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_XXXTiny"
+		 SpecialMonsterClassNames(1)="UnlimaginMod.UM_Monster_Clot_XXTiny"
+		 SpecialMonsterClassNames(2)="UnlimaginMod.UM_Monster_Clot_XTiny"
+		 SpecialMonsterClassNames(3)="UnlimaginMod.UM_Monster_Clot_Tiny"
+		 SpecialMonsterClassNames(4)="UnlimaginMod.UM_Monster_Clot_Huge"
 		 bNoWaveRestrictions=True
 		 // BossWave
 		 BossWaveSpawnChance=(Min=1.0,Max=1.0)
@@ -1893,19 +1912,19 @@ defaultproperties
 		 // WaveSquadLimit
 		 WaveSquadLimit(0)=(Min=0,Max=2)
 		 WaveSquadLimit(1)=(Min=1,Max=2)
-		 WaveSquadLimit(2)=(Min=1,Max=4)
-		 WaveSquadLimit(3)=(Min=1,Max=4)
-		 WaveSquadLimit(4)=(Min=1,Max=6)
-		 WaveSquadLimit(5)=(Min=1,Max=6)
-		 WaveSquadLimit(6)=(Min=1,Max=6)
+		 WaveSquadLimit(2)=(Min=1,Max=3)
+		 WaveSquadLimit(3)=(Min=1,Max=3)
+		 WaveSquadLimit(4)=(Min=1,Max=4)
+		 WaveSquadLimit(5)=(Min=1,Max=4)
+		 WaveSquadLimit(6)=(Min=1,Max=4)
 		 // WaveDeltaLimit
 		 WaveDeltaLimit(0)=(Min=0,MinTime=120.0,Max=4,MaxTime=90.0)
 		 WaveDeltaLimit(1)=(Min=1,MinTime=120.0,Max=4,MaxTime=90.0)
 		 WaveDeltaLimit(2)=(Min=1,MinTime=120.0,Max=6,MaxTime=90.0)
-		 WaveDeltaLimit(3)=(Min=1,MinTime=120.0,Max=8,MaxTime=120.0)
-		 WaveDeltaLimit(4)=(Min=1,MinTime=90.0,Max=10,MaxTime=120.0)
-		 WaveDeltaLimit(5)=(Min=1,MinTime=90.0,Max=12,MaxTime=120.0)
-		 WaveDeltaLimit(6)=(Min=1,MinTime=60.0,Max=12,MaxTime=120.0)
+		 WaveDeltaLimit(3)=(Min=1,MinTime=120.0,Max=6,MaxTime=120.0)
+		 WaveDeltaLimit(4)=(Min=1,MinTime=90.0,Max=8,MaxTime=120.0)
+		 WaveDeltaLimit(5)=(Min=1,MinTime=90.0,Max=8,MaxTime=120.0)
+		 WaveDeltaLimit(6)=(Min=1,MinTime=60.0,Max=8,MaxTime=120.0)
 		 // BossWave
 		 BossWaveSpawnChance=(Min=0.1,Max=0.2)
 		 BossWaveSquadLimit=(Min=1,Max=2)

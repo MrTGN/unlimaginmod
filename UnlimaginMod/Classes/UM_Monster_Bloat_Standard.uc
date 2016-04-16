@@ -41,30 +41,28 @@ defaultproperties
 	 ControllerClass=Class'UnlimaginMod.UM_ZombieBloatController'
 	 // Mesh
 	 Mesh=SkeletalMesh'UM_Bloat_A.Bloat_Mesh'
+	 // MeshTestCollision
+	 MeshTestCollisionHeight=63.0
+	 MeshTestCollisionRadius=25.0
 	 // DrawScale
 	 DrawScale=1.075000
 	 // Collision
-	 MeshTestCollisionHeight=62.0
-	 MeshTestCollisionRadius=25.0
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
-	 CollisionHeight=66.65
+	 // CollisionHeight = MeshTestCollisionHeight * DrawScale;
+	 // CollisionRadius = MeshTestCollisionRadius * DrawScale;
+	 CollisionHeight=67.725
 	 CollisionRadius=26.875
 	 // EyeHeight
-	 // MeshTestEyeHeight=56.0
-	 BaseEyeHeight=60.2
-	 EyeHeight=60.2
+	 // MeshTestEyeHeight=55.0
+	 BaseEyeHeight=59.125
+	 EyeHeight=59.125
 	 // CrouchHeight = MeshTestCollisionHeight / 1.5625 * DrawScale;
 	 // CrouchRadius = MeshTestCollisionRadius * DrawScale;
-	 CrouchHeight=42.656
+	 CrouchHeight=43.344
 	 CrouchRadius=26.875
-	 // OnlineHeadshotOffset=(X=5.0,Z=54.0)
-	 OnlineHeadshotOffset=(X=5.0,Z=58.0)
+	 // OnlineHeadshotOffset=(X=5.0,Z=58.0) // old
+	 // MeshTestOnlineHeadshotOffset=(X=0.0,Y=2.0,Z=53.0)
+	 OnlineHeadshotOffset=(X=0.0,Y=2.15,Z=62.35)
 	 OnlineHeadshotScale=1.5
-	 // Health
-	 HealthMax=525.0
-	 Health=525
-	 HeadHealth=35.0
 	 // Mass
 	 Mass=460.000000
 	 // Skins
@@ -81,4 +79,8 @@ defaultproperties
 	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
 	 DyingSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
+	 // BallisticCollision
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)
+	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=44.0,AreaSizeScale=1.05,AreaImpactStrength=14.6)
 }

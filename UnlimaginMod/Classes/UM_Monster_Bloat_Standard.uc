@@ -60,8 +60,8 @@ defaultproperties
 	 CrouchHeight=43.344
 	 CrouchRadius=26.875
 	 // OnlineHeadshotOffset=(X=5.0,Z=58.0) // old
-	 // MeshTestOnlineHeadshotOffset=(X=0.0,Y=2.0,Z=53.0)
-	 OnlineHeadshotOffset=(X=0.0,Y=2.15,Z=62.35)
+	 // MeshTestOnlineHeadshotOffset=(X=2.0,Y=2.0,Z=53.5)
+	 OnlineHeadshotOffset=(X=2.15,Y=0.0,Z=57.5125)
 	 OnlineHeadshotScale=1.5
 	 // Mass
 	 Mass=460.000000
@@ -80,7 +80,6 @@ defaultproperties
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
 	 DyingSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
 	 // BallisticCollision
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.0,AreaHeight=9.0,AreaBone="CHR_Head",AreaOffset=(X=2.0,Y=-2.0,Z=0.0),AreaImpactStrength=7.6)
-	 //ToDo: UM_PawnBodyCollision - это временна€ колизи€ туловища. ¬ дальнейшем заменить на более детальную.
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=25.0,AreaHeight=44.0,AreaSizeScale=1.05,AreaImpactStrength=14.6)
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=9.5,AreaHeight=8.0,AreaBone="CHR_Head",AreaOffset=(X=1.75,Y=-2.25,Z=0.0),AreaImpactStrength=7.6)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=53.5,AreaOffset=(X=0.0,Y=0.0,Z=-9.5),AreaImpactStrength=14.6)
 }

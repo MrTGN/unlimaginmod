@@ -29,7 +29,7 @@ defaultproperties
 	 EyeHeight=67.9938
 	 CrouchHeight=49.8456
 	 CrouchRadius=30.9063
-	 OnlineHeadshotOffset=(X=0.0,Y=2.4725,Z=71.7025)
+	 OnlineHeadshotOffset=(X=2.4725,Y=0.0,Z=66.1394)
 	 OnlineHeadshotScale=1.725
 	 // Mass
 	 Mass=529.0

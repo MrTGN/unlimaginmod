@@ -38,25 +38,25 @@ defaultproperties
 	 // DrawScale
 	 DrawScale=1.100000
 	 // Collision
-	 MeshTestCollisionHeight=50.0
-	 MeshTestCollisionRadius=17.0
+	 MeshTestCollisionHeight=50.1
+	 MeshTestCollisionRadius=18.0
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionHeight=69.0
 	 //CollisionRadius=24.0
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
-	 CollisionHeight=55.0
-	 CollisionRadius=18.7
+	 CollisionHeight=55.11
+	 CollisionRadius=19.8
 	 // MeshTestEyeHeight=44.0
 	 BaseEyeHeight=48.4
 	 EyeHeight=48.4
 	 // CrouchHeight = MeshTestCollisionHeight / 1.5625 * DrawScale;
 	 // CrouchRadius = MeshTestCollisionRadius * DrawScale;
-	 CrouchHeight=35.2
-	 CrouchRadius=18.7
-     // MeshTestOnlineHeadshotOffset=(X=10.000000,Z=42.000000)
-	 OnlineHeadshotOffset=(X=11.000000,Z=46.2)
+	 CrouchHeight=35.2704
+	 CrouchRadius=19.8
+     // 
+	 OnlineHeadshotOffset=(X=1.21,Y=0.0,Z=46.86)
 	 OnlineHeadshotScale=1.300000
 	 // Mass
 	 Mass=200.000000
@@ -73,4 +73,7 @@ defaultproperties
 	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
+	 // BallisticCollision
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.5,AreaHeight=6.0,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.5,Z=0.0),AreaImpactStrength=5.4)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=17.0,AreaHeight=42.6,AreaOffset=(X=0.0,Y=0.0,Z=-7.5),AreaImpactStrength=7.4)
 }

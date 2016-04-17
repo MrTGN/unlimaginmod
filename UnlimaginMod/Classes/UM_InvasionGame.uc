@@ -1779,11 +1779,12 @@ defaultproperties
 		 MonsterClassNames(6)="UnlimaginMod.UM_Monster_Clot_XXLarge"
 		 // SpecialMonsterChance
 		 SpecialMonsterChance=0.15
-		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_XXXTiny"
+		 SpecialMonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_Midget"
 		 SpecialMonsterClassNames(1)="UnlimaginMod.UM_Monster_Clot_XXTiny"
 		 SpecialMonsterClassNames(2)="UnlimaginMod.UM_Monster_Clot_XTiny"
 		 SpecialMonsterClassNames(3)="UnlimaginMod.UM_Monster_Clot_Tiny"
 		 SpecialMonsterClassNames(4)="UnlimaginMod.UM_Monster_Clot_Huge"
+		 SpecialMonsterClassNames(5)="UnlimaginMod.UM_Monster_Clot_XHuge"
 		 bNoWaveRestrictions=True
 		 // BossWave
 		 BossWaveSpawnChance=(Min=1.0,Max=1.0)

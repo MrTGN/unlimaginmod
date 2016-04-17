@@ -39,7 +39,7 @@ defaultproperties
 	 // Mesh
 	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
 	 // Collision
-	 MeshTestCollisionHeight=20.0
+	 MeshTestCollisionHeight=19.0
 	 MeshTestCollisionRadius=36.0
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
@@ -71,4 +71,7 @@ defaultproperties
      ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
      ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
      ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
+	 // BallisticCollision
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=8.0,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=19.0,AreaImpactStrength=6.6)
 }

@@ -16,20 +16,20 @@
 ----------------------------------------------------------------------------------
 	Comment:		 
 ==================================================================================*/
-class UM_Monster_Clot_XXXTiny extends UM_Monster_Clot_Standard;
+class UM_Monster_Clot_Midget extends UM_Monster_Clot_Standard;
 
 
 defaultproperties
 {
      // DrawScale
 	 DrawScale=0.715
-	 CollisionHeight=35.75
-	 CollisionRadius=12.155
+	 CollisionHeight=35.8215
+	 CollisionRadius=12.87
 	 BaseEyeHeight=31.46
 	 EyeHeight=31.46
-	 CrouchHeight=22.88
-	 CrouchRadius=12.155
-	 OnlineHeadshotOffset=(X=7.15,Z=30.03)
+	 CrouchHeight=22.9258
+	 CrouchRadius=12.87
+	 OnlineHeadshotOffset=(X=0.7865,Y=0.0,Z=30.459)
 	 OnlineHeadshotScale=0.845
 	 // Mass
 	 Mass=130.0

@@ -23,13 +23,13 @@ defaultproperties
 {
      // DrawScale
 	 DrawScale=1.265
-	 CollisionHeight=63.25
-	 CollisionRadius=21.505
+	 CollisionHeight=63.3765
+	 CollisionRadius=22.77
 	 BaseEyeHeight=55.66
 	 EyeHeight=55.66
-	 CrouchHeight=40.48
-	 CrouchRadius=21.505
-	 OnlineHeadshotOffset=(X=12.65,Z=53.13)
+	 CrouchHeight=40.561
+	 CrouchRadius=22.77
+	 OnlineHeadshotOffset=(X=1.3915,Y=0.0,Z=53.889)
 	 OnlineHeadshotScale=1.495
 	 // Mass
 	 Mass=230.0

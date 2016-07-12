@@ -3,7 +3,7 @@
 	Class name:		 UM_BaseGameInfo
 	Creation date:	 28.01.2015 03:23
 ----------------------------------------------------------------------------------
-	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
@@ -2235,7 +2235,7 @@ defaultproperties
 	 ZEDTimeDuration=3.0
 	 SpeedingBackZEDTime=0.5
 	 
-	 DelayBetweenSlowMoToggle=0.2
+	 DelayBetweenSlowMoToggle=0.1
 	 MinToggleSlowMoCharge=2.0
 	 
 	 MinHumanPlayers=1

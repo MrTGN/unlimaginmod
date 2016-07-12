@@ -3,7 +3,7 @@
 	Class name:		 UM_HuskExplosiveProjectile
 	Creation date:	 25.12.2014 12:44
 ----------------------------------------------------------------------------------
-	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

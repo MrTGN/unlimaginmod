@@ -3,7 +3,7 @@
 	Class name:		 UM_InvasionGame
 	Creation date:	 06.10.2012 13:12
 ----------------------------------------------------------------------------------
-	Copyright © 2012 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2012 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
@@ -1720,6 +1720,7 @@ defaultproperties
 	 // Bloat
 	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterBloatData
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Bloat_Standard"
+		 /*
 		 MonsterClassNames(1)="UnlimaginMod.UM_Monster_Bloat_XXSmall"
 		 MonsterClassNames(2)="UnlimaginMod.UM_Monster_Bloat_XSmall"
 		 MonsterClassNames(3)="UnlimaginMod.UM_Monster_Bloat_Small"
@@ -1733,6 +1734,7 @@ defaultproperties
 		 SpecialMonsterClassNames(3)="UnlimaginMod.UM_Monster_Bloat_Tiny"
 		 SpecialMonsterClassNames(4)="UnlimaginMod.UM_Monster_Bloat_Huge"
 		 SpecialMonsterClassNames(5)="UnlimaginMod.UM_Monster_Bloat_XHuge"
+		 */
 		 // WaveSpawnChance
 		 WaveSpawnChance(0)=(Min=0.15,Max=0.25)
 		 WaveSpawnChance(1)=(Min=0.2,Max=0.3)
@@ -1771,6 +1773,7 @@ defaultproperties
 	 Begin Object Class=UM_InvasionMonsterData Name=UM_MonsterClotData
 		 // MonsterClassNames
 		 MonsterClassNames(0)="UnlimaginMod.UM_Monster_Clot_Standard"
+		 /*
 		 MonsterClassNames(1)="UnlimaginMod.UM_Monster_Clot_XXSmall"
 		 MonsterClassNames(2)="UnlimaginMod.UM_Monster_Clot_XSmall"
 		 MonsterClassNames(3)="UnlimaginMod.UM_Monster_Clot_Small"
@@ -1785,6 +1788,7 @@ defaultproperties
 		 SpecialMonsterClassNames(3)="UnlimaginMod.UM_Monster_Clot_Tiny"
 		 SpecialMonsterClassNames(4)="UnlimaginMod.UM_Monster_Clot_Huge"
 		 SpecialMonsterClassNames(5)="UnlimaginMod.UM_Monster_Clot_XHuge"
+		 */
 		 bNoWaveRestrictions=True
 		 // BossWave
 		 BossWaveSpawnChance=(Min=1.0,Max=1.0)

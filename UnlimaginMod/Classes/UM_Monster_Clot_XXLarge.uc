@@ -3,7 +3,7 @@
 	Class name:		 UM_Monster_Clot_XXLarge
 	Creation date:	 14.04.2016 21:38
 ----------------------------------------------------------------------------------
-	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

@@ -3,7 +3,7 @@
 	Class name:		 UM_ZombieDamType_CrawlerPoison
 	Creation date:	 05.01.2015 16:49
 ----------------------------------------------------------------------------------
-	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

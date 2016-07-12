@@ -3,7 +3,7 @@
 	Class name:		 UM_SyringeFire
 	Creation date:	 22.12.2014 00:58
 ----------------------------------------------------------------------------------
-	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

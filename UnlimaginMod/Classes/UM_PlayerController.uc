@@ -15,6 +15,8 @@ var 				float			ShowActorDuration;
 var		transient	float			CurrentShowActorDuration;
 var		transient	bool			bShowingActor;
 
+var					bool			bDrawBallisticCollision;
+
 //var		transient	Pawn			PawnKiller;
 //var		transient	bool			bViewPawnKiller;
 
@@ -22,7 +24,7 @@ var		transient	bool			bShowingActor;
 replication
 {
 	// Things the server should send to the client.
-    reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		bUseAdvBehindview;
 	
 	// Functions server can call.
@@ -1473,11 +1475,62 @@ function WasKilledBy( Controller Killer )
 // Player Standing, walking, running, falling.
 state PlayerWalking
 {
+ignores SeePlayer, HearNoise, Bump;
+
 	simulated event BeginState()
 	{
 		Super(xPlayer).BeginState();
 		// Unzoom if we were zoomed
 		TransitionFOV(DefaultFOV,0.);
+	}
+	
+	function ProcessMove( float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot )
+	{
+		local	vector	OldAccel;
+		local	bool	OldCrouch;
+
+		if ( Pawn == None )
+			Return;
+		
+		OldAccel = Pawn.Acceleration;
+		if ( Pawn.Acceleration != NewAccel )
+			Pawn.Acceleration = NewAccel;
+		
+		if ( bPressedJump )  {
+			if ( UM_HumanPawn(Pawn) != None && NewAccel != Vect(0.0, 0.0, 0.0) )
+				UM_HumanPawn(Pawn).DoDirectionalJump( bUpdating, NewAccel );
+			else
+				Pawn.DoJump( bUpdating );
+		}
+
+		Pawn.SetViewPitch(Rotation.Pitch);
+
+		OldCrouch = Pawn.bWantsToCrouch;
+		if ( bDuck == 0 )
+			Pawn.ShouldCrouch(False);
+		else if ( Pawn.bCanCrouch )
+			Pawn.ShouldCrouch(True);
+	}
+}
+
+state PlayerSpidering
+{
+ignores SeePlayer, HearNoise, Bump;
+	
+	function ProcessMove( float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot )
+	{
+		local vector OldAccel;
+
+		OldAccel = Pawn.Acceleration;
+		if ( Pawn.Acceleration != NewAccel )
+			Pawn.Acceleration = NewAccel;
+
+		if ( bPressedJump )  {
+			if ( UM_HumanPawn(Pawn) != None && NewAccel != Vect(0.0, 0.0, 0.0) )
+				UM_HumanPawn(Pawn).DoDirectionalJump( bUpdating, NewAccel );
+			else
+				Pawn.DoJump( bUpdating );
+		}
 	}
 }
 

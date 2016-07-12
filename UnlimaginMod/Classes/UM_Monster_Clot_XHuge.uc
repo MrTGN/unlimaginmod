@@ -3,7 +3,7 @@
 	Class name:		 UM_Monster_Clot_XHuge
 	Creation date:	 17.04.2016 23:19
 ----------------------------------------------------------------------------------
-	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2016 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
@@ -20,7 +20,7 @@ class UM_Monster_Clot_XHuge extends UM_Monster_Clot_Standard;
 
 
 defaultproperties
-
+{
      // DrawScale
 	 DrawScale=1.375
 	 CollisionHeight=68.8875

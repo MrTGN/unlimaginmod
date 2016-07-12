@@ -3,7 +3,7 @@
 	Class name:		 UM_TestWeaponMuzzle
 	Creation date:	 29.12.2014 22:07
 ----------------------------------------------------------------------------------
-	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

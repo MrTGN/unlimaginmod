@@ -112,20 +112,30 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 {
 	local	name		NearestBone;
 	local	float		dist;
+	local	vector		HitDirection;
 	
 	bStuck = True;
 	bCollideWorld = False;
 	DestroyTrail();
 	bOrientToVelocity = False;
-	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
+	if ( Velocity == vect(0.0, 0.0, 0.0) )
+		HitDirection = Vector(Rotation);
+	else
+		HitDirection = Normal(Velocity);
+	SetRotation( Rotator(HitDirection) );
 	SetPhysics(PHYS_None);
 	
-	if ( Pawn(A) != None )  {
-		NearestBone = GetClosestBone(HitLocation, HitLocation, dist);
-		A.AttachToBone(Self, NearestBone);
-	}
-	else
+	if ( Pawn(A) != None )
+		NearestBone = A.GetClosestBone(HitLocation, HitDirection, dist);
+	
+	if ( NearestBone == '' )  {
+		PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 		SetBase(A);
+	}
+	else  {
+		A.AttachToBone(Self, NearestBone);
+		SetRelativeRotation( Rotator(HitDirection >> A.GetBoneRotation(NearestBone, 0)) );
+	}
 	
 	SpawnHitEffects(HitLocation, HitNormal, ,A);
 	

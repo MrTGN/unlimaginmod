@@ -281,7 +281,7 @@ static function bool CanUseThisWeapon( UM_PlayerReplicationInfo PRI, Weapon W )
 static function float GetMaxSlowMoCharge( UM_PlayerReplicationInfo PRI )
 {
 	if ( PRI.ClientVeteranSkillLevel > 6 )
-		Return 0.3 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 3.0 SlowMo seconds
+		Return 0.5 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 5.0 SlowMo seconds
 	
 	Return 0.0;
 }

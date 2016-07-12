@@ -133,16 +133,19 @@ var		float						DrugsDamageScale;
 var		float						DrugsBlurDuration;
 var		float						DrugsBlurIntensity;
 
-// Jumping
+// WeaponBones
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
+
+// Jumping
+var		float						DirectionalJumpSpeed;
 var		range						JumpRandRange;
 var		float						VeterancyJumpBonus;
 var		float						WeightJumpModifier;
 var		float						CarryWeightJumpModifier;
 
 // Bouncing from the walls and actors
-var		Vector						BounceMomentum;
-var		float						LowGravBounceMomentumScale, BounceDelay, BounceCheckDistance;
+var		float						BounceSpeed, BounceZ;
+var		float						LowGravBounceScale, BounceDelay, BounceCheckDistance;
 var		transient	float			NextBounceTime;
 var		int							BounceRemaining;
 var		Pawn						BounceVictim;
@@ -167,20 +170,21 @@ var		class<CashPickup>			CashPickupClass;
 // BallisticCollision
 struct BallisticCollisionData
 {
-	var	UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
-	var	class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
-	var	float							AreaRadius;	// Radius of the area mesh collision cyllinder
-	var	float							AreaHeight;	// Half-height area mesh collision cyllinder
-	var	name							AreaBone;	// Name Of the bone area will be attached to
-	var	vector							AreaOffset;	// Area offset from the bone
-	var	rotator							AreaRotation;	// Area relative rotation from the bone
-	var	float							AreaImpactStrength;	// J / mm2
-	var	float							AreaHealth;	// Health amount of this body part
-	var	float							AreaDamageScale;	// Amount to scale taken damage by this area
-	var	bool							bArmoredArea;	// This area can be covered with armor
+	var		UM_BallisticCollision			Area;	// Reference to spawned BallisticCollision
+	var		class<UM_BallisticCollision>	AreaClass;	// BallisticCollision area class
+	var		float							AreaRadius;	// Radius of the area mesh collision cyllinder
+	var		float							AreaHeight;	// Half-height area mesh collision cyllinder
+	var		float							AreaSizeScale;
+	var		name							AreaBone;	// Name of the bone area will be attached to
+	var		vector							AreaOffset;	// Area offset from the bone
+	var		rotator							AreaRotation;	// Area relative rotation from the bone
+	var		float							AreaImpactStrength;	// J / mm2
+	var		float							AreaHealth;	// Health amount of this body part
+	var		float							AreaDamageScale;	// Amount to scale taken damage by this area
+	var		bool							bArmoredArea;	// This area can be covered with armor
 };
 
-var	array<BallisticCollisionData>		BallisticCollision;
+var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
 // Slowmo time like an ZedTime in original KF
@@ -383,11 +387,12 @@ function AddDefaultInventory()
 function BuildBallisticCollision()
 {
 	local	int		i;
+	local	float	CurrentSizeScale;
 	
 	// Server only
 	if ( Role < ROLE_Authority )
 		Return;
-	
+		
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
 		if ( BallisticCollision[i].AreaClass != None )  {
 			// Spawning
@@ -395,25 +400,34 @@ function BuildBallisticCollision()
 			if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
 				Continue; // Skip if not exist
 			
+			// AreaSizeScale
+			if ( BallisticCollision[i].AreaSizeScale > 0.0 )
+				CurrentSizeScale = BallisticCollision[i].AreaSizeScale * DrawScale;
+			else
+				CurrentSizeScale = DrawScale;
+			
 			// HeadBallisticCollision
 			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
-				HeadBallisticCollision = UM_PawnHeadCollision(BallisticCollision[i].Area);
+				HeadBallisticCollision = UM_PawnHeadCollision( BallisticCollision[i].Area );
+			
 			// CollisionSize
-			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * DrawScale), (BallisticCollision[i].AreaHeight * DrawScale) );
+			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * CurrentSizeScale), (BallisticCollision[i].AreaHeight * CurrentSizeScale) );
+			
 			// Attaching
 			if ( BallisticCollision[i].AreaBone != '' )
 				AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
 			else
 				BallisticCollision[i].Area.SetBase( Self );
-			// if attached
-			if ( BallisticCollision[i].Area.Base != None )  {
-				// AreaOffset
-				if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * DrawScale );
-				// AreaRotation
-				if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
-					BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
-			}
+			
+			// AreaOffset
+			if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+				BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
+			// AreaRotation
+			if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+				BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
+			
+			//BallisticCollision[i].Area.bHardAttach = True;
+				
 			// AreaImpactStrength
 			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
 				BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
@@ -682,7 +696,6 @@ simulated function NotifyVeterancyChanged()
 	// client-owner trigger
 	ClientVeterancyChangedTrigger = VeterancyChangedTrigger;
 	
-	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerRepInfo != None )  {
 		// Overhealed Health Maximum
 		OverhealedHealthMax = Round(HealthMax * UM_PlayerRepInfo.GetOverhealedHealthMaxModifier());
@@ -1007,30 +1020,16 @@ simulated function AltFire( optional float F )
 	}
 }
 
-function DoDoubleJump( bool bUpdating )
-{
-	/*
-	PlayDoubleJump();
-
-	if ( !bIsCrouched && !bWantsToCrouch )  {
-		if ( !IsLocallyControlled() || AIController(Controller) != None )
-			MultiJumpRemaining -= 1;
-		
-		Velocity.Z = JumpZ + MultiJumpBoost;
-		SetPhysics(PHYS_Falling);
-		if ( !bUpdating )
-			PlayOwnedSound(GetSound(EST_DoubleJump), SLOT_Pain, GruntVolume,,80);
-	} */
-}
+function DoDoubleJump( bool bUpdating ) { }
 
 function bool CanDoubleJump()
 {
-	Return ( MultiJumpRemaining > 0 && Physics == PHYS_Falling );
+	Return False;
 }
 
 function bool CanMultiJump()
 {
-	Return ( MaxMultiJump > 0 );
+	Return False;
 }
 
 function bool CanBounce()
@@ -1053,10 +1052,9 @@ function bool CanBounce()
 	Return False;
 }
 
-function DoBounce( bool bUpdating )
+function DoBounce( bool bUpdating, optional vector NewVelocity )
 {
-	local	Vector		NewVel;
-	local	float		MX, JumpModif;
+	local	float		BounceModif;
 	
 	NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
 	--BounceRemaining;
@@ -1065,59 +1063,34 @@ function DoBounce( bool bUpdating )
 	
 	//Low Gravity
 	if ( PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )
-		JumpModif = JumpZ / default.JumpZ * LowGravBounceMomentumScale;
+		BounceModif = JumpZ / default.JumpZ * LowGravBounceScale;
 	else
-		JumpModif = JumpZ / default.JumpZ;
+		BounceModif = JumpZ / default.JumpZ;
 	
-	MX = default.BounceMomentum.X * JumpModif;
-	NewVel = (BounceMomentum * JumpModif) >> GetViewRotation();
-	NewVel.X = FClamp( (Velocity.X + NewVel.X), FMin(-MX, Velocity.X), FMax(MX, Velocity.X) );
-	NewVel.Y = FClamp( (Velocity.Y + NewVel.Y), FMin(-MX, Velocity.Y), FMax(MX, Velocity.Y) );
-	NewVel.Z = FClamp( (Velocity.Z + NewVel.Z), FMin(-(JumpZ * 1.25), Velocity.Z), FMax(JumpZ, Velocity.Z) );
-	Velocity = NewVel;
+	if ( NewVelocity == Vect(0.0, 0.0, 0.0) )
+		NewVelocity = Vector(Rotation) * BounceSpeed * BounceModif;
+	else
+		NewVelocity = Vector(Rotator(NewVelocity)) * BounceSpeed * BounceModif;
+	
+	NewVelocity.Z = FMin( (NewVelocity.Z + BounceZ * BounceModif) , (BounceZ * BounceModif) );
+	Velocity = NewVelocity;
 	
 	if ( BounceVictim != None )  {
-		NewVel = -NewVel * FClamp((Mass / BounceVictim.Mass), 0.25, 1.25);
+		NewVelocity = -NewVelocity * FClamp((Mass / BounceVictim.Mass), 0.25, 1.25);
 		if ( UM_BaseMonster(BounceVictim) != None )
-			UM_BaseMonster(BounceVictim).PushAwayZombie(NewVel);
+			UM_BaseMonster(BounceVictim).PushAwayZombie(NewVelocity);
 		else
-			BounceVictim.AddVelocity(NewVel);
+			BounceVictim.AddVelocity(NewVelocity);
 		
 		BounceVictim = None;
 	}
-	
-	BounceMomentum *= 0.6;
-}
-
-//ToDo: issue #214
-function bool DoDirectionalJump( bool bUpdating, vector Direction )
-{
-	/*
-		Эта функция должна вызываться из UM_PlayerController и получать оттуда вектор
-		направления прыжка. Логика такая: производится нажатия пробела, потом ожидание
-		нажатия каких кнопок курсора, т.е. некий аналог логики "комбо". 
-		От кнопок курсора в UM_PlayerController высчитывается вектор направления прыжка
-		и вызывается эта функция.
-	*/
-	Return False;
 }
 
 //Player Jumped
 function bool DoJump( bool bUpdating )
 {
-	// This extra jump allows a jumping or dodging pawn to jump again mid-air
-	// (via thrusters). The pawn must be within +/- 100 velocity units of the
-	// apex of the jump to do this special move.
-	/*
-	if ( !bUpdating && CanDoubleJump() && Abs(Velocity.Z) < 100 && IsLocallyControlled() )  {
-		if ( PlayerController(Controller) != None )
-			PlayerController(Controller).bDoubleJump = True;
-		
-		DoDoubleJump(bUpdating);
-		MultiJumpRemaining -= 1;
-		
-		Return True;
-	} */
+	local	vector	NewVelocity;
+	
 	// Do not allow to jump if somebody has grabbed this Pawn
 	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
 		// Used in DoBounce
@@ -1137,14 +1110,16 @@ function bool DoJump( bool bUpdating )
 			}
 			
 			if ( Physics == PHYS_Spider )
-				Velocity = JumpZ * Floor;
+				NewVelocity = JumpZ * Floor;
 			else if ( Physics == PHYS_Ladder )
-				Velocity.Z = 0;
+				NewVelocity.Z = 0.0;
 			else
-				Velocity.Z = JumpZ;
+				NewVelocity.Z = JumpZ;
 			
 			if ( Base != None && !Base.bWorldGeometry )
-				Velocity.Z += Base.Velocity.Z;
+				NewVelocity.Z += Base.Velocity.Z;
+			
+			Velocity = NewVelocity;
 			
 			SetPhysics(PHYS_Falling);
 			if ( !bUpdating )
@@ -1156,7 +1131,54 @@ function bool DoJump( bool bUpdating )
 			DoBounce(bUpdating);
 			Return True;
 		}
-		UpdateJumpZ();
+	}
+	
+	Return False;
+}
+
+function bool DoDirectionalJump( bool bUpdating, vector NewVelocity )
+{
+	// Do not allow to jump if somebody has grabbed this Pawn
+	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
+		// Used in DoBounce
+		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
+			NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
+			
+			// Take you out of ironsights if you jump on a non-lowgrav map
+			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
+				KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
+			
+			if ( Role == ROLE_Authority )  {
+				if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
+					MakeNoise((0.1 * Level.Game.GameDifficulty));
+				
+				if ( bCountJumps && Inventory != None )
+					Inventory.OwnerEvent('Jumped');
+			}
+			
+			NewVelocity = Vector(Rotator(NewVelocity)) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
+			if ( Physics == PHYS_Spider )
+				NewVelocity.Z = JumpZ * Floor.Z;
+			else if ( Physics == PHYS_Ladder )
+				NewVelocity.Z = 0.0;
+			else
+				NewVelocity.Z = JumpZ;
+			
+			if ( Base != None && !Base.bWorldGeometry )
+				NewVelocity.Z += Base.Velocity.Z;
+			
+			Velocity = NewVelocity;
+			
+			SetPhysics(PHYS_Falling);
+			if ( !bUpdating )
+				PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
+			
+			Return True;
+		}
+		else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
+			DoBounce(bUpdating, NewVelocity);
+			Return True;
+		}
 	}
 	
 	Return False;
@@ -2761,11 +2783,11 @@ simulated event Tick( float DeltaTime )
 
 event Landed( vector HitNormal )
 {
-	BounceMomentum = default.BounceMomentum;
 	if ( UM_PlayerRepInfo != None )
 		BounceRemaining = UM_PlayerRepInfo.GetPawnMaxBounce();
 	else
 		BounceRemaining = default.BounceRemaining;
+	UpdateJumpZ();
 	
 	ImpactVelocity = vect(0.0,0.0,0.0);
 	TakeFallingDamage();
@@ -2778,7 +2800,6 @@ event Landed( vector HitNormal )
 	}
 	
 	LastHitBy = None;
-	//MultiJumpRemaining = MaxMultiJump;
 	if ( Health > 0 && !bHidden && (Level.TimeSeconds - SplashTime) > 0.25 )
 		PlayOwnedSound(GetSound(EST_Land), SLOT_Interact, FMin(1, (-0.3 * Velocity.Z / JumpZ)));
 }
@@ -2946,10 +2967,10 @@ simulated event Destroyed()
 
 defaultproperties
 {
-	 MaxSlowMoCharge=2.0
+	 MaxSlowMoCharge=3.0
 	 
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
-	 DelayBetweenSlowMoToggle=0.2
+	 DelayBetweenSlowMoToggle=0.15
 	 SlowMoChargeRegenRate=0.02
 	 SlowMoChargeUpdateAmount=0.1
 	 PlayerDeathMarkClass=Class'PlayerDeathMark'
@@ -2967,6 +2988,7 @@ defaultproperties
 	 GroundSpeed=200.000000
 	 WaterSpeed=180.000000
 	 AirSpeed=230.000000
+	 DirectionalJumpSpeed=280.0
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
 	 // DyingCameraEffect
@@ -3024,8 +3046,9 @@ defaultproperties
 	 JumpRandRange=(Min=0.98,Max=1.06)
 	 BounceRemaining=0
 	 BounceCheckDistance=9.000000
-	 BounceMomentum=(X=380.000000,Z=140.000000)
-	 LowGravBounceMomentumScale=2.000000
+	 BounceSpeed=360.0
+	 BounceZ=160.0
+	 LowGravBounceScale=2.000000
 	 BounceDelay=0.200000
 	 LeftHandWeaponBone="WeaponL_Bone"
 	 RightHandWeaponBone="WeaponR_Bone"

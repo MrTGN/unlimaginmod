@@ -61,7 +61,7 @@ struct BallisticCollisionData
 	var		float							AreaRadius;	// Radius of the area mesh collision cyllinder
 	var		float							AreaHeight;	// Half-height area mesh collision cyllinder
 	var		float							AreaSizeScale;
-	var		name							AreaBone;	// Name Of the bone area will be attached to
+	var		name							AreaBone;	// Name of the bone area will be attached to
 	var		vector							AreaOffset;	// Area offset from the bone
 	var		rotator							AreaRotation;	// Area relative rotation from the bone
 	var		float							AreaImpactStrength;	// J / mm2
@@ -224,10 +224,10 @@ function BuildBallisticCollision()
 				Continue; // Skip if not exist
 			
 			// AreaSizeScale
-			if ( BallisticCollision[i].AreaSizeScale <= 0.0 )
-				CurrentSizeScale = DrawScale;
-			else
+			if ( BallisticCollision[i].AreaSizeScale > 0.0 )
 				CurrentSizeScale = BallisticCollision[i].AreaSizeScale * DrawScale;
+			else
+				CurrentSizeScale = DrawScale;
 			
 			// HeadBallisticCollision
 			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
@@ -242,15 +242,14 @@ function BuildBallisticCollision()
 			else
 				BallisticCollision[i].Area.SetBase( Self );
 			
-			// if attached
-			if ( BallisticCollision[i].Area.Base != None )  {
-				// AreaOffset
-				if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-					BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
-				// AreaRotation
-				if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
-					BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
-			}
+			// AreaOffset
+			if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+				BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
+			// AreaRotation
+			if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+				BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
+			
+			//BallisticCollision[i].Area.bHardAttach = True;
 			
 			// AreaImpactStrength
 			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
@@ -280,6 +279,8 @@ function DestroyBallisticCollision()
 		BallisticCollision.Remove(i, 1);
 	}
 }
+
+
 
 function AddVelocity( vector NewVelocity )
 {
@@ -1770,6 +1771,7 @@ defaultproperties
 	 ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ControllerClass=Class'UnlimaginMod.UM_MonsterController'
 	 // Collision flags
+	 SurfaceType=EST_Flesh
 	 bCollideActors=True
 	 bCollideWorld=True
 	 bBlockActors=True

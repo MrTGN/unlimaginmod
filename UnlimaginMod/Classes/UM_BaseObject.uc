@@ -3,7 +3,7 @@
 	Class name:		 UM_BaseObject
 	Creation date:	 24.01.2015 00:12
 ----------------------------------------------------------------------------------
-	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2015 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 

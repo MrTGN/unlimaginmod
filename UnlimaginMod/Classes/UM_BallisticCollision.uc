@@ -3,7 +3,7 @@
 	Class name:		 UM_BallisticCollision
 	Creation date:	 02.12.2014 12:23
 ----------------------------------------------------------------------------------
-	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/spbtgn>
+	Copyright © 2014 Tsiryuta G. N. <spbtgn@gmail.com>  <github.com/MrTGN>
 
 	May contain some parts of the code from: 
 	Killing Floor Source, Copyright © 2009-2014 Tripwire Interactive, LLC 
@@ -189,8 +189,8 @@ defaultproperties
 	 bIgnoreEncroachers=True
 	 bIgnoreOutOfWorld=True
 	 // Just default values
-	 CollisionRadius=0.0
-	 CollisionHeight=0.0
+	 CollisionRadius=1.0
+	 CollisionHeight=1.0
 	 // Advanced
 	 bGameRelevant=True
 	 bMovable=True

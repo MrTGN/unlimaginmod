@@ -1068,9 +1068,10 @@ function DoBounce( bool bUpdating, optional vector NewVelocity )
 		BounceModif = JumpZ / default.JumpZ;
 	
 	if ( NewVelocity == Vect(0.0, 0.0, 0.0) )
-		NewVelocity = Vector(Rotation) * BounceSpeed * BounceModif;
+		NewVelocity = Velocity;
 	else
-		NewVelocity = Vector(Rotator(NewVelocity)) * BounceSpeed * BounceModif;
+		NewVelocity = Normal(NewVelocity) * BounceSpeed * BounceModif;
+		
 	
 	NewVelocity.Z = FMin( (NewVelocity.Z + BounceZ * BounceModif) , (BounceZ * BounceModif) );
 	Velocity = NewVelocity;
@@ -1089,8 +1090,6 @@ function DoBounce( bool bUpdating, optional vector NewVelocity )
 //Player Jumped
 function bool DoJump( bool bUpdating )
 {
-	local	vector	NewVelocity;
-	
 	// Do not allow to jump if somebody has grabbed this Pawn
 	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
 		// Used in DoBounce
@@ -1110,16 +1109,14 @@ function bool DoJump( bool bUpdating )
 			}
 			
 			if ( Physics == PHYS_Spider )
-				NewVelocity = JumpZ * Floor;
+				Velocity = JumpZ * Floor;
 			else if ( Physics == PHYS_Ladder )
-				NewVelocity.Z = 0.0;
+				Velocity.Z = 0.0;
 			else
-				NewVelocity.Z = JumpZ;
+				Velocity.Z = JumpZ;
 			
 			if ( Base != None && !Base.bWorldGeometry )
-				NewVelocity.Z += Base.Velocity.Z;
-			
-			Velocity = NewVelocity;
+				Velocity.Z += Base.Velocity.Z;
 			
 			SetPhysics(PHYS_Falling);
 			if ( !bUpdating )
@@ -1156,7 +1153,7 @@ function bool DoDirectionalJump( bool bUpdating, vector NewVelocity )
 					Inventory.OwnerEvent('Jumped');
 			}
 			
-			NewVelocity = Vector(Rotator(NewVelocity)) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
+			NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
 			if ( Physics == PHYS_Spider )
 				NewVelocity.Z = JumpZ * Floor.Z;
 			else if ( Physics == PHYS_Ladder )
@@ -3045,7 +3042,7 @@ defaultproperties
 	 IntuitiveShootingRange=150.000000
 	 JumpRandRange=(Min=0.98,Max=1.06)
 	 BounceRemaining=0
-	 BounceCheckDistance=9.000000
+	 BounceCheckDistance=9.500000
 	 BounceSpeed=360.0
 	 BounceZ=160.0
 	 LowGravBounceScale=2.000000

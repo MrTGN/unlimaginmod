@@ -17,49 +17,6 @@ class UM_Monster_Bloat_Standard extends UM_BaseMonster_Bloat;
 #exec OBJ LOAD FILE=KFPlayerSound.uax
 #exec OBJ LOAD FILE=KF_EnemiesFinalSnd.uax
 
-function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
-{
-	local	vector	TraceHitLoc, TraceHitNorm;
-	local	int		look;
-	local	bool	bWasAnimating;
-		
-	if ( HeadBallisticCollision == None )
-		Return False;
-	
-	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer )  {
-		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0);
-		else if ( Physics == PHYS_Walking )  {
-			// Only play the idle anim if we're not already doing a different anim.
-			// This prevents anims getting interrupted on the server and borking things up - Ramm
-			if ( !IsAnimating(0) && !IsAnimating(1) )  {
-				if ( bIsCrouched )
-					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
-			}
-			else
-				bWasAnimating = True;
-
-			if ( bDoTorsoTwist )  {
-				SmoothViewYaw = Rotation.Yaw;
-				SmoothViewPitch = ViewPitch;
-				look = (256 * ViewPitch) & 65535;
-				if ( look > 32768 )
-					look -= 65536;
-				SetTwistLook(0, look);
-			}
-		}
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
-
-		if ( !bWasAnimating )
-			SetAnimFrame(0.5);
-	}
-	
-	// TraceThisActor returns True if did not hit this actor.
-	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray * HeadBallisticCollision.GetCollisionVSize()), Loc );
-}
-
 static simulated function PreCacheStaticMeshes(LevelInfo myLevel)
 {
     Super.PreCacheStaticMeshes(myLevel);

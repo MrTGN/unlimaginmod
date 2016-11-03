@@ -29,7 +29,7 @@ replication
 	
 	// Functions server can call.
 	reliable if ( Role == ROLE_Authority )
-		ClientResetViewTarget, /*ClientStartShowingActor,*/ ClientStopShowingActor;
+		ClientResetViewTarget, ClientStopShowingActor;
 
 	// Functions client can call.
 	reliable if ( Role < ROLE_Authority )
@@ -332,7 +332,7 @@ function ShowActor( Actor A, optional float NewShowActorDuration )
 {
 	// Do not show actor if Pawn have small amount of Health
 	// or if actor is already close enough (4 meters) and visible.
-	if ( A == None || A == Self || Pawn == None || Pawn.Health < 10 
+	if ( Role < ROLE_Authority || A == None || A == Self || Pawn == None || Pawn.Health < 10 
 		 || (VSizeSquared(A.Location - Pawn.Location) < 32400.0 && FastTrace(A.Location, Pawn.Location)) || bShowingActor )
 		Return;
 	
@@ -379,9 +379,12 @@ state ShowingActor
 	{
 		bShowingActor = True;
 		Log("BeginState() ShowingActor",Name);
-		Super.BeginState();
+		//Super.BeginState();
 		
-		SetTimer((CurrentShowActorDuration * Level.default.TimeDilation / Level.TimeDilation), False);
+		if ( Role < ROLE_Authority )
+			SetTimer((CurrentShowActorDuration * Level.default.TimeDilation / Level.TimeDilation), False);
+		else
+			SetTimer(0.0, False);
 	}
 	
 	/*
@@ -413,14 +416,15 @@ state ShowingActor
 		}
 	}	*/
 	
+	//simulated event Timer()
 	event Timer()
 	{
 		if ( Role < ROLE_Authority )
 			Return;
 		
-		SetTimer(0.0, False);
-		ClientStopShowingActor();
 		ServerStopShowingActor();
+		ClientStopShowingActor();
+		SetTimer(0.0, False);
 	}
 	
 	// Client function
@@ -433,7 +437,7 @@ state ShowingActor
 	simulated event EndState()
 	{
 		Log("EndState() ShowingActor",Name);
-		Super.EndState();
+		//Super.EndState();
 		bShowingActor = False;
 	}
 }
@@ -1470,6 +1474,56 @@ function WasKilledBy( Controller Killer )
 	PawnKiller = Killer.Pawn;
 	bViewPawnKiller = True;
 }	*/
+
+exec function ToggleDuck()
+{
+	if ( Pawn == None )
+		Return;
+	
+	if ( bDuck == 0 )
+		bDuck = 1;
+	else
+		bDuck = 0;
+}
+
+exec function Crouch()
+{
+	if ( Pawn != None )
+		bDuck = 1;
+}
+
+exec function UnCrouch()
+{
+	if ( Pawn != None )
+		bDuck = 0;
+}
+
+exec function ToggleSprint()
+{
+	if ( Pawn == None )
+		Return;
+	
+	if ( bSprint == 0 )
+		bSprint = 1;
+	else
+		bSprint = 0;
+}
+
+function HandleWalking()
+{
+	if ( UM_HumanPawn(Pawn) == None )
+		Return;
+
+    if ( UM_HumanPawn(Pawn).bAimingRifle )  {
+		bSprint = 0;
+		UM_HumanPawn(Pawn).SetWalking( True );
+		UM_HumanPawn(Pawn).SetSprinting( False );
+	}
+	else  {
+		UM_HumanPawn(Pawn).SetWalking( bRun != 0 && !Region.Zone.IsA('WarpZoneInfo') );
+		UM_HumanPawn(Pawn).SetSprinting( bSprint != 0 );
+	}
+}
 
 // Player movement.
 // Player Standing, walking, running, falling.

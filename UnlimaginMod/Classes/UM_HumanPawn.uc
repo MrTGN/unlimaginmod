@@ -136,6 +136,9 @@ var		float						DrugsBlurIntensity;
 // WeaponBones
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
 
+var		float						SprintingGroundSpeed;
+var		bool						bOldSprinting; 			// Helper flag for SetSprinting(). Since we simulate sprinting on both client and server, this flag is used to keep track of the local sprinting flags.
+
 // Jumping
 var		float						DirectionalJumpSpeed;
 var		range						JumpRandRange;
@@ -584,9 +587,43 @@ function UpdateGroundSpeed()
 {
 	// GroundSpeed always replicated from the server to the client-owner
 	if ( Role == ROLE_Authority )  {
-		GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+		if ( bIsSprinting )
+			GroundSpeed = default.SprintingGroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+		else
+			GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
+}
+
+event SetWalking( bool bNewIsWalking )
+{
+	if ( bNewIsWalking == bIsWalking )
+		Return;
+	
+	if ( bNewIsWalking )
+		bIsSprinting = False;
+	
+	bIsWalking = bNewIsWalking;
+	ChangeAnimation();
+}
+
+// Can we sprint in this state?
+simulated function bool AllowSprint()
+{
+	Return !bIsCrawling && Acceleration != vect(0.0, 0.0, 0.0) && CurrentWeight <= MaxCarryWeight && ((Weapon == None || Weapon.WeaponAllowSprint()));
+}
+
+function SetSprinting( bool bNewIsSprinting )
+{
+	if ( bNewIsSprinting == (bIsSprinting || bOldSprinting) || (bNewIsSprinting && (!AllowSprint() || !bCanStartSprint) ) )
+		Return;
+	
+	bIsSprinting = bNewIsSprinting;
+	bOldSprinting = bIsSprinting;
+	if ( bIsSprinting )
+		SetWalking( False );
+	
+	UpdateGroundSpeed();
 }
 
 function UpdateJumpZ()
@@ -846,6 +883,65 @@ function UnPossessed()
 		NotifyTeamChanged();
 	
 	NotifyVeterancyChanged();
+}
+
+function CheckBob( float DeltaTime, vector Y )
+{
+	local	float	Speed2D;
+	local	float	OldBobTime;
+	local	int		m,n;
+	local	float	UsedBobScaleModifier;
+
+	OldBobTime = BobTime;
+
+	Bob = FClamp(Bob, -0.01, 0.01);
+	UsedBobScaleModifier = BobScaleModifier;
+
+	// Modify the amount of bob based on the movement state
+	if ( bIsSprinting )
+		UsedBobScaleModifier = 1.5;
+	else if ( bIsCrouched )
+		UsedBobScaleModifier = 2.5;
+
+	if ( Physics == PHYS_Walking )  {
+		Speed2D = VSize(Velocity);
+		Speed2D *= BobSpeedModifier;
+
+		if ( Speed2D < 10 )
+			BobTime += 0.2 * DeltaTime;
+		else
+			BobTime += DeltaTime * (0.3 + 0.7 * Speed2D/GroundSpeed);
+
+		WalkBob = Y * (Bob * UsedBobScaleModifier) * Speed2D * sin(8 * BobTime);
+		AppliedBob = AppliedBob * (1 - FMin(1, 16 * deltatime));
+		WalkBob.Z = AppliedBob;
+		if ( Speed2D > 10 )
+			WalkBob.Z = WalkBob.Z + 0.75 * (Bob * UsedBobScaleModifier) * Speed2D * sin(16 * BobTime);
+		
+		if ( LandBob > 0.01 )  {
+			AppliedBob += FMin(1, 16 * deltatime) * LandBob;
+			LandBob *= (1 - 8*Deltatime);
+		}
+	}
+	else if ( Physics == PHYS_Swimming )  {
+		Speed2D = Sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
+		WalkBob = Y * Bob *  0.5 * Speed2D * sin(4.0 * Level.TimeSeconds);
+		WalkBob.Z = Bob * 1.5 * Speed2D * sin(8.0 * Level.TimeSeconds);
+	}
+	else  {
+		BobTime = 0;
+		WalkBob = WalkBob * (1 - FMin(1, 8 * deltatime));
+	}
+
+	if ( Physics != PHYS_Walking || VSize(Velocity) < 10
+		|| (PlayerController(Controller) != None && PlayerController(Controller).bBehindView) )
+		Return;
+
+	m = int(0.5 * Pi + 9.0 * OldBobTime / Pi);
+	n = int(0.5 * Pi + 9.0 * BobTime / Pi);
+
+	if ( m != n )
+		FootStepping(0);
 }
 
 // Accessor function that returns Intuitive Shooting (not aiming) Range
@@ -1153,7 +1249,8 @@ function bool DoDirectionalJump( bool bUpdating, vector NewVelocity )
 					Inventory.OwnerEvent('Jumped');
 			}
 			
-			NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
+			//NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
+			NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
 			if ( Physics == PHYS_Spider )
 				NewVelocity.Z = JumpZ * Floor.Z;
 			else if ( Physics == PHYS_Ladder )
@@ -2964,6 +3061,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 bCanStartSprint=True
 	 MaxSlowMoCharge=3.0
 	 
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
@@ -2982,10 +3080,12 @@ defaultproperties
 	 VeterancyHealPotency=1.0
 	 VeterancyOverhealPotency=1.0
 	 VeterancySyringeChargeModifier=1.0
-	 GroundSpeed=200.000000
-	 WaterSpeed=180.000000
-	 AirSpeed=230.000000
-	 DirectionalJumpSpeed=280.0
+	 
+	 SprintingGroundSpeed=240.0
+	 GroundSpeed=180.0
+	 WaterSpeed=160.0
+	 AirSpeed=250.0
+	 DirectionalJumpSpeed=260.0
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
 	 // DyingCameraEffect

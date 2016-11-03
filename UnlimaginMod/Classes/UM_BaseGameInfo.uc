@@ -1647,13 +1647,13 @@ function bool AllowImpressiveKillEvent( float EventChance )
 			Return False;
 		
 		// Increase chance by the time
-		if ( EventChance > 15.0 )
+		if ( TimeSinceLastEvent > 15.0 )
 			EventChance *= FMin( TimeSinceLastEvent, 60.0 ) / 15.0;		
 		// More than a minute ago
 		if ( TimeSinceLastEvent > 60.0 )
 			EventChance *= 4.0;
 		// More than a half-minute ago
-		else if( TimeSinceLastEvent > 30.0 )
+		else if ( TimeSinceLastEvent > 30.0 )
 			EventChance *= 2.0;
 		
 		Return FRand() <= EventChance;
@@ -1662,6 +1662,15 @@ function bool AllowImpressiveKillEvent( float EventChance )
 	Return True;
 }
 
+function CheckForImpressiveKill( UM_PlayerController Player, UM_BaseMonster Monster )
+{
+	if ( Player == None || Player.Pawn == None || Monster == None || Monster.ImpressiveKillDuration <= 0.0 || !AllowImpressiveKillEvent(Monster.ImpressiveKillChance) )
+		Return;
+	
+	DoZedTime( Monster.ImpressiveKillDuration );
+	if ( bShowImpressiveKillEvents )
+		Player.ShowActor( Monster, Monster.ImpressiveKillDuration );
+}
 
 // Called when a dramatic event happens that might cause slomo
 // BaseZedTimePossibility - the attempted probability of doing a slomo event

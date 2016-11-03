@@ -436,12 +436,37 @@ simulated function DrawSpectatingHud(Canvas C)
 		DrawHint(C);
 }
 
-simulated function DrawHud(Canvas C)
+// For debugging headshots
+simulated function DrawHeadShotSphere() // Dave@Psyonix
 {
-	local KFGameReplicationInfo CurrentGame;
-	local rotator CamRot;
-	local vector CamPos, ViewDir, ScreenPos;
-	local KFPawn KFBuddy;
+	local	UM_BaseMonster	Monster;
+	local	coords			CO;
+	local	vector			HeadLoc;
+
+	//super.DrawHeadShotSphere();
+
+	foreach DynamicActors( class'UM_BaseMonster', Monster )  {
+		if ( Monster != None && Monster.ServerHeadLocation != Monster.LastServerHeadLocation )  {
+			//Monster.DrawDebugSphere(Monster.Location + (Monster.OnlineHeadshotOffset >> Monster.Rotation), Monster.HeadRadius * Monster.HeadScale * Monster.OnlineHeadshotScale, 10, 0, 255, 0);
+			ClearStayingDebugLines();
+			Monster.LastServerHeadLocation = Monster.ServerHeadLocation;
+			// HeadLocation on the server
+			DrawStayingDebugSphere(Monster.ServerHeadLocation, Monster.HeadRadius * Monster.HeadScale, 10, 255, 0, 0);
+			CO = Monster.GetBoneCoords(Monster.HeadBone);
+			HeadLoc = CO.Origin + (Monster.HeadHeight * Monster.HeadScale * CO.XAxis);
+			// HeadLocation on Client side
+			DrawStayingDebugSphere(HeadLoc, Monster.HeadRadius * Monster.HeadScale, 10, 0, 255, 0);
+			Break;
+		}
+	}
+}
+
+simulated function DrawHud( Canvas C )
+{
+	local	KFGameReplicationInfo	CurrentGame;
+	local	rotator					CamRot;
+	local	vector					CamPos, ViewDir, ScreenPos;
+	local	KFPawn					KFBuddy;
 
 	CurrentGame = KFGameReplicationInfo(PlayerOwner.Level.GRI);
 
@@ -471,13 +496,11 @@ simulated function DrawHud(Canvas C)
 		ViewDir = vector(CamRot);
 
 		// Draw the Name, Health, Armor, and Veterancy above other players (using this way to fix portal's beacon errors).
-		foreach VisibleCollidingActors(Class'KFPawn',KFBuddy,1000.f,CamPos)
-		{
+		foreach VisibleCollidingActors(Class'KFPawn',KFBuddy,1000.f,CamPos)  {
 			KFBuddy.bNoTeamBeacon = True;
-			if ( KFBuddy!=PawnOwner && KFBuddy.PlayerReplicationInfo!=None && KFBuddy.Health>0 && ((KFBuddy.Location - CamPos) Dot ViewDir)>0.8 )
-			{
-				ScreenPos = C.WorldToScreen(KFBuddy.Location+vect(0,0,1)*KFBuddy.CollisionHeight);
-				if( ScreenPos.X>=0 && ScreenPos.Y>=0 && ScreenPos.X<=C.ClipX && ScreenPos.Y<=C.ClipY )
+			if ( KFBuddy != PawnOwner && KFBuddy.PlayerReplicationInfo != None && KFBuddy.Health > 0 && ((KFBuddy.Location - CamPos) Dot ViewDir) > 0.8 )  {
+				ScreenPos = C.WorldToScreen(KFBuddy.Location+vect(0,0,1) * KFBuddy.CollisionHeight);
+				if ( ScreenPos.X >= 0 && ScreenPos.Y >= 0 && ScreenPos.X <= C.ClipX && ScreenPos.Y <= C.ClipY )
 					DrawPlayerInfo(C, KFBuddy, ScreenPos.X, ScreenPos.Y);
 			}
 		}
@@ -487,11 +510,11 @@ simulated function DrawHud(Canvas C)
 		DrawHudPassA(C);
 		DrawHudPassC(C);
 
-		if ( KFPlayerController(PlayerOwner)!= None && KFPlayerController(PlayerOwner).ActiveNote!=None )
-		{
-			if( PlayerOwner.Pawn == None )
+		if ( KFPlayerController(PlayerOwner) != None && KFPlayerController(PlayerOwner).ActiveNote != None )  {
+			if ( PlayerOwner.Pawn == None )
 				KFPlayerController(PlayerOwner).ActiveNote = None;
-			else KFPlayerController(PlayerOwner).ActiveNote.RenderNote(C);
+			else
+				KFPlayerController(PlayerOwner).ActiveNote.RenderNote(C);
 		}
 
 		PassStyle = STY_None;
@@ -501,9 +524,8 @@ simulated function DrawHud(Canvas C)
 
 		PassStyle = STY_Alpha;
 
-		if ( CurrentGame!=None && CurrentGame.EndGameType > 0 )
-		{
-			DrawEndGameHUD(C, (CurrentGame.EndGameType==2));
+		if ( CurrentGame != None && CurrentGame.EndGameType > 0 )  {
+			DrawEndGameHUD(C, (CurrentGame.EndGameType == 2));
 			Return;
 		}
 
@@ -511,13 +533,16 @@ simulated function DrawHud(Canvas C)
 		C.Style = PassStyle;
 		DrawKFHUDTextElements(C);
 	}
-	if ( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).bViewingMatineeCinematic )
-	{
+	
+	if ( KFPlayerReplicationInfo(PlayerOwner.PlayerReplicationInfo).bViewingMatineeCinematic )  {
 		PassStyle = STY_Alpha;
 		DrawCinematicHUD(C);
 	}
+	
 	if ( bShowNotification )
 		DrawPopupNotification(C);
+	
+	DrawHeadShotSphere();
 }
 
 function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)

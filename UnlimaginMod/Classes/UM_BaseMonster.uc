@@ -82,6 +82,10 @@ var					float				ImpressiveKillDuration;
 
 var		transient	float				LastSeenCheckTime;
 
+// Headshot debugging
+var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
+var					vector              LastServerHeadLocation;
+
 //[end] Varibles
 //====================================================================
 
@@ -92,6 +96,10 @@ replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		bThisIsMiniBoss;
+	
+	// Headshot debugging
+	reliable if ( Role == ROLE_Authority )
+		ServerHeadLocation;
 }
 
 //[end] Replication
@@ -801,18 +809,18 @@ simulated function StartBurnFX()
 // Turn off the on-fire behavior
 simulated function UnSetBurningBehavior()
 {
-    local	int		i;
+	local	int		i;
 	// Don't turn off this behavior until the harpoon stun is over
-    if ( bHarpoonStunned )
-        Return;
+	if ( bHarpoonStunned )
+		Return;
 
 	if ( Role == Role_Authority )  {
 		Intelligence = default.Intelligence;
 		if ( !bZapped )  {
-    		SetGroundSpeed(GetOriginalGroundSpeed());
-    		AirSpeed = default.AirSpeed;
-    		WaterSpeed = default.WaterSpeed;
-        }
+			SetGroundSpeed(GetOriginalGroundSpeed());
+			AirSpeed = default.AirSpeed;
+			WaterSpeed = default.WaterSpeed;
+		}
 
 		// Set normal accuracy
 		if ( Controller != None )
@@ -1226,7 +1234,7 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 	local bool bUseAltHeadShotLocation;
 	local bool bWasAnimating;
 
-	if ( HeadBone == '' )
+	if ( bDecapitated || HeadBone == '' )
 		Return False;
 
 	// If we are a dedicated server estimate what animation is most likely playing on the client
@@ -1269,7 +1277,10 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 		C = GetBoneCoords(HeadBone);
 		HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
 	}
-	//ServerHeadLocation = HeadLoc;
+	
+	// Headshot debugging
+	if ( Role == ROLE_Authority )
+		ServerHeadLocation = HeadLoc;
 
 	// Express snipe trace line in terms of B + tM
 	B = loc;
@@ -1344,16 +1355,6 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	// TraceThisActor returns True if did not hit this actor.
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
-
-function CheckForImpressiveKill( UM_PlayerController PC )
-{
-	if ( PC == None || PC.Pawn == None || UM_BaseGameInfo(Level.Game) == None || !UM_BaseGameInfo(Level.Game).AllowImpressiveKillEvent(ImpressiveKillChance) )
-		Return;
-	
-	UM_BaseGameInfo(Level.Game).DoZedTime( ImpressiveKillDuration );
-	if ( UM_BaseGameInfo(Level.Game).bShowImpressiveKillEvents )
-		PC.ShowActor( Self, ImpressiveKillDuration );
-}
 
 // Process the damaging and Return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
@@ -1464,8 +1465,8 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 				if ( UM_HumanPawn(instigatedBy) != None )  {
 					UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
 					// ImpressiveKill
-					if ( Damage > Health )
-						CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller) );
+					if ( UM_BaseGameInfo(Level.Game) != None && Damage > Health )
+						UM_BaseGameInfo(Level.Game).CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller), Self );
 				}
 			}
 		}
@@ -1720,12 +1721,11 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-	 LifeSpan=150.0
 	 ImpressiveKillChance=0.03
-	 ImpressiveKillDuration=3.0
+	 ImpressiveKillDuration=4.0
 	 
 	 HealthMax=150.0
-     Health=150
+	 Health=150
 	 HeadHealth=25.0
 	 
 	 HeadShotSlowMoChargeBonus=0.2

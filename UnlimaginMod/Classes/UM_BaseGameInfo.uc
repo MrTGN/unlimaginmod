@@ -1518,7 +1518,7 @@ function ResetSlowMoInstigator()
 {
 	// Reduce Last Instigator SlowMoCharge
 	if ( SlowMoInstigator != None && SlowMoInstigator.Health > 0 && SlowMoDeltaTime > 0.0 )
-		SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+		SlowMoInstigator.SubtractSlowMoCharge( SlowMoDeltaTime );
 	// Reset
 	bSlowMoStartedByHuman = False;
 	SlowMoDeltaTime = 0.0;
@@ -1609,7 +1609,7 @@ event Tick( float DeltaTime )
 				}
 				// Reduce SlowMoInstigator SlowMoCharge
 				else if ( SlowMoDeltaTime >= SlowMoInstigator.SlowMoChargeUpdateAmount )  {
-					SlowMoInstigator.ReduceSlowMoCharge( SlowMoDeltaTime );
+					SlowMoInstigator.SubtractSlowMoCharge( SlowMoDeltaTime );
 					SlowMoDeltaTime = 0.0;
 					//CurrentZEDTimeDuration = SlowMoInstigator.SlowMoCharge;
 				}

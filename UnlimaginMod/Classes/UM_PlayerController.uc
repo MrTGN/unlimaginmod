@@ -1509,6 +1509,12 @@ exec function ToggleSprint()
 		bSprint = 0;
 }
 
+function UnSprint()
+{
+	if ( Pawn != None )
+		bSprint = 0;
+}
+
 function HandleWalking()
 {
 	if ( UM_HumanPawn(Pawn) == None )

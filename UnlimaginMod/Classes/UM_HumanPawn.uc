@@ -113,15 +113,26 @@ var		int							OverhealedHealthMax;	// Max Overhealed Health for this Pawn
 var		float						OverhealReductionFrequency;	// Overhealed Health per second
 var		transient	float			NextOverhealReductionTime;
 var		float						OverhealMovementModifier;	// Additional Overheal movement modifier. Look into the SetHealth() calculation.
+var		float						OverhealStaminaDrainModifier;
+var		float						OverhealStaminaRegenModifier;
 var		float						NormalHealthMovementModifier;	// Additional Health movement modifier. Look into the SetHealth() calculation.
+var		float						NormalHealthStaminaDrainModifier;
+var		float						NormalHealthStaminaRegenModifier;
 var		float						VeterancyOverhealPotency;	// Bonus to overheal somebody
 
-// Overweight
+
 var		float						WeightMovementModifier;
+var		float						WeightStaminaDrainModifier;
+var		float						WeightJumpStaminaDrainModifier;
+var		float						WeightStaminaRegenModifier;
+// Overweight
 var		float						MaxOverweightScale;
 var		float						MaxCarryOverweight;
 var		float						OverweightMovementModifier;
 var		float						OverweightJumpModifier;
+var		float						OverweightStaminaDrainModifier;
+var		float						OverweightJumpStaminaDrainModifier;
+var		float						OverweightStaminaRegenModifier;
 
 // Drugs effects
 var		bool						bClientOnDrugs;	// Client-side bOnDrugs
@@ -137,7 +148,28 @@ var		float						DrugsBlurIntensity;
 var		name						LeftHandWeaponBone, RightHandWeaponBone;
 
 var		float						SprintingGroundSpeed;
-var		bool						bOldSprinting; 			// Helper flag for SetSprinting(). Since we simulate sprinting on both client and server, this flag is used to keep track of the local sprinting flags.
+// Stamina
+var		byte						Stamina, MaxStamina;
+// Stamina Regeneration
+var		transient	bool			bStaminaAtMax;
+var		float						MotionlessStaminaRegenRate;
+var		float						CrouchedStaminaRegenRate;
+var		float						WalkingStaminaRegenRate;
+var		float						RuningStaminaRegenRate;
+var		float						StaminaRegenModifier;
+var		float						VeterancyStaminaRegenModifier;
+var		float						CarryWeightStaminaRegenModifier;
+var		float						HealthStaminaRegenModifier;
+var		transient	float			LastStaminaRegenTime, NextStaminaRegenTime;
+var		float						StaminaRegenDelay;
+// Stamina Drain
+var		byte						JumpStaminaDrain;
+var		float						SprintingStaminaDrain;	// Drain per sec
+var		float						VeterancyStaminaDrainModifier;
+var		float						CarryWeightJumpStaminaDrainModifier;
+var		float						CarryWeightStaminaDrainModifier;
+var		transient	float			LastStaminaDrainTime, NextStaminaDrainTime;
+var		float						SprintingStaminaDrainDelay;
 
 // Jumping
 var		float						DirectionalJumpSpeed;
@@ -216,7 +248,7 @@ replication
 	
 	// Variable replication from the server to client-owner
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		VeterancyChangedTrigger, SlowMoCharge;
+		VeterancyChangedTrigger, SlowMoCharge, Stamina;
 	
 	// Server to client-owner function call replication
 	reliable if ( Role == ROLE_Authority )
@@ -543,30 +575,47 @@ function AddVelocity( vector NewVelocity )
 }
 
 // Movement speed according to the healths
-function UpdateHealthMovementModifiers()
+function UpdateHealthModifiers()
 {
+	local	float	HealthRatio;
+	
+	HealthRatio = float(Health) / HealthMax;
 	// Overheal
-	if ( Health > int(HealthMax) )
-		HealthMovementModifier = ((float(Health) / HealthMax) * OverhealMovementModifier) + (1.0 - OverhealMovementModifier);
+	if ( HealthRatio > 1.0 )  {
+		HealthMovementModifier = HealthRatio * OverhealMovementModifier + (1.0 - OverhealMovementModifier);
+		HealthStaminaRegenModifier = HealthRatio * OverhealStaminaRegenModifier + (1.0 - OverhealStaminaRegenModifier);
+	}
 	// Normal Health
-	else
-		HealthMovementModifier = ((float(Health) / HealthMax) * NormalHealthMovementModifier) + (1.0 - NormalHealthMovementModifier);
+	else  {
+		HealthMovementModifier = HealthRatio * NormalHealthMovementModifier + (1.0 - NormalHealthMovementModifier);
+		HealthStaminaRegenModifier = HealthRatio * NormalHealthStaminaRegenModifier + (1.0 - NormalHealthStaminaRegenModifier);
+	}
 }
 
 // Movement speed according to the carry weight
-function UpdateCarryWeightMovementModifiers()
+function UpdateCarryWeightModifiers()
 {
 	local	float	WeightRatio;
 	
 	WeightRatio = CurrentWeight / MaxCarryWeight;
 	// Overweight
-	if ( CurrentWeight > MaxCarryWeight )  {
-		CarryWeightJumpModifier = 1.0 - WeightRatio * OverweightJumpModifier;
-		CarryWeightMovementModifier = 1.0 - WeightRatio * OverweightMovementModifier;
+	if ( WeightRatio > 1.0 )  {
+		CarryWeightJumpModifier = 1.0 - FMin( 0.9, (WeightRatio * OverweightJumpModifier) );
+		CarryWeightMovementModifier = 1.0 - FMin( 0.9, (WeightRatio * OverweightMovementModifier) );
+		// StaminaDrain
+		CarryWeightStaminaDrainModifier = 1.0 + WeightRatio * OverweightStaminaDrainModifier;
+		CarryWeightJumpStaminaDrainModifier = 1.0 + WeightRatio * OverweightJumpStaminaDrainModifier;
+		// StaminaRegen
+		CarryWeightStaminaRegenModifier = 1.0 - FMin( 0.9, (WeightRatio * OverweightStaminaRegenModifier) );
 	}
 	else  {
 		CarryWeightJumpModifier = 1.0 - WeightRatio * WeightJumpModifier;
 		CarryWeightMovementModifier = 1.0 - WeightRatio * WeightMovementModifier;
+		// StaminaDrain
+		CarryWeightStaminaDrainModifier = 1.0 + WeightRatio * WeightStaminaDrainModifier;
+		CarryWeightJumpStaminaDrainModifier = 1.0 + WeightRatio * WeightJumpStaminaDrainModifier;
+		// StaminaRegen
+		CarryWeightStaminaRegenModifier = 1.0 - WeightRatio * WeightStaminaRegenModifier;
 	}
 }
 
@@ -595,6 +644,17 @@ function UpdateGroundSpeed()
 	}
 }
 
+function UpdateStaminaDrain()
+{
+	JumpStaminaDrain = Round(float(default.JumpStaminaDrain) * CarryWeightJumpStaminaDrainModifier * VeterancyStaminaDrainModifier);
+	SprintingStaminaDrain = default.SprintingStaminaDrain * CarryWeightStaminaDrainModifier * VeterancyStaminaDrainModifier;
+}
+
+function UpdateStaminaRegenModifier()
+{
+	StaminaRegenModifier = HealthStaminaRegenModifier * CarryWeightStaminaRegenModifier * VeterancyStaminaRegenModifier;
+}
+
 event SetWalking( bool bNewIsWalking )
 {
 	if ( bNewIsWalking == bIsWalking )
@@ -607,22 +667,36 @@ event SetWalking( bool bNewIsWalking )
 	ChangeAnimation();
 }
 
-// Can we sprint in this state?
 simulated function bool AllowSprint()
 {
-	Return !bIsCrawling && Acceleration != vect(0.0, 0.0, 0.0) && CurrentWeight <= MaxCarryWeight && ((Weapon == None || Weapon.WeaponAllowSprint()));
+	Return !bIsCrouched && !bWantsToCrouch && !bIsCrawling && Stamina > Round(SprintingStaminaDrain) && Acceleration != vect(0.0, 0.0, 0.0) && ((Weapon == None || Weapon.WeaponAllowSprint()));
+}
+
+function StartSprint()
+{
+	if ( Weapon != None )
+		Weapon.PutDown();
+}
+
+function EndSprint()
+{
+	if ( Weapon != None )
+		Weapon.BringUp();
 }
 
 function SetSprinting( bool bNewIsSprinting )
 {
-	if ( bNewIsSprinting == (bIsSprinting || bOldSprinting) || (bNewIsSprinting && (!AllowSprint() || !bCanStartSprint) ) )
+	if ( bNewIsSprinting == bIsSprinting || (bNewIsSprinting && !AllowSprint()) )
 		Return;
 	
 	bIsSprinting = bNewIsSprinting;
-	bOldSprinting = bIsSprinting;
-	if ( bIsSprinting )
+	if ( bNewIsSprinting )  {
 		SetWalking( False );
-	
+		StartSprint();
+	}
+	else	
+		EndSprint();
+		
 	UpdateGroundSpeed();
 }
 
@@ -642,7 +716,7 @@ function SetHealth( int NewHealth )
 	if ( Health == 0 )
 		Return;
 	
-	UpdateHealthMovementModifiers();
+	UpdateHealthModifiers();
 	UpdateGroundSpeed();
 }
 
@@ -651,7 +725,7 @@ function SetCarryWeight( float NewCarryWeight )
 {
 	CurrentWeight = NewCarryWeight;
 	
-	UpdateCarryWeightMovementModifiers();
+	UpdateCarryWeightModifiers();
 	UpdateGroundSpeed();
 	UpdateJumpZ();
 }
@@ -768,8 +842,8 @@ simulated function NotifyVeterancyChanged()
 		CheckSlowMoCharge();
 		CheckVeterancyCarryWeightLimit();
 		CheckVeterancyAmmoLimit();
-		UpdateHealthMovementModifiers();
-		UpdateCarryWeightMovementModifiers();
+		UpdateHealthModifiers();
+		UpdateCarryWeightModifiers();
 		UpdateInventoryMovementModifiers();
 		UpdateGroundSpeed();
 		UpdateJumpZ();
@@ -899,7 +973,7 @@ function CheckBob( float DeltaTime, vector Y )
 
 	// Modify the amount of bob based on the movement state
 	if ( bIsSprinting )
-		UsedBobScaleModifier = 1.5;
+		UsedBobScaleModifier = 2.0;
 	else if ( bIsCrouched )
 		UsedBobScaleModifier = 2.5;
 
@@ -1187,43 +1261,48 @@ function DoBounce( bool bUpdating, optional vector NewVelocity )
 function bool DoJump( bool bUpdating )
 {
 	// Do not allow to jump if somebody has grabbed this Pawn
-	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
-		// Used in DoBounce
-		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
-			NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
+	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina < JumpStaminaDrain )
+		Return False;
+
+	// Used in DoBounce
+	if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
+		NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
+		
+		// Take you out of ironsights if you jump on a non-lowgrav map
+		if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
+			KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
+		
+		if ( Role == ROLE_Authority )  {
+			if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
+				MakeNoise((0.1 * Level.Game.GameDifficulty));
 			
-			// Take you out of ironsights if you jump on a non-lowgrav map
-			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
-				KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
-			
-			if ( Role == ROLE_Authority )  {
-				if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
-					MakeNoise((0.1 * Level.Game.GameDifficulty));
-				
-				if ( bCountJumps && Inventory != None )
-					Inventory.OwnerEvent('Jumped');
-			}
-			
-			if ( Physics == PHYS_Spider )
-				Velocity = JumpZ * Floor;
-			else if ( Physics == PHYS_Ladder )
-				Velocity.Z = 0.0;
-			else
-				Velocity.Z = JumpZ;
-			
-			if ( Base != None && !Base.bWorldGeometry )
-				Velocity.Z += Base.Velocity.Z;
-			
-			SetPhysics(PHYS_Falling);
-			if ( !bUpdating )
-				PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
-			
-			Return True;
+			if ( bCountJumps && Inventory != None )
+				Inventory.OwnerEvent('Jumped');
 		}
-		else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
-			DoBounce(bUpdating);
-			Return True;
-		}
+		
+		if ( Physics == PHYS_Spider )
+			Velocity = JumpZ * Floor;
+		else if ( Physics == PHYS_Ladder )
+			Velocity.Z = 0.0;
+		else
+			Velocity.Z = JumpZ;
+		
+		if ( Base != None && !Base.bWorldGeometry )
+			Velocity.Z += Base.Velocity.Z;
+		
+		SetPhysics(PHYS_Falling);
+		if ( !bUpdating )
+			PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
+		
+		SubtractStamina(JumpStaminaDrain);
+		
+		Return True;
+	}
+	else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
+		DoBounce(bUpdating);
+		SubtractStamina(JumpStaminaDrain);
+		
+		Return True;
 	}
 	
 	Return False;
@@ -1232,48 +1311,53 @@ function bool DoJump( bool bUpdating )
 function bool DoDirectionalJump( bool bUpdating, vector NewVelocity )
 {
 	// Do not allow to jump if somebody has grabbed this Pawn
-	if ( !bIsCrouched && !bWantsToCrouch && !bMovementDisabled )  {
-		// Used in DoBounce
-		if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
-			NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
+	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina < JumpStaminaDrain )
+		Return False;
+	
+	// Used in DoBounce
+	if ( Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider )  {
+		NextBounceTime = Level.TimeSeconds + BounceDelay * Lerp( FRand(), 0.95, 1.05 );
+		
+		// Take you out of ironsights if you jump on a non-lowgrav map
+		if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
+			KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
+		
+		if ( Role == ROLE_Authority )  {
+			if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
+				MakeNoise((0.1 * Level.Game.GameDifficulty));
 			
-			// Take you out of ironsights if you jump on a non-lowgrav map
-			if ( KFWeapon(Weapon) != None && PhysicsVolume.Gravity.Z <= class'PhysicsVolume'.default.Gravity.Z )
-				KFWeapon(Weapon).ForceZoomOutTime = Level.TimeSeconds + 0.01;
-			
-			if ( Role == ROLE_Authority )  {
-				if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
-					MakeNoise((0.1 * Level.Game.GameDifficulty));
-				
-				if ( bCountJumps && Inventory != None )
-					Inventory.OwnerEvent('Jumped');
-			}
-			
-			//NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * (JumpZ / default.JumpZ);
-			NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
-			if ( Physics == PHYS_Spider )
-				NewVelocity.Z = JumpZ * Floor.Z;
-			else if ( Physics == PHYS_Ladder )
-				NewVelocity.Z = 0.0;
-			else
-				NewVelocity.Z = JumpZ;
-			
-			if ( Base != None && !Base.bWorldGeometry )
-				NewVelocity.Z += Base.Velocity.Z;
-			
-			Velocity = NewVelocity;
-			
-			SetPhysics(PHYS_Falling);
-			if ( !bUpdating )
-				PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
-			
-			Return True;
+			if ( bCountJumps && Inventory != None )
+				Inventory.OwnerEvent('Jumped');
 		}
-		else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
-			DoBounce(bUpdating, NewVelocity);
-			Return True;
-		}
+		
+		NewVelocity = Normal(NewVelocity) * DirectionalJumpSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
+		if ( Physics == PHYS_Spider )
+			NewVelocity.Z = JumpZ * Floor.Z;
+		else if ( Physics == PHYS_Ladder )
+			NewVelocity.Z = 0.0;
+		else
+			NewVelocity.Z = JumpZ;
+		
+		if ( Base != None && !Base.bWorldGeometry )
+			NewVelocity.Z += Base.Velocity.Z;
+		
+		Velocity = NewVelocity;
+		
+		SetPhysics(PHYS_Falling);
+		if ( !bUpdating )
+			PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
+		
+		SubtractStamina(JumpStaminaDrain);
+		
+		Return True;
 	}
+	else if ( Physics == PHYS_Falling && !bUpdating && CanBounce() )  {
+		DoBounce(bUpdating, NewVelocity);
+		SubtractStamina(JumpStaminaDrain);
+		
+		Return True;
+	}
+
 	
 	Return False;
 }
@@ -2645,12 +2729,65 @@ function AddSlowMoCharge( float AddCharge )
 	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 
-function ReduceSlowMoCharge( float ReduceCharge )
+function SubtractSlowMoCharge( float SubtractCharge )
 {
-	SlowMoCharge = FMax( (SlowMoCharge - Abs(ReduceCharge)), 0.0 );
+	SlowMoCharge = FMax( (SlowMoCharge - Abs(SubtractCharge)), 0.0 );
 	bSlowMoCharged = SlowMoCharge >= MaxSlowMoCharge;
 }
 //[end] SlowMo
+
+//[block] Stamina
+function SubtractStamina( byte Subtract )
+{
+	Stamina = Max( 0, (Stamina - Subtract) );
+	bStaminaAtMax = Stamina == MaxStamina;
+}
+
+protected function DrainStamina()
+{
+	local	byte	DeltaStaminaDrain;
+	
+	NextStaminaDrainTime = Level.TimeSeconds + SprintingStaminaDrainDelay;
+	
+	DeltaStaminaDrain = int(SprintingStaminaDrain * (Level.TimeSeconds - LastStaminaDrainTime));
+	if ( DeltaStaminaDrain < 1 )
+		Return;
+	
+	LastStaminaDrainTime = Level.TimeSeconds;
+	SubtractStamina( DeltaStaminaDrain );
+}
+
+function StopSprinting()
+{
+	DrainStamina();
+	SetSprinting(False);
+	if ( UM_PlayerController(Controller) != None )
+		UM_PlayerController(Controller).UnSprint();
+}
+
+protected function RegenerateStamina()
+{
+	local	byte	DeltaStaminaRegen;
+	
+	NextStaminaRegenTime = Level.TimeSeconds + StaminaRegenDelay;
+	
+	if ( Acceleration == vect(0.0, 0.0, 0.0) )
+		DeltaStaminaRegen = int(MotionlessStaminaRegenRate * StaminaRegenModifier * (Level.TimeSeconds - LastStaminaRegenTime));
+	else if ( bIsCrouched )
+		DeltaStaminaRegen = int(CrouchedStaminaRegenRate * StaminaRegenModifier * (Level.TimeSeconds - LastStaminaRegenTime));
+	else if ( bIsWalking )
+		DeltaStaminaRegen = int(WalkingStaminaRegenRate * StaminaRegenModifier * (Level.TimeSeconds - LastStaminaRegenTime));
+	else
+		DeltaStaminaRegen = int(RuningStaminaRegenRate * StaminaRegenModifier * (Level.TimeSeconds - LastStaminaRegenTime));
+	
+	if ( DeltaStaminaRegen < 1 )
+		Return;
+	
+	LastStaminaRegenTime = Level.TimeSeconds;
+	Stamina = Min( MaxStamina, (Stamina + DeltaStaminaRegen) );
+	bStaminaAtMax = Stamina == MaxStamina;
+}
+//[end]
 
 // Clearing
 function Drugs() { }
@@ -2785,6 +2922,16 @@ simulated event Tick( float DeltaTime )
 		// SlowMo Charge
 		if ( !bSlowMoCharged && Level.TimeSeconds >= NextSlowMoChargeRegenTime )
 			IncreaseSlowMoCharge();
+		
+		// Sprinting
+		if ( bIsSprinting )  {
+			if ( Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0) )
+				StopSprinting();
+			else if ( Level.TimeSeconds >= NextStaminaDrainTime )
+				DrainStamina();
+		}
+		else ( !bStaminaAtMax && Level.TimeSeconds >= NextStaminaRegenTime )
+			RegenerateStamina();
 		
 		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
 		// Survived 10 Seconds After Vomit Achievement
@@ -3061,7 +3208,6 @@ simulated event Destroyed()
 
 defaultproperties
 {
-	 bCanStartSprint=True
 	 MaxSlowMoCharge=3.0
 	 
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
@@ -3109,6 +3255,36 @@ defaultproperties
 	 // Falling
 	 FallingDamageType=Class'Fell'
 	 LavaDamageType=Class'FellLava'
+	 // Stamina Modifiers Defaults
+	 VeterancyStaminaDrainModifier=1.0
+	 CarryWeightJumpStaminaDrainModifier=1.0
+	 CarryWeightStaminaDrainModifier=1.0
+	 StaminaRegenModifier=1.0
+	 VeterancyStaminaRegenModifier=1.0
+	 CarryWeightStaminaRegenModifier=1.0
+	 HealthStaminaRegenModifier=1.0
+	 // Stamina
+	 Stamina=100
+	 MaxStamina=100
+	 // JumpStaminaDrain
+	 JumpStaminaDrain=1
+	 WeightJumpStaminaDrainModifier=3.0
+	 OverweightJumpStaminaDrainModifier=6.0
+	 // SprintingStaminaDrain
+	 SprintingStaminaDrainDelay=0.2
+	 SprintingStaminaDrain=2.5
+	 WeightStaminaDrainModifier=1.0
+	 OverweightStaminaDrainModifier=3.0
+	 // StaminaRegen
+	 MotionlessStaminaRegenRate=1.5
+	 CrouchedStaminaRegenRate=0.75
+	 WalkingStaminaRegenRate=1.0
+	 RuningStaminaRegenRate=0.5
+	 StaminaRegenDelay=0.25
+	 WeightStaminaRegenModifier=0.2
+	 OverweightStaminaRegenModifier=0.4
+	 NormalHealthStaminaRegenModifier=0.3
+	 OverhealStaminaRegenModifier=0.4
 	 // CarryWeight
 	 WeightMovementModifier=0.14
 	 WeightJumpModifier=0.06

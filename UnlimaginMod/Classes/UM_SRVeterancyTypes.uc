@@ -294,6 +294,16 @@ static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI
 	Return 1.0;
 }
 
+static function float GetStaminaRegenModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0;
+}
+
+static function float GetStaminaDrainModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0;
+}
+
 // On how much this human can overheal somebody
 static function float GetOverhealPotency( UM_PlayerReplicationInfo PRI )
 {

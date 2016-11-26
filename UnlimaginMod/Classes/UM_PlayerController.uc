@@ -1509,12 +1509,6 @@ exec function ToggleSprint()
 		bSprint = 0;
 }
 
-function UnSprint()
-{
-	if ( Pawn != None )
-		bSprint = 0;
-}
-
 function HandleWalking()
 {
 	if ( UM_HumanPawn(Pawn) == None )
@@ -1574,6 +1568,27 @@ ignores SeePlayer, HearNoise, Bump;
 }
 
 state PlayerSpidering
+{
+ignores SeePlayer, HearNoise, Bump;
+	
+	function ProcessMove( float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot )
+	{
+		local vector OldAccel;
+
+		OldAccel = Pawn.Acceleration;
+		if ( Pawn.Acceleration != NewAccel )
+			Pawn.Acceleration = NewAccel;
+
+		if ( bPressedJump )  {
+			if ( UM_HumanPawn(Pawn) != None && NewAccel != Vect(0.0, 0.0, 0.0) )
+				UM_HumanPawn(Pawn).DoDirectionalJump( bUpdating, NewAccel );
+			else
+				Pawn.DoJump( bUpdating );
+		}
+	}
+}
+
+state PlayerClimbing
 {
 ignores SeePlayer, HearNoise, Bump;
 	

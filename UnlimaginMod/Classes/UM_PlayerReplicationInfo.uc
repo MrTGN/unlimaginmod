@@ -212,6 +212,22 @@ simulated function float GetSlowMoChargeRegenModifier()
 	Return 1.0;
 }
 
+simulated function float GetStaminaRegenModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetStaminaRegenModifier(Self);
+	
+	Return 1.0;
+}
+
+simulated function float GetStaminaDrainModifier()
+{
+	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetStaminaDrainModifier(Self);
+	
+	Return 1.0;
+}
+
 // On how much this human can overheal somebody
 simulated function float GetOverhealPotency()
 {

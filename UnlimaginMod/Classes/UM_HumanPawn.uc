@@ -222,11 +222,11 @@ struct BallisticCollisionData
 var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
-// Slowmo time like an ZedTime in original KF
-var						float			MaxSlowMoCharge; // Max SloMo charge in seconds
-//var		transient		float			SlowMoCharge; // Current SloMo charge in seconds
+// SlowMo time like an ZedTime in original KF
+var						float			MaxSlowMoCharge; // Max SlowMo charge in seconds
+//var		transient		float			SlowMoCharge; // Current SlowMo charge in seconds
 var						float			SlowMoCharge;
-var						float			SlowMoChargeRegenRate; // SloMo Charge Regen per second
+var						float			SlowMoChargeRegenRate; // SlowMo Charge Regen per second
 var		const			float			SlowMoChargeUpdateAmount;
 var		const			float			MinSlowMoToggleCharge;
 var		const			float			DelayBetweenSlowMoToggle;
@@ -669,19 +669,29 @@ event SetWalking( bool bNewIsWalking )
 
 simulated function bool AllowSprint()
 {
+	if ( (KFWeapon(Weapon) != None && KFWeapon(Weapon).bIsReloading && !KFWeapon(Weapon).InterruptReload()) || (UM_BaseWeapon(Weapon) != None && !UM_BaseWeapon(Weapon).FireModesReadyToFire()) || (Weapon.GetFireMode(0) != None && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) > 0.1) )
+		Return False;
+	
 	Return !bIsCrouched && !bWantsToCrouch && !bIsCrawling && Stamina > Round(SprintingStaminaDrain) && Acceleration != vect(0.0, 0.0, 0.0) && ((Weapon == None || Weapon.WeaponAllowSprint()));
 }
 
 function StartSprint()
 {
-	if ( Weapon != None )
+	LastStaminaRegenTime = Level.TimeSeconds;
+	LastStaminaDrainTime = Level.TimeSeconds;
+	NextStaminaDrainTime = LastStaminaDrainTime + SprintingStaminaDrainDelay;
+	/*
+	if ( KFWeapon(Weapon) != None )  {
 		Weapon.PutDown();
+	}	*/
 }
 
 function EndSprint()
 {
-	if ( Weapon != None )
+	/*
+	if ( KFWeapon(Weapon) != None )  {
 		Weapon.BringUp();
+	}	*/
 }
 
 function SetSprinting( bool bNewIsSprinting )
@@ -717,6 +727,7 @@ function SetHealth( int NewHealth )
 		Return;
 	
 	UpdateHealthModifiers();
+	UpdateStaminaRegenModifier();
 	UpdateGroundSpeed();
 }
 
@@ -726,6 +737,8 @@ function SetCarryWeight( float NewCarryWeight )
 	CurrentWeight = NewCarryWeight;
 	
 	UpdateCarryWeightModifiers();
+	UpdateStaminaDrain();
+	UpdateStaminaRegenModifier();
 	UpdateGroundSpeed();
 	UpdateJumpZ();
 }
@@ -823,6 +836,9 @@ simulated function NotifyVeterancyChanged()
 		VeterancySyringeChargeModifier = UM_PlayerRepInfo.GetSyringeChargeModifier();
 		MaxSlowMoCharge = UM_PlayerRepInfo.GetMaxSlowMoCharge();
 		SlowMoChargeRegenRate = default.SlowMoChargeRegenRate * UM_PlayerRepInfo.GetSlowMoChargeRegenModifier();
+		// Stamina
+		VeterancyStaminaRegenModifier = UM_PlayerRepInfo.GetStaminaRegenModifier();
+		VeterancyStaminaDrainModifier = UM_PlayerRepInfo.GetStaminaDrainModifier();
 	}
 	else  {
 		OverhealedHealthMax = int(HealthMax);
@@ -835,6 +851,9 @@ simulated function NotifyVeterancyChanged()
 		VeterancySyringeChargeModifier = default.VeterancySyringeChargeModifier;
 		MaxSlowMoCharge = default.MaxSlowMoCharge;
 		SlowMoChargeRegenRate = default.SlowMoChargeRegenRate;
+		// Stamina
+		VeterancyStaminaRegenModifier = default.VeterancyStaminaRegenModifier;
+		VeterancyStaminaDrainModifier = default.VeterancyStaminaDrainModifier;
 	}
 	
 	// Server
@@ -845,6 +864,8 @@ simulated function NotifyVeterancyChanged()
 		UpdateHealthModifiers();
 		UpdateCarryWeightModifiers();
 		UpdateInventoryMovementModifiers();
+		UpdateStaminaDrain();
+		UpdateStaminaRegenModifier();
 		UpdateGroundSpeed();
 		UpdateJumpZ();
 	
@@ -1261,7 +1282,7 @@ function DoBounce( bool bUpdating, optional vector NewVelocity )
 function bool DoJump( bool bUpdating )
 {
 	// Do not allow to jump if somebody has grabbed this Pawn
-	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina < JumpStaminaDrain )
+	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina <= JumpStaminaDrain )
 		Return False;
 
 	// Used in DoBounce
@@ -1311,7 +1332,7 @@ function bool DoJump( bool bUpdating )
 function bool DoDirectionalJump( bool bUpdating, vector NewVelocity )
 {
 	// Do not allow to jump if somebody has grabbed this Pawn
-	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina < JumpStaminaDrain )
+	if ( bIsCrouched || bWantsToCrouch || bMovementDisabled || Stamina <= JumpStaminaDrain )
 		Return False;
 	
 	// Used in DoBounce
@@ -2740,7 +2761,9 @@ function SubtractSlowMoCharge( float SubtractCharge )
 function SubtractStamina( byte Subtract )
 {
 	Stamina = Max( 0, (Stamina - Subtract) );
-	bStaminaAtMax = Stamina == MaxStamina;
+	bStaminaAtMax = Stamina >= MaxStamina;
+	LastStaminaRegenTime = Level.TimeSeconds;
+	NextStaminaRegenTime = LastStaminaRegenTime + StaminaRegenDelay;
 }
 
 protected function DrainStamina()
@@ -2755,14 +2778,6 @@ protected function DrainStamina()
 	
 	LastStaminaDrainTime = Level.TimeSeconds;
 	SubtractStamina( DeltaStaminaDrain );
-}
-
-function StopSprinting()
-{
-	DrainStamina();
-	SetSprinting(False);
-	if ( UM_PlayerController(Controller) != None )
-		UM_PlayerController(Controller).UnSprint();
 }
 
 protected function RegenerateStamina()
@@ -2785,7 +2800,7 @@ protected function RegenerateStamina()
 	
 	LastStaminaRegenTime = Level.TimeSeconds;
 	Stamina = Min( MaxStamina, (Stamina + DeltaStaminaRegen) );
-	bStaminaAtMax = Stamina == MaxStamina;
+	bStaminaAtMax = Stamina >= MaxStamina;
 }
 //[end]
 
@@ -2925,12 +2940,15 @@ simulated event Tick( float DeltaTime )
 		
 		// Sprinting
 		if ( bIsSprinting )  {
-			if ( Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0) )
-				StopSprinting();
+			if ( Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0) )  {
+				SetSprinting(False);
+				if ( Controller != None )
+					Controller.bSprint = 0;
+			}
 			else if ( Level.TimeSeconds >= NextStaminaDrainTime )
 				DrainStamina();
 		}
-		else ( !bStaminaAtMax && Level.TimeSeconds >= NextStaminaRegenTime )
+		else if ( !bStaminaAtMax && Level.TimeSeconds >= NextStaminaRegenTime )
 			RegenerateStamina();
 		
 		//ToDo: перенести эти ачивки в таймер поcле выполнения Issue #207
@@ -2977,6 +2995,9 @@ simulated event Tick( float DeltaTime )
 				ThrowGrenadeFinished();
 			}
 		}
+		// Client StopSprinting
+		if ( bIsSprinting && Controller != None && (Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0)) )
+			Controller.bSprint = 0;
 		// Drugs effects on the client-side
 		if ( bOnDrugs != bClientOnDrugs )  {
 			if ( bOnDrugs )
@@ -3227,10 +3248,10 @@ defaultproperties
 	 VeterancyOverhealPotency=1.0
 	 VeterancySyringeChargeModifier=1.0
 	 
-	 SprintingGroundSpeed=240.0
+	 SprintingGroundSpeed=250.0
 	 GroundSpeed=180.0
 	 WaterSpeed=160.0
-	 AirSpeed=250.0
+	 AirSpeed=280.0
 	 DirectionalJumpSpeed=260.0
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
@@ -3276,7 +3297,7 @@ defaultproperties
 	 WeightStaminaDrainModifier=1.0
 	 OverweightStaminaDrainModifier=3.0
 	 // StaminaRegen
-	 MotionlessStaminaRegenRate=1.5
+	 MotionlessStaminaRegenRate=1.25
 	 CrouchedStaminaRegenRate=0.75
 	 WalkingStaminaRegenRate=1.0
 	 RuningStaminaRegenRate=0.5

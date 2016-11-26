@@ -22,16 +22,27 @@ var()   SpriteWidget            SlowMoChargeBG;
 var()   SpriteWidget            SlowMoChargeIcon;
 var()   NumericWidget           SlowMoChargeDigits;
 
+var()   SpriteWidget            StaminaBG;
+var()   SpriteWidget            StaminaIcon;
+var()   NumericWidget           StaminaDigits;
+
 simulated function SetHUDAlpha()
 {
 	Super.SetHUDAlpha();
-	
+	// SlowMoCharge
 	SlowMoChargeBG.Tints[0].A = KFHUDAlpha;
 	SlowMoChargeBG.Tints[1].A = KFHUDAlpha;
 	SlowMoChargeIcon.Tints[0].A = KFHUDAlpha;
 	SlowMoChargeIcon.Tints[1].A = KFHUDAlpha;
 	SlowMoChargeDigits.Tints[0].A = KFHUDAlpha;
 	SlowMoChargeDigits.Tints[1].A = KFHUDAlpha;
+	// Stamina
+	StaminaBG.Tints[0].A = KFHUDAlpha;
+	StaminaBG.Tints[1].A = KFHUDAlpha;
+	StaminaIcon.Tints[0].A = KFHUDAlpha;
+	StaminaIcon.Tints[1].A = KFHUDAlpha;
+	StaminaDigits.Tints[0].A = KFHUDAlpha;
+	StaminaDigits.Tints[1].A = KFHUDAlpha;
 }
 
 simulated event PostBeginPlay()
@@ -851,7 +862,20 @@ simulated function DrawHudPassA(Canvas C)
 		C.DrawText( string(HumanPawn.SlowMoCharge) @"s" );
 		C.FontScaleX = 1;
 		C.FontScaleY = 1;
-	
+		// Stamina
+		C.SetPos(C.ClipX * StaminaBG.PosX, C.ClipY * StaminaBG.PosY);
+		if ( !bLightHud )
+			C.DrawTile(StaminaBG.WidgetTexture, StaminaBG.WidgetTexture.MaterialUSize() * StaminaBG.TextureScale * 1.5 * HudCanvasScale * ResScaleX * HudScale, StaminaBG.WidgetTexture.MaterialVSize() * StaminaBG.TextureScale * HudCanvasScale * ResScaleY * HudScale, 0, 0, StaminaBG.WidgetTexture.MaterialUSize(), StaminaBG.WidgetTexture.MaterialVSize());
+		
+		DrawSpriteWidget(C, StaminaIcon);
+		C.Font = LoadSmallFontStatic(5);
+		C.FontScaleX = C.ClipX / 1024.0;
+		C.FontScaleY = C.FontScaleX;
+		C.SetPos(C.ClipX * StaminaDigits.PosX, C.ClipY * StaminaDigits.PosY);
+		C.DrawColor = StaminaDigits.Tints[0];
+		C.DrawText( string(HumanPawn.Stamina) );
+		C.FontScaleX = 1;
+		C.FontScaleY = 1;
 		// Weight
 		C.SetPos(C.ClipX * WeightBG.PosX, C.ClipY * WeightBG.PosY);
 		if ( !bLightHud )
@@ -1801,6 +1825,10 @@ defaultproperties
 	 SlowMoChargeBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=256,Y2=64),TextureScale=0.350000,PosX=0.155000,PosY=0.935000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=128),Tints[1]=(B=255,G=255,R=255,A=128))
 	 SlowMoChargeIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Lightning_Bolt',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.200000,PosX=0.160000,PosY=0.945000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
 	 SlowMoChargeDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.185000,PosY=0.950000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
+	 // Stamina
+	 StaminaBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=256,Y2=128),TextureScale=0.350000,PosX=0.155000,PosY=0.0.865000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=128),Tints[1]=(B=255,G=255,R=255,A=128))
+	 StaminaIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Lightning_Bolt',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.200000,PosX=0.160000,PosY=0.875000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
+	 StaminaDigits=(RenderStyle=STY_Alpha,TextureScale=0.300000,PosX=0.185000,PosY=0.880000,Tints[0]=(B=64,G=64,R=255,A=255),Tints[1]=(B=64,G=64,R=255,A=255))
 	 // Weight
 	 WeightBG=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Box_128x64',RenderStyle=STY_Alpha,TextureCoords=(X2=384,Y2=64),TextureScale=0.350000,PosX=0.295000,PosY=0.935000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))
 	 WeightIcon=(WidgetTexture=Texture'KillingFloorHUD.HUD.Hud_Weight',RenderStyle=STY_Alpha,TextureCoords=(X2=64,Y2=64),TextureScale=0.280000,PosX=0.300000,PosY=0.941000,ScaleMode=SM_Right,Scale=1.000000,Tints[0]=(B=255,G=255,R=255,A=255),Tints[1]=(B=255,G=255,R=255,A=255))

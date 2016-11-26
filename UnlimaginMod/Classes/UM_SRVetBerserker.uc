@@ -157,6 +157,16 @@ static function float GetSlowMoChargeRegenModifier( UM_PlayerReplicationInfo PRI
 	Return 1.25 + 0.125 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 150% bonus
 }
 
+static function float GetStaminaRegenModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0 + 0.1 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 100% bonus
+}
+
+static function float GetStaminaDrainModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0 - 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 50% bonus
+}
+
 // Change the cost of particular items
 static function float GetCostScaling(KFPlayerReplicationInfo KFPRI, class<Pickup> Item)
 {

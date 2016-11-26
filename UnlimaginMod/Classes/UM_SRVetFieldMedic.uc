@@ -114,6 +114,16 @@ static function float GetOverhealedHealthMaxModifier( UM_PlayerReplicationInfo P
 	Return 1.25 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10));	// Up to 75% bonus
 }
 
+static function float GetStaminaRegenModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0 + 0.05 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 50% bonus
+}
+
+static function float GetStaminaDrainModifier( UM_PlayerReplicationInfo PRI )
+{
+	Return 1.0;
+}
+
 // New function to reduce taken damage
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {

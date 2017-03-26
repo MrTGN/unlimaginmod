@@ -48,21 +48,24 @@ defaultproperties
 	 Mesh=SkeletalMesh'UM_Patriarch_A.Patriarch_Mesh'
 	 // Collision
 	 MeshTestCollisionHeight=70.0
-	 MeshTestCollisionRadius=25.0
-	 //CollisionHeight = MeshTestCollisionHeight * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionRadius = MeshTestCollisionRadius * DrawScale * ExtraSizeScaleRange.Max;
-	 //CollisionHeight=92.0
-	 //CollisionRadius=33.0
+	 MeshTestCollisionRadius=24.0
+	 // DrawScale
+	 DrawScale=1.050000
 	 //CollisionHeight = MeshTestCollisionHeight * DrawScale;
 	 //CollisionRadius = MeshTestCollisionRadius * DrawScale;
 	 CollisionHeight=73.5
-	 CollisionRadius=26.25
-	 BaseEyeHeight=61.0
-	 EyeHeight=61.0
-	 // DrawScale
-	 DrawScale=1.050000
-	 //OnlineHeadshotOffset=(X=28.000000,Z=75.000000)
-	 OnlineHeadshotOffset=(X=20.000000,Z=59.000000)
+	 CollisionRadius=25.2
+	 //MeshEyeHeight=65.5
+	 BaseEyeHeight=68.775
+	 EyeHeight=68.775
+	 // CrouchHeight = CollisionHeight / 1.5625;
+	 // CrouchRadius = CollisionRadius;
+	 CrouchHeight=47.04
+	 CrouchRadius=25.2
+	 // OnlineHeadshotOffset=(X=28.000000,Z=75.000000) // old
+	 // OnlineHeadshotOffset is a Head Offset for the server HeadShot processing when the walking anim is playing on the clients
+	 // MeshTestOnlineHeadshotOffset=(X=24.0,Z=59.0) * DrawScale
+	 OnlineHeadshotOffset=(X=25.2,Z=61.95)
 	 OnlineHeadshotScale=1.200000
 	 // Mass
 	 Mass=900.000000
@@ -91,4 +94,7 @@ defaultproperties
 	 TauntLumberJackSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_TauntLumberJack'
 	 TauntRadialSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_TauntRadial'
 	 SaveMeSound=sound'KF_EnemiesFinalSnd.Patriarch.Kev_SaveMe'
+	 // BallisticCollision
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.0,AreaSizeScale=1.05,AreaBone="HitPoint_Head",AreaImpactStrength=16.5)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=61.0,AreaOffset=(X=0.0,Y=0.0,Z=-9.0),AreaImpactStrength=22.5)
 }

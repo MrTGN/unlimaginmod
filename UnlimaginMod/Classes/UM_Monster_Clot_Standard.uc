@@ -55,8 +55,9 @@ defaultproperties
 	 // CrouchRadius = MeshTestCollisionRadius * DrawScale;
 	 CrouchHeight=35.2704
 	 CrouchRadius=19.8
-     // 
-	 OnlineHeadshotOffset=(X=1.21,Y=0.0,Z=46.86)
+	 // Head Offset for the server HeadShot processing when the walking anim is playing on the clients
+	 //OnlineHeadshotOffset=(X=15.0,Z=39.5) * DrawScale
+	 OnlineHeadshotOffset=(X=16.5,Z=43.45)
 	 OnlineHeadshotScale=1.300000
 	 // Mass
 	 Mass=200.000000
@@ -74,6 +75,6 @@ defaultproperties
 	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 // BallisticCollision
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.5,AreaHeight=6.0,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.5,Z=0.0),AreaImpactStrength=5.4)
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=17.0,AreaHeight=42.6,AreaOffset=(X=0.0,Y=0.0,Z=-7.5),AreaImpactStrength=7.4)
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.5,AreaHeight=7.6,AreaBone="HitPoint_Head",AreaImpactStrength=5.4)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=18.0,AreaHeight=42.5,AreaOffset=(Z=-7.6),AreaImpactStrength=7.4)
 }

@@ -31,94 +31,8 @@ static simulated function PreCacheMaterials(LevelInfo myLevel)
 	myLevel.AddPrecacheMaterial(Texture'KF_Specimens_Trip_T.bloat_diffuse');
 }
 
-// Overridden so that anims don't get interrupted on the server if one is already playing
-function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
-{
-	local coords C;
-	local vector HeadLoc, B, M, diff;
-	local float t, DotMM, Distance;
-	local int look;
-	local bool bUseAltHeadShotLocation;
-	local bool bWasAnimating;
-
-	if ( bDecapitated || HeadBone == '' )
-		Return False;
-
-	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer )  {
-		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0);
-		else if ( Physics == PHYS_Walking )  {
-			// Only play the idle anim if we're not already doing a different anim.
-			// This prevents anims getting interrupted on the server and borking things up - Ramm
-			if ( !IsAnimating(0) && !IsAnimating(1) )  {
-				if ( bIsCrouched )
-					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
-				else
-					bUseAltHeadShotLocation = True;
-			}
-			else
-				bWasAnimating = True;
-
-			if ( bDoTorsoTwist )  {
-				SmoothViewYaw = Rotation.Yaw;
-				SmoothViewPitch = ViewPitch;
-				look = (256 * ViewPitch) & 65535;
-				if ( look > 32768 )
-					look -= 65536;
-				SetTwistLook(0, look);
-			}
-		}
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
-
-		if( !bWasAnimating )
-			SetAnimFrame(0.5);
-	}
-
-	if ( bUseAltHeadShotLocation )  {
-		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
-		AdditionalScale *= OnlineHeadshotScale;
-	}
-	else  {
-		C = GetBoneCoords('HitPoint_Head');
-		HeadLoc = C.Origin;
-		//HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
-	}
-	
-	// Headshot debugging
-	if ( Role == ROLE_Authority )
-		ServerHeadLocation = HeadLoc;
-
-	// Express snipe trace line in terms of B + tM
-	B = loc;
-	M = ray * (2.0 * CollisionHeight + 2.0 * CollisionRadius);
-
-	// Find Point-Line Squared Distance
-	diff = HeadLoc - B;
-	t = M Dot diff;
-	if ( t > 0 )  {
-		DotMM = M dot M;
-		if ( t < DotMM )  {
-			t = t / DotMM;
-			diff = diff - (t * M);
-		}
-		else  {
-			t = 1;
-			diff -= M;
-		}
-	}
-	else
-		t = 0;
-
-	Distance = Sqrt(diff Dot diff);
-
-	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
-}
-
 defaultproperties
 {
-     //HeadBone="HitPoint_Head"
 	 // DetachedBodyParts
 	 DetachedArmClass=Class'KFChar.SeveredArmBloat'
      DetachedLegClass=Class'KFChar.SeveredLegBloat'
@@ -141,13 +55,14 @@ defaultproperties
 	 // MeshTestEyeHeight=55.0
 	 BaseEyeHeight=59.125
 	 EyeHeight=59.125
-	 // CrouchHeight = MeshTestCollisionHeight / 1.5625 * DrawScale;
-	 // CrouchRadius = MeshTestCollisionRadius * DrawScale;
+	 // CrouchHeight = CollisionHeight / 1.5625;
+	 // CrouchRadius = CollisionRadius;
 	 CrouchHeight=43.344
 	 CrouchRadius=26.875
 	 // OnlineHeadshotOffset=(X=5.0,Z=58.0) // old
-	 // MeshTestOnlineHeadshotOffset=(X=2.0,Y=0.0,Z=53.0)
-	 OnlineHeadshotOffset=(X=2.15,Y=0.0,Z=56.975)
+	 // Head Offset for the server HeadShot processing when the walking anim is playing on the clients
+	 //OnlineHeadshotOffset=(X=4.0,Z=56.5) * DrawScale
+	 OnlineHeadshotOffset=(X=4.3,Z=60.7375)
 	 OnlineHeadshotScale=1.5
 	 // Mass
 	 Mass=460.000000
@@ -166,6 +81,6 @@ defaultproperties
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
 	 DyingSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
 	 // BallisticCollision
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.5,AreaHeight=9.5,AreaBone="HitPoint_Head",AreaImpactStrength=7.6)
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=53.5,AreaOffset=(X=0.0,Y=0.0,Z=-9.5),AreaImpactStrength=14.6)
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.5,AreaHeight=9.5,AreaSizeScale=1.05,AreaBone="HitPoint_Head",AreaImpactStrength=7.6)
+	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=53.5,AreaOffset=(Z=-9.5),AreaImpactStrength=14.6)
 }

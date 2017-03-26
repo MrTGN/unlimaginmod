@@ -1625,6 +1625,7 @@ defaultproperties
 	 WaveMonsterSquadSize(5)=(Min=6,RandMin=3,Max=18,RandMax=10)
 	 WaveMonsterSquadSize(6)=(Min=7,RandMin=3,Max=18,RandMax=12)
 	 // WaveSquadsSpawnPeriod
+	 /* old settings
 	 WaveSquadsSpawnPeriod(0)=(Min=5.0,RandMin=1.0,Max=3.5,RandMax=1.5)
 	 WaveSquadsSpawnPeriod(1)=(Min=4.5,RandMin=1.0,Max=3.0,RandMax=1.5)
 	 WaveSquadsSpawnPeriod(2)=(Min=4.5,RandMin=1.0,Max=3.0,RandMax=1.5)
@@ -1632,6 +1633,14 @@ defaultproperties
 	 WaveSquadsSpawnPeriod(4)=(Min=4.0,RandMin=1.0,Max=2.5,RandMax=1.5)
 	 WaveSquadsSpawnPeriod(5)=(Min=3.5,RandMin=1.0,Max=2.0,RandMax=1.5)
 	 WaveSquadsSpawnPeriod(6)=(Min=3.5,RandMin=1.0,Max=2.0,RandMax=1.5)
+	 */
+	 WaveSquadsSpawnPeriod(0)=(Min=6.0,RandMin=2.0,Max=4.0,RandMax=2.0)
+	 WaveSquadsSpawnPeriod(1)=(Min=5.5,RandMin=2.0,Max=3.5,RandMax=2.0)
+	 WaveSquadsSpawnPeriod(2)=(Min=5.5,RandMin=2.0,Max=3.5,RandMax=2.0)
+	 WaveSquadsSpawnPeriod(3)=(Min=5.0,RandMin=1.5,Max=3.0,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(4)=(Min=5.0,RandMin=1.5,Max=3.0,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(5)=(Min=4.5,RandMin=1.5,Max=2.5,RandMax=1.5)
+	 WaveSquadsSpawnPeriod(6)=(Min=4.5,RandMin=1.5,Max=2.5,RandMax=1.5)
 	 // WaveSquadsSpawnEndTime
 	 WaveSquadsSpawnEndTime(0)=25
 	 WaveSquadsSpawnEndTime(1)=26

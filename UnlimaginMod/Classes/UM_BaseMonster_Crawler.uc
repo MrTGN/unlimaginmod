@@ -241,7 +241,8 @@ defaultproperties
      damageForce=5000
      KFRagdollName="Crawler_Trip"
      CrispUpThreshhold=10
-     Intelligence=BRAINS_Mammal
+     //Intelligence=BRAINS_Mammal
+	 Intelligence=BRAINS_Human
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.850000
      SeveredHeadAttachScale=1.100000
@@ -292,7 +293,4 @@ defaultproperties
 	 //PlayerNumHeadHealthScale=0.0
 	 PlayerNumHeadHealthScale=0.0
 	 Mass=100.000000
-	 // BallisticCollision
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.4,AreaHeight=7.5,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
-	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=20.0,AreaImpactStrength=6.6)
 }

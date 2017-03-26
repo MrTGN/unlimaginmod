@@ -99,25 +99,7 @@ state InitialHunting extends Hunting
 		// Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
 		UM_BaseMonster_Boss(Pawn).SneakCount++;
 
-		if ( Pawn.CollisionRadius > 27.0 || Pawn.CollisionHeight > 46.0 )  {
-			ZDif = Pawn.CollisionHeight - 44.0;
-			Pawn.SetCollisionSize(24.0, 44.0);
-			Pawn.MoveSmooth( vect(0.0,0.0,-1.0) * ZDif );
-		}
-
 		Super.BeginState();
-	}
-	event EndState()
-	{
-		local float ZDif;
-
-		if ( Pawn.CollisionRadius != Pawn.Default.CollisionRadius || Pawn.CollisionHeight !=Pawn.Default.CollisionHeight )  {
-			ZDif = Pawn.Default.CollisionRadius - 44.0;
-			Pawn.MoveSmooth( vect(0.0,0.0,1.0) * ZDif );
-			Pawn.SetCollisionSize( Pawn.Default.CollisionRadius, Pawn.Default.CollisionHeight );
-		}
-
-		Super.EndState();
 	}
 }
 

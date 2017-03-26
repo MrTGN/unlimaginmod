@@ -477,7 +477,8 @@ defaultproperties
      damageForce=70000
      bFatAss=True
      KFRagdollName="Burns_Trip"
-     Intelligence=BRAINS_Mammal
+     //Intelligence=BRAINS_Mammal
+	 Intelligence=BRAINS_Human
      bCanDistanceAttackDoors=True
      SeveredArmAttachScale=0.900000
      SeveredLegAttachScale=0.900000

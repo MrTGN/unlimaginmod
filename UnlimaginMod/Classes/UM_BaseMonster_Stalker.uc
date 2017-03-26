@@ -390,6 +390,8 @@ function bool DoJump( bool bUpdating )
 
 defaultproperties
 {
+	 Intelligence=BRAINS_Human
+	 
 	 MinGrabChance=0.200000
 	 MaxGrabChance=0.800000
 	 GrappleDuration=1.500000

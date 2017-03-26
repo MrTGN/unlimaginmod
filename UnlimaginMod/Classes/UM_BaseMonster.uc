@@ -72,6 +72,7 @@ struct BallisticCollisionData
 
 var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
+var		name							HeadHitPointName;
 
 var		float							HeadShotSlowMoChargeBonus;
 
@@ -1265,17 +1266,19 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 		else if ( Physics == PHYS_Swimming )
 			PlayAnim(SwimAnims[0], 1.0, 0.0);
 
-		if( !bWasAnimating )
+		if ( !bWasAnimating )
 			SetAnimFrame(0.5);
 	}
 
-	if( bUseAltHeadShotLocation )  {
+	if ( bUseAltHeadShotLocation )  {
 		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
 		AdditionalScale *= OnlineHeadshotScale;
 	}
 	else  {
-		C = GetBoneCoords(HeadBone);
-		HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
+		//C = GetBoneCoords(HeadBone);
+		//HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
+		C = GetBoneCoords(HeadHitPointName);
+		HeadLoc = C.Origin;
 	}
 	
 	// Headshot debugging
@@ -1721,6 +1724,10 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
+	 HeadHitPointName="HitPoint_Head"
+	 
+	 Intelligence=BRAINS_Mammal
+	 
 	 ImpressiveKillChance=0.03
 	 ImpressiveKillDuration=4.0
 	 

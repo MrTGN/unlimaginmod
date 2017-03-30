@@ -36,7 +36,7 @@ defaultproperties
 	 BallisticRandRange=(Min=0.8,Max=1.2)
      //MuzzleVelocity
      MuzzleVelocity=10.000000	// m/sec
-	 Trail=(xEmitterClass=Class'KFTracer')
+	 //Trail=(xEmitterClass=Class'KFTracer')
 	 //Mesh
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 DrawScale=5.000000

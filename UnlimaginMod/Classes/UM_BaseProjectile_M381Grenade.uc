@@ -25,7 +25,7 @@ defaultproperties
 	 //Shrapnel
 	 ShrapnelClass=None
 	 DisintegrateChance=0.950000
-	 Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
+	 //Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
 	 ProjectileMass=0.230000	// kilograms
 	 //EffectiveRange in Meters
 	 EffectiveRange=120.000000

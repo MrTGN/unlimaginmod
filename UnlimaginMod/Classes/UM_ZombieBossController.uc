@@ -94,8 +94,6 @@ state InitialHunting extends Hunting
 
 	event BeginState()
 	{
-		local float ZDif;
-
 		// Added sneakcount hack to try and fix the endless loop crash. Try and track down what was causing this later - Ramm
 		UM_BaseMonster_Boss(Pawn).SneakCount++;
 

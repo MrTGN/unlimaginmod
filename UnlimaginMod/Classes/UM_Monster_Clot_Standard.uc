@@ -75,6 +75,6 @@ defaultproperties
 	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.clot.Clot_Challenge'
 	 // BallisticCollision
-	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.5,AreaHeight=7.6,AreaBone="HitPoint_Head",AreaImpactStrength=5.4)
+	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=5.0,AreaHeight=7.6,AreaSizeScale=1.05,AreaBone="HitPoint_Head",AreaImpactStrength=5.4)
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=18.0,AreaHeight=42.5,AreaOffset=(Z=-7.6),AreaImpactStrength=7.4)
 }

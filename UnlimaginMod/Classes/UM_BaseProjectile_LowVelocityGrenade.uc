@@ -200,7 +200,7 @@ defaultproperties
      MinFudgeScale=0.025000
      InitialAccelerationTime=0.100000
 	 //Trail
-	 Trail=(EmitterClass=Class'UnlimaginMod.UM_LowVelocityGrenadeTrail',EmitterRotation=(Pitch=32768))
+	 //Trail=(EmitterClass=Class'UnlimaginMod.UM_LowVelocityGrenadeTrail',EmitterRotation=(Pitch=32768))
 	 //HitEffects
 	 HitSoundVolume=1.250000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)

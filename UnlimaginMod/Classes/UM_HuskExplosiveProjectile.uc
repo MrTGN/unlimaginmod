@@ -21,8 +21,7 @@ class UM_HuskExplosiveProjectile extends UM_BaseMonsterExplosiveProjectile;
 
 defaultproperties
 {
-     //Trail
-	 Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
+     //Trail //Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'

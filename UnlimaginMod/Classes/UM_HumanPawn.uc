@@ -248,11 +248,11 @@ replication
 	
 	// Variable replication from the server to client-owner
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
-		VeterancyChangedTrigger, SlowMoCharge;
+		VeterancyChangedTrigger;
 	
 	// Variable replication from the server to client-owner
 	reliable if ( Role == ROLE_Authority && bNetOwner )
-		Stamina;
+		Stamina, SlowMoCharge;
 	
 	// Server to client-owner function call replication
 	reliable if ( Role == ROLE_Authority )

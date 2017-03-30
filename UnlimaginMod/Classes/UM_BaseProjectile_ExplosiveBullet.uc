@@ -23,7 +23,7 @@ defaultproperties
      bCanHurtSameTypeProjectile=False
 	 ShrapnelClass=None
 	 //Trail
-	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
+	 //Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 HeadShotDamageMult=1.100000
 	 //StaticMesh
 	 DrawScale=1.000000

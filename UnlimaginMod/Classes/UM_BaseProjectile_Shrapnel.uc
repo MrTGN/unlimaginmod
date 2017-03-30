@@ -21,7 +21,7 @@ class UM_BaseProjectile_Shrapnel extends UM_BaseProjectile_Bullet
 defaultproperties
 {
      //Trail
-	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
+	 //Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
 	 bCanRebound=True
 	 bAutoLifeSpan=True
 	 bTrueBallistics=True

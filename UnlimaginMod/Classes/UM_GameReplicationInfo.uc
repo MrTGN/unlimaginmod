@@ -33,8 +33,11 @@ var					bool					bAllowPlayerSpawn;
 
 replication
 {
+	reliable if ( Role == ROLE_Authority )
+		FriendlyFireScale, GameDifficulty;
+	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		FriendlyFireScale, GameDifficulty, bAllowPlayerSpawn;
+		bAllowPlayerSpawn;
 }
 
 //[end] Replication

@@ -31,7 +31,7 @@ defaultproperties
 	 MaxEffectiveRange=1500.000000
 	 ProjectileMass=0.015000
 	 //Trail
-	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
+	 //Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
 	 MuzzleVelocity=380.000000
      HeadShotDamageMult=1.500000
 	 Damage=100.000000

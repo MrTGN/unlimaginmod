@@ -82,7 +82,7 @@ defaultproperties
 	 //[end]
 	 HeadShotDamageMult=1.100000
 	 //Trail
-	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
+	 //Trail=(xEmitterClass=Class'UnlimaginMod.UM_BulletTracer')
 	 //HitEffects
 	 //You can use this varible to set new hit sound volume and radius
 	 //HitSoundVolume=1.000000

@@ -3234,7 +3234,7 @@ simulated event Destroyed()
 defaultproperties
 {
 	 MaxSlowMoCharge=3.0
-	 
+	 bPhysicsAnimUpdate=True
 	 CashPickupClass=class'UnlimaginMod.UM_CashPickup'
 	 DelayBetweenSlowMoToggle=0.15
 	 SlowMoChargeRegenRate=0.02

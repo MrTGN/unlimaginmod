@@ -190,7 +190,7 @@ exec function DumpZedSquads(int MyKFGameLength);
 function NotifyNumPlayersChanged();
 
 //[block] PlayerList
-protected function CheckPlayerList()
+function CheckPlayerList()
 {
 	local	byte	i, j;
 	
@@ -240,7 +240,7 @@ protected function RemoveFromPlayerList( PlayerController PC )
 //[end] PlayerList
 
 //[block] SpectatorList
-protected function CheckSpectatorList()
+function CheckSpectatorList()
 {
 	local	byte	i;
 	
@@ -283,7 +283,7 @@ protected function RemoveFromSpectatorList( PlayerController PC )
 //[end] SpectatorList
 
 //[block] BotList
-protected function CheckBotList()
+function CheckBotList()
 {
 	local	byte	i;
 	

@@ -87,6 +87,15 @@ var		transient	float				LastSeenCheckTime;
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
 var					vector              LastServerHeadLocation;
 
+// Animation
+var		transient	bool				bHeadlessWalkingAnimated;
+
+// Replicates next rand num for animation array index
+var					byte				NextWalkAnimNum;
+var					byte				NextBurningWalkAnimNum;
+var					byte				NextTauntAnimNum;
+var					byte				NextMeleeAnimNum;
+
 //[end] Varibles
 //====================================================================
 
@@ -97,6 +106,9 @@ replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
 		bThisIsMiniBoss;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty )
+		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum;
 	
 	// Headshot debugging
 	reliable if ( Role == ROLE_Authority )
@@ -289,8 +301,6 @@ function DestroyBallisticCollision()
 	}
 }
 
-
-
 function AddVelocity( vector NewVelocity )
 {
 	if ( bIgnoreForces || NewVelocity == vect(0,0,0) || VSizeSquared(NewVelocity) < 2500.0 )
@@ -311,7 +321,7 @@ function AddVelocity( vector NewVelocity )
 event PreBeginPlay()
 {
 	LastSeenCheckTime = Level.TimeSeconds;
-	
+	AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
 	/*
 	if ( !bRandomSizeAdjusted )
 		RandomizeMonsterSizes();
@@ -322,6 +332,23 @@ event PreBeginPlay()
 function bool NotRelevantMoreThan( float NotSeenTime )
 {
 	Return (Level.TimeSeconds - LastSeenCheckTime) > NotSeenTime && (Level.TimeSeconds - LastSeenOrRelevantTime) > NotSeenTime;
+}
+
+// Rand next anim nums on the server
+function ServerRandAnims()
+{
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	// AdditionalWalkAnim
+	if ( AdditionalWalkAnims.Length > 0 )
+		NextWalkAnimNum = Rand(AdditionalWalkAnims.Length);
+	// BurningWalkAnim
+	NextBurningWalkAnimNum = Rand(ArrayCount(BurningWalkFAnims));
+	// TauntAnim
+	NextTauntAnimNum = 3 + Rand(TauntAnims.Length - 3); // First 4 taunts are 'order' anims. Don't pick them.
+	// MeleeAnim
+	NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
 }
 
 simulated event PostBeginPlay()
@@ -345,6 +372,7 @@ simulated event PostBeginPlay()
 			Health = HealthModifer;
 		
 		BuildBallisticCollision();
+		ServerRandAnims();
 		/*
 		if ( HeadBallisticCollision != None )
 			OnlineHeadshotOffset = HeadBallisticCollision.Location - (Location - CollisionHeight * Vect(0.0, 0.0, 1.0));	*/
@@ -380,8 +408,8 @@ simulated event PostBeginPlay()
 
 	bSTUNNED = False;
 	DECAP = False;
-
 	if ( Role == ROLE_Authority )  {
+		
 		// Difficulty Scaling
 		if ( !bDiffAdjusted && Level.Game != None )  {
 			//log(self$" Beginning ground speed "$default.GroundSpeed);
@@ -468,18 +496,14 @@ simulated event PostBeginPlay()
 		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
 			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList( self );
 	}
-
-	if ( Level.NetMode != NM_DedicatedServer )  {
-		AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
-		MovementAnims[0] = AdditionalWalkAnims[Rand(AdditionalWalkAnims.length)];
-	}
 }
 
 simulated event PostNetBeginPlay()
 {
+	AnimateWalking();
 	EnableChannelNotify(1, 1);
-	AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
-	AnimBlendParams(1, 1.0, 0.0,, HeadBone);
+	AnimBlendParams(1, 1.0, 0.0, , SpineBone1);
+	AnimBlendParams(1, 1.0, 0.0, , HeadBone);
 	
 	Super(Pawn).PostNetBeginPlay();
 }
@@ -511,21 +535,6 @@ function bool MakeGrandEntry()
 function bool SetBossLaught()
 {
 	Return False;
-}
-
-
-function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
-{
-	local	int		i;
-	
-	// making attached SealSquealProjectile explode when this pawn dies
-	for ( i = 0; i < Attached.Length; ++i )  {
-		if ( SealSquealProjectile(Attached[i]) != None )
-			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
-	}
-	DestroyBallisticCollision();
-	
-	Super(Pawn).Died( Killer, DamageType, HitLocation );
 }
 
 simulated event Destroyed()
@@ -752,6 +761,512 @@ function ListenServerRelevantCheck()
 	}
 }
 
+function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
+{
+	local	int		i;
+	
+	// making attached SealSquealProjectile explode when this pawn dies
+	for ( i = 0; i < Attached.Length; ++i )  {
+		if ( SealSquealProjectile(Attached[i]) != None )
+			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
+	}
+	DestroyBallisticCollision();
+	
+	Super(Pawn).Died( Killer, DamageType, HitLocation );
+}
+
+//[Block] Animation functions
+simulated function AnimateWalking()
+{
+	local	byte	i;
+	
+	for ( i = 0; i < ArrayCount(MovementAnims); ++i )
+		MovementAnims[i] = default.MovementAnims[i];
+	
+	for ( i = 0; i < ArrayCount(WalkAnims); ++i )
+		WalkAnims[i] = default.WalkAnims[i];
+	
+	if ( AdditionalWalkAnims.Length > 0 )  {
+		// Moving forward Rand anim
+		if ( AdditionalWalkAnims[NextWalkAnimNum] == '' )
+			AdditionalWalkAnims.Remove(NextWalkAnimNum, 1);
+		else if ( HasAnim(AdditionalWalkAnims[NextWalkAnimNum]) )  {
+			MovementAnims[0] = AdditionalWalkAnims[NextWalkAnimNum];
+			WalkAnims[0] = AdditionalWalkAnims[NextWalkAnimNum];
+		}
+		
+		// Rand next anim num on the server
+		if ( Role == ROLE_Authority )  {
+			NextWalkAnimNum = Rand(AdditionalWalkAnims.Length);
+			NetUpdateTime = Level.TimeSeconds - 1.0;
+		}
+	}
+}
+
+simulated function AnimateBurningWalking()
+{
+	// Moving forward Rand anim
+	if ( BurningWalkFAnims[NextBurningWalkAnimNum] != '' && HasAnim(BurningWalkFAnims[NextBurningWalkAnimNum]) )  {
+		MovementAnims[0] = BurningWalkFAnims[NextBurningWalkAnimNum];
+		WalkAnims[0] = BurningWalkFAnims[NextBurningWalkAnimNum];
+	}
+	// Moving back anim
+	if ( BurningWalkAnims[0] != '' && HasAnim(BurningWalkAnims[0]) )  {
+		MovementAnims[1] = BurningWalkAnims[0];
+		WalkAnims[1] = BurningWalkAnims[0];
+	}
+	// Moving left anim
+	if ( BurningWalkAnims[1] != '' && HasAnim(BurningWalkAnims[1]) )  {
+		MovementAnims[2] = BurningWalkAnims[1];
+		WalkAnims[2] = BurningWalkAnims[1];
+	}
+	// Moving right anim
+	if ( BurningWalkAnims[2] != '' && HasAnim(BurningWalkAnims[2]) )  {
+		MovementAnims[3] = BurningWalkAnims[2];
+		WalkAnims[3] = BurningWalkAnims[2];
+	}
+	
+	// Rand next anim num on the server
+	if ( Role == ROLE_Authority )  {
+		NextBurningWalkAnimNum = Rand(ArrayCount(BurningWalkFAnims));
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+}
+
+simulated function AnimateHeadlessWalking()
+{
+	bHeadlessWalkingAnimated = True;
+	// Moving forward anim
+	if ( HeadlessWalkAnims[0] != '' && HasAnim(HeadlessWalkAnims[0]) )  {
+		MovementAnims[0] = HeadlessWalkAnims[0];
+		WalkAnims[0] = HeadlessWalkAnims[0];
+	}
+	// Moving back anim
+	if ( HeadlessWalkAnims[1] != '' && HasAnim(HeadlessWalkAnims[1]) )  {
+		MovementAnims[1] = HeadlessWalkAnims[1];
+		WalkAnims[1] = HeadlessWalkAnims[1];
+	}
+	// Moving left anim
+	if ( HeadlessWalkAnims[2] != '' && HasAnim(HeadlessWalkAnims[2]) )  {
+		MovementAnims[2] = HeadlessWalkAnims[2];
+		WalkAnims[2] = HeadlessWalkAnims[2];
+	}
+	// Moving right anim
+	if ( HeadlessWalkAnims[3] != '' && HasAnim(HeadlessWalkAnims[3]) )  {
+		MovementAnims[3] = HeadlessWalkAnims[3];
+		WalkAnims[3] = HeadlessWalkAnims[3];
+	}
+}
+
+
+simulated event PlayJump();
+simulated event PlayFalling();
+simulated function PlayMoving();
+simulated function PlayWaiting();
+
+simulated event PlayLandingAnimation(float ImpactVel);
+
+function PlayLanded(float impactVel)
+{
+	if ( !bPhysicsAnimUpdate )
+		PlayLandingAnimation(impactvel);
+}
+
+function PlayVictoryAnimation()
+{
+	SetAnimAction( TauntAnims[NextTauntAnimNum] );
+	// Rand NextTauntAnimNum on the server 
+	if ( Role == ROLE_Authority )
+		NextTauntAnimNum = 3 + Rand(TauntAnims.Length - 3); // First 4 taunts are 'order' anims. Don't pick them.
+}
+
+simulated event ChangeAnimation()
+{
+	if ( Controller != None && Controller.bControlAnimations )
+		Return;
+	
+	// player animation - set up new idle and moving animations
+	PlayWaiting();
+	PlayMoving();
+}
+
+event SetWalking(bool bNewIsWalking)
+{
+	/*
+	// this could have been responsible for making the zombies "lethargic" in wander state.
+	// they should retain the same walk speed at all times. Comment from KFMonster.uc.
+	if ( bNewIsWalking != bIsWalking )  {
+		bIsWalking = bNewIsWalking;
+		ChangeAnimation();
+	}	*/
+}
+
+simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLoc)
+{
+	local	vector				shotDir, hitLocRel, deathAngVel, shotStrength;
+	local	float				maxDim;
+	local	string				RagSkelName;
+	local	KarmaParamsSkel		skelParams;
+	local	bool				PlayersRagdoll;
+	local	PlayerController	pc;
+
+	if ( MyExtCollision != None )
+		MyExtCollision.Destroy();
+	
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		// Is this the local player's ragdoll?
+		if ( OldController != None )
+			pc = PlayerController(OldController);
+		
+		if ( pc != None && pc.ViewTarget == self )
+			PlayersRagdoll = True;
+		
+		// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
+		// For a listen server, use LastSeenOrRelevantTime instead of render time so
+		// monsters don't disappear for other players that the host can't see - Ramm
+		if ( Level.NetMode == NM_ListenServer && Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && ((Level.TimeSeconds - LastSeenOrRelevantTime) > 3.0 || bGibbed) )  {
+			bDestroyNextTick = True;
+			TimeSetDestroyNextTickTime = Level.TimeSeconds;
+			Return;
+		}
+		else if ( Level.NetMode != NM_ListenServer && Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && ((Level.TimeSeconds - LastRenderTime) > 3.0 || bGibbed) ) {
+			Destroy();
+			Return;
+		}
+
+		// Try and obtain a rag-doll setup. Use optional 'override' one out of player record first, then use the species one.
+		if ( RagdollOverride != "" )
+			RagSkelName = RagdollOverride;
+		else if ( Species != None )
+			RagSkelName = Species.static.GetRagSkelName( GetMeshName() );
+		else 
+			RagSkelName = "Male1"; // Otherwise assume it is Male1 ragdoll were after here.
+
+		KMakeRagdollAvailable();
+
+		if ( KIsRagdollAvailable() && RagSkelName != "" )  {
+			skelParams = KarmaParamsSkel(KParams);
+			skelParams.KSkeleton = RagSkelName;
+
+			// Stop animation playing.
+			StopAnimating(true);
+
+			// StopAnimating() resets the neck bone rotation, we have to set it again
+			// if the zed was decapitated the cute way
+			if ( class'GameInfo'.static.UseLowGore() && NeckRot != rot(0,0,0) )
+				SetBoneRotation('neck', NeckRot);
+
+			if ( DamageType != None )  {
+				if ( DamageType.default.bLeaveBodyEffect )
+					TearOffMomentum = vect(0,0,0);
+
+				if ( DamageType.default.bKUseOwnDeathVel )  {
+					RagDeathVel = DamageType.default.KDeathVel;
+					RagDeathUpKick = DamageType.default.KDeathUpKick;
+					RagShootStrength = DamageType.default.KDamageImpulse;
+				}
+			}
+
+			// Set the dude moving in direction he was shot in general
+			shotDir = Normal(GetTearOffMomemtum());
+			shotStrength = RagDeathVel * shotDir;
+			// Calculate angular velocity to impart, based on shot location.
+			hitLocRel = TakeHitLocation - Location;
+
+			if ( DamageType.default.bLocationalHit )  {
+				hitLocRel.X *= RagSpinScale;
+				hitLocRel.Y *= RagSpinScale;
+				
+				if ( Abs(hitLocRel.X)  > RagMaxSpinAmount )  {
+					if( hitLocRel.X < 0 )
+						hitLocRel.X = FMax((hitLocRel.X * RagSpinScale), (RagMaxSpinAmount * -1));
+					else
+						hitLocRel.X = FMin((hitLocRel.X * RagSpinScale), RagMaxSpinAmount);
+				}
+
+				if ( Abs(hitLocRel.Y)  > RagMaxSpinAmount )  {
+					if ( hitLocRel.Y < 0 )
+						hitLocRel.Y = FMax((hitLocRel.Y * RagSpinScale), (RagMaxSpinAmount * -1));
+					else
+						hitLocRel.Y = FMin((hitLocRel.Y * RagSpinScale), RagMaxSpinAmount);
+				}
+
+			}
+			else  {
+				// We scale the hit location out sideways a bit, to get more spin around Z.
+				hitLocRel.X *= RagSpinScale;
+				hitLocRel.Y *= RagSpinScale;
+			}
+
+			//log("hitLocRel.X = "$hitLocRel.X$" hitLocRel.Y = "$hitLocRel.Y);
+			//log("TearOffMomentum = "$VSize(GetTearOffMomemtum()));
+
+			// If the tear off momentum was very small for some reason, make up some angular velocity for the pawn
+			if ( VSize(GetTearOffMomemtum()) < 0.01 )
+				deathAngVel = VRand() * 18000.0;
+			else
+				deathAngVel = RagInvInertia * (hitLocRel cross shotStrength);
+
+			// Set initial angular and linear velocity for ragdoll.
+			// Scale horizontal velocity for characters - they run really fast!
+			if ( DamageType.Default.bRubbery )
+				skelParams.KStartLinVel = vect(0,0,0);
+			
+			if ( Damagetype.default.bKUseTearOffMomentum )
+				skelParams.KStartLinVel = GetTearOffMomemtum() + Velocity;
+			else  {
+				skelParams.KStartLinVel.X = 0.6 * Velocity.X;
+				skelParams.KStartLinVel.Y = 0.6 * Velocity.Y;
+				skelParams.KStartLinVel.Z = 1.0 * Velocity.Z;
+				skelParams.KStartLinVel += shotStrength;
+			}
+			
+			// If not moving downwards - give extra upward kick
+			if ( !DamageType.default.bLeaveBodyEffect && !DamageType.Default.bRubbery && Velocity.Z > -10.0 )
+				skelParams.KStartLinVel.Z += RagDeathUpKick;
+
+			if ( DamageType.Default.bRubbery )  {
+				Velocity = vect(0,0,0);
+				skelParams.KStartAngVel = vect(0,0,0);
+			}
+			else  {
+				skelParams.KStartAngVel = deathAngVel;
+				// Set up deferred shot-bone impulse
+				maxDim = Max(CollisionRadius, CollisionHeight);
+				skelParams.KShotStart = TakeHitLocation - (1 * shotDir);
+				skelParams.KShotEnd = TakeHitLocation + (2*maxDim*shotDir);
+				skelParams.KShotStrength = RagShootStrength;
+			}
+
+			//log("RagDeathVel = "$RagDeathVel$" KShotStrength = "$skelParams.KShotStrength$" RagDeathUpKick = "$RagDeathUpKick);
+
+			// If this damage type causes convulsions, turn them on here.
+			if ( DamageType != None && DamageType.default.bCauseConvulsions )  {
+				RagConvulseMaterial=DamageType.default.DamageOverlayMaterial;
+				skelParams.bKDoConvulsions = True;
+			}
+
+			// Turn on Karma collision for ragdoll.
+			KSetBlockKarma(true);
+			// Set physics mode to ragdoll.
+			// This doesn't actaully start it straight away, it's deferred to the first tick.
+			SetPhysics(PHYS_KarmaRagdoll);
+			// If viewing this ragdoll, set the flag to indicate that it is 'important'
+			if ( PlayersRagdoll )
+				skelParams.bKImportantRagdoll = True;
+
+			skelParams.bRubbery = DamageType.Default.bRubbery;
+			bRubbery = DamageType.Default.bRubbery;
+			skelParams.KActorGravScale = RagGravScale;
+
+			Return;
+		}
+	}
+	
+	// non-ragdoll death fallback
+	Velocity += GetTearOffMomemtum();
+	BaseEyeHeight = Default.BaseEyeHeight;
+	SetTwistLook(0, 0);
+	SetInvisibility(0.0);
+	// We don't do this - Ramm
+	//PlayDirectionalDeath(HitLoc);
+	SetPhysics(PHYS_Falling);
+}
+
+//Stops the green shit when a player dies.
+simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
+{
+	local	float		frame, rate;
+	local	name		seq;
+	local	LavaDeath	LD;
+	local	MiscEmmiter	BE;
+
+	AmbientSound = None;
+	bCanTeleport = False; // sjs - fix karma going crazy when corpses land on teleporters
+	bReplicateMovement = False;
+	bTearOff = True;
+	bPlayedDeath = True;
+	StopBurnFX();
+
+	if ( CurrentCombo != None )
+		CurrentCombo.Destroy();
+
+	HitDamageType = DamageType; // these are replicated to other clients
+	TakeHitLocation = HitLoc;
+
+	bSTUNNED = False;
+	bMovable = True;
+
+	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None )
+		ZombieCrispUp();
+
+	ProcessHitFX();
+	if ( DamageType != None )  {
+		if ( DamageType.default.bSkeletize )  {
+			SetOverlayMaterial(DamageType.Default.DamageOverlayMaterial, 4.0, true);
+			if ( !bSkeletized )  {
+				if ( Level.NetMode != NM_DedicatedServer && SkeletonMesh != None )  {
+					if ( DamageType.default.bLeaveBodyEffect )  {
+						BE = spawn(class'MiscEmmiter', self);
+						if ( BE != None )  {
+							BE.DamageType = DamageType;
+							BE.HitLoc = HitLoc;
+							bFrozenBody = true;
+						}
+					}
+					GetAnimParams( 0, seq, frame, rate );
+					LinkMesh(SkeletonMesh, true);
+					Skins.Length = 0;
+					PlayAnim(seq, 0, 0);
+					SetAnimFrame(frame);
+				}
+				
+				if ( Physics == PHYS_Walking )
+					Velocity = Vect(0,0,0);
+				
+				SetTearOffMomemtum(GetTearOffMomemtum() * 0.25);
+				bSkeletized = True;
+				
+				if ( Level.NetMode != NM_DedicatedServer && DamageType == class'FellLava' )  {
+					LD = spawn(class'LavaDeath', , , Location + vect(0, 0, 10), Rotation );
+					if ( LD != None )
+						LD.SetBase(self);
+					//PlaySound( sound'WeaponSounds.BExplosion5', SLOT_None, 1.5*TransientSoundVolume );
+				}
+			}
+		}
+		else if ( DamageType.Default.DeathOverlayMaterial != None )
+			SetOverlayMaterial(DamageType.Default.DeathOverlayMaterial, DamageType.default.DeathOverlayTime, true);
+		else if ( DamageType.Default.DamageOverlayMaterial != None && Level.DetailMode != DM_Low && !Level.bDropDetail )
+			SetOverlayMaterial(DamageType.Default.DamageOverlayMaterial, 2*DamageType.default.DamageOverlayTime, true);
+	}
+
+	// stop shooting
+	AnimBlendParams(1, 0.0);
+	FireState = FS_None;
+
+	// Try to adjust around performance
+	//log(Level.DetailMode);
+
+	LifeSpan = RagdollLifeSpan;
+
+	GotoState('ZombieDying');
+	if ( BE != None )
+		Return;
+	
+	PlayDyingAnimation(DamageType, HitLoc);
+}
+
+simulated function int DoAnimAction( name AnimName )
+{
+	if ( AnimName == HitAnims[0] || AnimName == HitAnims[1] || AnimName == HitAnims[2] || AnimName == KFHitFront || AnimName == KFHitBack || AnimName == KFHitRight || AnimName == KFHitLeft )  {
+		AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
+		PlayAnim(AnimName, , 0.1, 1);
+		
+		Return 1;
+	}
+
+	PlayAnim(AnimName, ,0.1, 0);
+	
+	Return 0;
+}
+
+simulated function bool AnimNeedsWait(name TestAnim)
+{
+	Return ExpectingChannel == 0;
+}
+
+simulated event SetAnimAction(name NewAction)
+{
+	if ( NewAction == '' )
+		Return;
+	
+	if ( NewAction == 'Claw' )  {
+		NewAction = meleeAnims[NextMeleeAnimNum];
+		CurrentDamtype = ZombieDamType[NextMeleeAnimNum];
+		// Rand NextMeleeAnimNum on the server
+		if ( Role == ROLE_Authority )
+			NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
+	}
+	else if ( NewAction == 'DoorBash' )
+		CurrentDamtype = ZombieDamType[Rand(3)];
+	
+	ExpectingChannel = DoAnimAction(NewAction);
+	bWaitForAnim = AnimNeedsWait(NewAction);
+	
+	/*
+	if ( Level.NetMode != NM_Client )  {
+		AnimAction = NewAction;
+		bResetAnimAct = True;
+		ResetAnimActTime = Level.TimeSeconds + 0.3;
+	}	*/
+}
+
+simulated event AnimEnd(int Channel)
+{
+	AnimAction = '';
+	if ( bShotAnim && Channel == ExpectingChannel )  {
+		bShotAnim = False;
+		if ( Controller != None )
+			Controller.bPreparingMove = False;
+	}
+	
+	if ( !bPhysicsAnimUpdate && Channel == 0 )
+		bPhysicsAnimUpdate = Default.bPhysicsAnimUpdate;
+	
+	if ( Channel == 1 )  {
+		if ( FireState == FS_Ready )  {
+			AnimBlendToAlpha(1, 0.0, 0.12);
+			FireState = FS_None;
+		}
+		else if ( FireState == FS_PlayOnce )  {
+			PlayAnim(IdleWeaponAnim,, 0.2, 1);
+			FireState = FS_Ready;
+			IdleTime = Level.TimeSeconds;
+		}
+		else
+			AnimBlendToAlpha(1, 0.0, 0.12);
+	}
+	else if ( bKeepTaunting && Channel == 0 )
+		PlayVictoryAnimation();
+}
+//[End]
+
+// Set the zed to the zapped behavior
+simulated function SetZappedBehavior()
+{
+	if ( Role == Role_Authority )  {
+		Intelligence = BRAINS_Retarded; // burning dumbasses!
+		SetGroundSpeed(OriginalGroundSpeed * ZappedSpeedMod);
+		AirSpeed *= ZappedSpeedMod;
+		WaterSpeed *= ZappedSpeedMod;
+		// Make them less accurate while they are burning
+		if ( Controller != None )
+		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
+	}
+	// Set burning walk anim
+	AnimateBurningWalking();
+}
+
+// Turn off the on-fire behavior
+simulated function UnSetZappedBehavior()
+{
+	if ( Role == Role_Authority )  {
+		Intelligence = default.Intelligence;
+		if ( bBurnified )
+			SetGroundSpeed(GetOriginalGroundSpeed() * 0.80);
+		else
+			SetGroundSpeed(GetOriginalGroundSpeed());
+		AirSpeed = default.AirSpeed;
+		WaterSpeed = default.WaterSpeed;
+		// Set normal accuracy
+		if ( Controller != None )
+		   MonsterController(Controller).Accuracy = MonsterController(Controller).default.Accuracy;
+	}
+	// restore regular anims
+	AnimateWalking();
+}
+
 // Set the zed to the on fire behavior
 simulated function SetBurningBehavior()
 {
@@ -765,19 +1280,8 @@ simulated function SetBurningBehavior()
 		if ( Controller != None )
 		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
 	}
-
-	// Set the forward movement anim to a random burning anim
-	// Set the rest of the movement anims to the headless anim (not sure if these ever even get played) - Ramm
-	// WalkAnims
-	WalkAnims[0] = BurningWalkFAnims[Rand(3)];
-	WalkAnims[1] = BurningWalkAnims[0];
-	WalkAnims[2] = BurningWalkAnims[1];
-	WalkAnims[3] = BurningWalkAnims[2];
-	// MovementAnims
-	MovementAnims[0] = BurningWalkFAnims[Rand(3)];
-	MovementAnims[1] = BurningWalkAnims[0];
-	MovementAnims[2] = BurningWalkAnims[1];
-	MovementAnims[3] = BurningWalkAnims[2];
+	// Set burning walk anim
+	AnimateBurningWalking();
 }
 
 simulated function StartBurnFX()
@@ -810,7 +1314,6 @@ simulated function StartBurnFX()
 // Turn off the on-fire behavior
 simulated function UnSetBurningBehavior()
 {
-	local	int		i;
 	// Don't turn off this behavior until the harpoon stun is over
 	if ( bHarpoonStunned )
 		Return;
@@ -830,11 +1333,7 @@ simulated function UnSetBurningBehavior()
 
 	bAshen = False;
 	// restore regular anims
-	for ( i = 0; i < ArrayCount(default.WalkAnims); ++i )
-		WalkAnims[i] = default.WalkAnims[i];
-
-	for ( i = 0; i < ArrayCount(default.MovementAnims); ++i )
-		MovementAnims[i] = default.MovementAnims[i];
+	AnimateWalking();
 }
 
 simulated function RemoveFlamingEffects()
@@ -889,10 +1388,11 @@ simulated event Tick( float DeltaTime )
 			ListenServerRelevantCheck();
 	}
 	
-	if ( bResetAnimAct && ResetAnimActTime < Level.TimeSeconds )  {
+	/*
+	if ( bResetAnimAct && Level.TimeSeconds >= ResetAnimActTime )  {
 		AnimAction = '';
 		bResetAnimAct = False;
-	}
+	}	*/
 	
 	if ( Controller != None )
 		LookTarget = Controller.Enemy;
@@ -902,6 +1402,9 @@ simulated event Tick( float DeltaTime )
 		Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
 		BleedOutTime = 0.0;
 	}
+	
+	if ( bDecapitated && !bHeadlessWalkingAnimated )
+		AnimateHeadlessWalking();
 	
 	//SPLATTER!!!!!!!!!
 	//TODO - can we work this into Epic's gib code?
@@ -1174,54 +1677,11 @@ function RangedAttack(Actor A)
 		Return;
 	else if ( CanAttack(A) )  {
 		bShotAnim = True;
-		SetAnimAction(MeleeAnims[Rand(3)]);
+		SetAnimAction('Claw');
 		//PlaySound(sound'Claw2s', SLOT_None); KFTODO: Replace this
 		Controller.bPreparingMove = True;
 		Acceleration = vect(0,0,0);
 		Return;
-	}
-}
-
-simulated event SetAnimAction(name NewAction)
-{
-	local int meleeAnimIndex;
-
-	if ( NewAction == '' )
-		Return;
-	
-	if ( NewAction == 'DoorBash' )
-		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-	else  {
-		for ( meleeAnimIndex = 0; meleeAnimIndex < 2; ++meleeAnimIndex )  {
-			if ( NewAction == MeleeAnims[meleeAnimIndex] )  {
-				CurrentDamtype = ZombieDamType[meleeAnimIndex];
-				Break;
-			}
-		}
-	}
-	
-	/* if ( NewAction == MeleeAnims[0] || 
-		 NewAction == MeleeAnims[1] ||
-		 NewAction == MeleeAnims[2] )
-	{
-		meleeAnimIndex = Rand(3);
-		NewAction = MeleeAnims[meleeAnimIndex];
-		CurrentDamtype = ZombieDamType[meleeAnimIndex];
-	}
-	else if ( NewAction == 'DoorBash' )
-	   CurrentDamtype = ZombieDamType[Rand(3)]; */
-
-	ExpectingChannel = DoAnimAction(NewAction);
-
-	if ( AnimNeedsWait(NewAction) )
-		bWaitForAnim = True;
-	else
-		bWaitForAnim = False;
-
-	if ( Level.NetMode != NM_Client )  {
-		AnimAction = NewAction;
-		bResetAnimAct = True;
-		ResetAnimActTime = Level.TimeSeconds + 0.3;
 	}
 }
 
@@ -1242,6 +1702,8 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 	if ( Level.NetMode == NM_DedicatedServer )  {
 		if ( Physics == PHYS_Falling )
 			PlayAnim(AirAnims[0], 1.0, 0.0);
+		else if ( Physics == PHYS_Swimming )
+			PlayAnim(SwimAnims[0], 1.0, 0.0);
 		else if ( Physics == PHYS_Walking )  {
 			// Only play the idle anim if we're not already doing a different anim.
 			// This prevents anims getting interrupted on the server and borking things up - Ramm
@@ -1263,8 +1725,6 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 				SetTwistLook(0, look);
 			}
 		}
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
 
 		if ( !bWasAnimating )
 			SetAnimFrame(0.5);
@@ -1583,8 +2043,6 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 //Issue: #264
 function RemoveHead()
 {
-	local	int		i;
-	
 	if ( HeadBallisticCollision != None )  {
 		HeadBallisticCollision.DisableCollision();
 		HeadBallisticCollision.Destroy();
@@ -1620,20 +2078,14 @@ function RemoveHead()
 	if ( Health > 0 )
 		BleedOutTime = Level.TimeSeconds +  BleedOutDuration;
 
+	/* wtf?
 	// He's got no head so biting is out.
 	if ( MeleeAnims[2] == 'Claw3' )
 		MeleeAnims[2] = 'Claw2';
 	if ( MeleeAnims[1] == 'Claw3' )
 		MeleeAnims[1] = 'Claw1';
-
-	// Plug in headless anims if we have them
-	for ( i = 0; i < 4; ++i )  {
-		if ( HeadlessWalkAnims[i] != '' && HasAnim(HeadlessWalkAnims[i]) )  {
-			MovementAnims[i] = HeadlessWalkAnims[i];
-			WalkAnims[i]     = HeadlessWalkAnims[i];
-		}
-	}
-
+	*/	
+	
 	PlaySound(DecapitationSound, SLOT_Misc,1.30,True,525);
 }
 
@@ -1725,6 +2177,8 @@ function Dazzle(float TimeScale)
 defaultproperties
 {
 	 HeadHitPointName="HitPoint_Head"
+	 
+	 bPhysicsAnimUpdate=True
 	 
 	 Intelligence=BRAINS_Mammal
 	 

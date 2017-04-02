@@ -1819,6 +1819,41 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
+// Return True if head was removed
+function bool ProcessTakeHeadShotDamage( int Damage )
+{
+	HeadHealth = Max( (HeadHealth - Damage), 0 );
+	if ( HeadHealth > 0 || Damage < Health )  {
+		PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None, 2.0, True, 500);
+		Return False;	// Don't remove head
+	}
+	
+	bDecapitated  = True;
+	DECAP = True;
+	DecapTime = Level.TimeSeconds;
+	Intelligence = BRAINS_Retarded; // Headless dumbasses!
+	Velocity = vect(0.0, 0.0, 0.0);
+	SetAnimAction('HitF');
+	SetGroundSpeed(GroundSpeed *= 0.8);
+	AirSpeed *= 0.8;
+	WaterSpeed *= 0.8;
+	AmbientSound = MiscSound; // No more raspy breathin'...cuz he has no throat or mouth :S
+	
+	// Destroy HeadBallisticCollision
+	if ( HeadBallisticCollision != None )  {
+		HeadBallisticCollision.DisableCollision();
+		HeadBallisticCollision.Destroy();
+		HeadBallisticCollision = None;
+	}
+
+	if ( MonsterController(Controller) != None )
+		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
+	
+	PlaySound(DecapitationSound, SLOT_Misc,1.30,True,525);
+	
+	Return True; // Haed was removed
+}
+
 // Process the damaging and Return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
@@ -1908,40 +1943,40 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( Damage < 1 )
 		Return 0;
 	
+	// KillAssistant
+	if ( DamageType != None && LastDamagedBy != None && LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None && KFMonsterController(Controller) != None )
+		KFMonsterController(Controller).AddKillAssistant( LastDamagedBy.Controller, FMin(Health, Damage) );
+	
+	// Last Damage
 	LastDamagedBy = InstigatedBy;
 	LastDamagedByType = damageType;
 	HitMomentum = VSize(Momentum);
 	LastHitLocation = Hitlocation;
 	LastMomentum = Momentum;
 	LastDamageAmount = Damage;
-	
-	if ( DamageType != None && LastDamagedBy != None && LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None && KFMonsterController(Controller) != None )
-		KFMonsterController(Controller).AddKillAssistant( LastDamagedBy.Controller, FMin(Health, Damage) );
 
-	if ( !bDecapitated )  {
-		if ( bIsHeadShot )  {
-			// Play a sound when someone gets a headshot TODO: Put in the real sound here
-			PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None,2.0,True,500);
-			HeadHealth = Max( (HeadHealth - Damage), 0 );
-			if ( HeadHealth < 1 || Damage > Health )  {
-				RemoveHead();
-				if ( UM_HumanPawn(instigatedBy) != None )  {
-					UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
-					// ImpressiveKill
-					if ( UM_BaseGameInfo(Level.Game) != None && Damage > Health )
-						UM_BaseGameInfo(Level.Game).CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller), Self );
-				}
-			}
+	if ( !bDecapitated && bIsHeadShot && ProcessTakeHeadShotDamage(Damage) )  {
+		// Head explodes, causing additional hurty.
+		Damage += Damage + HealthMax * 0.25;
+		if ( BurnDown > 0 )
+			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
+		// Bonuses
+		if ( UM_HumanPawn(instigatedBy) != None )  {
+			// SlowMoCharge
+			UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
+			// ImpressiveKill
+			if ( UM_BaseGameInfo(Level.Game) != None && Damage > Health )
+				UM_BaseGameInfo(Level.Game).CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller), Self );
 		}
 		// Award headshot here, not when zombie died.
-		if ( bDecapitated && Class<KFWeaponDamageType>(DamageType) != None && 
+		if ( Class<KFWeaponDamageType>(DamageType) != None && 
 			 instigatedBy != None && KFPlayerController(instigatedBy.Controller) != None )  {
 			bLaserSightedEBRM14Headshotted = M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
 			Class<KFWeaponDamageType>(DamageType).Static.ScoredHeadshot(KFSteamStatsAndAchievements(PlayerController(instigatedBy.Controller).SteamStatsAndAchievements), self.Class, bLaserSightedEBRM14Headshotted);
 		}
 	}
 	
-		// Client check for Gore FX
+	// Client check for Gore FX
 	//BodyPartRemoval(Damage,instigatedBy,Hitlocation,Momentum,DamageType);
 	/*
 	if ( Damage < Health && DamageType != class'DamTypeFrag' && DamageType != class'DamTypePipeBomb' && DamageType != class'DamTypeM79Grenade' && DamageType != class'DamTypeM32Grenade' && DamageType != class'DamTypeM203Grenade' && DamageType != class'DamTypeDwarfAxe' && DamageType != class'DamTypeSPGrenade' && DamageType != class'DamTypeSealSquealExplosion' && DamageType != class'DamTypeSeekerSixRocket' && Class<Whisky_DamTypeHammer>(DamageType) == None && Class<UM_BaseDamType_Explosive>(DamageType) == None )
@@ -1975,6 +2010,9 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	}
 	// Paw has lost some Health
 	else  {
+		// Decapitated BleedOutTime
+		if ( bDecapitated )
+			BleedOutTime = Level.TimeSeconds +  BleedOutDuration;
 		AddVelocity( Momentum );
 		if ( Controller != None )
 			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
@@ -2040,54 +2078,7 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 }
 
-//Issue: #264
-function RemoveHead()
-{
-	if ( HeadBallisticCollision != None )  {
-		HeadBallisticCollision.DisableCollision();
-		HeadBallisticCollision.Destroy();
-		HeadBallisticCollision = None;
-	}
-	
-	Intelligence = BRAINS_Retarded; // Headless dumbasses!
-	bDecapitated  = True;
-	DECAP = True;
-	DecapTime = Level.TimeSeconds;
-
-	Velocity = vect(0.0, 0.0, 0.0);
-	SetAnimAction('HitF');
-	SetGroundSpeed(GroundSpeed *= 0.80);
-	AirSpeed *= 0.8;
-	WaterSpeed *= 0.8;
-
-	// No more raspy breathin'...cuz he has no throat or mouth :S
-	AmbientSound = MiscSound;
-
-	if ( Controller != None )
-		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
-
-	// Head explodes, causing additional hurty.
-	if ( KFPawn(LastDamagedBy) != None )  {
-		//ToDo: #264.1
-		ProcessTakeDamage( (LastDamageAmount + HealthMax * 0.25), LastDamagedBy, LastHitLocation, LastMomentum, LastDamagedByType );
-
-		if ( BurnDown > 0 )
-			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
-	}
-
-	if ( Health > 0 )
-		BleedOutTime = Level.TimeSeconds +  BleedOutDuration;
-
-	/* wtf?
-	// He's got no head so biting is out.
-	if ( MeleeAnims[2] == 'Claw3' )
-		MeleeAnims[2] = 'Claw2';
-	if ( MeleeAnims[1] == 'Claw3' )
-		MeleeAnims[1] = 'Claw1';
-	*/	
-	
-	PlaySound(DecapitationSound, SLOT_Misc,1.30,True,525);
-}
+function RemoveHead() { }
 
 function TakeFireDamage( int Damage, Pawn FireDamageInstigator );
 

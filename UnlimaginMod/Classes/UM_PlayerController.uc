@@ -1,4 +1,6 @@
-class UM_PlayerController extends KFPlayerController;
+class UM_PlayerController extends KFPlayerController
+	config(user)
+	exportstructs;
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 

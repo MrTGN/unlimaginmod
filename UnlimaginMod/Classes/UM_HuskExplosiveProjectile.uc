@@ -21,7 +21,8 @@ class UM_HuskExplosiveProjectile extends UM_BaseMonsterExplosiveProjectile;
 
 defaultproperties
 {
-     //Trail //Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
+     //Trail
+	 Trail=(EmitterClass=Class'UnlimaginMod.UM_PanzerfaustTrail',EmitterRotation=(Pitch=32768))
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
@@ -42,7 +43,7 @@ defaultproperties
 	 MuzzleVelocity=48.000000	// m/sec
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
-	 TransientSoundVolume=1.500000
+	 TransientSoundVolume=1.600000
 	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=200.0,bUse3D=True)
 	 ExplodeSound=(Ref="KF_LAWSnd.Rocket_Explode",Vol=2.0,Radius=200.0,bUse3D=True)
 }

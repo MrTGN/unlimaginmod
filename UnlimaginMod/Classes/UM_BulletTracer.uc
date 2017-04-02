@@ -21,11 +21,11 @@ class UM_BulletTracer extends KFTracer;
 defaultproperties
 {
      mStartParticles=0
-     mMaxParticles=40
-	 mLifeRange(0)=0.040000
-     mLifeRange(1)=0.040000
-	 mRegenRange(0)=30.000000
-     mRegenRange(1)=30.000000
+     mMaxParticles=20
+	 mLifeRange(0)=0.010000
+     mLifeRange(1)=0.010000
+	 mRegenRange(0)=10.000000
+     mRegenRange(1)=10.000000
 	 mSpawnVecB=(X=20.000000,Z=0.000000)
 	 mSizeRange(0)=4.000000
      mSizeRange(1)=4.000000

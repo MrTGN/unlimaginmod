@@ -15,7 +15,8 @@
 //	Comments:		 
 //================================================================================
 class UM_PlayerInput extends KFPlayerInput within UM_PlayerController
-	config(User);
+	config(User)
+	transient;
 
 
 //========================================================================

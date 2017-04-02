@@ -20,7 +20,7 @@ class UM_TungstenShrapnel extends UM_BaseProjectile_Shrapnel;
 defaultproperties
 {
      //Trail
-	 //Trail=(xEmitterClass=Class'UnlimaginMod.UM_TungstenBulletTracer')
+	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_TungstenBulletTracer')
 	 BallisticCoefficient=0.092000
 	 ProjectileDiameter=10.0
 	 ProjectileMass=0.010080	// kilograms

@@ -89,12 +89,14 @@ var					vector              LastServerHeadLocation;
 
 // Animation
 var		transient	bool				bHeadlessWalkingAnimated;
+var		transient	bool				bCrispSkinApplied;
 
 // Replicates next rand num for animation array index
 var					byte				NextWalkAnimNum;
 var					byte				NextBurningWalkAnimNum;
 var					byte				NextTauntAnimNum;
 var					byte				NextMeleeAnimNum;
+var					byte				NextHitAnimNum;
 
 //[end] Varibles
 //====================================================================
@@ -108,7 +110,7 @@ replication
 		bThisIsMiniBoss;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum;
+		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum, NextHitAnimNum;
 	
 	// Headshot debugging
 	reliable if ( Role == ROLE_Authority )
@@ -318,15 +320,21 @@ function AddVelocity( vector NewVelocity )
 	Velocity += NewVelocity;
 }
 
+function CalcAmbientRelevancyScale()
+{
+	// Make the zed only relevant by thier ambient sound out to a range of 10 meters
+	CustomAmbientRelevancyScale = 500.0 / (100.0 * SoundRadius);
+}
+
 event PreBeginPlay()
 {
 	LastSeenCheckTime = Level.TimeSeconds;
-	AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
 	/*
 	if ( !bRandomSizeAdjusted )
 		RandomizeMonsterSizes();
 	*/
-	Super.PreBeginPlay();
+	Super(Pawn).PreBeginPlay();
+	CalcAmbientRelevancyScale();
 }
 
 function bool NotRelevantMoreThan( float NotSeenTime )
@@ -335,7 +343,7 @@ function bool NotRelevantMoreThan( float NotSeenTime )
 }
 
 // Rand next anim nums on the server
-function ServerRandAnims()
+function ServerRandNextAnims()
 {
 	if ( Role < ROLE_Authority )
 		Return;
@@ -349,12 +357,18 @@ function ServerRandAnims()
 	NextTauntAnimNum = 3 + Rand(TauntAnims.Length - 3); // First 4 taunts are 'order' anims. Don't pick them.
 	// MeleeAnim
 	NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
+	// HitAnims
+	NextHitAnimNum = Rand(ArrayCount(HitAnims));
 }
 
 simulated event PostBeginPlay()
 {
 	local	float	RandMult;
 	local	float	MovementSpeedDifficultyScale;
+	
+	// Store default.MovementAnims[0] to AdditionalWalkAnims
+	if ( AdditionalWalkAnims.Length > 0 )
+		AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
 	
 	if ( ROLE == ROLE_Authority )  {
 		if ( ControllerClass != None && Controller == None )
@@ -372,7 +386,7 @@ simulated event PostBeginPlay()
 			Health = HealthModifer;
 		
 		BuildBallisticCollision();
-		ServerRandAnims();
+		ServerRandNextAnims();
 		/*
 		if ( HeadBallisticCollision != None )
 			OnlineHeadshotOffset = HeadBallisticCollision.Location - (Location - CollisionHeight * Vect(0.0, 0.0, 1.0));	*/
@@ -539,10 +553,9 @@ function bool SetBossLaught()
 
 simulated event Destroyed()
 {
+	DestroyBallisticCollision();
 	if ( Health > 0 )
 		Suicide();
-	
-	DestroyBallisticCollision();
 	
 	Super.Destroyed();
 }
@@ -763,7 +776,13 @@ function ListenServerRelevantCheck()
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	local	int		i;
+	local	int				i;
+	local	Vector			TossVel;
+	local	Trigger			T;
+	local	NavigationPoint	N;
+	
+	if ( bDeleteMe || Level.bLevelChange || Level.Game == None )
+		Return; // already destroyed, or level is being cleaned up
 	
 	// making attached SealSquealProjectile explode when this pawn dies
 	for ( i = 0; i < Attached.Length; ++i )  {
@@ -772,7 +791,176 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	}
 	DestroyBallisticCollision();
 	
-	Super(Pawn).Died( Killer, DamageType, HitLocation );
+	if ( DamageType.default.bCausedByWorld && (Killer == None || Killer == Controller) && LastHitBy != None )
+		Killer = LastHitBy;
+	
+	// mutator hook to prevent deaths
+	// WARNING - don't prevent bot suicides - they suicide when really needed
+	if ( Level.Game.PreventDeath(self, Killer, damageType, HitLocation) )  {
+		Health = Max(Health, 1); //mutator should set this higher
+		Return;
+	}
+	Health = Min(0, Health);
+	
+	if ( Weapon != None && (DrivenVehicle == None || DrivenVehicle.bAllowWeaponToss) )  {
+		if ( Controller != None )
+			Controller.LastPawnWeapon = Weapon.Class;
+		Weapon.HolderDied();
+		TossVel = Vector(GetViewRotation());
+		TossVel = TossVel * ((Velocity Dot TossVel) + 500) + Vect(0,0,200);
+		TossWeapon(TossVel);
+	}
+
+	if ( DrivenVehicle != None )  {
+		Velocity = DrivenVehicle.Velocity;
+		DrivenVehicle.DriverDied();
+	}
+
+	if ( Controller != None )  {
+		Controller.WasKilledBy(Killer);
+		Level.Game.Killed(Killer, Controller, self, damageType);
+	}
+	else
+		Level.Game.Killed(Killer, Controller(Owner), self, damageType);
+	
+	DrivenVehicle = None;
+	
+	if ( Killer != None )
+		TriggerEvent(Event, self, Killer.Pawn);
+	else
+		TriggerEvent(Event, self, None);
+
+	// make sure to untrigger any triggers requiring player touch
+	if ( IsPlayerPawn() || WasPlayerPawn() )  {
+		PhysicsVolume.PlayerPawnDiedInVolume(self);
+		ForEach TouchingActors(class'Trigger',T)
+			T.PlayerToucherDied(self);
+		// event for HoldObjectives
+		//for ( N=Level.NavigationPointList; N!=None; N=N.NextNavigationPoint )
+		//	if ( N.bStatic && N.bReceivePlayerToucherDiedNotify )
+		ForEach TouchingActors(class'NavigationPoint', N)
+			if ( N.bReceivePlayerToucherDiedNotify )
+				N.PlayerToucherDied( Self );
+	}
+	
+	// remove powerup effects, etc.
+	RemovePowerups();
+
+	Velocity.Z *= 1.3;
+	if ( IsHumanControlled() )
+		PlayerController(Controller).ForceDeathUpdate();
+	if ( DamageType != None && DamageType.default.bAlwaysGibs )
+		ChunkUp( Rotation, DamageType.default.GibPerterbation );
+	else  {
+		NetUpdateFrequency = Default.NetUpdateFrequency;
+		PlayDying(DamageType, HitLocation);
+		if ( Level.Game.bGameEnded )
+			Return;
+		if ( !bPhysicsAnimUpdate && !IsLocallyControlled() )
+			ClientDying(DamageType, HitLocation);
+	}
+}
+
+simulated function HideBone(name boneName)
+{
+	local	int		BoneScaleSlot;
+	local	coords	boneCoords;
+	local	bool	bValidBoneToHide;
+
+	if ( boneName == LeftThighBone )  {
+		boneScaleSlot = 0;
+		bValidBoneToHide = True;
+		if ( SeveredLeftLeg == None )  {
+			SeveredLeftLeg = Spawn(SeveredLegAttachClass,self);
+			SeveredLeftLeg.SetDrawScale(SeveredLegAttachScale);
+			boneCoords = GetBoneCoords( 'lleg' );
+			AttachEmitterEffect( LimbSpurtEmitterClass, 'lleg', boneCoords.Origin, rot(0,0,0) );
+			AttachToBone(SeveredLeftLeg, 'lleg');
+		}
+	}
+	else if ( boneName == RightThighBone )  {
+		boneScaleSlot = 1;
+		bValidBoneToHide = True;
+		if ( SeveredRightLeg == None )  {
+			SeveredRightLeg = Spawn(SeveredLegAttachClass,self);
+			SeveredRightLeg.SetDrawScale(SeveredLegAttachScale);
+			boneCoords = GetBoneCoords( 'rleg' );
+			AttachEmitterEffect( LimbSpurtEmitterClass, 'rleg', boneCoords.Origin, rot(0,0,0) );
+			AttachToBone(SeveredRightLeg, 'rleg');
+		}
+	}
+	else if ( boneName == RightFArmBone )  {
+		boneScaleSlot = 2;
+		bValidBoneToHide = True;
+		if ( SeveredRightArm == None )  {
+			SeveredRightArm = Spawn(SeveredArmAttachClass,self);
+			SeveredRightArm.SetDrawScale(SeveredArmAttachScale);
+			boneCoords = GetBoneCoords( 'rarm' );
+			AttachEmitterEffect( LimbSpurtEmitterClass, 'rarm', boneCoords.Origin, rot(0,0,0) );
+			AttachToBone(SeveredRightArm, 'rarm');
+		}
+	}
+	else if ( boneName == LeftFArmBone )  {
+		boneScaleSlot = 3;
+		bValidBoneToHide = True;
+		if ( SeveredLeftArm == None )  {
+			SeveredLeftArm = Spawn(SeveredArmAttachClass,self);
+			SeveredLeftArm.SetDrawScale(SeveredArmAttachScale);
+			boneCoords = GetBoneCoords( 'larm' );
+			AttachEmitterEffect( LimbSpurtEmitterClass, 'larm', boneCoords.Origin, rot(0,0,0) );
+			AttachToBone(SeveredLeftArm, 'larm');
+		}
+	}
+	else if ( boneName == HeadBone )  {
+		if ( SeveredHead != None )
+			Return;
+		
+		// Only scale the bone down once
+		bValidBoneToHide = True;
+		boneScaleSlot = 4;
+		SeveredHead = Spawn(SeveredHeadAttachClass,self);
+		SeveredHead.SetDrawScale(SeveredHeadAttachScale);
+		boneCoords = GetBoneCoords( 'neck' );
+		if ( bNoBrainBitEmitter )
+			AttachEmitterEffect( NeckSpurtNoGibEmitterClass, 'neck', boneCoords.Origin, rot(0,0,0) );
+		else
+			AttachEmitterEffect( NeckSpurtEmitterClass, 'neck', boneCoords.Origin, rot(0,0,0) );
+		AttachToBone(SeveredHead, 'neck');
+	}
+	else if ( boneName == 'spine' )  {
+	    bValidBoneToHide = True;
+		boneScaleSlot = 5;
+	}
+
+	// Only hide the bone if it is one of the arms, legs, or head, don't hide other misc bones
+	if ( bValidBoneToHide )
+		SetBoneScale(BoneScaleSlot, 0.0, BoneName);
+}
+
+simulated function SpawnSeveredGiblet( class<SeveredAppendage> GibClass, Vector Location, Rotator Rotation, float GibPerterbation, rotator SpawnRotation )
+{
+	local	SeveredAppendage	Giblet;
+	local	Vector				Direction, Dummy;
+
+	if ( GibClass == None || Level.Game.static.UseLowGore() )
+		Return;
+
+	Instigator = self;
+	Giblet = Spawn( GibClass,,, Location, SpawnRotation );
+	if ( Giblet == None )
+		Return;
+	
+	Giblet.SpawnTrail();
+	GibPerterbation *= 32768.0;
+	Rotation.Pitch += ( FRand() * 2.0 * GibPerterbation ) - GibPerterbation;
+	Rotation.Yaw += ( FRand() * 2.0 * GibPerterbation ) - GibPerterbation;
+	Rotation.Roll += ( FRand() * 2.0 * GibPerterbation ) - GibPerterbation;
+	GetAxes( Rotation, Dummy, Dummy, Direction );
+	Giblet.Velocity = Velocity + Normal(Direction) * (Giblet.MaxSpeed + Giblet.MaxSpeed * 0.5 * FRand());
+
+	// Give a little upward motion to the decapitated head
+	if ( class<SeveredHead>(GibClass) != None )
+		Giblet.Velocity.Z += 50;
 }
 
 //[Block] Animation functions
@@ -892,9 +1080,9 @@ simulated event ChangeAnimation()
 
 event SetWalking(bool bNewIsWalking)
 {
-	/*
+	/* Comment from KFMonster.uc
 	// this could have been responsible for making the zombies "lethargic" in wander state.
-	// they should retain the same walk speed at all times. Comment from KFMonster.uc.
+	// they should retain the same walk speed at all times.
 	if ( bNewIsWalking != bIsWalking )  {
 		bIsWalking = bNewIsWalking;
 		ChangeAnimation();
@@ -908,17 +1096,12 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 	local	string				RagSkelName;
 	local	KarmaParamsSkel		skelParams;
 	local	bool				PlayersRagdoll;
-	local	PlayerController	pc;
 
 	if ( MyExtCollision != None )
 		MyExtCollision.Destroy();
 	
 	if ( Level.NetMode != NM_DedicatedServer )  {
-		// Is this the local player's ragdoll?
-		if ( OldController != None )
-			pc = PlayerController(OldController);
-		
-		if ( pc != None && pc.ViewTarget == self )
+		if ( PlayerController(OldController) != None && PlayerController(OldController).ViewTarget == self )
 			PlayersRagdoll = True;
 		
 		// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
@@ -953,7 +1136,7 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 
 			// StopAnimating() resets the neck bone rotation, we have to set it again
 			// if the zed was decapitated the cute way
-			if ( class'GameInfo'.static.UseLowGore() && NeckRot != rot(0,0,0) )
+			if ( Level.Game.static.UseLowGore() && NeckRot != rot(0,0,0) )
 				SetBoneRotation('neck', NeckRot);
 
 			if ( DamageType != None )  {
@@ -1073,8 +1256,232 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 	SetPhysics(PHYS_Falling);
 }
 
+simulated function CuteDecapFX()
+{
+	local int LeftRight;
+
+	LeftRight = 1;
+
+	if ( rand(10) > 5 )
+		LeftRight = -1;
+
+	NeckRot.Yaw = -clamp(rand(24000), 14000, 24000);
+	NeckRot.Roll = LeftRight * clamp(rand(8000), 2000, 8000);
+	NeckRot.Pitch =  LeftRight * clamp(rand(12000), 2000, 12000);
+
+	SetBoneRotation('neck', NeckRot);
+
+	RemoveHead();
+	PlaySound(DecapitationSound, SLOT_Misc, 1.3, True, 525);
+}
+
+// Handle hiding the head when its been melee chopped off
+simulated function SpecialHideHead()
+{
+	local	int		BoneScaleSlot;
+	local	coords	boneCoords;
+
+	if ( SeveredHead != None )
+		Return;
+	
+	// Only scale the bone down once
+	boneScaleSlot = 4;
+	SeveredHead = Spawn(SeveredHeadAttachClass,self);
+	SeveredHead.SetDrawScale(SeveredHeadAttachScale);
+	boneCoords = GetBoneCoords( 'neck' );
+	AttachEmitterEffect( NeckSpurtNoGibEmitterClass, 'neck', boneCoords.Origin, rot(0,0,0) );
+	AttachToBone(SeveredHead, 'neck');
+	SetBoneScale(BoneScaleSlot, 0.0, 'head');
+}
+
+// Handle doing the decapitation hit effects
+simulated function DecapFX( Vector DecapLocation, Rotator DecapRotation, bool bSpawnDetachedHead, optional bool bNoBrainBits )
+{
+	local	float		GibPerterbation;
+	local	BrainSplash	SplatExplosion;
+
+	// Do the cute version of the Decapitation
+	if ( Level.Game.static.UseLowGore() )  {
+		CuteDecapFX();
+		Return;
+	}
+
+	bNoBrainBitEmitter = bNoBrainBits;
+	GibPerterbation = 0.060000; // damageType.default.GibPerterbation;
+
+	if ( bSpawnDetachedHead )
+		SpecialHideHead();
+	else
+		HideBone(HeadBone);
+
+	if ( bSpawnDetachedHead )
+		SpawnSeveredGiblet( DetachedHeadClass, DecapLocation, DecapRotation, GibPerterbation, GetBoneRotation(HeadBone) );
+	
+	if ( !bSpawnDetachedHead && !bNoBrainBits && EffectIsRelevant(DecapLocation,false) )  {
+		KFSpawnGiblet( class 'KFMod.KFGibBrain',DecapLocation, self.Rotation, GibPerterbation, 250 ) ;
+		KFSpawnGiblet( class 'KFMod.KFGibBrainb',DecapLocation, self.Rotation, GibPerterbation, 250 ) ;
+		KFSpawnGiblet( class 'KFMod.KFGibBrain',DecapLocation, self.Rotation, GibPerterbation, 250 ) ;
+	}
+	
+	SplatExplosion = Spawn(class 'BrainSplash',self,, DecapLocation );
+}
+
+simulated function ProcessHitFX()
+{
+	local	Coords				boneCoords;
+	local	class<xEmitter>		HitEffects[4];
+	local	int					i,j;
+	local	float				GibPerterbation;
+
+	if ( Level.NetMode == NM_DedicatedServer || bSkeletized || Mesh == SkeletonMesh)  {
+		SimHitFxTicker = HitFxTicker;
+		Return;
+	}
+
+	for ( SimHitFxTicker = SimHitFxTicker; SimHitFxTicker != HitFxTicker; SimHitFxTicker = (SimHitFxTicker + 1) % ArrayCount(HitFX) )  {
+		j++;
+		if ( j > 30 )  {
+			SimHitFxTicker = HitFxTicker;
+			Return;
+		}
+
+		if ( HitFX[SimHitFxTicker].damtype == None || (Level.bDropDetail && (Level.TimeSeconds - LastRenderTime > 3) && !IsHumanControlled()) )
+			continue;
+
+		//log("Processing effects for damtype "$HitFX[SimHitFxTicker].damtype);
+
+		if ( HitFX[SimHitFxTicker].bone == 'obliterate' && !Level.Game.static.UseLowGore() )  {
+			SpawnGibs( HitFX[SimHitFxTicker].rotDir, 1);
+			bGibbed = True;
+			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
+			if ( Level.NetMode == NM_ListenServer )  {
+				bDestroyNextTick = True;
+				TimeSetDestroyNextTickTime = Level.TimeSeconds;
+			}
+			else
+				Destroy();
+			
+			Return;
+		}
+
+		boneCoords = GetBoneCoords( HitFX[SimHitFxTicker].bone );
+		if ( !Level.bDropDetail && !Level.Game.static.NoBlood() && !bSkeletized && !Level.Game.static.UseLowGore() )  {
+			//AttachEmitterEffect( BleedingEmitterClass, HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
+
+			HitFX[SimHitFxTicker].damtype.static.GetHitEffects( HitEffects, Health );
+			// don't attach effects under water
+			if ( !PhysicsVolume.bWaterVolume )  {
+				for ( i = 0; i < ArrayCount(HitEffects); i++ )  {
+					if ( HitEffects[i] == None )
+						continue;
+					AttachEffect( HitEffects[i], HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
+				}
+			}
+		}
+
+		if ( Level.Game.static.UseLowGore() )  {
+			HitFX[SimHitFxTicker].bSever = False;
+			switch( HitFX[SimHitFxTicker].bone )
+			{
+				 case 'head':
+					if ( !bHeadGibbed )  {
+						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
+						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
+						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
+
+					  	bHeadGibbed = True;
+				  	}
+					break;
+			}
+		}
+
+		if ( HitFX[SimHitFxTicker].bSever )  {
+			GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
+			switch( HitFX[SimHitFxTicker].bone )
+			{
+				case 'obliterate':
+					break;
+
+				case LeftThighBone:
+					if ( !bLeftLegGibbed )  {
+	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+	                    bLeftLegGibbed = True;
+					}
+					break;
+
+				case RightThighBone:
+					if ( !bRightLegGibbed )  {
+	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+	                    bRightLegGibbed = True;
+					}
+					break;
+
+				case LeftFArmBone:
+					if ( !bLeftArmGibbed )  {
+	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;;
+	                    bLeftArmGibbed=true;
+					}
+					break;
+
+				case RightFArmBone:
+					if ( !bRightArmGibbed )  {
+	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+	                    bRightArmGibbed=true;
+					}
+					break;
+
+				case 'head':
+					if( !bHeadGibbed )  {
+						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
+						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
+						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
+							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
+
+					  	bHeadGibbed = True;
+				  	}
+					break;
+			}
+
+
+			if ( HitFX[SimHitFXTicker].bone != 'Spine' && HitFX[SimHitFXTicker].bone != FireRootBone && HitFX[SimHitFXTicker].bone != 'head' && Health < 1 )
+				HideBone(HitFX[SimHitFxTicker].bone);
+		}
+	}
+}
+
+simulated function ZombieCrispUp()
+{
+	bAshen = True;
+	bCrispified = True;
+	bCrispSkinApplied = True;
+	SetBurningBehavior();
+
+	if ( Level.NetMode == NM_DedicatedServer || Level.Game.static.UseLowGore() )
+		Return;
+
+	Skins[0]=Combiner'PatchTex.Common.BurnSkinEmbers_cmb';
+	Skins[1]=Combiner'PatchTex.Common.BurnSkinEmbers_cmb';
+	Skins[2]=Combiner'PatchTex.Common.BurnSkinEmbers_cmb';
+	Skins[3]=Combiner'PatchTex.Common.BurnSkinEmbers_cmb';
+}
+
 //Stops the green shit when a player dies.
-simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
+simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
 	local	float		frame, rate;
 	local	name		seq;
@@ -1232,6 +1639,154 @@ simulated event AnimEnd(int Channel)
 }
 //[End]
 
+State ZombieDying
+{
+ignores AnimEnd, Trigger, Bump, HitWall, HeadVolumeChange, PhysicsVolumeChange, Falling, BreathTimer, Died, RangedAttack;     //Tick
+
+	simulated event BeginState()
+	{
+		if ( bDestroyNextTick )  {
+			// If we've flagged this character to be destroyed next tick, handle that
+			if ( Level.TimeSeconds > TimeSetDestroyNextTickTime )
+				Destroy();
+			else
+				SetTimer(0.01, false);
+		}
+		else  {
+			if ( bTearOff && (Level.NetMode == NM_DedicatedServer || Level.Game.static.UseLowGore()) )
+				LifeSpan = 1.0;
+			else
+				SetTimer(2.0, false);
+		}
+
+		SetPhysics(PHYS_Falling);
+		if ( Controller != None )
+			Controller.Destroy();
+	}
+	
+	function bool CanGetOutOfWay()
+	{
+		Return False;
+	}
+
+	simulated event Landed(vector HitNormal)
+	{
+		//SetPhysics(PHYS_None);
+		SetCollision(false, false, false);
+		if ( !bDestroyNextTick )
+			Disable('Tick');
+	}
+
+	simulated event Timer()
+	{
+		local	KarmaParamsSkel		skelParams;
+
+		if ( bDestroyNextTick )  {
+			// If we've flagged this character to be destroyed next tick, handle that
+			if ( Level.TimeSeconds > TimeSetDestroyNextTickTime )
+				Destroy();
+			else
+				SetTimer(0.01, false);
+
+			Return;
+		}
+
+		if ( !PlayerCanSeeMe() )  {
+			StartDeRes();
+			Destroy();
+		}
+		// If we are running out of life, but we still haven't come to rest, force the de-res.
+		// unless pawn is the viewtarget of a player who used to own it
+		else if ( LifeSpan <= DeResTime && !bDeRes )  {
+			skelParams = KarmaParamsSkel(KParams);
+			skelParams.bKImportantRagdoll = False;
+			// spawn derez
+			bDeRes = True;
+		}
+		else
+			SetTimer(1.0, false);
+	}
+
+	simulated event TakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> damageType, optional int HitIndex )
+	{
+		local	Vector	HitNormal, shotDir;
+		local	Vector	PushLinVel, PushAngVel;
+		local	Name	HitBone;
+		local	float	HitBoneDist;
+		local	bool	bIsHeadshot;
+		local	vector	HitRay;
+
+		if ( bFrozenBody || bRubbery )
+			Return;
+
+		if ( Physics == PHYS_KarmaRagdoll )  {
+			// Can't shoot corpses during de-res
+			if ( bDeRes )
+				Return;
+
+			// Throw the body if its a rocket explosion or shock combo
+			if ( damageType.Default.bThrowRagdoll )  {
+				shotDir = Normal(Momentum);
+				PushLinVel = (RagDeathVel * shotDir) +  vect(0, 0, 250);
+				PushAngVel = Normal(shotDir Cross vect(0, 0, 1)) * -18000;
+				KSetSkelVel( PushLinVel, PushAngVel );
+			}
+			else if ( damageType.Default.bRagdollBullet )  {
+				if ( Momentum == vect(0,0,0) )
+					Momentum = HitLocation - InstigatedBy.Location;
+				
+				if ( FRand() < 0.65 )  {
+					if ( Velocity.Z <= 0 )
+						PushLinVel = vect(0,0,40);
+					PushAngVel = Normal(Normal(Momentum) Cross vect(0, 0, 1)) * -8000 ;
+					PushAngVel.X *= 0.5;
+					PushAngVel.Y *= 0.5;
+					PushAngVel.Z *= 4;
+					KSetSkelVel( PushLinVel, PushAngVel );
+				}
+				PushLinVel = RagShootStrength*Normal(Momentum);
+				KAddImpulse(PushLinVel, HitLocation);
+				if ( LifeSpan > 0.0 && LifeSpan < (DeResTime + 2) )
+					LifeSpan += 0.2;
+			}
+			else  {
+				PushLinVel = RagShootStrength*Normal(Momentum);
+				KAddImpulse(PushLinVel, HitLocation);
+			}
+		}
+
+		if ( Damage > 0 )  {
+			Health = Max( (Health - Damage), 0 );
+			if ( !bDecapitated && class<KFWeaponDamageType>(damageType)!=none &&
+				class<KFWeaponDamageType>(damageType).default.bCheckForHeadShots )
+				bIsHeadShot = IsHeadShot(HitLocation, normal(Momentum), 1.0);
+
+			if ( bIsHeadShot )  {
+				RemoveHead();
+				PlaySound(DecapitationSound, SLOT_Misc, 1.3, True, 525);
+			}
+
+			HitRay = vect(0,0,0);
+			if ( InstigatedBy != None )
+				HitRay = Normal(HitLocation-(InstigatedBy.Location+(vect(0,0,1)*InstigatedBy.EyeHeight)));
+
+			CalcHitLoc( HitLocation, HitRay, HitBone, HitBoneDist );
+
+			if ( InstigatedBy != None )
+				HitNormal = Normal( Normal(InstigatedBy.Location-HitLocation) + VRand() * 0.2 + vect(0,0,2.8) );
+			else
+				HitNormal = Normal( Vect(0,0,1) + VRand() * 0.2 + vect(0,0,2.8) );
+
+			// Actually do blood on a client
+			PlayHit(Damage, InstigatedBy, hitLocation, damageType, Momentum);
+			DoDamageFX( HitBone, Damage, DamageType, Rotator(HitNormal) );
+		}
+
+		if ( DamageType.Default.DamageOverlayMaterial != None && Level.DetailMode != DM_Low && !Level.bDropDetail )
+			SetOverlayMaterial(DamageType.Default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, true);
+	}
+}
+
 // Set the zed to the zapped behavior
 simulated function SetZappedBehavior()
 {
@@ -1297,7 +1852,7 @@ simulated function StartBurnFX()
 		Return;
 	
 	// No real flames when low gore, make them smoke, smoking kills
-	if ( class'GameInfo'.static.UseLowGore() )
+	if ( Level.Game.static.UseLowGore() )
 		Effect = AltBurnEffect;
 	else
 		Effect = BurnEffect;
@@ -1367,7 +1922,7 @@ simulated function StopBurnFX()
 simulated event Tick( float DeltaTime )
 {
 	// If we've flagged this character to be destroyed next tick, handle that
-	if ( bDestroyNextTick && TimeSetDestroyNextTickTime < Level.TimeSeconds )
+	if ( bDestroyNextTick && Level.TimeSeconds > TimeSetDestroyNextTickTime )
 		Destroy();
 	
 	// Make Zeds move faster if they aren't net relevant, or noone has seen them
@@ -1394,17 +1949,17 @@ simulated event Tick( float DeltaTime )
 		bResetAnimAct = False;
 	}	*/
 	
+	if ( bDecapitated && !bHeadlessWalkingAnimated )
+		AnimateHeadlessWalking();
+	
 	if ( Controller != None )
 		LookTarget = Controller.Enemy;
 	
 	// If the Zed has been bleeding long enough, make it die
-	if ( Role == ROLE_Authority && bDecapitated && BleedOutTime > 0.0 && (Level.TimeSeconds - BleedOutTime) >= 0.0 )  {
+	if ( Role == ROLE_Authority && bDecapitated && BleedOutTime > 0.0 && Level.TimeSeconds > BleedOutTime )  {
 		Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
 		BleedOutTime = 0.0;
 	}
-	
-	if ( bDecapitated && !bHeadlessWalkingAnimated )
-		AnimateHeadlessWalking();
 	
 	//SPLATTER!!!!!!!!!
 	//TODO - can we work this into Epic's gib code?
@@ -1416,10 +1971,8 @@ simulated event Tick( float DeltaTime )
 		else if ( bBurnified && !bBurnApplied && !bGibbed )
 			StartBurnFX();
 
-		if ( bAshen && Level.NetMode == NM_Client && !class'GameInfo'.static.UseLowGore() )  {
+		if ( bAshen && Level.NetMode == NM_Client && !bCrispSkinApplied )
 			ZombieCrispUp();
-			bAshen = False;
-		}
 	}
 	
 	if ( DECAP && Level.TimeSeconds > (DecapTime + 2.0) && Controller != None )  {
@@ -1503,24 +2056,21 @@ function bool FlipOver()
 
 simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> DamageType, Rotator r )
 {
-	local float DismemberProbability;
-	local int RandBone;
-	local bool bDidSever;
+	local	float	DismemberProbability;
+	local	int		RandBone;
+	local	bool	bDidSever;
 
 	//log("DamageFX bonename = "$boneName$" "$Level.TimeSeconds$" Damage "$Damage);
 
-	if( bDecapitated && !bPlayBrainSplash )
-	{
-		if ( class<DamTypeMelee>(DamageType) != None &&
-			 Class<Whisky_DamTypeHammerHeadShot>(DamageType) == None &&
-			 Class<Whisky_DamTypeHammerSecondaryHeadShot>(DamageType) == None )
+	if ( bDecapitated && !bPlayBrainSplash )  {
+		if ( class<DamTypeMelee>(DamageType) != None && Class<Whisky_DamTypeHammerHeadShot>(DamageType) == None && Class<Whisky_DamTypeHammerSecondaryHeadShot>(DamageType) == None )
 			HitFX[HitFxTicker].damtype = class'DamTypeMeleeDecapitation';
 		else if( class<DamTypeNailGun>(DamageType) != None )
 			HitFX[HitFxTicker].damtype = class'DamTypeProjectileDecap';
 		else
 			HitFX[HitFxTicker].damtype = class'DamTypeDecapitation';
 
-		if ( DamageType.default.bNeverSevers || class'GameInfo'.static.UseLowGore()
+		if ( DamageType.default.bNeverSevers || Level.Game.static.UseLowGore()
 			|| (Level.Game != None && Level.Game.PreventSever(self, boneName, Damage, DamageType)) )
 			HitFX[HitFxTicker].bSever = False;
 		else
@@ -1530,21 +2080,18 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 		HitFX[HitFxTicker].rotDir = r;
 		HitFxTicker = HitFxTicker + 1;
 		
-		if( HitFxTicker > ArrayCount(HitFX)-1 )
+		if ( HitFxTicker > ArrayCount(HitFX)-1 )
 			HitFxTicker = 0;
 
 		bPlayBrainSplash = True;
 
-		if ( Damage <= DamageType.default.HumanObliterationThreshhold && Damage == 1000 )
+		if ( !(Damage > DamageType.default.HumanObliterationThreshhold && Damage != 1000) )
 			Return;
 	}
 
-	if ( FRand() > 0.3f || Damage > 30 || Health <= 0 /*|| DamageType == class 'DamTypeCrossbowHeadshot'*/)
-	{
+	if ( FRand() > 0.3f || Damage > 30 || Health < 1 )  {
 		HitFX[HitFxTicker].damtype = DamageType;
-
-		if( Health <= 0 /*|| DamageType == class 'DamTypeCrossbowHeadshot'*/)
-		{
+		if ( Health < 1 )  {
 			switch( boneName )
 			{
 				case 'neck':
@@ -1594,7 +2141,7 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 			}
 		}
 
-		if ( DamageType.default.bNeverSevers || class'GameInfo'.static.UseLowGore() 
+		if ( DamageType.default.bNeverSevers || Level.Game.static.UseLowGore() 
 			 || (Level.Game != None && Level.Game.PreventSever(self, boneName, Damage, DamageType)) )  {
 			HitFX[HitFxTicker].bSever = False;
 			bDidSever = False;
@@ -1629,7 +2176,7 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 		}
 
 		if ( Health < 0 && Damage > DamageType.default.HumanObliterationThreshhold && 
-			 Damage != 1000 && !class'GameInfo'.static.UseLowGore() )
+			 Damage != 1000 && !Level.Game.static.UseLowGore() )
 			boneName = 'obliterate';
 
 		HitFX[HitFxTicker].bone = boneName;
@@ -1639,8 +2186,7 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 			HitFxTicker = 0;
 
 		// If this was a really hardcore damage from an explosion, randomly spawn some arms and legs
-		if ( bDidSever && !DamageType.default.bLocationalHit && 
-			 Damage > 200 && Damage != 1000 && !class'GameInfo'.static.UseLowGore() )  {
+		if ( bDidSever && !DamageType.default.bLocationalHit && Damage > 200 && Damage != 1000 && !Level.Game.static.UseLowGore() )  {
 			if ((Damage > 400 && FRand() < 0.3) || FRand() < 0.1 )  {
 				DoDamageFX(HeadBone,1000,DamageType,r);
 				DoDamageFX(LeftThighBone,1000,DamageType,r);
@@ -1819,39 +2365,282 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
-// Return True if head was removed
-function bool ProcessTakeHeadShotDamage( int Damage )
+//simulated function RemoveHead()
+function RemoveHead()
 {
-	HeadHealth = Max( (HeadHealth - Damage), 0 );
-	if ( HeadHealth > 0 || Damage < Health )  {
-		PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None, 2.0, True, 500);
-		Return False;	// Don't remove head
-	}
-	
-	bDecapitated  = True;
-	DECAP = True;
-	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
-	Velocity = vect(0.0, 0.0, 0.0);
+	//Velocity = vect(0.0, 0.0, 0.0);
+	AnimateHeadlessWalking();
 	SetAnimAction('HitF');
 	SetGroundSpeed(GroundSpeed *= 0.8);
 	AirSpeed *= 0.8;
 	WaterSpeed *= 0.8;
 	AmbientSound = MiscSound; // No more raspy breathin'...cuz he has no throat or mouth :S
-	
 	// Destroy HeadBallisticCollision
 	if ( HeadBallisticCollision != None )  {
 		HeadBallisticCollision.DisableCollision();
 		HeadBallisticCollision.Destroy();
 		HeadBallisticCollision = None;
 	}
+}
 
+// Return True if head was removed
+function bool ProcessTakeHeadShotDamage( int Damage )
+{
+	HeadHealth = Max( (HeadHealth - Damage), 0 );
+	if ( HeadHealth > 0 || Damage < Health )  {
+		PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None, 2.0, True, 500);
+		Log("ProcessTakeHeadShotDamage() Head wan't remove",Name);
+		Return False;	// Don't remove head
+	}
+	
+	bDecapitated = True;
+	DECAP = True;
+	DecapTime = Level.TimeSeconds;
+	Log("ProcessTakeHeadShotDamage() Head was removed",Name);
+	RemoveHead();
+	PlaySound(DecapitationSound, SLOT_Misc, 1.3, True, 525);
 	if ( MonsterController(Controller) != None )
 		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
 	
-	PlaySound(DecapitationSound, SLOT_Misc,1.30,True,525);
-	
 	Return True; // Haed was removed
+}
+
+// Implemented in subclasses - return false if there is some action that we don't want the direction hit to interrupt
+simulated function bool HitCanInterruptAction()
+{
+	Return True;
+}
+
+simulated function PlayDirectionalHit(Vector HitLoc)
+{
+	local	Vector	X,Y,Z, Dir;
+
+	if ( !HitCanInterruptAction() )
+		Return;
+	
+	GetAxes(Rotation, X,Y,Z);
+	HitLoc.Z = Location.Z;
+	Dir = -Normal(Location - HitLoc);
+
+	// random
+	if ( VSizeSquared(Location - HitLoc) < 1.0 )
+		Dir = VRand();
+	else
+		Dir = -Normal(Location - HitLoc);
+
+	if ( Dir dot X > 0.7 || Dir == vect(0,0,0) )  {
+		if ( LastDamagedBy != None && LastDamageAmount > 0 )  {
+			bSTUNNED = StunsRemaining != 0 && (LastDamageAmount >= (0.5 * default.Health) ||
+				 (VSize(LastDamagedBy.Location - Location) <= (MeleeRange * 2.0) && class<DamTypeMelee>(LastDamagedbyType) != None && KFPawn(LastDamagedBy) != None && LastDamageAmount > (default.Health * 0.1)));
+			if ( bSTUNNED )  {
+				SetAnimAction(HitAnims[NextHitAnimNum]);
+				if ( Role == Role_Authority )
+					NextHitAnimNum = Rand(ArrayCount(HitAnims));
+				SetTimer(StunTime, false);
+				--StunsRemaining;
+			}
+			else
+				SetAnimAction(KFHitFront);
+		}
+	}
+	else if ( Dir Dot X < -0.7 )
+		SetAnimAction(KFHitBack);
+	else if ( Dir Dot Y > 0 )
+		SetAnimAction(KFHitRight);
+	else 
+		SetAnimAction(KFHitLeft);
+}
+
+/*	From KFMonster.uc
+	Important Block of code controlling how the Zombies (excluding the Bloat and Fleshpound who cannot be stunned, respond to damage from the
+	various weapons in the game. The basic rule is that any damage amount equal to or greater than 40 points will cause a stun.
+	There are exceptions with the fists however, which are substantially under the damage quota but can still cause stuns 50% of the time.
+	Why? Cus if they didn't at least have that functionality, they would be fundamentally useless. And anyone willing to take on a hoarde of zombies
+	with only the gloves on his hands, deserves more respect than that!	*/
+simulated function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
+{
+	local	int		FistStrikeStunChance;
+
+	if ( (Level.TimeSeconds - LastPainAnim) < MinTimeBetweenPainAnims )
+		Return;
+
+	// No anim if we're burning, we're already playing an anim
+	if ( !(bCrispified && bBurnified) )  {
+		if ( Damage > 4 )
+			PlayDirectionalHit(HitLocation);
+		else if (DamageType.name == 'DamTypeShotgun' || DamageType.name == 'DamTypeDBShotgun'
+		|| DamageType.name == 'DamTypeFrag' || DamageType.name == 'DamTypeAA12Shotgun'
+		|| DamageType.name == 'DamTypePipeBomb' || DamageType.name == 'DamTypeM79Grenade'
+		|| DamageType.name == 'DamTypeM32Grenade' || DamageType.name == 'DamTypeM203Grenade'
+		|| DamageType.name == 'DamTypeBenelli' || DamageType.name == 'DamTypeKSGShotgun'
+		|| DamageType.name == 'DamTypeTrenchgun' || DamageType.name == 'DamTypeNailgun'
+		|| DamageType.name == 'DamTypeSPShotgun' || DamageType.name == 'DamTypeSPGrenade'
+		|| DamageType.name == 'DamTypeSealSquealExplosion' || DamageType.name == 'DamTypeSeekerSixRocket')
+			PlayDirectionalHit(HitLocation);
+		else if ( DamageType.name == 'DamTypeClaws' )  {
+			FistStrikeStunChance = rand(10);
+			if ( FistStrikeStunChance > 5 )
+				PlayDirectionalHit(HitLocation);
+		}
+		else if ( DamageType.name == 'DamTypeKnife' )  {
+			FistStrikeStunChance = rand(10);
+			if ( FistStrikeStunChance > 7 )
+				PlayDirectionalHit(HitLocation);
+		}
+		else if ( DamageType.name == 'DamTypeChainsaw' )
+			PlayDirectionalHit(HitLocation);
+		else if ( DamageType.name == 'DamTypeStunNade' )
+			PlayDirectionalHit(HitLocation);
+		else if ( DamageType.name == 'DamTypeCrossbowHeadshot' || DamageType.name == 'DamTypeCrossbuzzsaw' || DamageType.name == 'DamTypeCrossbowHeadShot' )
+			PlayDirectionalHit(HitLocation);
+		LastPainAnim = Level.TimeSeconds;
+	}
+
+	if ( (Level.TimeSeconds - LastPainSound) < MinTimeBetweenPainSounds )
+		Return;
+
+	LastPainSound = Level.TimeSeconds;
+	if ( class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )
+		PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400);
+}
+
+// Modified version of the original Pawn playhit. Set up because we want our blood puffs to be directional based
+// On the momentum of the bullet, not out from the center of the player
+function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIndex)
+{
+	local	Vector				HitNormal;
+	local	vector				BloodOffset, Mo;
+	local	class<Effects>		DesiredEffect;
+	local	class<Emitter>		DesiredEmitter;
+	local	PlayerController	Hearer;
+
+	if ( DamageType == None || Damage < 1 && (Controller == None || !Controller.bGodMode) )
+		Return;
+
+	//spawn some blood
+	if ( Damage > DamageType.Default.DamageThreshold )  {
+		HitNormal = Normal(HitLocation - Location);
+		// Play any set effect
+		if ( EffectIsRelevant(Location,true) )  {
+			DesiredEffect = DamageType.static.GetPawnDamageEffect(HitLocation, Damage, Momentum, self, (Level.bDropDetail || Level.DetailMode == DM_Low));
+			if ( DesiredEffect != None )  {
+				BloodOffset = 0.2 * CollisionRadius * HitNormal;
+				BloodOffset.Z = BloodOffset.Z * 0.5;
+				Mo = Momentum;
+				if ( Mo.Z > 0 )
+					Mo.Z *= 0.5;
+				spawn(DesiredEffect,self,,HitLocation + BloodOffset, rotator(Mo));
+			}
+			// Spawn any preset emitter
+			// Don't spawn the blood when we're zapped as we're spawning the zapped damage emitter elsewhere
+			if ( !bZapped || !DamageType.default.bLocationalHit )  {
+				DesiredEmitter = DamageType.Static.GetPawnDamageEmitter(HitLocation, Damage, Momentum, self, (Level.bDropDetail || Level.DetailMode == DM_Low));
+				if ( DesiredEmitter != None )  {
+				    if ( InstigatedBy != None )
+				        HitNormal = Normal((InstigatedBy.Location+(vect(0,0,1)*InstigatedBy.EyeHeight))-HitLocation);
+
+					spawn(DesiredEmitter,,,HitLocation+HitNormal + (-HitNormal * CollisionRadius), Rotator(HitNormal));
+				}
+			}
+		}
+	}
+	
+	if ( Health < 1 )  {
+		if ( PhysicsVolume.bDestructive && PhysicsVolume.ExitActor != None )
+			Spawn(PhysicsVolume.ExitActor);
+		Return;
+	}
+
+	if ( (Level.TimeSeconds - LastPainTime) > 0.1 )  {
+		if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
+			Hearer = PlayerController(InstigatedBy.Controller);
+		if ( Hearer != None )
+			Hearer.bAcuteHearing = True;
+		PlayTakeHit(HitLocation,Damage,damageType);
+		if ( Hearer != None )
+			Hearer.bAcuteHearing = false;
+		LastPainTime = Level.TimeSeconds;
+	}
+}
+
+// New Hit FX for Zombies!
+function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIdx )
+{
+	local	Vector					HitNormal;
+	local	Vector					HitRay;
+	local	Name					HitBone;
+	local	float					HitBoneDist;
+	local	bool					bShowEffects, bRecentHit;
+
+	bRecentHit = (Level.TimeSeconds - LastPainTime) < 0.2;
+	LastDamageAmount = Damage;
+	// Call the modified version of the original Pawn playhit
+	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
+
+	if ( Damage < 1 )
+		Return;
+
+	if ( Health > 0 && Damage > int(float(Default.Health) / 1.5) )
+		FlipOver();
+
+	bShowEffects = ( Level.NetMode != NM_Standalone || (Level.TimeSeconds - LastRenderTime) < 2.5 || (InstigatedBy != None && PlayerController(InstigatedBy.Controller) != None) || PlayerController(Controller) != None );
+	
+	if ( !bShowEffects )
+		Return;
+
+	if ( BurnDown > 0 && !bBurnified )
+		bBurnified = True;
+
+	HitRay = vect(0,0,0);
+	if ( InstigatedBy != None )
+		HitRay = Normal(HitLocation - (InstigatedBy.Location + (vect(0,0,1) * InstigatedBy.EyeHeight)));
+
+	if ( DamageType.default.bLocationalHit )  {
+		CalcHitLoc( HitLocation, HitRay, HitBone, HitBoneDist );
+		// Do a zapped effect is someone shoots us and we're zapped to help show that the zed is taking more damage
+		if ( bZapped && DamageType.name != 'DamTypeZEDGun' )  {
+			PlaySound(class'ZedGunProjectile'.default.ExplosionSound,,class'ZedGunProjectile'.default.ExplosionSoundVolume);
+			Spawn(class'ZedGunProjectile'.default.ExplosionEmitter,,,HitLocation + HitNormal*20,rotator(HitNormal));
+		}
+	}
+	else  {
+		HitLocation = Location ;
+		HitBone = FireRootBone;
+		HitBoneDist = 0.0;
+	}
+
+	if ( DamageType.default.bAlwaysSevers && DamageType.default.bSpecial )
+		HitBone = 'head';
+
+	if ( InstigatedBy != None )
+		HitNormal = Normal( Normal(InstigatedBy.Location-HitLocation) + VRand() * 0.2 + vect(0,0,2.8) );
+	else
+		HitNormal = Normal( Vect(0,0,1) + VRand() * 0.2 + vect(0,0,2.8) );
+
+	//log("HitLocation "$Hitlocation) ;
+
+	if ( DamageType.Default.bCausesBlood && Level.Game != None && !Level.Game.static.NoBlood() && !Level.Game.static.UseLowGore() && (!bRecentHit || FRand() > 0.8) )  {
+		if ( Momentum != Vect(0.0, 0.0, 0.0) )
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Momentum) );
+		else if ( InstigatedBy != None )
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - InstigatedBy.Location) );
+		else
+			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - HitLocation) );
+	}
+
+	if ( InstigatedBy != None && InstigatedBy.PlayerReplicationInfo != None && KFSteamStatsAndAchievements(InstigatedBy.PlayerReplicationInfo.SteamStatsAndAchievements) != None && Health < 1 && Damage > DamageType.default.HumanObliterationThreshhold && Damage != 1000 && (!bDecapitated || bPlayBrainSplash) )  {
+		KFSteamStatsAndAchievements(InstigatedBy.PlayerReplicationInfo.SteamStatsAndAchievements).AddGibKill(class<DamTypeM79Grenade>(damageType) != none);
+
+		if ( IsA('ZombieFleshPound') )  {
+			KFSteamStatsAndAchievements(InstigatedBy.PlayerReplicationInfo.SteamStatsAndAchievements).AddFleshpoundGibKill();
+		}
+	}
+
+	DoDamageFX( HitBone, Damage, DamageType, Rotator(HitNormal) );
+
+	if ( DamageType.default.DamageOverlayMaterial != None && Damage > 0 ) // additional check in case shield absorbed
+		SetOverlayMaterial( DamageType.default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, false );
 }
 
 // Process the damaging and Return the amount of taken damage
@@ -1907,19 +2696,16 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	
 	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )  {
 		// Do larger headshot checks if it is a melee attach
-		if ( class<DamTypeMelee>(DamageType) != None )
+		if ( class<DamTypeMelee>(DamageType) != None )  {
 			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.25);
-		else
-			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
-		
-		if ( bIsHeadShot )  {
-			if ( class<DamTypeMelee>(DamageType) == None && KFPRI != None &&
-				 KFPRI.ClientVeteranSkill != None )
-				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType) );
-			else
+			if ( bIsHeadShot )
 				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult );
 		}
-		
+		else  {
+			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
+			if ( bIsHeadShot && KFPRI != None && KFPRI.ClientVeteranSkill != None )
+				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType) );
+		}
 		bLaserSightedEBRM14Headshotted = bIsHeadshot && instigatedBy != None && M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
 	}
 	else
@@ -1957,7 +2743,11 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 
 	if ( !bDecapitated && bIsHeadShot && ProcessTakeHeadShotDamage(Damage) )  {
 		// Head explodes, causing additional hurty.
-		Damage += Damage + HealthMax * 0.25;
+		//Damage += Damage + HealthMax * 0.25;
+		//Damage += int(float(Health) * 0.5);
+		if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
+			Damage += KFPRI.ClientVeteranSkill.Static.AddDamage(KFPRI, self, KFPawn(instigatedBy), (Damage + int(HealthMax * 0.25)), DamageType);
+			LastDamageAmount = Damage;
 		if ( BurnDown > 0 )
 			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
 		// Bonuses
@@ -2012,7 +2802,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	else  {
 		// Decapitated BleedOutTime
 		if ( bDecapitated )
-			BleedOutTime = Level.TimeSeconds +  BleedOutDuration;
+			BleedOutTime = Level.TimeSeconds + BleedOutDuration;
 		AddVelocity( Momentum );
 		if ( Controller != None )
 			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
@@ -2077,8 +2867,6 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 }
-
-function RemoveHead() { }
 
 function TakeFireDamage( int Damage, Pawn FireDamageInstigator );
 

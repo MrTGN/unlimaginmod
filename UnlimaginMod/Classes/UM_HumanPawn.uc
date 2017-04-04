@@ -3297,7 +3297,7 @@ defaultproperties
 	 OverweightJumpStaminaDrainModifier=6.0
 	 // SprintingStaminaDrain
 	 SprintingStaminaDrainDelay=0.2
-	 SprintingStaminaDrain=2.5
+	 SprintingStaminaDrain=2.0
 	 WeightStaminaDrainModifier=1.0
 	 OverweightStaminaDrainModifier=3.0
 	 // StaminaRegen

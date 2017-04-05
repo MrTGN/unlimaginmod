@@ -2702,7 +2702,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 // Process the damaging and Return the amount of taken damage
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
-	local	bool						bIsHeadshot;
+	local	bool						bIsHeadShot;
 	local	Controller					Killer;
 	local	KFPlayerReplicationInfo		KFPRI;
 	local	KFSteamStatsAndAchievements	KFSteamStats;
@@ -2787,18 +2787,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( Damage < 1 )
 		Return 0;
 	
-	// KillAssistant
-	if ( DamageType != None && LastDamagedBy != None && LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None && KFMonsterController(Controller) != None )
-		KFMonsterController(Controller).AddKillAssistant( LastDamagedBy.Controller, FMin(Health, Damage) );
-	
-	// Last Damage
-	LastDamagedBy = InstigatedBy;
-	LastDamagedByType = damageType;
-	HitMomentum = VSize(Momentum);
-	LastHitLocation = Hitlocation;
-	LastMomentum = Momentum;
-	LastDamageAmount = Damage;
-
 	if ( !bDecapitated && bIsHeadShot )  {
 		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500, , True);
 		// Calc Head damage
@@ -2808,7 +2796,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 			RemoveHead();
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
-			LastDamageAmount = Damage;
 			// Bonuses
 			if ( UM_HumanPawn(instigatedBy) != None )  {
 				// SlowMoCharge
@@ -2829,6 +2816,10 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		}
 	}
 	
+	// KillAssistant
+	if ( DamageType != None && LastDamagedBy != None && LastDamagedBy.IsPlayerPawn() && LastDamagedBy.Controller != None && KFMonsterController(Controller) != None )
+		KFMonsterController(Controller).AddKillAssistant( LastDamagedBy.Controller, FMin(Health, Damage) );
+	
 	/*
 	if ( Damage < Health && DamageType != class'DamTypeFrag' && DamageType != class'DamTypePipeBomb' && DamageType != class'DamTypeM79Grenade' && DamageType != class'DamTypeM32Grenade' && DamageType != class'DamTypeM203Grenade' && DamageType != class'DamTypeDwarfAxe' && DamageType != class'DamTypeSPGrenade' && DamageType != class'DamTypeSealSquealExplosion' && DamageType != class'DamTypeSeekerSixRocket' && Class<Whisky_DamTypeHammer>(DamageType) == None && Class<UM_BaseDamType_Explosive>(DamageType) == None )
 		Momentum *= float(Damage) / float(Health) * 0.75;
@@ -2836,6 +2827,14 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 
 	if ( HitLocation == vect(0.0, 0.0, 0.0) )
 		HitLocation = Location;
+	
+	// Last Damage
+	LastDamageAmount = Damage;
+	LastDamagedBy = InstigatedBy;
+	LastDamagedByType = damageType;
+	HitMomentum = VSize(Momentum);
+	LastHitLocation = Hitlocation;
+	LastMomentum = Momentum;
 	
 	Health = Max( (Health - Damage), 0 );
 	PlayHit( Damage, InstigatedBy, HitLocation, DamageType, Momentum );
@@ -2899,7 +2898,7 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 		}
 
 		if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) == None && class<DamTypeMAC10MPInc>(DamageType) == None )
-			Damage *= 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
+			Damage = float(Damage) * 1.5; // Increase burn damage 1.5 times, except MAC10 and all Incendiary Bullets by instatnt fire.
 		
 		if ( Damage >= 15 )
 			HeatAmount = 4;
@@ -2924,7 +2923,7 @@ event TakeDamage( int Damage, Pawn instigatedBy, Vector Hitlocation, Vector Mome
 		BileCount = 7;
 		BileInstigator = instigatedBy;
 		if ( NextBileTime < Level.TimeSeconds )
-			NextBileTime = Level.TimeSeconds+BileFrequency;
+			NextBileTime = Level.TimeSeconds + BileFrequency;
 	}
 
 	ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );

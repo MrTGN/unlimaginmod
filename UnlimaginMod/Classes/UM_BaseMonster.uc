@@ -72,9 +72,11 @@ struct BallisticCollisionData
 
 var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
-var		name							HeadHitPointName;
 
-var		float							HeadShotSlowMoChargeBonus;
+var					name				HeadHitPointName;
+var					sound				HeadHitSound;
+
+var					float				HeadShotSlowMoChargeBonus;
 
 var		transient	bool				bAddedToMonsterList;
 
@@ -769,6 +771,8 @@ function ListenServerRelevantCheck()
 	}
 }
 
+function ClientDying(class<DamageType> DamageType, vector HitLocation) { }
+
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
 	local	int				i;
@@ -828,8 +832,8 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	// make sure to untrigger any triggers requiring player touch
 	if ( IsPlayerPawn() || WasPlayerPawn() )  {
 		PhysicsVolume.PlayerPawnDiedInVolume(self);
-		ForEach TouchingActors(class'Trigger',T)
-			T.PlayerToucherDied(self);
+		ForEach TouchingActors(class'Trigger', T)
+			T.PlayerToucherDied( self );
 		// event for HoldObjectives
 		//for ( N=Level.NavigationPointList; N!=None; N=N.NextNavigationPoint )
 		//	if ( N.bStatic && N.bReceivePlayerToucherDiedNotify )
@@ -1264,9 +1268,6 @@ simulated function CuteDecapFX()
 	NeckRot.Pitch =  LeftRight * clamp(rand(12000), 2000, 12000);
 
 	SetBoneRotation('neck', NeckRot);
-
-	RemoveHead();
-	PlaySound(DecapitationSound, SLOT_Misc, 1.3, True, 525);
 }
 
 // Handle hiding the head when its been melee chopped off
@@ -1828,25 +1829,26 @@ ignores AnimEnd, Trigger, Bump, HitWall, HeadVolumeChange, PhysicsVolumeChange, 
 
 		if ( Damage > 0 )  {
 			Health = Max( (Health - Damage), 0 );
-			if ( !bDecapitated && class<KFWeaponDamageType>(damageType)!=none &&
-				class<KFWeaponDamageType>(damageType).default.bCheckForHeadShots )
-				bIsHeadShot = IsHeadShot(HitLocation, normal(Momentum), 1.0);
-
-			if ( bIsHeadShot )  {
-				RemoveHead();
-				PlaySound(DecapitationSound, SLOT_Misc, 1.3, True, 525);
+			if ( Role == ROLE_Authority && !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None )  {
+				// Do larger headshot checks if it is a melee attach
+				if ( class<DamTypeMelee>(DamageType) != None )
+					bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.25);
+				else
+					bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
+				if ( bIsHeadShot )
+					RemoveHead();
 			}
 
 			HitRay = vect(0,0,0);
 			if ( InstigatedBy != None )
-				HitRay = Normal(HitLocation-(InstigatedBy.Location+(vect(0,0,1)*InstigatedBy.EyeHeight)));
+				HitRay = Normal( HitLocation - (InstigatedBy.Location + vect(0.0,0.0,1.0) * InstigatedBy.EyeHeight) );
 
 			CalcHitLoc( HitLocation, HitRay, HitBone, HitBoneDist );
 
 			if ( InstigatedBy != None )
-				HitNormal = Normal( Normal(InstigatedBy.Location-HitLocation) + VRand() * 0.2 + vect(0,0,2.8) );
+				HitNormal = Normal( Normal(InstigatedBy.Location - HitLocation) + VRand() * 0.2 + vect(0.0,0.0,2.8) );
 			else
-				HitNormal = Normal( Vect(0,0,1) + VRand() * 0.2 + vect(0,0,2.8) );
+				HitNormal = Normal( Vect(0.0,0.0,1.0) + VRand() * 0.2 + vect(0.0,0.0,2.8) );
 
 			// Actually do blood on a client
 			PlayHit(Damage, InstigatedBy, hitLocation, damageType, Momentum);
@@ -2436,8 +2438,11 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
-simulated function RemoveHead()
+function RemoveHead()
 {
+	bDecapitated = True;
+	DECAP = True;
+	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
 	AnimateHeadlessWalking();
@@ -2447,33 +2452,14 @@ simulated function RemoveHead()
 	WaterSpeed *= 0.8;
 	AmbientSound = MiscSound; // No more raspy breathin'...cuz he has no throat or mouth :S
 	// Destroy HeadBallisticCollision
+	if ( MonsterController(Controller) != None )
+		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
 	if ( HeadBallisticCollision != None )  {
 		HeadBallisticCollision.DisableCollision();
 		HeadBallisticCollision.Destroy();
 		HeadBallisticCollision = None;
 	}
-}
-
-// Return True if head was removed
-function bool ProcessTakeHeadShotDamage( int Damage )
-{
-	HeadHealth = Max( (HeadHealth - Damage), 0 );
-	if ( HeadHealth > 0 || Damage < Health )  {
-		PlaySound(sound'KF_EnemyGlobalSndTwo.Impact_Skull', SLOT_None, 1.25, True, 500, , True);
-		Log("ProcessTakeHeadShotDamage() Head wan't remove",Name);
-		Return False;	// Don't remove head
-	}
-	
-	bDecapitated = True;
-	DECAP = True;
-	DecapTime = Level.TimeSeconds;
-	Log("ProcessTakeHeadShotDamage() Head was removed",Name);
-	RemoveHead();
-	PlaySound(DecapitationSound, SLOT_Misc, 1.5, True, 525, , True);
-	if ( MonsterController(Controller) != None )
-		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's headless now, after all) :-D
-	
-	Return True; // Haed was removed
+	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600, , True);
 }
 
 // Implemented in subclasses - return false if there is some action that we don't want the direction hit to interrupt
@@ -2719,6 +2705,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	local	bool						bIsHeadshot;
 	local	Controller					Killer;
 	local	KFPlayerReplicationInfo		KFPRI;
+	local	KFSteamStatsAndAchievements	KFSteamStats;
 	
 	// Only server
 	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
@@ -2764,25 +2751,26 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		KFPRI = KFPlayerReplicationInfo(instigatedBy.PlayerReplicationInfo);
 	}
 	
-	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )  {
+	// Check for headshot
+	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None )  {
 		// Do larger headshot checks if it is a melee attach
-		if ( class<DamTypeMelee>(DamageType) != None )  {
+		if ( class<DamTypeMelee>(DamageType) != None )
 			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.25);
-			if ( bIsHeadShot )
+		else
+			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
+		
+		if ( bIsHeadShot )  {
+			if ( class<DamTypeMelee>(DamageType) == None && KFPRI != None &&
+				 KFPRI.ClientVeteranSkill != None )
+				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType) );
+			else
 				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult );
 		}
-		else  {
-			bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
-			if ( bIsHeadShot && KFPRI != None && KFPRI.ClientVeteranSkill != None )
-				Damage = Round( float(Damage) * class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult * KFPRI.ClientVeteranSkill.Static.GetHeadShotDamMulti(KFPRI, KFPawn(instigatedBy), DamageType) );
-		}
-		bLaserSightedEBRM14Headshotted = bIsHeadshot && instigatedBy != None && M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
 	}
-	else
-		bLaserSightedEBRM14Headshotted = bLaserSightedEBRM14Headshotted && bDecapitated;
 	
+	// Scale damage by VeteranSkill
 	if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
-		Damage = KFPRI.ClientVeteranSkill.Static.AddDamage(KFPRI, self, KFPawn(instigatedBy), Damage, DamageType);
+		Damage = KFPRI.ClientVeteranSkill.static.AddDamage(KFPRI, self, KFPawn(instigatedBy), Damage, DamageType);
 	
 	// ReduceDamage
 	if ( Level.Game != None )
@@ -2811,30 +2799,33 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	LastMomentum = Momentum;
 	LastDamageAmount = Damage;
 
-	if ( !bDecapitated && bIsHeadShot && ProcessTakeHeadShotDamage(Damage) )  {
-		// Head explodes, causing additional hurty.
-		//Damage += int(float(Health) * 0.5);
-		if ( KFPRI != None && KFPRI.ClientVeteranSkill != None )
-			Damage += KFPRI.ClientVeteranSkill.Static.AddDamage(KFPRI, self, KFPawn(instigatedBy), (Damage + int(HealthMax * 0.25)), DamageType);
-		else
+	if ( !bDecapitated && bIsHeadShot )  {
+		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500, , True);
+		// Calc Head damage
+		HeadHealth = Max( (HeadHealth - Damage), 0 );
+		// Decap
+		if ( HeadHealth < 1 || Damage >= Health )  {
+			RemoveHead();
+			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
-		
-		LastDamageAmount = Damage;
-		if ( BurnDown > 0 )
-			KFSteamStatsAndAchievements(KFPawn(LastDamagedBy).PlayerReplicationInfo.SteamStatsAndAchievements).AddBurningDecapKill(class'KFGameType'.static.GetCurrentMapName(Level));
-		// Bonuses
-		if ( UM_HumanPawn(instigatedBy) != None )  {
-			// SlowMoCharge
-			UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
-			// ImpressiveKill
-			if ( UM_BaseGameInfo(Level.Game) != None && Damage > Health )
-				UM_BaseGameInfo(Level.Game).CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller), Self );
-		}
-		// Award headshot here, not when zombie died.
-		if ( Class<KFWeaponDamageType>(DamageType) != None && 
-			 instigatedBy != None && KFPlayerController(instigatedBy.Controller) != None )  {
-			bLaserSightedEBRM14Headshotted = M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
-			Class<KFWeaponDamageType>(DamageType).Static.ScoredHeadshot(KFSteamStatsAndAchievements(PlayerController(instigatedBy.Controller).SteamStatsAndAchievements), self.Class, bLaserSightedEBRM14Headshotted);
+			LastDamageAmount = Damage;
+			// Bonuses
+			if ( UM_HumanPawn(instigatedBy) != None )  {
+				// SlowMoCharge
+				UM_HumanPawn(instigatedBy).AddSlowMoCharge( HeadShotSlowMoChargeBonus );
+				// ImpressiveKill
+				if ( UM_BaseGameInfo(Level.Game) != None && Damage >= Health )
+					UM_BaseGameInfo(Level.Game).CheckForImpressiveKill( UM_PlayerController(instigatedBy.Controller), Self );
+			}
+			// Award headshot here, not when zombie died.
+			KFSteamStats = KFSteamStatsAndAchievements(PlayerController(instigatedBy.Controller).SteamStatsAndAchievements);
+			if ( KFSteamStats != None )  {
+				bLaserSightedEBRM14Headshotted = M14EBRBattleRifle(instigatedBy.Weapon) != None && M14EBRBattleRifle(instigatedBy.Weapon).bLaserActive;
+				// ScoredHeadshot
+				Class<KFWeaponDamageType>(DamageType).Static.ScoredHeadshot( KFSteamStats, Class, bLaserSightedEBRM14Headshotted );
+				if ( BurnDown > 0 )
+					KFSteamStats.AddBurningDecapKill( class'KFGameType'.static.GetCurrentMapName(Level) );
+			}
 		}
 	}
 	
@@ -3027,6 +3018,7 @@ function Dazzle(float TimeScale)
 defaultproperties
 {
 	 HeadHitPointName="HitPoint_Head"
+	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
 	 
 	 bPhysicsAnimUpdate=True
 	 

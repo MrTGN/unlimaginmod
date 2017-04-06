@@ -626,15 +626,30 @@ defaultproperties
 	 HeadScale=1.500000
 	 AmbientSoundScaling=8.000000
 	 MenuName="Bloat"
+	 // MovementAnims
 	 MovementAnims(0)="WalkBloat"
-	 MovementAnims(1)="WalkBloat"
+     MovementAnims(1)="WalkBloat"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 // WalkAnims
 	 WalkAnims(0)="WalkBloat"
 	 WalkAnims(1)="WalkBloat"
-	 WalkAnims(2)="WalkBloat"
-	 WalkAnims(3)="WalkBloat"
+	 WalkAnims(2)="RunL"
+	 WalkAnims(3)="RunR"
+	 // AirAnims
+	 AirAnims(0)="InAir"
+     AirAnims(1)="InAir"
+     AirAnims(2)="InAir"
+     AirAnims(3)="InAir"
+	 // LandAnims
+	 LandAnims(0)="Landed"
+     LandAnims(1)="Landed"
+     LandAnims(2)="Landed"
+     LandAnims(3)="Landed"
 	 IdleCrouchAnim="BloatIdle"
 	 IdleWeaponAnim="BloatIdle"
 	 IdleRestAnim="BloatIdle"
+	 HeadlessIdleAnim="BloatIdle_Headless"
 	 SoundVolume=200
 	 RotationRate=(Yaw=45000,Roll=0)
 	 

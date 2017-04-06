@@ -16,21 +16,40 @@ class UM_MonsterController extends KFMonsterController;
 
 //var		float	MyDazzleTime;
 
-// Get rid of this Zed if he's stuck somewhere and noone has seen him
-function bool CanKillMeYet()
+function InitPlayerReplicationInfo()
 {
-	if ( KFGameType(Level.Game) != None && KFMonster(Pawn) != None &&
-		( KFGameType(Level.Game).WaveNum >= KFGameType(Level.Game).FinalWave || (Level.TimeSeconds - KFMonster(Pawn).LastSeenOrRelevantTime) > 20.0 ) )
-			Return True;
+	PlayerReplicationInfo = Spawn(PlayerReplicationInfoClass, Self,,vect(0,0,0),rot(0,0,0));
+	if ( PlayerReplicationInfo == None )
+		Return;
+	
+	if ( PlayerReplicationInfo.PlayerName == "" )
+		PlayerReplicationInfo.SetPlayerName(class'GameInfo'.Default.DefaultPlayerName);
 
-	Return False;
+	PlayerReplicationInfo.bNoTeam = !Level.Game.bTeamGame;
 }
 
-function bool DoWaitForLanding()
+function SetCombatTimer()
 {
-	GotoState('WaitingForLanding');
+	SetTimer((1.2 - 0.09 * FMin(10.0, (Skill + ReactionTime))), True);
+}
+
+event PostBeginPlay()
+{
+	if ( !bDeleteMe && bIsPlayer && Level.NetMode != NM_Client )
+		InitPlayerReplicationInfo();
 	
-	Return true;
+	SetCombatTimer();
+	if ( UnrealMPGameInfo(Level.Game).bSoaking )
+		bSoaking = True;
+
+	MoanTime = Level.TimeSeconds + 2.0 + 36.0 * FRand();
+	EvaluateTime = Level.TimeSeconds;
+	TimeToSet = Level.TimeSeconds;
+	ItsSet = False;
+
+	/* Kind of a hack, but it's the safest way to toggle Threat assessment behaviour right now .. */
+	if ( KFGameType(Level.Game) != None && KFGameType(Level.Game).bUseZEDThreatAssessment )
+		bUseThreatAssessment = True;
 }
 
 event bool NotifyLanded(vector HitNormal)
@@ -49,6 +68,23 @@ event bool NotifyLanded(vector HitNormal)
 	}
 	
 	Return False;
+}
+
+// Get rid of this Zed if he's stuck somewhere and noone has seen him
+function bool CanKillMeYet()
+{
+	if ( KFGameType(Level.Game) != None && KFMonster(Pawn) != None &&
+		( KFGameType(Level.Game).WaveNum >= KFGameType(Level.Game).FinalWave || (Level.TimeSeconds - KFMonster(Pawn).LastSeenOrRelevantTime) > 20.0 ) )
+			Return True;
+
+	Return False;
+}
+
+function bool DoWaitForLanding()
+{
+	GotoState('WaitingForLanding');
+	
+	Return true;
 }
 
 state WaitingForLanding
@@ -176,13 +212,13 @@ Begin:
 
 function bool EnemyVisible()
 {
-	if ( VisibleEnemy == Enemy && Level.TimeSeconds <= EnemyVisibilityTime )
+	if ( Level.TimeSeconds == EnemyVisibilityTime && VisibleEnemy == Enemy )
 		Return bEnemyIsVisible;
 	
 	VisibleEnemy = Enemy;
-	//EnemyVisibilityTime = Level.TimeSeconds;
-	EnemyVisibilityTime = Level.TimeSeconds + 0.001;
-	bEnemyIsVisible = LineOfSightTo(Enemy);
+	EnemyVisibilityTime = Level.TimeSeconds;
+	//EnemyVisibilityTime = Level.TimeSeconds + 0.001;
+	bEnemyIsVisible = LineOfSightTo( VisibleEnemy );
 	
 	Return bEnemyIsVisible;
 }
@@ -204,10 +240,9 @@ function bool FindNewEnemy()
 	if ( GameInfo == None || GameInfo.PlayerList.Length < 1 )
 		Return False;
 	
-	GameInfo.CheckPlayerList();
 	for ( i = 0; i < GameInfo.PlayerList.Length; ++i )  {
 		Human = UM_HumanPawn(GameInfo.PlayerList[i].Pawn);
-		if ( Human == None || Human.Health <= 0 || Human.bPendingDelete )
+		if ( Human == None || Human.Health < 1 || Human.bPendingDelete )
 			continue;	// skip
 		
 		if ( bUseThreatAssessment )  {
@@ -558,8 +593,9 @@ state ZombieHunt
 	
 	event Timer()
 	{
-		if (Pawn.Velocity == vect(0,0,0) )
+		if ( Pawn.Velocity == vect(0.0,0.0,0.0) )
 			GotoState('ZombieRestFormation','Moving');
+		
 		SetCombatTimer();
 		StopFiring();
 	}
@@ -636,8 +672,8 @@ state ZombieHunt
 		Destination = LastSeeingPos;
 		bEnemyInfoValid = false;
 		if ( FastTrace(Enemy.Location, ViewSpot) && VSize(Pawn.Location - Destination) > Pawn.CollisionRadius )  {
-				SeePlayer(Enemy);
-				Return;
+			SeePlayer(Enemy);
+			Return;
 		}
 
 		posZ = LastSeenPos.Z + Pawn.CollisionHeight - Enemy.CollisionHeight;
@@ -671,6 +707,43 @@ state ZombieHunt
 	}
 }
 
+function bool EnemyThreatChanged()
+{
+	local	UM_BaseGameInfo	GameInfo;
+	local	KFHumanPawn		C;
+	local	float			NewThreat, CurrentThreat;
+
+	if ( !bUseThreatAssessment )
+		Return False;
+
+	if ( KFHumanPawn(Enemy) != None )
+		CurrentThreat = KFHumanPawn(Enemy).AssessThreatTo(self);
+	else
+		Return True;
+
+	/* Current Enemy is of no threat suddenly */
+	if ( CurrentThreat < 1 )
+		Return True;
+	
+	GameInfo = UM_BaseGameInfo(Level.Game);
+	if ( GameInfo == None || GameInfo.PlayerList.Length < 1 )
+		Return False;
+	
+	for ( i = 0; i < GameInfo.PlayerList.Length; ++i )  {
+		Human = UM_HumanPawn(GameInfo.PlayerList[i].Pawn);
+		if ( Human == None || Human.Health < 1 || Human.bPendingDelete || Human == Enemy )
+			continue;	// skip
+		
+		NewThreat = Human.AssessThreatTo(self);
+		// There's another guy nearby with a greater threat than me
+		if ( NewThreat > CurrentThreat )
+			Return True;
+	}
+
+	Return False;
+}
+
+
 function FightEnemy(bool bCanCharge)
 {
 	if ( KFM.bShotAnim )  {
@@ -681,7 +754,7 @@ function FightEnemy(bool bCanCharge)
 	if ( KFM.MeleeRange != KFM.default.MeleeRange )
 		KFM.MeleeRange = KFM.default.MeleeRange;
 
-	if ( Enemy == none || Enemy.Health <= 0 || EnemyThreatChanged() )
+	if ( Enemy == None || Enemy.Health < 1 || EnemyThreatChanged() )
 		FindNewEnemy();
 
 	if ( Enemy == FailedHuntEnemy && Level.TimeSeconds == FailedHuntTime )  {
@@ -691,7 +764,7 @@ function FightEnemy(bool bCanCharge)
 		if ( Enemy == FailedHuntEnemy )  {
 			GoalString = "FAILED HUNT - HANG OUT";
 			if ( EnemyVisible() )
-				bCanCharge = false;
+				bCanCharge = False;
 		}
 	}
 	

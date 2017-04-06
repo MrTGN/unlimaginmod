@@ -629,9 +629,6 @@ defaultproperties
      OffsetTime=3.500000
      ChargingAnim="PoundRun"
      RageDamageThreshold=360
-     MeleeAnims(0)="PoundAttack1"
-     MeleeAnims(1)="PoundAttack2"
-     MeleeAnims(2)="PoundAttack3"
      
      StunsRemaining=1
      BleedOutDuration=7.000000
@@ -663,8 +660,16 @@ defaultproperties
      HeadHeight=2.500000
      HeadScale=1.300000
      MenuName="Flesh Pound"
-     MovementAnims(0)="PoundWalk"
+	 // MeleeAnims
+	 MeleeAnims(0)="PoundAttack1"
+     MeleeAnims(1)="PoundAttack2"
+     MeleeAnims(2)="PoundAttack3"
+	 // MovementAnims
+	 MovementAnims(0)="PoundWalk"
      MovementAnims(1)="WalkB"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 // WalkAnims
      WalkAnims(0)="PoundWalk"
      WalkAnims(1)="WalkB"
      WalkAnims(2)="RunL"

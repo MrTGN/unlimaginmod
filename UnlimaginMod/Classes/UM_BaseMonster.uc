@@ -90,7 +90,8 @@ var					vector              ServerHeadLocation;     // The location of the Zed's
 var					vector              LastServerHeadLocation;
 
 // Animation
-var		transient	bool				bHeadlessWalkingAnimated;
+var		transient	bool				bHeadlessAnimated;
+var					name				HeadlessIdleAnim;
 var		transient	bool				bCrispSkinApplied;
 var		transient	bool				bBleedOut;
 
@@ -517,7 +518,7 @@ simulated event PostBeginPlay()
 
 simulated event PostNetBeginPlay()
 {
-	AnimateWalking();
+	AnimateDefault();
 	EnableChannelNotify(1, 1);
 	AnimBlendParams(1, 1.0, 0.0, , SpineBone1);
 	AnimBlendParams(1, 1.0, 0.0, , HeadBone);
@@ -962,7 +963,7 @@ simulated function SpawnSeveredGiblet( class<SeveredAppendage> GibClass, Vector 
 }
 
 //[Block] Animation functions
-simulated function AnimateWalking()
+simulated function AnimateDefault()
 {
 	local	byte	i;
 	
@@ -989,7 +990,7 @@ simulated function AnimateWalking()
 	}
 }
 
-simulated function AnimateBurningWalking()
+simulated function AnimateBurning()
 {
 	// Moving forward Rand anim
 	if ( BurningWalkFAnims[NextBurningWalkAnimNum] != '' && HasAnim(BurningWalkFAnims[NextBurningWalkAnimNum]) )  {
@@ -1019,9 +1020,9 @@ simulated function AnimateBurningWalking()
 	}
 }
 
-simulated function AnimateHeadlessWalking()
+simulated function AnimateHeadless()
 {
-	bHeadlessWalkingAnimated = True;
+	bHeadlessAnimated = True;
 	// Moving forward anim
 	if ( HeadlessWalkAnims[0] != '' && HasAnim(HeadlessWalkAnims[0]) )  {
 		MovementAnims[0] = HeadlessWalkAnims[0];
@@ -1041,6 +1042,14 @@ simulated function AnimateHeadlessWalking()
 	if ( HeadlessWalkAnims[3] != '' && HasAnim(HeadlessWalkAnims[3]) )  {
 		MovementAnims[3] = HeadlessWalkAnims[3];
 		WalkAnims[3] = HeadlessWalkAnims[3];
+	}
+	// HeadlessIdleAnim
+	if ( HeadlessIdleAnim != '' && HasAnim(HeadlessIdleAnim) )  {
+		IdleHeavyAnim = HeadlessIdleAnim;
+		IdleRifleAnim = HeadlessIdleAnim;
+		IdleCrouchAnim = HeadlessIdleAnim;
+		IdleWeaponAnim = HeadlessIdleAnim;
+		IdleRestAnim = HeadlessIdleAnim;
 	}
 }
 
@@ -1836,7 +1845,7 @@ ignores AnimEnd, Trigger, Bump, HitWall, HeadVolumeChange, PhysicsVolumeChange, 
 				else
 					bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
 				if ( bIsHeadShot )
-					RemoveHead();
+					Decap( HitLocation );
 			}
 
 			HitRay = vect(0,0,0);
@@ -1873,7 +1882,7 @@ simulated function SetZappedBehavior()
 		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
 	}
 	// Set burning walk anim
-	AnimateBurningWalking();
+	AnimateBurning();
 }
 
 // Turn off the on-fire behavior
@@ -1892,7 +1901,7 @@ simulated function UnSetZappedBehavior()
 		   MonsterController(Controller).Accuracy = MonsterController(Controller).default.Accuracy;
 	}
 	// restore regular anims
-	AnimateWalking();
+	AnimateDefault();
 }
 
 // Set the zed to the on fire behavior
@@ -1909,7 +1918,7 @@ simulated function SetBurningBehavior()
 		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
 	}
 	// Set burning walk anim
-	AnimateBurningWalking();
+	AnimateBurning();
 }
 
 simulated function StartBurnFX()
@@ -1961,7 +1970,7 @@ simulated function UnSetBurningBehavior()
 
 	bAshen = False;
 	// restore regular anims
-	AnimateWalking();
+	AnimateDefault();
 }
 
 simulated function RemoveFlamingEffects()
@@ -2022,8 +2031,8 @@ simulated event Tick( float DeltaTime )
 		bResetAnimAct = False;
 	}	*/
 	
-	if ( bDecapitated && !bHeadlessWalkingAnimated )
-		AnimateHeadlessWalking();
+	if ( bDecapitated && !bHeadlessAnimated )
+		AnimateHeadless();
 	
 	if ( Controller != None )
 		LookTarget = Controller.Enemy;
@@ -2438,15 +2447,33 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
-function RemoveHead()
+function RemoveHead() { }
+
+function Decap( vector HitLoc )
 {
+	local	vector	X, Y, Z, Dir;
+	
 	bDecapitated = True;
 	DECAP = True;
 	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
-	AnimateHeadlessWalking();
-	SetAnimAction('HitF');
+	AnimateHeadless();
+	//SetAnimAction('HitF');
+	
+	// Decap Anim Action
+	GetAxes(Rotation, X, Y, Z);
+	HitLoc.Z = Location.Z;
+	Dir = -Normal(Location - HitLoc);
+	if ( (Dir dot X) > 0.7 || Dir == vect(0.0,0.0,0.0) )
+		SetAnimAction(KFHitFront);
+	else if ( (Dir Dot X) < -0.7 )
+		SetAnimAction(KFHitBack);
+	else if ( (Dir Dot Y) > 0.0 )
+		SetAnimAction(KFHitRight);
+	else
+		SetAnimAction(KFHitLeft);
+	
 	SetGroundSpeed(GroundSpeed *= 0.8);
 	AirSpeed *= 0.8;
 	WaterSpeed *= 0.8;
@@ -2477,12 +2504,11 @@ simulated function PlayDirectionalHit(Vector HitLoc)
 	
 	GetAxes(Rotation, X,Y,Z);
 	HitLoc.Z = Location.Z;
-	Dir = -Normal(Location - HitLoc);
 
 	// random
-	if ( VSizeSquared(Location - HitLoc) < 1.0 )
-		Dir = VRand();
-	else
+//	if ( VSizeSquared(Location - HitLoc) < 1.0 )
+//		Dir = VRand();
+//	else
 		Dir = -Normal(Location - HitLoc);
 
 	if ( Dir dot X > 0.7 || Dir == vect(0,0,0) )  {
@@ -2793,7 +2819,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decap
 		if ( HeadHealth < 1 || Damage >= Health )  {
-			RemoveHead();
+			Decap( HitLocation );
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
 			// Bonuses
@@ -3019,8 +3045,6 @@ defaultproperties
 	 HeadHitPointName="HitPoint_Head"
 	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
 	 
-	 bPhysicsAnimUpdate=True
-	 
 	 Intelligence=BRAINS_Mammal
 	 
 	 ImpressiveKillChance=0.03
@@ -3063,17 +3087,99 @@ defaultproperties
 	 ExtraHealthChance=0.200000
 	 ExtraHealthScaleRange=(Min=1.15,Max=2.0)
 	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
-	 //Anims
-	 DoubleJumpAnims(0)="Jump"
-	 DoubleJumpAnims(1)="Jump"
-	 DoubleJumpAnims(2)="Jump"
-	 DoubleJumpAnims(3)="Jump"
+	 bPhysicsAnimUpdate=True
+     bDoTorsoTwist=True
+	 // MeleeAnims
+	 MeleeAnims(0)="Claw"
+     MeleeAnims(1)="Claw2"
+     MeleeAnims(2)="Claw3"
+     // HitAnims
+	 HitAnims(0)="HitF"
+     HitAnims(1)="HitF2"
+     HitAnims(2)="HitF3"
+	 KFHitFront="HitReactionF"
+     KFHitBack="HitReactionB"
+     KFHitLeft="HitReactionL"
+     KFHitRight="HitReactionR"
+	 // MovementAnims
+	 MovementAnims(0)="RunF"
+     MovementAnims(1)="RunB"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
+	 WalkAnims(0)="WalkF"
+     WalkAnims(1)="WalkB"
+     WalkAnims(2)="WalkL"
+     WalkAnims(3)="WalkR"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Headless"
+     HeadlessWalkAnims(1)="WalkB_Headless"
+     HeadlessWalkAnims(2)="WalkL_Headless"
+     HeadlessWalkAnims(3)="WalkR_Headless"
+     // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
+	 // CrouchAnims
+	 CrouchAnims(0)="Crouch"
+     CrouchAnims(1)="Crouch"
+     CrouchAnims(2)="Crouch"
+     CrouchAnims(3)="Crouch"
+	 // SwimAnims
+	 SwimAnims(0)="SwimF"
+     SwimAnims(1)="SwimB"
+     SwimAnims(2)="SwimL"
+     SwimAnims(3)="SwimR"
+	 // AirAnims
+	 AirAnims(0)="InAir"
+     AirAnims(1)="InAir"
+     AirAnims(2)="InAir"
+     AirAnims(3)="InAir"
+	 // TakeoffAnims
+	 TakeoffAnims(0)="Jump"
+     TakeoffAnims(1)="Jump"
+     TakeoffAnims(2)="Jump"
+     TakeoffAnims(3)="Jump"
+     // LandAnims
+	 LandAnims(0)="Landed"
+     LandAnims(1)="Landed"
+     LandAnims(2)="Landed"
+     LandAnims(3)="Landed"
+	 // DoubleJumpAnims
+     DoubleJumpAnims(0)="Jump"
+     DoubleJumpAnims(1)="Jump"
+     DoubleJumpAnims(2)="Jump"
+     DoubleJumpAnims(3)="Jump"
+     // DodgeAnims
+	 DodgeAnims(0)="DodgeF"
+     DodgeAnims(1)="DodgeB"
+     DodgeAnims(2)="DodgeL"
+     DodgeAnims(3)="DodgeR"
+	 // IdleAnim
+	 HeadlessIdleAnim="Idle_Headless"
+	 IdleHeavyAnim="Idle_LargeZombie"
+     IdleRifleAnim="Idle_LargeZombie"
+	 IdleCrouchAnim="Idle_LargeZombie"
+     IdleWeaponAnim="Idle_LargeZombie"
+     IdleRestAnim="Idle_LargeZombie"
+	 // FireAnim
+	 FireHeavyRapidAnim="MeleeAttack"
+     FireHeavyBurstAnim="MeleeAttack"
+     FireRifleRapidAnim="MeleeAttack"
+     FireRifleBurstAnim="MeleeAttack"
+	 // ZombieDamType
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ControllerClass=Class'UnlimaginMod.UM_MonsterController'
 	 // Collision flags
-	 SurfaceType=EST_Flesh
+	 //SurfaceType=EST_Flesh
 	 bCollideActors=True
 	 bCollideWorld=True
 	 bBlockActors=True

@@ -180,7 +180,6 @@ defaultproperties
 	 KFRagdollName="Clot_Trip"
 	 CrispUpThreshhold=9
 	 PuntAnim="ClotPunt"
-	 AdditionalWalkAnims(0)="ClotWalk2"
 	 Intelligence=BRAINS_Mammal
 	 SeveredArmAttachScale=0.800000
 	 SeveredLegAttachScale=0.800000
@@ -191,13 +190,35 @@ defaultproperties
 	 GroundSpeed=105.000000
 	 WaterSpeed=105.000000
 	 JumpZ=340.000000
+	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
+	 
+	 // MovementAnims
 	 MovementAnims(0)="ClotWalk"
+     MovementAnims(1)="ClotWalk"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
 	 WalkAnims(0)="ClotWalk"
 	 WalkAnims(1)="ClotWalk"
-	 WalkAnims(2)="ClotWalk"
-	 WalkAnims(3)="ClotWalk"
-	 RotationRate=(Yaw=45000,Roll=0)
+	 WalkAnims(2)="RunL"
+	 WalkAnims(3)="RunR"
+	 AdditionalWalkAnims(0)="ClotWalk2"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Headless"
+     HeadlessWalkAnims(1)="WalkB_Headless"
+     HeadlessWalkAnims(2)="WalkL_Headless"
+     HeadlessWalkAnims(3)="WalkR_Headless"
+     // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_FireTwo"
+     BurningWalkFAnims(2)="WalkF_FireThree"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
 	 
 	 HealthMax=130.0
 	 Health=130

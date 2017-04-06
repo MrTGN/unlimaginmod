@@ -335,9 +335,6 @@ defaultproperties
 	 ImpressiveKillChance=0.05
 	 
 	 RunGroundSpeedScale=1.850000
-	 MeleeAnims(0)="GoreAttack1"
-	 MeleeAnims(1)="GoreAttack2"
-	 MeleeAnims(2)="GoreAttack1"
 	 bCannibal=True
 	 MeleeDamage=15
 	 damageForce=5000
@@ -355,6 +352,11 @@ defaultproperties
 	 HeadHeight=2.500000
 	 HeadScale=1.500000
 	 MenuName="Gorefast"
+	 // MeleeAnims
+	 MeleeAnims(0)="GoreAttack1"
+	 MeleeAnims(1)="GoreAttack2"
+	 MeleeAnims(2)="GoreAttack1"
+	 
 	 MovementAnims(0)="GoreWalk"
 	 WalkAnims(0)="GoreWalk"
 	 WalkAnims(1)="GoreWalk"

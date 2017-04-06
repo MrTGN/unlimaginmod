@@ -221,19 +221,6 @@ defaultproperties
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
 	 PounceSpeed=330.000000
-     MeleeAirAnims(0)="InAir_Attack1"
-     MeleeAirAnims(1)="InAir_Attack2"
-	 MeleeAirAnims(2)="InAir_Attack1"
-     MeleeAnims(0)="ZombieLeapAttack"
-     MeleeAnims(1)="ZombieLeapAttack2"
-	 MeleeAnims(2)="ZombieLeapAttack"
-     HitAnims(0)="HitF"
-     HitAnims(1)="HitF"
-	 HitAnims(2)="HitF"
-     KFHitFront="HitF"
-     KFHitBack="HitF"
-     KFHitLeft="HitF"
-     KFHitRight="HitF"
      bStunImmune=True
      bCannibal=True
      ZombieFlag=2
@@ -258,22 +245,51 @@ defaultproperties
      HeadScale=1.050000
      MenuName="Crawler"
      bDoTorsoTwist=False
+	 // MeleeAirAnims
+	 MeleeAirAnims(0)="InAir_Attack1"
+     MeleeAirAnims(1)="InAir_Attack2"
+	 MeleeAirAnims(2)="InAir_Attack1"
+     // MeleeAnims
+	 MeleeAnims(0)="ZombieLeapAttack"
+     MeleeAnims(1)="ZombieLeapAttack2"
+	 MeleeAnims(2)="ZombieLeapAttack"
+     // HitAnims
+	 HitAnims(0)="HitF"
+     HitAnims(1)="HitF"
+	 HitAnims(2)="HitF"
+     KFHitFront="HitF"
+     KFHitBack="HitF"
+     KFHitLeft="HitF"
+     KFHitRight="HitF"
+	 // MovementAnims
 	 MovementAnims(0)="ZombieScuttle"
      MovementAnims(1)="ZombieScuttleB"
      MovementAnims(2)="ZombieScuttleL"
      MovementAnims(3)="ZombieScuttleR"
-     WalkAnims(0)="ZombieScuttle"
+     // WalkAnims
+	 WalkAnims(0)="ZombieScuttle"
      WalkAnims(1)="ZombieScuttleB"
      WalkAnims(2)="ZombieScuttleL"
      WalkAnims(3)="ZombieScuttleR"
-     AirAnims(0)="ZombieSpring"
+	 // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkF_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
+     // AirAnims
+	 AirAnims(0)="ZombieSpring"
      AirAnims(1)="ZombieSpring"
      AirAnims(2)="ZombieSpring"
      AirAnims(3)="ZombieSpring"
+	 // TakeoffAnims
      TakeoffAnims(0)="ZombieSpring"
      TakeoffAnims(1)="ZombieSpring"
      TakeoffAnims(2)="ZombieSpring"
      TakeoffAnims(3)="ZombieSpring"
+	 // DoubleJumpAnims
 	 DoubleJumpAnims(0)="ZombieSpring"
      DoubleJumpAnims(1)="ZombieSpring"
      DoubleJumpAnims(2)="ZombieSpring"

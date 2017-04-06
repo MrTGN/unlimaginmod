@@ -2781,6 +2781,9 @@ protected function DrainStamina()
 		Return;
 	
 	LastStaminaDrainTime = Level.TimeSeconds;
+	if ( Physics == PHYS_Falling || VSizeSquared(Velocity) < 100.0 )
+		Return;	// Don not subtract Stamina in this cases
+	
 	SubtractStamina( DeltaStaminaDrain );
 }
 

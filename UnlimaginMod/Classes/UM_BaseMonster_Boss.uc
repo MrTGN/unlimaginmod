@@ -1856,12 +1856,6 @@ defaultproperties
 	 SeveredArmAttachScale=1.100000
 	 SeveredLegAttachScale=1.200000
 	 SeveredHeadAttachScale=1.500000
-	 BurningWalkFAnims(0)="WalkF"
-	 BurningWalkFAnims(1)="WalkF"
-	 BurningWalkFAnims(2)="WalkF"
-	 BurningWalkAnims(0)="WalkF"
-	 BurningWalkAnims(1)="WalkF"
-	 BurningWalkAnims(2)="WalkF"
 	 MotionDetectorThreat=10.000000
 	 bOnlyDamagedByCrossbow=True
 	 bBoss=True
@@ -1875,18 +1869,35 @@ defaultproperties
 	 WaterSpeed=120.000000
 	 HeadScale=1.300000
 	 MenuName="Patriarch"
+	 // MovementAnims
 	 MovementAnims(0)="WalkF"
-	 MovementAnims(1)="WalkF"
-	 MovementAnims(2)="WalkF"
-	 MovementAnims(3)="WalkF"
+	 MovementAnims(1)="WalkB"
+	 MovementAnims(2)="WalkL"
+	 MovementAnims(3)="WalkR"
+	 // WalkAnims
+	 WalkAnims(0)="WalkF"
+     WalkAnims(1)="WalkB"
+     WalkAnims(2)="WalkL"
+     WalkAnims(3)="WalkR"
+	 // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF"
+	 BurningWalkFAnims(1)="WalkF"
+	 BurningWalkFAnims(2)="WalkF"
+	 // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB"
+	 BurningWalkAnims(1)="WalkL"
+	 BurningWalkAnims(2)="WalkR"
+	 // AirAnims
 	 AirAnims(0)="JumpInAir"
 	 AirAnims(1)="JumpInAir"
 	 AirAnims(2)="JumpInAir"
 	 AirAnims(3)="JumpInAir"
+	 // TakeoffAnims
 	 TakeoffAnims(0)="JumpTakeOff"
 	 TakeoffAnims(1)="JumpTakeOff"
 	 TakeoffAnims(2)="JumpTakeOff"
 	 TakeoffAnims(3)="JumpTakeOff"
+	 // LandAnims
 	 LandAnims(0)="JumpLanded"
 	 LandAnims(1)="JumpLanded"
 	 LandAnims(2)="JumpLanded"

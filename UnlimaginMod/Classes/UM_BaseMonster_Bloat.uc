@@ -43,11 +43,6 @@ var	Class<Projectile>		BileProjectileClass;
 //========================================================================
 //[block] Functions
 
-function bool FlipOver()
-{
-	Return False;
-}
-
 // don't interrupt the bloat while he is puking
 simulated function bool HitCanInterruptAction()
 {
@@ -56,7 +51,6 @@ simulated function bool HitCanInterruptAction()
 
 	Return True;
 }
-
 
 function DoorAttack(Actor A)
 {

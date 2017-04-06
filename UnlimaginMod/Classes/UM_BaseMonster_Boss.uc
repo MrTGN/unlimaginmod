@@ -1464,11 +1464,6 @@ simulated function HandleBumpGlass()
 }
 
 
-function bool FlipOver()
-{
-	Return False;
-}
-
 // Return True if we want to charge from taking too much damage
 function bool ShouldChargeFromDamage()
 {
@@ -1830,6 +1825,8 @@ defaultproperties
 	 
 	 HeadShotSlowMoChargeBonus=1.0
 	 Intelligence=BRAINS_Human
+	 
+	 KnockedDownHealthPct=0.8
 	 
 	 ChargingAnim="RunF"
 	 HealingLevels(0)=5600

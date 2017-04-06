@@ -90,10 +90,18 @@ var					vector              ServerHeadLocation;     // The location of the Zed's
 var					vector              LastServerHeadLocation;
 
 // Animation
-var		transient	bool				bHeadlessAnimated;
+var					name				RunAnims[8];
+var					name				KnockDownAnim;
+var					bool				bCanBeKnockedDown;
+var		transient	bool				bKnockedDown;
+var					float				KnockedDownHealthPct;
+
+// Decapitation
+var		transient	bool				bHeadlessAnimated, bBleedOut;
 var					name				HeadlessIdleAnim;
+
+// CrispSkin
 var		transient	bool				bCrispSkinApplied;
-var		transient	bool				bBleedOut;
 
 // Replicates next rand num for animation array index
 var					byte				NextWalkAnimNum;
@@ -516,14 +524,40 @@ simulated event PostBeginPlay()
 	}
 }
 
+// called after PostBeginPlay on net client
 simulated event PostNetBeginPlay()
 {
+	local	PlayerController	PC;
+	
 	AnimateDefault();
 	EnableChannelNotify(1, 1);
 	AnimBlendParams(1, 1.0, 0.0, , SpineBone1);
 	AnimBlendParams(1, 1.0, 0.0, , HeadBone);
 	
-	Super(Pawn).PostNetBeginPlay();
+	if ( Level.bDropDetail || (Level.DetailMode == DM_Low) )
+		MaxLights = Min(4,MaxLights);
+	
+	if ( Role == ROLE_Authority )
+		Return;
+	
+	if ( Controller != None )  {
+		if ( Controller.Pawn == None )
+			Controller.Pawn = self;
+		if ( PlayerController(Controller) != None && PlayerController(Controller).ViewTarget == Controller )
+			PlayerController(Controller).SetViewTarget(self);
+		
+		if ( PlayerReplicationInfo != None && PlayerReplicationInfo.Owner == None )  {
+			PlayerReplicationInfo.SetOwner(Controller);
+			if ( left(PlayerReplicationInfo.PlayerName, 5) ~= "PRESS" )  {
+				PC = Level.GetLocalPlayerController();
+				if ( PC != None && PC.PlayerReplicationInfo != None && !(left(PlayerReplicationInfo.PlayerName, 5) ~= "PRESS") )
+					bScriptPostRender = True;
+			}
+		}
+	}
+	
+	if ( Role == ROLE_AutonomousProxy )
+		bUpdateEyeHeight = True;
 }
 
 // Setters for extra collision cylinders
@@ -987,6 +1021,17 @@ simulated function AnimateDefault()
 			NextWalkAnimNum = Rand(AdditionalWalkAnims.Length);
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		}
+	}
+}
+
+simulated function AnimateRuning()
+{
+	local	byte	i;
+	
+	for ( i = 0; i < ArrayCount(RunAnims); ++i )  {
+		if ( RunAnims[i] != '' && HasAnim(RunAnims[i]) )
+			MovementAnims[i] = RunAnims[i];
+			WalkAnims[i] = RunAnims[i];
 	}
 }
 
@@ -1460,25 +1505,7 @@ simulated function ProcessHitFX()
 			}
 		}
 
-		if ( class'GameInfo'.static.UseLowGore() )  {
-			HitFX[SimHitFxTicker].bSever = False;
-			switch( HitFX[SimHitFxTicker].bone )
-			{
-				 case 'head':
-					if ( !bHeadGibbed )  {
-						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
-
-					  	bHeadGibbed = True;
-				  	}
-					break;
-			}
-		}
-
+		HitFX[SimHitFxTicker].bSever = class'GameInfo'.static.UseLowGore();
 		if ( HitFX[SimHitFxTicker].bSever )  {
 			GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
 			switch( HitFX[SimHitFxTicker].bone )
@@ -2104,7 +2131,7 @@ simulated event Tick( float DeltaTime )
 // Actually execute the kick (this is notified in the ZombieKick animation)
 function KickActor()
 {
-	KickTarget.Velocity.Z += (Mass * 5 + (KGetMass() * 10));
+	KickTarget.Velocity.Z += Mass * 5.0 + KGetMass() * 10.0;
 	KickTarget.KAddImpulse(ImpactVector, KickLocation);
 	Acceleration = vect(0,0,0);
 	Velocity = vect(0,0,0);
@@ -2115,23 +2142,20 @@ function KickActor()
 	bShotAnim = True;
 }
 
+function bool FlipOver() {}
+
 // High damage was taken, make em fall over.
-function bool FlipOver()
+function bool CheckForKnockDown( int Damage )
 {
-	if ( Physics == PHYS_Falling )
-		SetPhysics(PHYS_Walking);
+	if ( UM_MonsterController(Controller) == None || !bCanBeKnockedDown || Health < 1 || Damage < int(float(Default.Health) * KnockedDownHealthPct) )
+		Return False;
+	
+	//if ( Physics == PHYS_Falling )
+		//SetPhysics(PHYS_Walking);
 
 	bShotAnim = True;
-	SetAnimAction('KnockDown');
-	Acceleration = vect(0, 0, 0);
-	Velocity.X = 0;
-	Velocity.Y = 0;
-	Controller.GoToState('WaitForAnim');
-	
-	if ( UM_MonsterController(Controller) != None )
-		UM_MonsterController(Controller).bUseFreezeHack = True;
-	else if ( KFMonsterController(Controller) != None )
-		KFMonsterController(Controller).bUseFreezeHack = True;
+	UM_MonsterController(Controller).GotoState('KnockDown');
+	SetAnimAction(KnockDownAnim);
 	
 	Return True;
 }
@@ -2451,14 +2475,11 @@ function RemoveHead()
 {
 	bDecapitated = True;
 	DECAP = True;
+	bPlayDecapitationSound = True;
 	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
 	AnimateHeadless();
-	// Decap Anim Action
-	SetAnimAction(HitAnims[NextHitAnimNum]);
-	NextHitAnimNum = Rand(ArrayCount(HitAnims));
-	
 	SetGroundSpeed(GroundSpeed *= 0.8);
 	AirSpeed *= 0.8;
 	WaterSpeed *= 0.8;
@@ -2471,7 +2492,6 @@ function RemoveHead()
 		HeadBallisticCollision.Destroy();
 		HeadBallisticCollision = None;
 	}
-	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600, , True);
 }
 
 // Implemented in subclasses - return false if there is some action that we don't want the direction hit to interrupt
@@ -2528,13 +2548,8 @@ function PlayDirectionalHit(Vector HitLoc)
 //simulated function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
-	local	int		FistStrikeStunChance;
-
-	if ( (Level.TimeSeconds - LastPainAnim) < MinTimeBetweenPainAnims )
-		Return;
-
 	// No anim if we're burning, we're already playing an anim
-	if ( !(bCrispified && bBurnified) )  {
+	if ( !bKnockedDown && Level.TimeSeconds >= (LastPainAnim + MinTimeBetweenPainAnims) && !(bCrispified && bBurnified) )  {
 		if ( Damage > 4 )
 			PlayDirectionalHit(HitLocation);
 		else if (DamageType.name == 'DamTypeShotgun' || DamageType.name == 'DamTypeDBShotgun'
@@ -2547,13 +2562,11 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 		|| DamageType.name == 'DamTypeSealSquealExplosion' || DamageType.name == 'DamTypeSeekerSixRocket')
 			PlayDirectionalHit(HitLocation);
 		else if ( DamageType.name == 'DamTypeClaws' )  {
-			FistStrikeStunChance = rand(10);
-			if ( FistStrikeStunChance > 5 )
+			if ( Rand(10) > 5 )
 				PlayDirectionalHit(HitLocation);
 		}
 		else if ( DamageType.name == 'DamTypeKnife' )  {
-			FistStrikeStunChance = rand(10);
-			if ( FistStrikeStunChance > 7 )
+			if ( Rand(10) > 7 )
 				PlayDirectionalHit(HitLocation);
 		}
 		else if ( DamageType.name == 'DamTypeChainsaw' )
@@ -2619,15 +2632,33 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 			Spawn(PhysicsVolume.ExitActor);
 		Return;
 	}
-
-	if ( (Level.TimeSeconds - LastPainTime) > 0.1 )  {
+	
+	if ( bDecapitated ) {
 		if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
 			Hearer = PlayerController(InstigatedBy.Controller);
+		// makes playercontroller hear much better
 		if ( Hearer != None )
 			Hearer.bAcuteHearing = True;
-		PlayTakeHit(HitLocation,Damage,damageType);
+		if ( !bKnockedDown )  {
+			SetAnimAction(HitAnims[NextHitAnimNum]);
+			NextHitAnimNum = Rand(ArrayCount(HitAnims));
+		}
+		PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600, , True);
+		// makes playercontroller hear much better
 		if ( Hearer != None )
-			Hearer.bAcuteHearing = false;
+			Hearer.bAcuteHearing = False;
+	}	
+	else if ( (Level.TimeSeconds - LastPainTime) > 0.1 )  {
+		if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
+			Hearer = PlayerController(InstigatedBy.Controller);
+		// makes playercontroller hear much better
+		if ( Hearer != None )
+			Hearer.bAcuteHearing = True;
+		PlayTakeHit(HitLocation, Damage, damageType);
+		// makes playercontroller hear much better
+		if ( Hearer != None )
+			Hearer.bAcuteHearing = False;
+		
 		LastPainTime = Level.TimeSeconds;
 	}
 }
@@ -2642,15 +2673,12 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 	local	bool					bShowEffects, bRecentHit;
 
 	bRecentHit = (Level.TimeSeconds - LastPainTime) < 0.2;
-	LastDamageAmount = Damage;
-	// Call the modified version of the original Pawn playhit
-	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
-
 	if ( Damage < 1 )
 		Return;
-
-	if ( Health > 0 && Damage > int(float(Default.Health) / 1.5) )
-		FlipOver();
+	
+	CheckForKnockDown(Damage);	
+	// Call the modified version of the original Pawn playhit
+	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
 
 	bShowEffects = ( Level.NetMode != NM_Standalone || (Level.TimeSeconds - LastRenderTime) < 2.5 || (InstigatedBy != None && PlayerController(InstigatedBy.Controller) != None) || PlayerController(Controller) != None );
 	
@@ -2803,11 +2831,12 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500, , True);
 		// Calc Head damage
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
-		// Decap
+		// Decapitate
 		if ( HeadHealth < 1 || Damage >= Health )  {
-			RemoveHead();
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
+			RemoveHead();
+			
 			// Bonuses
 			if ( UM_HumanPawn(instigatedBy) != None )  {
 				// SlowMoCharge
@@ -2884,6 +2913,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	}
 	MakeNoise(1.0);
 	bBackstabbed = False;
+	bPlaying
 	
 	Return Damage;
 }
@@ -3075,6 +3105,10 @@ defaultproperties
 	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
 	 bPhysicsAnimUpdate=True
      bDoTorsoTwist=True
+	 // KnockDownAnim
+	 bCanBeKnockedDown=True
+	 KnockDownAnim="KnockDown"
+	 KnockedDownHealthPct=0.65
 	 // MeleeAnims
 	 MeleeAnims(0)="Claw"
      MeleeAnims(1)="Claw2"

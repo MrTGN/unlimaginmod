@@ -62,11 +62,6 @@ simulated function bool AnimNeedsWait( name TestAnim )
 	Return False;
 }
 
-function bool FlipOver()
-{
-	Return False;
-}
-
 function DoorAttack( Actor A )
 {
 	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || A == None )
@@ -389,6 +384,8 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
+	 KnockedDownHealthPct=0.8
+	 
 	 ImpressiveKillChance=0.05
 	 
 	 Intelligence=BRAINS_Mammal

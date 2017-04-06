@@ -593,11 +593,6 @@ simulated event Tick( float DeltaTime )
 		Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 }
 
-function bool FlipOver()
-{
-	Return False;
-}
-
 function bool SameSpeciesAs(Pawn P)
 {
 	Return ( UM_BaseMonster_FleshPound(P) != None );
@@ -616,6 +611,8 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 KnockedDownHealthPct=0.8
+	 
 	 ImpressiveKillChance=1.0
 	 
 	 HeadShotSlowMoChargeBonus=0.5

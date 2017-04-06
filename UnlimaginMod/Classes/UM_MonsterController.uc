@@ -70,6 +70,21 @@ event bool NotifyLanded(vector HitNormal)
 	Return False;
 }
 
+event Tick(float DeltaTime)
+{
+	if ( Level.TimeSeconds >= MoanTime )  {
+		ZombieMoan();
+		MoanTime = Level.TimeSeconds + 12.0 + FRand() * 8.0;
+	}
+	
+	if ( bAboutToGetDoor )  {
+		bAboutToGetDoor = False;
+		if ( TargetDoor != None )
+        	BreakUpDoor(TargetDoor, True);
+	}
+}
+
+
 // Get rid of this Zed if he's stuck somewhere and noone has seen him
 function bool CanKillMeYet()
 {
@@ -501,7 +516,7 @@ function WhatToDoNext(byte CallingByte)
 
 state WaitForAnim
 {
-Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
+ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 
 	event BeginState()
 	{
@@ -524,7 +539,7 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 		if ( bUseFreezeHack )  {
 			MoveTarget = None;
 			MoveTimer = -1;
-			Pawn.Acceleration = vect(0,0,0);
+			Pawn.Acceleration = vect(0.0,0.0,0.0);
 			Pawn.GroundSpeed = 1;
 			Pawn.AccelRate = 0;
 		}
@@ -535,6 +550,8 @@ Ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 		if ( Pawn != None )  {
 			Pawn.AccelRate = Pawn.Default.AccelRate;
 			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
+			if ( UM_BaseMonster(Pawn) != None )
+				UM_BaseMonster(Pawn).bKnockedDown = False;
 		}
 		bUseFreezeHack = False;
 	}
@@ -802,27 +819,41 @@ WaitForAnim:
 
 state KnockDown
 {
-	ignores EnemyNotVisible, Startle;
+	ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 
 	// Don't do this in this state
 	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin)  { }
-
-Begin:
-	Pawn.ShouldCrouch(True);
-
-WaitForAnim:
-	if ( KFM.bShotAnim )  {
-		Sleep(0.1);
-		Goto('WaitForAnim');
+	
+	event Tick( float Delta )
+	{
+		Global.Tick(Delta);
+		if ( bUseFreezeHack )  {
+			MoveTarget = None;
+			MoveTimer = -1;
+			Pawn.Acceleration = vect(0.0,0.0,0.0);
+			Pawn.GroundSpeed = 1;
+			Pawn.AccelRate = 0;
+		}
 	}
 
+Begin:
+	bUseFreezeHack = True;
+	//Pawn.ShouldCrouch(True);
+	if ( UM_BaseMonster(Pawn) != None )
+		UM_BaseMonster(Pawn).bKnockedDown = True;
+	
+	while( KFM.bShotAnim )
+		Sleep(0.1);
 
 	WhatToDoNext(152);
 	if ( bSoaking )
-		SoakStop("STUCK IN STAGGERED!!!");
+		SoakStop("STUCK IN KnockDown!!!");
 
 End:
-	Pawn.ShouldCrouch(False);
+	if ( UM_BaseMonster(Pawn) != None )
+		UM_BaseMonster(Pawn).bKnockedDown = False;
+	bUseFreezeHack = False;
+	//Pawn.ShouldCrouch(False);
 }
 
 // State for being scared of something, the bot attempts to move away from it

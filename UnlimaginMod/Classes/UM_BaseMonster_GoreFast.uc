@@ -332,6 +332,8 @@ simulated function HideBone(name boneName)
 
 defaultproperties
 {
+	 KnockedDownHealthPct=0.7
+	 
 	 ImpressiveKillChance=0.05
 	 
 	 RunGroundSpeedScale=1.850000

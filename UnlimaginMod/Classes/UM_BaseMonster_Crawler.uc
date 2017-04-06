@@ -191,16 +191,13 @@ simulated function bool AnimNeedsWait(name TestAnim)
     Return True;
 }
 
-function bool FlipOver()
-{
-	Return False;
-}
-
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
+	 bCanBeKnockedDown=False
+	 
 	 ImpressiveKillChance=0.05
 	 
 	 HeadShotSlowMoChargeBonus=0.25

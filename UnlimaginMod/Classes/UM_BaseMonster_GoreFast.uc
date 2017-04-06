@@ -356,12 +356,19 @@ defaultproperties
 	 MeleeAnims(0)="GoreAttack1"
 	 MeleeAnims(1)="GoreAttack2"
 	 MeleeAnims(2)="GoreAttack1"
-	 
+	 // MovementAnims
 	 MovementAnims(0)="GoreWalk"
+     MovementAnims(1)="GoreWalk"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
 	 WalkAnims(0)="GoreWalk"
-	 WalkAnims(1)="GoreWalk"
-	 WalkAnims(2)="GoreWalk"
-	 WalkAnims(3)="GoreWalk"
+     WalkAnims(1)="GoreWalk"
+     WalkAnims(2)="RunL"
+     WalkAnims(3)="RunR"
+	 
 	 IdleCrouchAnim="GoreIdle"
 	 IdleWeaponAnim="GoreIdle"
 	 IdleRestAnim="GoreIdle"

@@ -1845,7 +1845,7 @@ ignores AnimEnd, Trigger, Bump, HitWall, HeadVolumeChange, PhysicsVolumeChange, 
 				else
 					bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
 				if ( bIsHeadShot )
-					Decap( HitLocation );
+					RemoveHead();
 			}
 
 			HitRay = vect(0,0,0);
@@ -2447,32 +2447,17 @@ function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
 	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
 }	*/
 
-function RemoveHead() { }
-
-function Decap( vector HitLoc )
+function RemoveHead()
 {
-	local	vector	X, Y, Z, Dir;
-	
 	bDecapitated = True;
 	DECAP = True;
 	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
 	AnimateHeadless();
-	//SetAnimAction('HitF');
-	
 	// Decap Anim Action
-	GetAxes(Rotation, X, Y, Z);
-	HitLoc.Z = Location.Z;
-	Dir = -Normal(Location - HitLoc);
-	if ( (Dir dot X) > 0.7 || Dir == vect(0.0,0.0,0.0) )
-		SetAnimAction(KFHitFront);
-	else if ( (Dir Dot X) < -0.7 )
-		SetAnimAction(KFHitBack);
-	else if ( (Dir Dot Y) > 0.0 )
-		SetAnimAction(KFHitRight);
-	else
-		SetAnimAction(KFHitLeft);
+	SetAnimAction(HitAnims[NextHitAnimNum]);
+	NextHitAnimNum = Rand(ArrayCount(HitAnims));
 	
 	SetGroundSpeed(GroundSpeed *= 0.8);
 	AirSpeed *= 0.8;
@@ -2495,7 +2480,8 @@ simulated function bool HitCanInterruptAction()
 	Return True;
 }
 
-simulated function PlayDirectionalHit(Vector HitLoc)
+//simulated function PlayDirectionalHit(Vector HitLoc)
+function PlayDirectionalHit(Vector HitLoc)
 {
 	local	Vector	X,Y,Z, Dir;
 
@@ -2504,14 +2490,13 @@ simulated function PlayDirectionalHit(Vector HitLoc)
 	
 	GetAxes(Rotation, X,Y,Z);
 	HitLoc.Z = Location.Z;
-
-	// random
-//	if ( VSizeSquared(Location - HitLoc) < 1.0 )
-//		Dir = VRand();
-//	else
+	
+	if ( VSizeSquared(Location - HitLoc) < 1.0 )
+		Dir = vect(0.0,0.0,0.0);
+	else
 		Dir = -Normal(Location - HitLoc);
 
-	if ( Dir dot X > 0.7 || Dir == vect(0,0,0) )  {
+	if ( Dir dot X > 0.7 || Dir == vect(0.0,0.0,0.0) )  {
 		if ( LastDamagedBy != None && LastDamageAmount > 0 )  {
 			bSTUNNED = StunsRemaining != 0 && (LastDamageAmount >= (0.5 * default.Health) ||
 				 (VSize(LastDamagedBy.Location - Location) <= (MeleeRange * 2.0) && class<DamTypeMelee>(LastDamagedbyType) != None && KFPawn(LastDamagedBy) != None && LastDamageAmount > (default.Health * 0.1)));
@@ -2540,7 +2525,8 @@ simulated function PlayDirectionalHit(Vector HitLoc)
 	There are exceptions with the fists however, which are substantially under the damage quota but can still cause stuns 50% of the time.
 	Why? Cus if they didn't at least have that functionality, they would be fundamentally useless. And anyone willing to take on a hoarde of zombies
 	with only the gloves on his hands, deserves more respect than that!	*/
-simulated function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
+//simulated function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
+function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
 	local	int		FistStrikeStunChance;
 
@@ -2819,7 +2805,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decap
 		if ( HeadHealth < 1 || Damage >= Health )  {
-			Decap( HitLocation );
+			RemoveHead();
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
 			// Bonuses

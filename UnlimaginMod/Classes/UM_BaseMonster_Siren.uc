@@ -406,12 +406,6 @@ defaultproperties
 	 ShakeEffectScalar=1.000000
 	 MinShakeEffectScale=0.600000
 	 ScreamBlurScale=0.850000
-	 MeleeAnims(0)="Siren_Bite"
-	 MeleeAnims(1)="Siren_Bite2"
-	 MeleeAnims(2)="Siren_Bite"
-	 HitAnims(0)="HitReactionF"
-	 HitAnims(1)="HitReactionF"
-	 HitAnims(2)="HitReactionF"
 	 
 	 ZapThreshold=0.500000
 	 ZappedDamageMod=1.500000
@@ -438,14 +432,44 @@ defaultproperties
 	 HeadHeight=1.000000
 	 HeadScale=1.000000
 	 MenuName="Siren"
+	 // MeleeAnims
+	 MeleeAnims(0)="Siren_Bite"
+	 MeleeAnims(1)="Siren_Bite2"
+	 MeleeAnims(2)="Siren_Bite"
+	 // HitAnims
+	 HitAnims(0)="HitF"
+     HitAnims(1)="HitF2"
+     HitAnims(2)="HitF3"
+	 KFHitFront="HitReactionF"
+     KFHitBack="HitReactionB"
+     KFHitLeft="HitReactionL"
+     KFHitRight="HitReactionR"
+	 // MovementAnims
 	 MovementAnims(0)="Siren_Walk"
-	 MovementAnims(1)="Siren_Walk"
-	 MovementAnims(2)="Siren_Walk"
-	 MovementAnims(3)="Siren_Walk"
+     MovementAnims(1)="Siren_Walk"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
 	 WalkAnims(0)="Siren_Walk"
-	 WalkAnims(1)="Siren_Walk"
-	 WalkAnims(2)="Siren_Walk"
-	 WalkAnims(3)="Siren_Walk"
+     WalkAnims(1)="Siren_Walk"
+     WalkAnims(2)="RunL"
+     WalkAnims(3)="RunR"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Fire"
+     HeadlessWalkAnims(1)="WalkB_Fire"
+     HeadlessWalkAnims(2)="WalkL_Fire"
+     HeadlessWalkAnims(3)="WalkR_Fire"
+     // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
+	 // IdleAnim
 	 IdleCrouchAnim="Siren_Idle"
 	 IdleWeaponAnim="Siren_Idle"
 	 IdleRestAnim="Siren_Idle"

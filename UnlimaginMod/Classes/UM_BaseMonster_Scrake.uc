@@ -599,9 +599,6 @@ defaultproperties
 	 
 	 AttackChargeRate=2.500000
 	 ExhaustEffectClass=Class'KFMod.ChainsawExhaust'
-	 MeleeAnims(0)="SawZombieAttack1"
-	 MeleeAnims(1)="SawZombieAttack2"
-	 MeleeAnims(2)="SawZombieAttack1"
 	 
 	 StunsRemaining=1
 	 BleedOutDuration=6.000000
@@ -629,14 +626,35 @@ defaultproperties
 	 WaterSpeed=75.000000
 	 HeadHeight=2.200000
 	 MenuName="Scrake"
+	 
+	 // MeleeAnims
+	 MeleeAnims(0)="SawZombieAttack1"
+	 MeleeAnims(1)="SawZombieAttack2"
+	 MeleeAnims(2)="SawZombieAttack1"
+	 // MovementAnims
 	 MovementAnims(0)="SawZombieWalk"
-	 MovementAnims(1)="SawZombieWalk"
-	 MovementAnims(2)="SawZombieWalk"
-	 MovementAnims(3)="SawZombieWalk"
+     MovementAnims(1)="WalkB"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 // WalkAnims
 	 WalkAnims(0)="SawZombieWalk"
-	 WalkAnims(1)="SawZombieWalk"
-	 WalkAnims(2)="SawZombieWalk"
-	 WalkAnims(3)="SawZombieWalk"
+     WalkAnims(1)="WalkB"
+     WalkAnims(2)="RunL"
+     WalkAnims(3)="RunR"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Headless"
+     HeadlessWalkAnims(1)="WalkB_Headless"
+     HeadlessWalkAnims(2)="WalkF_Headless"
+     HeadlessWalkAnims(3)="WalkF_Headless"
+	 // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
+	 // IdleAnim
 	 IdleCrouchAnim="SawZombieIdle"
 	 IdleWeaponAnim="SawZombieIdle"
 	 IdleRestAnim="SawZombieIdle"

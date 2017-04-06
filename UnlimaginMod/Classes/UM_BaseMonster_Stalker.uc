@@ -396,9 +396,6 @@ defaultproperties
 	 MaxGrabChance=0.800000
 	 GrappleDuration=1.500000
 	 GrabMessageDelay=12.000000
-	 MeleeAnims(0)="StalkerSpinAttack"
-	 MeleeAnims(1)="StalkerAttack1"
-	 MeleeAnims(2)="JumpAttack"
 	 
 	 MeleeDamage=9
 	 damageForce=5000
@@ -420,14 +417,36 @@ defaultproperties
 	 JumpZ=350.000000
 	 HeadHeight=2.500000
 	 MenuName="Stalker"
+	 // MeleeAnims
+	 MeleeAnims(0)="StalkerSpinAttack"
+	 MeleeAnims(1)="StalkerAttack1"
+	 MeleeAnims(2)="JumpAttack"
+	 // MovementAnims
 	 MovementAnims(0)="ZombieRun"
-	 MovementAnims(1)="ZombieRun"
-	 MovementAnims(2)="ZombieRun"
-	 MovementAnims(3)="ZombieRun"
+     MovementAnims(1)="WalkB"
+     MovementAnims(2)="RunL"
+     MovementAnims(3)="RunR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
 	 WalkAnims(0)="ZombieRun"
-	 WalkAnims(1)="ZombieRun"
-	 WalkAnims(2)="ZombieRun"
-	 WalkAnims(3)="ZombieRun"
+     WalkAnims(1)="WalkB"
+     WalkAnims(2)="RunL"
+     WalkAnims(3)="RunR"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Fire"
+     HeadlessWalkAnims(1)="WalkB_Fire"
+     HeadlessWalkAnims(2)="WalkL_Fire"
+     HeadlessWalkAnims(3)="WalkR_Fire"
+     // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
+	 // IdleAnim
 	 IdleCrouchAnim="StalkerIdle"
 	 IdleWeaponAnim="StalkerIdle"
 	 IdleRestAnim="StalkerIdle"	 

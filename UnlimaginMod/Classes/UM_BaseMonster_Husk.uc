@@ -466,9 +466,6 @@ defaultproperties
 	 
 	 HeadShotSlowMoChargeBonus=0.25
 	 ProjectileFireInterval=5.500000
-     MeleeAnims(0)="Strike"
-     MeleeAnims(1)="Strike"
-     MeleeAnims(2)="Strike"
      BleedOutDuration=6.000000
      ZapThreshold=0.750000
      bHarpoonToBodyStuns=False
@@ -494,13 +491,35 @@ defaultproperties
      HeadScale=1.500000
      AmbientSoundScaling=8.000000
      MenuName="Husk"
-     MovementAnims(0)="WalkF"
+	 // MeleeAnims
+	 MeleeAnims(0)="Strike"
+     MeleeAnims(1)="Strike"
+     MeleeAnims(2)="Strike"
+	 // MovementAnims
+	 MovementAnims(0)="WalkF"
      MovementAnims(1)="WalkB"
      MovementAnims(2)="WalkL"
      MovementAnims(3)="WalkR"
+	 TurnLeftAnim="TurnLeft"
+     TurnRightAnim="TurnRight"
+	 // WalkAnims
+	 WalkAnims(0)="WalkF"
      WalkAnims(1)="WalkB"
      WalkAnims(2)="WalkL"
      WalkAnims(3)="WalkR"
+	 // HeadlessWalkAnims
+	 HeadlessWalkAnims(0)="WalkF_Headless"
+     HeadlessWalkAnims(1)="WalkB_Headless"
+     HeadlessWalkAnims(2)="WalkL_Headless"
+     HeadlessWalkAnims(3)="WalkR_Headless"
+     // BurningWalkFAnims
+	 BurningWalkFAnims(0)="WalkF_Fire"
+     BurningWalkFAnims(1)="WalkF_Fire"
+     BurningWalkFAnims(2)="WalkF_Fire"
+     // BurningWalkAnims
+	 BurningWalkAnims(0)="WalkB_Fire"
+     BurningWalkAnims(1)="WalkL_Fire"
+     BurningWalkAnims(2)="WalkR_Fire"
      IdleCrouchAnim="Idle"
      IdleWeaponAnim="Idle"
      IdleRestAnim="Idle"

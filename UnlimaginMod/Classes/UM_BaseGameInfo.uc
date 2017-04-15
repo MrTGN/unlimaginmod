@@ -29,29 +29,6 @@ class UM_BaseGameInfo extends KFGameType
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
-// Int Range
-struct IRange
-{
-	var()	config	int		Min;
-	var()	config	int		Max;
-};
-
-struct IRandRange
-{
-	var()	config	int		Min;
-	var()	config	int		RandMin;
-	var()	config	int		Max;
-	var()	config	int		RandMax;
-};
-
-struct FRandRange
-{
-	var()	config	float	Min;
-	var()	config	float	RandMin;
-	var()	config	float	Max;
-	var()	config	float	RandMax;
-};
-
 // Do slomo event when was killed a specified number of victims
 struct DramaticKillData
 {

@@ -15,6 +15,7 @@
 //	Comments:		 Base ProjectileWeapon fire class
 //================================================================================
 class UM_BaseProjectileWeaponFire extends KFShotgunFire
+	DependsOn(UM_BaseObject)
 	DependsOn(UM_BaseActor)
 	Abstract;
 
@@ -58,8 +59,13 @@ var				float			NextDryFireTime;
 
 var				float			FirstPersonSoundVolumeScale;	// Scales sounds Volume at FirstPerson view
 
+var(Recoil)		UM_BaseObject.IRange	RecoilUpRot;	// Min and Max recoil player camera Up rotation
+var(Recoil)		UM_BaseObject.IRange	RecoilLeftRot;	// Min and Max recoil player camera Left rotation
+var(Recoil)		UM_BaseObject.IRange	RecoilRightRot;	// Min and Max recoil player camera Right rotation
+var(Recoil)		float					RecoilLeftChance;	// 0.0 is always right, 1.0 is always left
 var(Recoil)		float			RecoilVelocityScale;	// How much to scale the recoil by based on how fast the player is moving
-var(Recoil)		bool			bRecoilRightOnly;		// Only recoil the weapon's yaw to the right, not just randomly right and left
+var(Recoil)		bool			bRecoilIgnoreZVelocity;	// Ignore Z axis in Velocity vector
+var(Recoil)		float			RecoilHealthScale;	// Recoil based on how much Health the player have
 var(Recoil)		float			AimingVerticalRecoilBonus;	// VerticalRecoil Aiming Bonus
 var(Recoil)		float			AimingHorizontalRecoilBonus;	// HorizontalRecoil Aiming Bonus
 
@@ -96,7 +102,6 @@ var(Movement)	float			MovingAimErrorScale;	// Increases AimError when player is 
 var(Movement)	float			MovingSpreadScale;		// Increases Spread when player is moving. Must be > 1.000000
 
 var				bool			bChangeProjByPerk;
-var				bool			bRecoilIgnoreZVelocity;
 
 // Array with projectiles data. Weapon will switch projectile info from default to info 
 // from this array by PerkIndex if bChangeProjByPerk=True
@@ -973,24 +978,31 @@ function AddRecoil()
 	if ( KFPC != None && !KFPC.bFreeCamera )  {
 		// Aiming bonuses
 		if ( KFWeap.bAimingRifle )  {
-			NewRecoilRotation.Pitch = Round( Lerp(FRand(), (default.maxVerticalRecoilAngle * 0.5), default.maxVerticalRecoilAngle) * AimingVerticalRecoilBonus );
-			NewRecoilRotation.Yaw = Round( Lerp(FRand(), (default.maxHorizontalRecoilAngle * 0.5), default.maxHorizontalRecoilAngle) * AimingHorizontalRecoilBonus );
+			NewRecoilRotation.Pitch = Round( Lerp(FRand(), RecoilUpRot.Min, RecoilUpRot.Max) * AimingVerticalRecoilBonus );
+			// Left recoil rotation
+			if ( RecoilLeftChance > 0.0 && FRand() <= RecoilLeftChance )
+				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilLeftRot.Min, RecoilLeftRot.Max) * AimingHorizontalRecoilBonus );
+			// Right recoil rotation
+			else
+				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilRightRot.Min, RecoilRightRot.Max) * AimingHorizontalRecoilBonus );
 		}
 		else  {
-			NewRecoilRotation.Pitch = Round( Lerp(FRand(), (default.maxVerticalRecoilAngle * 0.5), default.maxVerticalRecoilAngle) );
-			NewRecoilRotation.Yaw = Round( Lerp(FRand(), (default.maxHorizontalRecoilAngle * 0.5), default.maxHorizontalRecoilAngle) );
+			NewRecoilRotation.Pitch = Round( Lerp(FRand(), RecoilUpRot.Min, RecoilUpRot.Max) );
+			// Left recoil rotation
+			if ( RecoilLeftChance > 0.0 && FRand() <= RecoilLeftChance )
+				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilLeftRot.Min, RecoilLeftRot.Max) * AimingHorizontalRecoilBonus );
+			// Right recoil rotation
+			else
+				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilRightRot.Min, RecoilRightRot.Max) * AimingHorizontalRecoilBonus );
 		}
-
-		if ( !bRecoilRightOnly && Rand(2) == 1 )
-			NewRecoilRotation.Yaw *= -1.0;
-
+		// Recoil based on how fast the player is moving
 		if ( RecoilVelocityScale > 0.0 )  {
 			AdjustedVelocity = Instigator.Velocity;
 			if ( Instigator.Physics == PHYS_Falling &&
 				Instigator.PhysicsVolume.Gravity.Z > class'PhysicsVolume'.default.Gravity.Z )  {
 				// Ignore Z velocity in low grav so we don't get massive recoil
 				AdjustedVelocity.Z = 0.0;
-				AdjustedSpeed = VSize(AdjustedVelocity);
+				AdjustedSpeed = VSize(AdjustedVelocity) / Instigator.GroundSpeed;
 				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale * 0.5));
 				// Reduce the falling recoil in low grav
 				NewRecoilRotation.Pitch += Round(AdjustedSpeed * RecoilVelocityScale * 0.5);
@@ -999,17 +1011,24 @@ function AddRecoil()
 			else  {
 				if ( bRecoilIgnoreZVelocity )
 					AdjustedVelocity.Z = 0.0;
-				AdjustedSpeed = VSize(AdjustedVelocity);
+				AdjustedSpeed = VSize(AdjustedVelocity) / Instigator.GroundSpeed;
 				//log("AdjustedSpeed = "$AdjustedSpeed$" scale = "$(AdjustedSpeed* RecoilVelocityScale));
 				NewRecoilRotation.Pitch += Round(AdjustedSpeed * RecoilVelocityScale);
 				NewRecoilRotation.Yaw += Round(AdjustedSpeed * RecoilVelocityScale);
 			}
 		}
 		// Recoil based on how much Health the player have
-		NewRecoilRotation.Pitch += Round( Instigator.HealthMax / float(Instigator.Health) * 5.0 );
-		NewRecoilRotation.Yaw += Round( Instigator.HealthMax / float(Instigator.Health) * 5.0 );
+		if ( RecoilHealthScale > 0.0 )  {
+			NewRecoilRotation.Pitch = Round( float(NewRecoilRotation.Pitch) * (Instigator.HealthMax / float(Instigator.Health) * RecoilHealthScale) * VeterancyRecoilModifier );
+			NewRecoilRotation.Yaw = Round( float(NewRecoilRotation.Yaw) * (Instigator.HealthMax / float(Instigator.Health) * RecoilHealthScale) * VeterancyRecoilModifier );
+		}
+		// else just use VeterancyRecoilModifier
+		else  {
+			NewRecoilRotation.Pitch = Round( float(NewRecoilRotation.Pitch)  * VeterancyRecoilModifier );
+			NewRecoilRotation.Yaw = Round( float(NewRecoilRotation.Yaw) * VeterancyRecoilModifier )
+		}
 		// Perk bouns
-		KFPC.SetRecoil( (NewRecoilRotation * VeterancyRecoilModifier), (RecoilRate * FireSpeedModif) );
+		KFPC.SetRecoil( NewRecoilRotation, (RecoilRate * FireSpeedModif) );
  	}
 }
 
@@ -1291,61 +1310,60 @@ defaultproperties
 	 // Animation
 	 //ReloadAnim
 	 ReloadAnim="Reload"
-	 ReloadAnimRate=1.000000
+	 ReloadAnimRate=1.0
 	 //PreFireAnims
-	 PreFireAnims(0)=(Anim="PreFire",Rate=1.000000)
+	 PreFireAnims(0)=(Anim="PreFire",Rate=1.0)
 	 //FireAnims
-	 FireAnims(0)=(Anim="Fire",Rate=1.000000)
-	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
+	 FireAnims(0)=(Anim="Fire",Rate=1.0)
+	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.0)
 	 //FireLoopAnims
-	 FireLoopAnims(0)=(Anim="FireLoop",Rate=1.000000)
+	 FireLoopAnims(0)=(Anim="FireLoop",Rate=1.0)
 	 //FireEndAnims
-	 FireEndAnims(0)=(Anim="FireEnd",Rate=1.000000)
+	 FireEndAnims(0)=(Anim="FireEnd",Rate=1.0)
 	 //Sounds
-	 FirstPersonSoundVolumeScale=0.860000
-	 TransientSoundVolume=0.500000
-     TransientSoundRadius=300.000000
-	 RandomPitchAdjustAmt=0.050000
+	 FirstPersonSoundVolumeScale=0.86
+	 TransientSoundVolume=0.5
+     TransientSoundRadius=300.0
+	 RandomPitchAdjustAmt=0.05
 	 //Booleans
 	 bFiringDoesntAffectMovement=False
 	 bLeadTarget=True
      bInstantHit=False
 	 bModeExclusive=True
 	 bRandomPitchFireSound=True
-	 bRecoilRightOnly=False
 	 bNoKickMomentum=True
 	 bOnlyLowGravKickMomentum=False
 	 bChangeProjByPerk=False
 	 bWaitForRelease=False
 	 //Instigator MovingSpeedScale
-	 FirstShotMovingSpeedScale=0.750000
-	 FireMovingSpeedScale=0.500000
+	 FirstShotMovingSpeedScale=0.75
+	 FireMovingSpeedScale=0.5
 	 //[block] Bonuses
 	 //Recoil
-	 AimingVerticalRecoilBonus=0.950000
-	 AimingHorizontalRecoilBonus=0.990000
+	 AimingVerticalRecoilBonus=0.95
+	 AimingHorizontalRecoilBonus=0.99
 	 //Spread
-	 SpreadCooldownTime=0.500000
-	 AimingSpreadBonus=0.900000
-	 CrouchedSpreadBonus=0.950000
-	 VeterancySpreadBonus=1.000000
+	 SpreadCooldownTime=0.5
+	 AimingSpreadBonus=0.9
+	 CrouchedSpreadBonus=0.95
+	 VeterancySpreadBonus=1.0
 	 //AimError
-     AimingAimErrorBonus=0.600000
-     CrouchedAimErrorBonus=0.850000
-	 VeterancyAimErrorBonus=1.00000
+     AimingAimErrorBonus=0.6
+     CrouchedAimErrorBonus=0.85
+	 VeterancyAimErrorBonus=1.0
 	 //ShakeView
-	 AimingShakeBonus=0.950000
+	 AimingShakeBonus=0.95
 	 //Movement
 	 MoveShakeScale=0.2
-	 MaxMoveShakeScale=1.100000
-	 MovingAimErrorScale=4.000000
+	 MaxMoveShakeScale=1.1
+	 MovingAimErrorScale=4.0
 	 // Max InstigatorMovingSpeed (GroundSpeed) = 200
 	 // Total MaxSpread = MaxSpread + (200 * MovingSpreadScale)
-	 MovingSpreadScale=0.001000
+	 MovingSpreadScale=0.001
 	 //[end]
      //Fire properties
-	 EffectiveRange=5000.000000
-	 LowGravKickMomentumScale=2.000000
+	 EffectiveRange=5000.0
+	 LowGravKickMomentumScale=2.0
 	 AmmoPerFire=1
 	 ProjPerFire=1
 	 // ProjSpawnOffset calculates automaticly. It uses Weapon.PlayerViewOffset X, Y, Z values.
@@ -1355,17 +1373,19 @@ defaultproperties
 	 // Z - vertical axis (height)
 	 // If ProjSpawnOffset.X >= Weapon.PlayerViewOffset.X will be used only ProjSpawnOffset.X value.
 	 // You can use this to force spwan on the fixed distance on the X Axis.
-	 ProjSpawnOffsets(0)=(X=0.000000,Y=0.000000,Z=0.000000)
-	 RecoilVelocityScale=3.000000
-	 AimError=10.000000
+	 ProjSpawnOffsets(0)=(X=0.0,Y=0.0,Z=0.0)
+	 RecoilLeftChance=0.5
+	 RecoilVelocityScale=2.0
+	 RecoilHealthScale=3.0
+	 AimError=10.0
 	 // DamageAtten - attenuate instant-hit/projectile damage by this multiplier
 	 // In fact this class don't use this variable at all. 
 	 // I've stored this value here just for not picking up other value from the parent class.
-	 DamageAtten=1.000000
+	 DamageAtten=1.0
 	 //Spread
-	 Spread=500.000000
+	 Spread=500.0
 	 ShotsForMaxSpread=6
-	 MaxSpread=500.000000
+	 MaxSpread=500.0
      SpreadStyle=SS_Random
 }
 

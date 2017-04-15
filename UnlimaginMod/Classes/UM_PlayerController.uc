@@ -22,6 +22,8 @@ var					bool			bDrawBallisticCollision;
 //var		transient	Pawn			PawnKiller;
 //var		transient	bool			bViewPawnKiller;
 
+var		transient	float			StopRecoilTime;
+
 
 replication
 {
@@ -1014,6 +1016,99 @@ simulated event InitInputSystem()
 	ServerSetReadyToStart();
 }
 
+function ViewShake(float DeltaTime)
+{
+	if ( ShakeOffsetRate != vect(0,0,0) )  {
+		// modify shake offset
+		// ShakeOffset.X
+		ShakeOffset.X += DeltaTime * ShakeOffsetRate.X;
+		CheckShake(ShakeOffsetMax.X, ShakeOffset.X, ShakeOffsetRate.X, ShakeOffsetTime.X, DeltaTime);
+		// ShakeOffset.Y
+		ShakeOffset.Y += DeltaTime * ShakeOffsetRate.Y;
+		CheckShake(ShakeOffsetMax.Y, ShakeOffset.Y, ShakeOffsetRate.Y, ShakeOffsetTime.Y, DeltaTime);
+		// ShakeOffset.Z
+		ShakeOffset.Z += DeltaTime * ShakeOffsetRate.Z;
+		CheckShake(ShakeOffsetMax.Z, ShakeOffset.Z, ShakeOffsetRate.Z, ShakeOffsetTime.Z, DeltaTime);
+	}
+
+	if ( ShakeRotRate != vect(0,0,0) )  {
+		UpdateShakeRotComponent(ShakeRotMax.X, ShakeRot.Pitch, ShakeRotRate.X, ShakeRotTime.X, DeltaTime);
+		UpdateShakeRotComponent(ShakeRotMax.Y, ShakeRot.Yaw,   ShakeRotRate.Y, ShakeRotTime.Y, DeltaTime);
+		UpdateShakeRotComponent(ShakeRotMax.Z, ShakeRot.Roll,  ShakeRotRate.Z, ShakeRotTime.Z, DeltaTime);
+	}
+}
+
+// Removing unnecessary function
+simulated function rotator RecoilHandler(rotator NewRotation, float DeltaTime)
+{
+	Return rot(0,0,0);
+}
+
+function UpdateRotation(float DeltaTime, float maxPitch)
+{
+	local	rotator		newRotation, ViewRotation;
+
+	if ( bInterpolating || (Pawn != None && Pawn.bInterpolating) )  {
+		ViewShake(deltaTime);
+		Return;
+	}
+
+	// Added FreeCam control for better view control
+	if ( bFreeCam )  {
+		if ( bFreeCamZoom )
+			CameraDeltaRad += DeltaTime * 0.25 * aLookUp;
+		else if ( bFreeCamSwivel )  {
+			CameraSwivel.Yaw += 16.0 * DeltaTime * aTurn;
+			CameraSwivel.Pitch += 16.0 * DeltaTime * aLookUp;
+		}
+		else  {
+			CameraDeltaRotation.Yaw += 32.0 * DeltaTime * aTurn;
+			CameraDeltaRotation.Pitch += 32.0 * DeltaTime * aLookUp;
+		}
+	}
+	else  {
+	    ViewRotation = Rotation;
+		if ( Pawn != None && Pawn.Physics != PHYS_Flying )  {
+			// Ensure we are not setting the pawn to a rotation beyond its desired
+			if ( Pawn.DesiredRotation.Roll < 65535 && (ViewRotation.Roll < Pawn.DesiredRotation.Roll || ViewRotation.Roll > 0) )
+				ViewRotation.Roll = 0;
+			else if ( Pawn.DesiredRotation.Roll > 0 && (ViewRotation.Roll > Pawn.DesiredRotation.Roll || ViewRotation.Roll < 65535))
+				ViewRotation.Roll = 0;
+		}
+
+		DesiredRotation = ViewRotation; //save old rotation
+		TurnTarget = None;
+		bRotateToDesired = False;
+		bSetTurnRot = False;
+		ViewRotation.Yaw += 32.0 * DeltaTime * aTurn;
+		ViewRotation.Pitch += 32.0 * DeltaTime * aLookUp;
+
+		if ( Pawn != None ) {
+			if ( Pawn.Weapon != None && Level.TimeSeconds < StopRecoilTime )  {
+				ViewRotation.Yaw += Round( float(RecoilRotator.Yaw) / RecoilSpeed * DeltaTime );
+				ViewRotation.Pitch += Round( float(RecoilRotator.Pitch) / RecoilSpeed * DeltaTime );
+			}
+			ViewRotation.Pitch = Pawn.LimitPitch(ViewRotation.Pitch);
+		}
+
+		SetRotation(ViewRotation);
+		ViewShake(deltaTime);
+		ViewFlash(deltaTime);
+
+		NewRotation = ViewRotation;
+		if ( !bRotateToDesired && Pawn != None && (!bFreeCamera || !bBehindView) )
+			Pawn.FaceRotation(NewRotation, deltatime);
+	}
+}
+
+// Set a new recoil amount
+simulated function SetRecoil(rotator NewRecoilRotation, float NewRecoilSpeed)
+{
+	RecoilRotator += NewRecoilRotation;
+	RecoilSpeed = NewRecoilSpeed;
+	StopRecoilTime = Level.TimeSeconds + NewRecoilSpeed;
+}
+
 //[block] View Shakers
 /* ShakeView()
 Call this function to shake the player's view
@@ -1516,7 +1611,7 @@ function HandleWalking()
 	if ( UM_HumanPawn(Pawn) == None )
 		Return;
 
-    if ( UM_HumanPawn(Pawn).bAimingRifle )  {
+	if ( UM_HumanPawn(Pawn).bAimingRifle )  {
 		bSprint = 0;
 		UM_HumanPawn(Pawn).SetWalking( True );
 		UM_HumanPawn(Pawn).SetSprinting( False );

@@ -1097,7 +1097,8 @@ Begin:
 	GoToState('');
 }
 
-state KnockDown // Knocked
+// Knocked
+state KnockDown
 {
 	function bool ShouldChargeFromDamage()
 	{
@@ -1105,7 +1106,7 @@ state KnockDown // Knocked
 	}
 
 Begin:
-	if( Health > 0 )  {
+	if ( Health > 0 )  {
 		Sleep(GetAnimDuration('KnockDown'));
 		CloakBoss();
 		PlaySound(SaveMeSound, SLOT_Misc, 2.0,,500.0);

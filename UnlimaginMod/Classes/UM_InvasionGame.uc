@@ -17,6 +17,7 @@
 	Comment:		 
 ==================================================================================*/
 class UM_InvasionGame extends UM_BaseGameInfo
+	DependsOn(UM_BaseObject)
 	config;
 
 #exec OBJ LOAD FILE=KillingFloorTextures.utx
@@ -57,37 +58,37 @@ var		config		bool						bBeginMatchWithShopping;
 var					range						InitialShoppingTime;
 
 // Normal Wave Data
-var					int							InitialWaveNum;
-var					array<IRange>				WaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-var					array<IRandRange>			WaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
-var					array<FRandRange>			WaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
-var					array<int>					WaveSquadsSpawnEndTime;	// Time when level will stop to spawn new squads at the end of this wave (in seconds)
-var					array<float>				WaveDifficulty;		// Used for the Bot Difficulty
-var					array<int>					WaveStartDelay;		// This wave start time out in seconds
-var					array<FRandRange>			WaveDuration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
-var					array<range>				WaveBreakTime;			// Shopping time after this wave in seconds
-var					array<range>				WaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
-var					array<IRange>				WaveStartingCash;		// Random starting cash on this wave
-var					array<IRange>				WaveMinRespawnCash;		// Random min respawn cash on this wave
-var					array<range>				WaveDeathCashModifier;	// Death cash penalty on this wave (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+var					int								InitialWaveNum;
+var					array<UM_BaseObject.IRange>		WaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+var					array<UM_BaseObject.IRandRange>	WaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+var					array<UM_BaseObject.FRandRange>	WaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
+var					array<int>						WaveSquadsSpawnEndTime;	// Time when level will stop to spawn new squads at the end of this wave (in seconds)
+var					array<float>					WaveDifficulty;		// Used for the Bot Difficulty
+var					array<int>						WaveStartDelay;		// This wave start time out in seconds
+var					array<UM_BaseObject.FRandRange>	WaveDuration;		// Wave duration in minutes (all) (Min and RandMin - MinGameDifficulty, Max and RandMax - MaxGameDifficulty)
+var					array<range>					WaveBreakTime;			// Shopping time after this wave in seconds
+var					array<range>					WaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
+var					array<UM_BaseObject.IRange>		WaveStartingCash;		// Random starting cash on this wave
+var					array<UM_BaseObject.IRange>		WaveMinRespawnCash;		// Random min respawn cash on this wave
+var					array<range>					WaveDeathCashModifier;	// Death cash penalty on this wave (Min - MinGameDifficulty, Max - MaxGameDifficulty)
 
 // Boss Wave Data
 var					int							BossWaveNum;
-var					IRange						BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
-var					IRandRange					BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
-var					FRandRange					BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
+var					UM_BaseObject.IRange		BossWaveAliveMonsters;		// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers or MaxGameDifficulty)
+var					UM_BaseObject.IRandRange	BossWaveMonsterSquadSize;	// (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty).  RandMin and RandMax also sets the random +/- squad size modifier.
+var					UM_BaseObject.FRandRange	BossWaveSquadsSpawnPeriod;	// Squads Spawn Period in seconds (Min - MinHumanPlayer and MinGameDifficulty, Max - MaxHumanPlayers and MaxGameDifficulty). RandMin and RandMax also sets the random +/- spawn period modifier.
 var					float						BossWaveDifficulty;		// Used for the Bot Difficulty
 var					int							BossWaveStartDelay;		// This wave start time out in seconds
 var					range						BossWaveDoorsRepairChance;	// Chance to repair some of the doors on this wave (0.0 - no repair, 1.0 - repair all doors) (Min - MinGameDifficulty, Max - MaxGameDifficulty)
-var					IRange						BossWaveStartingCash;		// Random starting cash on this wave
-var					IRange						BossWaveMinRespawnCash;		// Random min respawn cash on this wave
+var					UM_BaseObject.IRange		BossWaveStartingCash;		// Random starting cash on this wave
+var					UM_BaseObject.IRange		BossWaveMinRespawnCash;		// Random min respawn cash on this wave
 
 // Monsters
 var		export	array<UM_InvasionMonsterData>	Monsters;
 // BossMonsterClass
 var()				string						BossMonsterClassName;
-var()				class<UM_BaseMonster>			BossMonsterClass;
-var		transient	UM_BaseMonster					BossMonster;
+var()				class<UM_BaseMonster>		BossMonsterClass;
+var		transient	UM_BaseMonster				BossMonster;
 
 var		config		bool						bShowBossGrandEntry;
 var		config		bool						bShowBossDeath;
@@ -95,7 +96,7 @@ var		transient	bool						bNeedToSpawnBoss;
 var		transient	bool						bBossKilled;
 
 // Spawned monster list
-var		transient	array<UM_BaseMonster>			AliveMonsterList;
+var		transient	array<UM_BaseMonster>		AliveMonsterList;
 
 var					int							BulidSquadIterationLimit;
 
@@ -118,6 +119,9 @@ var		transient	int							NextMonsterSquadSize;
 var		transient	int							CurrentWaveDuration, WaveElapsedTime;
 var		transient	float						CurrentDoorsRepairChance;
 
+var		transient	float						StopWaveCountDownTime;
+var					float						KillingWaveCountDownExtensionTime;
+
 // ZedSpawnListUpdate
 var					float						ZedSpawnListUpdateDelay;
 var		transient	float						NextZedSpawnListUpdateTime;
@@ -130,9 +134,9 @@ var					float						JammedMonstersCheckDelay;
 var					float						SpawningVolumeUpdateDelay;
 var		transient	float						NextSpawningVolumeUpdateTime;
 
-// Lerp Modifiers
-var					float						LerpNumPlayersModifier;
-var					float						LerpGameDifficultyModifier;
+// Modifiers to calculating Dynamic Parameters
+var					float						NumPlayersModifier;
+var					float						GameDifficultyModifier;
 
 var					float						ZEDTimeKillSlowMoChargeBonus;
 
@@ -337,12 +341,12 @@ function UpdateDynamicParameters()
 	local	int		i;
 	local	float	MidModif;
 	
-	MidModif = (LerpNumPlayersModifier + LerpGameDifficultyModifier) * 0.5;
+	MidModif = (NumPlayersModifier + GameDifficultyModifier) * 0.5;
 	
 	// Normal Wave
 	if ( WaveNum < FinalWave )  {
 		// MaxAliveMonsters
-		MaxAliveMonsters = Round( Lerp(FMin((LerpNumPlayersModifier + LerpGameDifficultyModifier), 1.0), float(WaveAliveMonsters[WaveNum].Min), float(WaveAliveMonsters[WaveNum].Max)) );
+		MaxAliveMonsters = Round( Lerp(FMin((NumPlayersModifier + GameDifficultyModifier), 1.0), float(WaveAliveMonsters[WaveNum].Min), float(WaveAliveMonsters[WaveNum].Max)) );
 		// CurrentMonsterSquadSize
 		CurrentMonsterSquadSize = Round( Lerp(MidModif, float(WaveMonsterSquadSize[WaveNum].Min), float(WaveMonsterSquadSize[WaveNum].Max)) );
 		CurrentMonsterSquadRandSize = Lerp( MidModif, float(WaveMonsterSquadSize[WaveNum].RandMin), float(WaveMonsterSquadSize[WaveNum].RandMax) );
@@ -352,16 +356,16 @@ function UpdateDynamicParameters()
 		// AdjustedDifficulty
 		AdjustedDifficulty = GameDifficulty * WaveDifficulty[WaveNum];
 		// CurrentWaveDuration
-		CurrentWaveDuration = Round( Lerp(LerpGameDifficultyModifier, WaveDuration[WaveNum].Min, WaveDuration[WaveNum].Max) * 60.0 + Lerp(LerpGameDifficultyModifier, WaveDuration[WaveNum].RandMin, WaveDuration[WaveNum].RandMax) * (120.0 * FRand() - 60.0) );
+		CurrentWaveDuration = Round( Lerp(GameDifficultyModifier, WaveDuration[WaveNum].Min, WaveDuration[WaveNum].Max) * 60.0 + Lerp(GameDifficultyModifier, WaveDuration[WaveNum].RandMin, WaveDuration[WaveNum].RandMax) * (120.0 * FRand() - 60.0) );
 		// CurrentDoorsRepairChance
-		CurrentDoorsRepairChance = Lerp( LerpGameDifficultyModifier, WaveDoorsRepairChance[WaveNum].Min, WaveDoorsRepairChance[WaveNum].Max );
+		CurrentDoorsRepairChance = Lerp( GameDifficultyModifier, WaveDoorsRepairChance[WaveNum].Min, WaveDoorsRepairChance[WaveNum].Max );
 		// DeathCashModifier
-		DeathCashModifier = Lerp( LerpGameDifficultyModifier, WaveDeathCashModifier[WaveNum].Min, WaveDeathCashModifier[WaveNum].Max );
+		DeathCashModifier = Lerp( GameDifficultyModifier, WaveDeathCashModifier[WaveNum].Min, WaveDeathCashModifier[WaveNum].Max );
 	}
 	// BossWave
 	else  {
 		// MaxAliveMonsters
-		MaxAliveMonsters = Round( Lerp(FMin((LerpNumPlayersModifier + LerpGameDifficultyModifier), 1.0), float(BossWaveAliveMonsters.Min), float(BossWaveAliveMonsters.Max)) );		
+		MaxAliveMonsters = Round( Lerp(FMin((NumPlayersModifier + GameDifficultyModifier), 1.0), float(BossWaveAliveMonsters.Min), float(BossWaveAliveMonsters.Max)) );		
 		// CurrentMonsterSquadSize
 		CurrentMonsterSquadSize = Round( Lerp(MidModif, float(BossWaveMonsterSquadSize.Min), float(BossWaveMonsterSquadSize.Max)) );
 		CurrentMonsterSquadRandSize = Lerp( MidModif, float(BossWaveMonsterSquadSize.RandMin), float(BossWaveMonsterSquadSize.RandMax) );
@@ -371,7 +375,7 @@ function UpdateDynamicParameters()
 		// AdjustedDifficulty
 		AdjustedDifficulty = GameDifficulty * BossWaveDifficulty;
 		// CurrentDoorsRepairChance
-		CurrentDoorsRepairChance = Lerp( LerpGameDifficultyModifier, BossWaveDoorsRepairChance.Min, BossWaveDoorsRepairChance.Max );
+		CurrentDoorsRepairChance = Lerp( GameDifficultyModifier, BossWaveDoorsRepairChance.Min, BossWaveDoorsRepairChance.Max );
 	}
 	
 	// NextMonsterSquadSize
@@ -385,14 +389,14 @@ function UpdateDynamicParameters()
 function NotifyGameDifficultyChanged()
 {
 	// Modifier for the Lerp function (0.0 - 1.0)
-	LerpGameDifficultyModifier = (GameDifficulty - MinGameDifficulty) / (MaxGameDifficulty - MinGameDifficulty);
+	GameDifficultyModifier = (GameDifficulty - MinGameDifficulty) / (MaxGameDifficulty - MinGameDifficulty);
 	UpdateDynamicParameters();
 }
 
 function NotifyNumPlayersChanged()
 {
 	// Modifier for the Lerp function (0.0 - 1.0)
-	LerpNumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
+	NumPlayersModifier = float(NumActivePlayers + NumBots - MinHumanPlayers) / float(MaxHumanPlayers - MinHumanPlayers);
 	UpdateDynamicParameters();
 }
 
@@ -1246,7 +1250,7 @@ state WaveInProgress
 		
 		IncreaseElapsedTime();
 		++WaveElapsedTime;
-		if ( WaveCountDown > 0 )
+		if ( WaveCountDown > 0 && Level.TimeSeconds < StopWaveCountDownTime )
 			DecreaseWaveCountDown();
 		// End Wave
 		if ( WaveCountDown < 1 )  {
@@ -1424,11 +1428,18 @@ state BossWaveInProgress
 
 function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<DamageType> DamageType )
 {
+	// if Monster was killed
 	if ( MonsterController(Killed) != None || Monster(KilledPawn) != None )  {
 		--NumMonsters;
 		++ZombiesKilled;
 		if ( KFGameReplicationInfo(GameReplicationInfo) != None )
 			KFGameReplicationInfo(GameReplicationInfo).MaxMonsters = NumMonsters;
+		
+		if ( Monster(KilledPawn) == None )
+			KilledPawn = Killed.Pawn;
+		
+		if ( MonsterController(Killed) == None )
+			Killed = KilledPawn.Controller;
 		
 		if ( PlayerController(Killer) != None )  {
 			if ( !bDidTraderMovingMessage )  {
@@ -1479,8 +1490,17 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 			}
 		}
 		
-		if ( Class<Monster>(KilledPawn.Class) != None )
+		if ( Class<Monster>(KilledPawn.Class) != None )  {
 			LastKilledMonsterClass = Class<Monster>(KilledPawn.Class);
+			
+			if ( StopWaveCountDownTime < Level.TimeSeconds )
+				StopWaveCountDownTime = Level.TimeSeconds;
+			
+			if ( Class<UM_BaseMonster>(KilledPawn.Class) != None )  {
+				StopWaveCountDownTime += Class<UM_BaseMonster>(KilledPawn.Class).KilledWaveCountDownExtensionTime;
+			else
+				StopWaveCountDownTime += KillingWaveCountDownExtensionTime;
+		}
 	}
 	
 	Super(DeathMatch).Killed( Killer, Killed, KilledPawn, DamageType );
@@ -1581,10 +1601,10 @@ defaultproperties
 	 bSaveSpectatorScores=True
 	 
 	 //[block] Set Modifiers to default values here
-	 LerpNumPlayersModifier=1.0
-	 LerpGameDifficultyModifier=1.0
+	 NumPlayersModifier=1.0
+	 GameDifficultyModifier=1.0
 	 //[end]
-	 
+	 KillingWaveCountDownExtensionTime=4.0
 	 BulidSquadIterationLimit=400
 	 MinSquadSpawnCheckDelay=0.1
 	 MaxMonsters=1000

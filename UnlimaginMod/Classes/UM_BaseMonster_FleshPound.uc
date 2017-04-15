@@ -611,7 +611,8 @@ simulated event Destroyed()
 
 defaultproperties
 {
-	 KnockedDownHealthPct=0.8
+	 KnockedDownHealthPct=0.75
+	 KilledWaveCountDownExtensionTime=12.0
 	 
 	 ImpressiveKillChance=1.0
 	 

@@ -584,6 +584,7 @@ defaultproperties
 {
 	 ImpressiveKillChance=0.15
 	 HeadShotSlowMoChargeBonus=0.25
+	 KilledWaveCountDownExtensionTime=5.0
 	 
 	 BileExplosion=Class'KFMod.BileExplosion'
      BileExplosionHeadless=Class'KFMod.BileExplosionHeadless'

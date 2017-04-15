@@ -20,7 +20,7 @@ class UM_BaseSMGFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-	 RecoilVelocityScale=2.0
+	 RecoilVelocityScale=1.5
 	 //Instigator MovingSpeedScale
 	 FirstShotMovingSpeedScale=0.800000
 	 FireMovingSpeedScale=0.600000

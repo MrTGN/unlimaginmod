@@ -22,24 +22,34 @@ class UM_BaseObject extends Object
 //========================================================================
 //[block] Variables
 
+// Int Range
+struct IRange
+{
+	var()	config	int		Min;
+	var()	config	int		Max;
+};
+
+struct IRandRange
+{
+	var()	config	int		Min;
+	var()	config	int		RandMin;
+	var()	config	int		Max;
+	var()	config	int		RandMax;
+};
+
+struct FRandRange
+{
+	var()	config	float	Min;
+	var()	config	float	RandMin;
+	var()	config	float	Max;
+	var()	config	float	RandMax;
+};
+
 //[end] Varibles
 //====================================================================
 
 //========================================================================
 //[block] Functions
-
-simulated static final function float GetExtraRandRangeFloat( 
-	range 	FR, 
-	float	ExtraRangeChance,
-	range	EFR )
-{
-	// Not Extra Range
-	if ( FRand() > ExtraRangeChance )
-		Return Lerp( FRand(), FR.Min, FR.Max );
-	// Extra Range
-	else
-		Return Lerp( FRand(), EFR.Min, EFR.Max );
-}
 
 //[end] Functions
 //====================================================================

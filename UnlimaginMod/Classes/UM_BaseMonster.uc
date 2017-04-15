@@ -85,9 +85,14 @@ var					float				ImpressiveKillDuration;
 
 var		transient	float				LastSeenCheckTime;
 
+var					float				KilledWaveCountDownExtensionTime;
+
 // Headshot debugging
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
 var					vector              LastServerHeadLocation;
+
+// PlayHit Delays
+var		transient	float				NextPainTime, NextPainAnimTime, NextPainSoundTime;
 
 // Animation
 var					name				RunAnims[8];
@@ -97,7 +102,7 @@ var		transient	bool				bKnockedDown;
 var					float				KnockedDownHealthPct;
 
 // Decapitation
-var		transient	bool				bHeadlessAnimated, bBleedOut;
+var		transient	bool				bHeadlessAnimated, bBleedOut, bDecapitationPlayed;
 var					name				HeadlessIdleAnim;
 
 // CrispSkin
@@ -766,7 +771,7 @@ function StandaloneRelevantCheck()
 				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
 					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
 					LastSeenOrRelevantTime = Level.TimeSeconds;
-					SetGroundSpeed(GetOriginalGroundSpeed());
+					SetGroundSpeed(OriginalGroundSpeed);
 				}
 				else
 					SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
@@ -775,7 +780,7 @@ function StandaloneRelevantCheck()
 	}
 	else  {
 		LastSeenOrRelevantTime = Level.TimeSeconds;
-		SetGroundSpeed(GetOriginalGroundSpeed());
+		SetGroundSpeed(OriginalGroundSpeed);
 	}
 }
 
@@ -793,7 +798,7 @@ function ListenServerRelevantCheck()
 				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
 					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
 					LastSeenOrRelevantTime = Level.TimeSeconds;
-					SetGroundSpeed(GetOriginalGroundSpeed());
+					SetGroundSpeed(OriginalGroundSpeed);
 				}
 				else
 					SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
@@ -802,7 +807,7 @@ function ListenServerRelevantCheck()
 	}
 	else  {
 		LastSeenOrRelevantTime = Level.TimeSeconds;
-		SetGroundSpeed(GetOriginalGroundSpeed());
+		SetGroundSpeed(OriginalGroundSpeed);
 	}
 }
 
@@ -1456,7 +1461,7 @@ simulated function ProcessHitFX()
 {
 	local	Coords				boneCoords;
 	local	class<xEmitter>		HitEffects[4];
-	local	int					i,j;
+	local	int					i, j;
 	local	float				GibPerterbation;
 
 	if ( Level.NetMode == NM_DedicatedServer || bSkeletized || Mesh == SkeletonMesh)  {
@@ -1471,7 +1476,7 @@ simulated function ProcessHitFX()
 			Return;
 		}
 
-		if ( HitFX[SimHitFxTicker].damtype == None || (Level.bDropDetail && (Level.TimeSeconds - LastRenderTime > 3) && !IsHumanControlled()) )
+		if ( HitFX[SimHitFxTicker].damtype == None || (Level.bDropDetail && (Level.TimeSeconds - LastRenderTime) > 3.0 && !IsHumanControlled()) )
 			continue;
 
 		//log("Processing effects for damtype "$HitFX[SimHitFxTicker].damtype);
@@ -1491,84 +1496,95 @@ simulated function ProcessHitFX()
 		}
 
 		boneCoords = GetBoneCoords( HitFX[SimHitFxTicker].bone );
-		if ( !Level.bDropDetail && !class'GameInfo'.static.NoBlood() && !bSkeletized && !class'GameInfo'.static.UseLowGore() )  {
+		// if UseLowGore() just remove head bone
+		if ( class'GameInfo'.static.UseLowGore() )  {
+			HitFX[SimHitFxTicker].bSever = False;
+			if ( HitFX[SimHitFxTicker].bone == HeadBone && !bHeadGibbed )  {
+				bHeadGibbed = True;
+				if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
+				else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
+				else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
+			}
+		}
+		else if ( !Level.bDropDetail && !class'GameInfo'.static.NoBlood() && !bSkeletized )  {
 			//AttachEmitterEffect( BleedingEmitterClass, HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
-
 			HitFX[SimHitFxTicker].damtype.static.GetHitEffects( HitEffects, Health );
 			// don't attach effects under water
 			if ( !PhysicsVolume.bWaterVolume )  {
-				for ( i = 0; i < ArrayCount(HitEffects); i++ )  {
+				for ( i = 0; i < ArrayCount(HitEffects); ++i )  {
 					if ( HitEffects[i] == None )
 						continue;
 					AttachEffect( HitEffects[i], HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
 				}
 			}
 		}
+		
+		if ( !HitFX[SimHitFxTicker].bSever )
+			Continue; // Skip if UseLowGore()
+				
+		GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
+		switch( HitFX[SimHitFxTicker].bone )
+		{
+			case 'obliterate':
+				Break;
 
-		HitFX[SimHitFxTicker].bSever = class'GameInfo'.static.UseLowGore();
-		if ( HitFX[SimHitFxTicker].bSever )  {
-			GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
-			switch( HitFX[SimHitFxTicker].bone )
-			{
-				case 'obliterate':
-					break;
+			case LeftThighBone:
+				if ( bLeftLegGibbed )
+					Break;
+				bLeftLegGibbed = True;
+				SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				Break;
 
-				case LeftThighBone:
-					if ( !bLeftLegGibbed )  {
-	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bLeftLegGibbed = True;
-					}
-					break;
+			case RightThighBone:
+				if ( bRightLegGibbed )
+					Break;
+				bRightLegGibbed = True;
+				SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				Break;
 
-				case RightThighBone:
-					if ( !bRightLegGibbed )  {
-	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bRightLegGibbed = True;
-					}
-					break;
+			case LeftFArmBone:
+				if ( bLeftArmGibbed )
+					Break;
+				bLeftArmGibbed = True;
+				SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;;
+				Break;
 
-				case LeftFArmBone:
-					if ( !bLeftArmGibbed )  {
-	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;;
-	                    bLeftArmGibbed=true;
-					}
-					break;
+			case RightFArmBone:
+				if ( bRightArmGibbed )
+					Break;
+				bRightArmGibbed = True;
+				SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
+				KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
+				Break;
 
-				case RightFArmBone:
-					if ( !bRightArmGibbed )  {
-	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bRightArmGibbed=true;
-					}
-					break;
-
-				case 'head':
-					if( !bHeadGibbed )  {
-						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
-
-					  	bHeadGibbed = True;
-				  	}
-					break;
-			}
-
-
-			if ( HitFX[SimHitFXTicker].bone != 'Spine' && HitFX[SimHitFXTicker].bone != FireRootBone && HitFX[SimHitFXTicker].bone != 'head' && Health < 1 )
-				HideBone(HitFX[SimHitFxTicker].bone);
+			case HeadBone:
+				if ( bHeadGibbed )
+					Break;
+				bHeadGibbed = True;
+				if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false);
+				else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, false, true);
+				else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
+					DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, true);
+				Break;
 		}
+
+
+		if ( HitFX[SimHitFXTicker].bone != 'Spine' && HitFX[SimHitFXTicker].bone != FireRootBone && HitFX[SimHitFXTicker].bone != 'head' && Health < 1 )
+			HideBone(HitFX[SimHitFxTicker].bone);
 	}
 }
 
@@ -1918,9 +1934,9 @@ simulated function UnSetZappedBehavior()
 	if ( Role == Role_Authority )  {
 		Intelligence = default.Intelligence;
 		if ( bBurnified )
-			SetGroundSpeed(GetOriginalGroundSpeed() * 0.80);
+			SetGroundSpeed(OriginalGroundSpeed * 0.80);
 		else
-			SetGroundSpeed(GetOriginalGroundSpeed());
+			SetGroundSpeed(OriginalGroundSpeed);
 		AirSpeed = default.AirSpeed;
 		WaterSpeed = default.WaterSpeed;
 		// Set normal accuracy
@@ -1985,7 +2001,7 @@ simulated function UnSetBurningBehavior()
 	if ( Role == Role_Authority )  {
 		Intelligence = default.Intelligence;
 		if ( !bZapped )  {
-			SetGroundSpeed(GetOriginalGroundSpeed());
+			SetGroundSpeed(OriginalGroundSpeed);
 			AirSpeed = default.AirSpeed;
 			WaterSpeed = default.WaterSpeed;
 		}
@@ -2041,11 +2057,11 @@ simulated event Tick( float DeltaTime )
 		if ( Level.NetMode == NM_Standalone )
 			StandaloneRelevantCheck();
 		else if ( Level.NetMode == NM_DedicatedServer )  {
-			if ( Level.TimeSeconds - LastReplicateTime > 0.5 )
+			if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 )
 				SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
 			else  {
 				LastSeenOrRelevantTime = Level.TimeSeconds;
-				SetGroundSpeed(GetOriginalGroundSpeed());
+				SetGroundSpeed(OriginalGroundSpeed);
 			}
 		}
 		else if ( Level.NetMode == NM_ListenServer )
@@ -2142,22 +2158,9 @@ function KickActor()
 	bShotAnim = True;
 }
 
-function bool FlipOver() {}
-
-// High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage )
+function bool FlipOver()
 {
-	if ( UM_MonsterController(Controller) == None || !bCanBeKnockedDown || Health < 1 || Damage < int(float(Default.Health) * KnockedDownHealthPct) )
-		Return False;
-	
-	//if ( Physics == PHYS_Falling )
-		//SetPhysics(PHYS_Walking);
-
-	bShotAnim = True;
-	UM_MonsterController(Controller).GotoState('KnockDown');
-	SetAnimAction(KnockDownAnim);
-	
-	Return True;
+	Return False;
 }
 
 simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> DamageType, Rotator r )
@@ -2475,7 +2478,6 @@ function RemoveHead()
 {
 	bDecapitated = True;
 	DECAP = True;
-	bPlayDecapitationSound = True;
 	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
@@ -2549,7 +2551,7 @@ function PlayDirectionalHit(Vector HitLoc)
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
 	// No anim if we're burning, we're already playing an anim
-	if ( !bKnockedDown && Level.TimeSeconds >= (LastPainAnim + MinTimeBetweenPainAnims) && !(bCrispified && bBurnified) )  {
+	if ( !bKnockedDown && Level.TimeSeconds >= NextPainAnimTime && !(bCrispified && bBurnified) )  {
 		if ( Damage > 4 )
 			PlayDirectionalHit(HitLocation);
 		else if (DamageType.name == 'DamTypeShotgun' || DamageType.name == 'DamTypeDBShotgun'
@@ -2575,13 +2577,13 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 			PlayDirectionalHit(HitLocation);
 		else if ( DamageType.name == 'DamTypeCrossbowHeadshot' || DamageType.name == 'DamTypeCrossbuzzsaw' || DamageType.name == 'DamTypeCrossbowHeadShot' )
 			PlayDirectionalHit(HitLocation);
-		LastPainAnim = Level.TimeSeconds;
+		NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
 	}
 
-	if ( (Level.TimeSeconds - LastPainSound) < MinTimeBetweenPainSounds )
+	if ( Level.TimeSeconds < NextPainSoundTime )
 		Return;
 
-	LastPainSound = Level.TimeSeconds;
+	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
 	if ( class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )
 		PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400);
 }
@@ -2633,7 +2635,8 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 		Return;
 	}
 	
-	if ( bDecapitated ) {
+	if ( bDecapitated && !bDecapitationPlayed )  {
+		bDecapitationPlayed = True;
 		if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
 			Hearer = PlayerController(InstigatedBy.Controller);
 		// makes playercontroller hear much better
@@ -2647,20 +2650,40 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 		// makes playercontroller hear much better
 		if ( Hearer != None )
 			Hearer.bAcuteHearing = False;
-	}	
-	else if ( (Level.TimeSeconds - LastPainTime) > 0.1 )  {
-		if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
-			Hearer = PlayerController(InstigatedBy.Controller);
-		// makes playercontroller hear much better
-		if ( Hearer != None )
-			Hearer.bAcuteHearing = True;
-		PlayTakeHit(HitLocation, Damage, damageType);
-		// makes playercontroller hear much better
-		if ( Hearer != None )
-			Hearer.bAcuteHearing = False;
 		
-		LastPainTime = Level.TimeSeconds;
-	}
+		Return;
+	}	
+	
+	if ( Level.TimeSeconds < NextPainTime )
+		Return;
+	
+	if ( InstigatedBy != None && DamageType != None && DamageType.default.bDirectDamage )
+		Hearer = PlayerController(InstigatedBy.Controller);
+	// makes playercontroller hear much better
+	if ( Hearer != None )
+		Hearer.bAcuteHearing = True;
+	PlayTakeHit(HitLocation, Damage, damageType);
+	// makes playercontroller hear much better
+	if ( Hearer != None )
+		Hearer.bAcuteHearing = False;
+	
+	NextPainTime = Level.TimeSeconds + 0.1;
+}
+
+// High damage was taken, make em fall over.
+function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+{
+	Return UM_MonsterController(Controller) != None && bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 && Damage >= int(HealthMax * KnockedDownHealthPct);
+}
+
+function PlayKnockDown()
+{
+	//if ( Physics == PHYS_Falling )
+		//SetPhysics(PHYS_Walking);
+	
+	bShotAnim = True;
+	SetAnimAction(KnockDownAnim);
+	UM_MonsterController(Controller).GotoState('KnockedDown');
 }
 
 // New Hit FX for Zombies!
@@ -2676,7 +2699,8 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 	if ( Damage < 1 )
 		Return;
 	
-	CheckForKnockDown(Damage);	
+	if ( CheckForKnockDown(Damage, DamageType) )
+		PlayKnockDown();
 	// Call the modified version of the original Pawn playhit
 	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
 
@@ -2836,7 +2860,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
 			RemoveHead();
-			
 			// Bonuses
 			if ( UM_HumanPawn(instigatedBy) != None )  {
 				// SlowMoCharge
@@ -2913,7 +2936,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	}
 	MakeNoise(1.0);
 	bBackstabbed = False;
-	bPlaying
 	
 	Return Damage;
 }
@@ -3005,7 +3027,7 @@ simulated event Timer()
 	LastBurnDamage = 0;
 	HeatAmount = 0;
 	if ( !bZapped )
-		SetGroundSpeed(default.GroundSpeed);
+		SetGroundSpeed(OriginalGroundSpeed);
 	StopBurnFX();
 	SetTimer(0.0, False);  // Disable timer
 }
@@ -3065,6 +3087,8 @@ defaultproperties
 	 
 	 ImpressiveKillChance=0.03
 	 ImpressiveKillDuration=4.0
+	 
+	 KilledWaveCountDownExtensionTime=4.0
 	 
 	 HealthMax=150.0
 	 Health=150

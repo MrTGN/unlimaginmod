@@ -20,33 +20,33 @@ class UM_BaseAssaultRifleFire extends UM_BaseAutomaticWeaponFire
 
 defaultproperties
 {
-     RecoilVelocityScale=2.5
+     RecoilVelocityScale=2.0
 	 //Instigator MovingSpeedScale
-	 FirstShotMovingSpeedScale=0.750000
-	 FireMovingSpeedScale=0.500000
+	 FirstShotMovingSpeedScale=0.75
+	 FireMovingSpeedScale=0.5
 	 //[block] Bonuses
 	 //Recoil
-	 AimingVerticalRecoilBonus=0.950000
-	 AimingHorizontalRecoilBonus=0.990000
+	 AimingVerticalRecoilBonus=0.95
+	 AimingHorizontalRecoilBonus=0.99
 	 //Spread
-	 SpreadCooldownTime=0.500000
-	 AimingSpreadBonus=0.900000
-	 CrouchedSpreadBonus=0.950000
-	 SemiAutoSpreadBonus=0.850000
-	 BurstSpreadBonus=0.950000
+	 SpreadCooldownTime=0.5
+	 AimingSpreadBonus=0.9
+	 CrouchedSpreadBonus=0.95
+	 SemiAutoSpreadBonus=0.85
+	 BurstSpreadBonus=0.95
 	 //AimError
-     AimingAimErrorBonus=0.600000
-     CrouchedAimErrorBonus=0.850000
+     AimingAimErrorBonus=0.6
+     CrouchedAimErrorBonus=0.85
 	 //ShakeView
-	 AimingShakeBonus=0.950000
+	 AimingShakeBonus=0.95
 	 //Movement
-	 MaxMoveShakeScale=1.030000
-	 MovingAimErrorScale=4.000000
+	 MaxMoveShakeScale=1.03
+	 MovingAimErrorScale=4.0
 	 // InstigatorMovingSpeed = 200
 	 // Total MaxSpread = MaxSpread + (200 * MovingSpreadScale)
-	 MovingSpreadScale=0.000800
+	 MovingSpreadScale=0.0008
 	 //[end]
-	 RecoilRate=0.080000
-	 Spread=0.009000
-	 MaxSpread=0.062000
+	 RecoilRate=0.08
+	 Spread=0.009
+	 MaxSpread=0.062
 }

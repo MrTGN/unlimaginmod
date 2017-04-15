@@ -394,7 +394,8 @@ defaultproperties
 	 ProjPerFire=1
 	 RoundsInBurst=3
 	 RecoilRate=0.090000
-	 RecoilVelocityScale=3.000000
+	 RecoilLeftChance=0.45
+	 RecoilVelocityScale=2.0
 	 BotRefireRate=0.100000
 	 AimError=30.000000
 	 //Spread

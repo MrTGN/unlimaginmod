@@ -18,7 +18,7 @@
 					 spawn time, wave limits and restrictions.
 ==================================================================================*/
 class UM_InvasionMonsterData extends UM_BaseObject
-	DependsOn(UM_BaseGameInfo);
+	DependsOn(UM_BaseObject);
 
 //========================================================================
 //[block] Variables
@@ -44,14 +44,14 @@ var					array< class<UM_BaseMonster> >	SpecialMonsterClasses;		// Class of the c
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
 var()				array<Range>					WaveSpawnChance;	// N wave spawn Chance (Min - , Max - )
-var()				array<UM_BaseGameInfo.IRange>	WaveSquadLimit;	// N wave limit per squad (Min - , Max - )
+var()				array<UM_BaseObject.IRange>		WaveSquadLimit;	// N wave limit per squad (Min - , Max - )
 var()				array<DeltaData>				WaveDeltaLimit;		// N wave Limit per DeltaTime
 var()				bool							bNoWaveDeltaLimit;
 
 // Boss wave limits
 var()				bool							bNoBossWaveRestrictions;
 var()				Range							BossWaveSpawnChance;
-var()				UM_BaseGameInfo.IRange			BossWaveSquadLimit;
+var()				UM_BaseObject.IRange			BossWaveSquadLimit;
 var()				DeltaData						BossWaveDeltaLimit;
 var()				bool							bNoBossWaveDeltaLimit;
 

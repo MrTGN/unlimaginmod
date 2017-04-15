@@ -33,19 +33,21 @@ defaultproperties
 	 FlashEmitterClasses(0)=Class'ROEffects.MuzzleFlash1stSTG'
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
+	 bRandomPitchFireSound=False
+	 TransientSoundVolume=3.800000
+     TransientSoundRadius=250.000000
 	 //Animations
 	 FireAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireLoopAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
+	 bPawnRapidFireAnim=True
+	 // Recoil
      RecoilRate=0.070000
-     maxVerticalRecoilAngle=232
-     maxHorizontalRecoilAngle=124
-     bRecoilRightOnly=True
-     bRandomPitchFireSound=False
-     bPawnRapidFireAnim=True
-     TransientSoundVolume=3.800000
-     TransientSoundRadius=250.000000
+	 RecoilUpRot=(Min=164,Max=234)
+	 RecoilLeftChance=0.0
+     RecoilRightRot=(Min=80,Max=124)
+     
      TweenTime=0.025000
      FireForce="AssaultRifleFire"
      FireRate=0.080000

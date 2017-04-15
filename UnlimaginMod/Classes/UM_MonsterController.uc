@@ -550,8 +550,6 @@ ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
 		if ( Pawn != None )  {
 			Pawn.AccelRate = Pawn.Default.AccelRate;
 			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-			if ( UM_BaseMonster(Pawn) != None )
-				UM_BaseMonster(Pawn).bKnockedDown = False;
 		}
 		bUseFreezeHack = False;
 	}
@@ -726,9 +724,10 @@ state ZombieHunt
 
 function bool EnemyThreatChanged()
 {
-	local	UM_BaseGameInfo	GameInfo;
-	local	KFHumanPawn		C;
-	local	float			NewThreat, CurrentThreat;
+	local	UM_BaseGameInfo		GameInfo;
+	local	UM_HumanPawn		Human;
+	local	float				NewThreat, CurrentThreat;
+	local	byte				i;
 
 	if ( !bUseThreatAssessment )
 		Return False;
@@ -817,13 +816,21 @@ WaitForAnim:
 		SoakStop("STUCK IN KICKING!!!");
 }
 
-state KnockDown
+state KnockedDown
 {
-	ignores SeePlayer,HearNoise,Timer,EnemyNotVisible,NotifyBump,Startle;
+	ignores SeePlayer, HearNoise, Timer, EnemyNotVisible, NotifyBump, Startle;
 
 	// Don't do this in this state
-	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin)  { }
+	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin) { }
 	
+	event AnimEnd(int Channel)
+	{
+		Pawn.AnimEnd(Channel);
+		//if ( !Monster(Pawn).bShotAnim )
+			//WhatToDoNext(99);
+	}
+	
+	/*
 	event Tick( float Delta )
 	{
 		Global.Tick(Delta);
@@ -834,26 +841,56 @@ state KnockDown
 			Pawn.GroundSpeed = 1;
 			Pawn.AccelRate = 0;
 		}
-	}
+	}	*/
+	
 
 Begin:
 	bUseFreezeHack = True;
-	//Pawn.ShouldCrouch(True);
-	if ( UM_BaseMonster(Pawn) != None )
-		UM_BaseMonster(Pawn).bKnockedDown = True;
+	if ( Pawn != None )  {
+		MoveTarget = None;
+		MoveTimer = -1;
+		Pawn.GroundSpeed = 0.0;
+		Pawn.AccelRate = 0.0;
+		Pawn.Acceleration = vect(0.0,0.0,0.0);
+		//Pawn.ShouldCrouch(True);
+		if ( UM_BaseMonster(Pawn) != None )
+			UM_BaseMonster(Pawn).bKnockedDown = True;
+	}
+	FinishAnim(0);
+	//while( KFM.bShotAnim )
+		//Sleep(0.1);
 	
-	while( KFM.bShotAnim )
-		Sleep(0.1);
-
-	WhatToDoNext(152);
+	if ( Pawn != None )  {
+		Pawn.AccelRate = Pawn.Default.AccelRate;
+		if ( UM_BaseMonster(Pawn) != None )  {
+			UM_BaseMonster(Pawn).bKnockedDown = False;
+			UM_BaseMonster(Pawn).SetGroundSpeed(UM_BaseMonster(Pawn).OriginalGroundSpeed);
+		}
+		else
+			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
+		//Pawn.ShouldCrouch(False);
+	}
+	bUseFreezeHack = False;
+	
+	//WhatToDoNext(152);
+	WhatToDoNext(99);
 	if ( bSoaking )
 		SoakStop("STUCK IN KnockDown!!!");
 
+/*
 End:
-	if ( UM_BaseMonster(Pawn) != None )
-		UM_BaseMonster(Pawn).bKnockedDown = False;
 	bUseFreezeHack = False;
-	//Pawn.ShouldCrouch(False);
+	if ( Pawn != None )  {
+		Pawn.AccelRate = Pawn.Default.AccelRate;
+		if ( UM_BaseMonster(Pawn) != None )  {
+			UM_BaseMonster(Pawn).bKnockedDown = False;
+			UM_BaseMonster(Pawn).SetGroundSpeed(UM_BaseMonster(Pawn).OriginalGroundSpeed);
+		}
+		else
+			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
+		//Pawn.ShouldCrouch(False);
+	}
+*/
 }
 
 // State for being scared of something, the bot attempts to move away from it

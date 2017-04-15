@@ -28,7 +28,7 @@ function float UpdateSpread(float NewSpread)
 
 defaultproperties
 {
-	 RecoilVelocityScale=3.0
+	 RecoilVelocityScale=2.5
 	 //[block] Fire Effects
 	 bAttachFlashEmitter=True
 	 bAttachSmokeEmitter=True

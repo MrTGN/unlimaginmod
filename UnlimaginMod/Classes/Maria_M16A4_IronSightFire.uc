@@ -37,9 +37,11 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectM4Rifle'
 	 //[end]
 	 ProjSpawnOffsets(0)=(X=0.000000,Y=-3.000000,Z=-1.000000)
-     RecoilRate=0.065000
-     maxVerticalRecoilAngle=192
-     maxHorizontalRecoilAngle=100
+     // Recoil
+	 RecoilRate=0.065000
+	 VerticalRecoilRot=(Min=142,Max=192)
+     HorizontalRecoilRot=(Min=-96,Max=104)
+	 
      FireRate=0.075000
      AmmoClass=Class'UnlimaginMod.Maria_M16A4Ammo'
      ShakeRotMag=(X=52.000000,Y=50.000000,Z=350.000000)

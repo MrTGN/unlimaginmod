@@ -41,9 +41,11 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectM4Rifle'
 	 //[end]
+	 // Recoil
 	 RecoilRate=0.065000
-     maxVerticalRecoilAngle=192
-     maxHorizontalRecoilAngle=100
+	 VerticalRecoilRot=(Min=142,Max=192)
+     HorizontalRecoilRot=(Min=-94,Max=104)
+	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=1.800000
      TweenTime=0.025000

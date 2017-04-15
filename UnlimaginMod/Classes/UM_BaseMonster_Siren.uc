@@ -385,7 +385,7 @@ simulated function ProcessHitFX()
 defaultproperties
 {
 	 KnockedDownHealthPct=0.8
-	 
+	 KilledWaveCountDownExtensionTime=6.0
 	 ImpressiveKillChance=0.05
 	 
 	 Intelligence=BRAINS_Mammal

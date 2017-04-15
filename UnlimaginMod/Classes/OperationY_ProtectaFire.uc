@@ -28,10 +28,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectBenelli'
 	 //[end]
-	 KickMomentum=(X=-85.000000,Z=15.000000)
-     RecoilRate=0.100000
-     maxVerticalRecoilAngle=1540
-     maxHorizontalRecoilAngle=700
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=900,Max=1400)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=500,Max=700)
+	 RecoilRightRot=(Min=500,Max=700)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      ProjPerFire=10
      bWaitForRelease=True

@@ -27,10 +27,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectShotty'
 	 //[end]
 	 ProjSpawnOffsets(0)=(X=0.000000,Y=-2.000000,Z=-2.000000)
-	 bOnlyLowGravKickMomentum=True
-     KickMomentum=(X=-35.000000,Z=5.000000)
-     maxVerticalRecoilAngle=750
-     maxHorizontalRecoilAngle=420
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=420,Max=760)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=300,Max=380)
+	 RecoilRightRot=(Min=320,Max=400)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      FireSoundRef="KF_AA12Snd.AA12_Fire"
      StereoFireSoundRef="KF_AA12Snd.AA12_FireST"

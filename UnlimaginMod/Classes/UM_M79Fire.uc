@@ -32,8 +32,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=None
 	 //[end]
 	 EffectiveRange=2500.000000
-     maxVerticalRecoilAngle=200
-     maxHorizontalRecoilAngle=50
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=148,Max=200)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=32,Max=48)
+	 RecoilRightRot=(Min=36,Max=50)
+	 
      FireAimedAnims(0)=(Anim="Iron_Fire",Rate=1.000000)
      FireSoundRef="KF_M79Snd.M79_Fire"
      StereoFireSoundRef="KF_M79Snd.M79_FireST"

@@ -40,9 +40,13 @@ defaultproperties
 	 FireEndSoundRef="KF_IJC_HalloweenSnd.ThompsonSMG_Fire_Loop_End_M"
      FireEndStereoSoundRef="KF_IJC_HalloweenSnd.ThompsonSMG_Fire_Loop_End_S"
      AmbientFireSoundRef="KF_IJC_HalloweenSnd.ThompsonSMG_Fire_Loop"
-     RecoilRate=0.080000
-     maxVerticalRecoilAngle=158
-     maxHorizontalRecoilAngle=110
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=102,Max=158)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=72,Max=108)
+	 RecoilRightRot=(Min=76,Max=110)
+	 
      FireSoundRef="KF_IJC_HalloweenSnd.Thompson_Fire_Single_M"
      StereoFireSoundRef="KF_IJC_HalloweenSnd.Thompson_Fire_Single_S"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"

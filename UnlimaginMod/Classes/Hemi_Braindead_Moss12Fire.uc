@@ -35,9 +35,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
 	 //[end]
-	 KickMomentum=(X=-85.000000,Z=15.000000)
-     maxVerticalRecoilAngle=1480
-     maxHorizontalRecoilAngle=900
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=860,Max=1200)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=670,Max=780)
+	 RecoilRightRot=(Min=680,Max=800)
+	 
      FireAimedAnims(0)=(Anim="IronSight_Fire",Rate=0.950000)
 	 FireAnims(0)=(Rate=0.950000)
      ProjPerFire=9

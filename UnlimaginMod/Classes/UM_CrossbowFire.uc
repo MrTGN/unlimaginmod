@@ -21,8 +21,13 @@ defaultproperties
 {
      bDoFiringEffects=False
 	 EffectiveRange=2500.000000
-     maxVerticalRecoilAngle=200
-     maxHorizontalRecoilAngle=50
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=140,Max=180)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=30,Max=50)
+	 RecoilRightRot=(Min=30,Max=50)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      FireSoundRef="KF_XbowSnd.Xbow_Fire"
      NoAmmoSoundRef="KF_XbowSnd.Xbow_DryFire"

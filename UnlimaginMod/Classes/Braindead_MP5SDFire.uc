@@ -48,9 +48,13 @@ defaultproperties
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 //[end]
      bWaitForRelease=False
-	 RecoilRate=0.060000
-     maxVerticalRecoilAngle=124
-     maxHorizontalRecoilAngle=75
+	 // Recoil
+	 RecoilRate=0.065000
+	 RecoilUpRot=(Min=80,Max=120)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=42,Max=68)
+	 RecoilRightRot=(Min=46,Max=74)
+	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=1.820000
      TweenTime=0.025000

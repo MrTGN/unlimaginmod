@@ -19,9 +19,13 @@ defaultproperties
 	 EmptyFireAnims(0)=(Anim="Fire_Empty",Rate=1.000000)
      EmptyFireAimedAnims(0)=(Anim="Fire_Iron_empty",Rate=1.000000)
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=465
-     maxHorizontalRecoilAngle=85
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=220,Max=280)
+	 RecoilLeftChance=0.49
+     RecoilLeftRot=(Min=36,Max=80)
+	 RecoilRightRot=(Min=38,Max=80)
+
      FireSoundRef="Browning_S.shoot_m"
      StereoFireSoundRef="Browning_S.shoot_s"
 	 NoAmmoSoundRef="KF_HandcannonSnd.50AE_DryFire"

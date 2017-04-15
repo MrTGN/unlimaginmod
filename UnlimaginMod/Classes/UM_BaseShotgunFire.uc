@@ -62,7 +62,7 @@ defaultproperties
 	 MovingSpreadScale=1.000000
 	 //[end]
 	 //Booleans
-	 bNoKickMomentum=False
+	 //bNoKickMomentum=False
 	 bChangeProjByPerk=True
 	 bRandomPitchFireSound=True
      //Sounds

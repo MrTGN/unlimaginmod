@@ -1084,10 +1084,12 @@ function UpdateRotation(float DeltaTime, float maxPitch)
 		ViewRotation.Pitch += 32.0 * DeltaTime * aLookUp;
 
 		if ( Pawn != None ) {
-			if ( Pawn.Weapon != None && Level.TimeSeconds < StopRecoilTime )  {
-				ViewRotation.Yaw += Round( float(RecoilRotator.Yaw) / RecoilSpeed * DeltaTime );
+			if ( Pawn.Weapon != None && Level.TimeSeconds <= StopRecoilTime )  {
 				ViewRotation.Pitch += Round( float(RecoilRotator.Pitch) / RecoilSpeed * DeltaTime );
+				ViewRotation.Yaw += Round( float(RecoilRotator.Yaw) / RecoilSpeed * DeltaTime );
 			}
+			else
+				RecoilRotator = rot(0,0,0);
 			ViewRotation.Pitch = Pawn.LimitPitch(ViewRotation.Pitch);
 		}
 

@@ -37,9 +37,13 @@ defaultproperties
 	 FireAimedAnims(0)=(Anim="Iron_Idle",Rate=1.000000) // "Fire_Iron"
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireLoopAimedAnims(0)=(Anim="Iron_Idle",Rate=1.000000)
+	 // Recoil
 	 RecoilRate=0.070000
-     maxVerticalRecoilAngle=475
-     maxHorizontalRecoilAngle=145
+	 RecoilUpRot=(Min=312,Max=406)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=72,Max=116)
+	 RecoilRightRot=(Min=76,Max=124)
+	 
 	 bPawnRapidFireAnim=True
      bWaitForRelease=True
      TransientSoundVolume=4.000000

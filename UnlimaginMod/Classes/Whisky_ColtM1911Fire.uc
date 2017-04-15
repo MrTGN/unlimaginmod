@@ -35,9 +35,13 @@ defaultproperties
      EmptyFireAnims(0)=(Anim="Fire_Last",Rate=1.500000)
 	 FireAnims(0)=(Rate=1.500000)
 	 FireAimedAnims(0)=(Rate=1.500000)
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=550
-     maxHorizontalRecoilAngle=95
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=260,Max=320)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=54,Max=86)
+	 RecoilRightRot=(Min=56,Max=90)
+
      bRandomPitchFireSound=True
      bPawnRapidFireAnim=True
      bWaitForRelease=True

@@ -66,9 +66,13 @@ defaultproperties
 	 FireEndAimedAnims(0)=(Anim="Idle",Rate=1.200000)
 	 FireLoopAnims(0)=(Anim="Idle",Rate=1.200000)
 	 FireLoopAimedAnims(0)=(Anim="Idle",Rate=1.200000)
-     RecoilRate=0.035000
-     maxVerticalRecoilAngle=150
-     maxHorizontalRecoilAngle=110
+	 // Recoil
+	 RecoilRate=0.035000
+	 RecoilUpRot=(Min=80,Max=120)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=46,Max=60)
+	 RecoilRightRot=(Min=48,Max=62)
+	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=15.000000
 	 //TransientSoundRadius=500.000000

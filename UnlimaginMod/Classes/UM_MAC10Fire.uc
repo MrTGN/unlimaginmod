@@ -37,9 +37,13 @@ defaultproperties
 	 FireEndSoundRef="KF_MAC10MPSnd.MAC10_Fire_Loop_End_M"
      FireEndStereoSoundRef="KF_MAC10MPSnd.MAC10_Fire_Loop_End_S"
      AmbientFireSoundRef="KF_MAC10MPSnd.MAC10_Fire_Loop"
-     RecoilRate=0.050000
-     maxVerticalRecoilAngle=150
-     maxHorizontalRecoilAngle=100
+	 // Recoil
+	 RecoilRate=0.050000
+	 RecoilUpRot=(Min=110,Max=150)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=72,Max=96)
+	 RecoilRightRot=(Min=76,Max=98)
+	 
      FireSoundRef="KF_MAC10MPSnd.MAC10_Silenced_Fire"
      StereoFireSoundRef="KF_MAC10MPSnd.MAC10_Silenced_FireST"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"

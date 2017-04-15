@@ -34,9 +34,13 @@ defaultproperties
 	 FireEndSoundRef="KF_FNFALSnd.FNFAL_Fire_Loop_End_M"
      FireEndStereoSoundRef="KF_FNFALSnd.FNFAL_Fire_Loop_End_S"
      AmbientFireSoundRef="KF_FNFALSnd.FNFAL_Fire_Loop"
-     RecoilRate=0.080000
-     maxVerticalRecoilAngle=150
-     maxHorizontalRecoilAngle=115
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=125,Max=160)
+	 RecoilLeftChance=0.45
+     RecoilLeftRot=(Min=82,Max=108)
+	 RecoilRightRot=(Min=86,Max=114)
+	 
      FireSoundRef="KF_FNFALSnd.FNFAL_Fire_Single_M"
      StereoFireSoundRef="KF_FNFALSnd.FNFAL_Fire_Single_S"
      NoAmmoSoundRef="KF_SCARSnd.SCAR_DryFire"

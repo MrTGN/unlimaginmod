@@ -21,10 +21,12 @@ defaultproperties
 	 //[end]
 	 ProjSpawnOffsets(0)=(X=0.000000,Y=0.000000,Z=-3.000000)
 	 FireAimedAnims(0)=(Anim="Fire",Rate=1.000000)
-     // Recoil
+	 // Recoil
 	 RecoilRate=0.070000
-	 VerticalRecoilRot=(Min=163,Max=242)
-     HorizontalRecoilRot=(Min=-80,Max=85)
+	 RecoilUpRot=(Min=163,Max=242)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=60,Max=80)
+	 RecoilRightRot=(Min=60,Max=85)
 	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=2.250000

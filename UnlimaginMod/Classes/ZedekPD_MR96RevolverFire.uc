@@ -15,9 +15,13 @@ defaultproperties
 	 FireSoundRef="MR96_S.mr96_fire_m"
      StereoFireSoundRef="MR96_S.mr96_fire_s"
      NoAmmoSoundRef="KF_HandcannonSnd.50AE_DryFire"
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=510
-     maxHorizontalRecoilAngle=75
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=300,Max=400)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=32,Max=70)
+	 RecoilRightRot=(Min=32,Max=70)
+
      bWaitForRelease=True
      TransientSoundVolume=2.250000
 	 FireAimedAnims(0)=(Anim="Iron_Fire",Rate=1.000000)

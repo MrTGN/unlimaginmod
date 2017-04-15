@@ -30,9 +30,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=500
-     maxHorizontalRecoilAngle=252
+	 // Recoil
+	 RecoilRate=0.076000
+	 RecoilUpRot=(Min=326,Max=502)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=198,Max=236)
+	 RecoilRightRot=(Min=202,Max=248)
+	 
      FireSoundRef="KF_SCARSnd.SCAR_Fire"
      StereoFireSoundRef="KF_SCARSnd.SCAR_FireST"
      NoAmmoSoundRef="KF_SCARSnd.SCAR_DryFire"

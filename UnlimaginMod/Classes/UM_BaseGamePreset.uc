@@ -18,7 +18,6 @@
 	You can create as many game settings profiles as you want and switches between them. 
 ==================================================================================*/
 class UM_BaseGamePreset extends UM_BaseObject
-	DependsOn(UM_BaseGameInfo)
 	//Config
 	//ParseConfig
 	Abstract;
@@ -26,10 +25,18 @@ class UM_BaseGamePreset extends UM_BaseObject
 //========================================================================
 //[block] Variables
 
-var					float							MinGameDifficulty, MaxGameDifficulty;
-var					int								MinHumanPlayers, MaxHumanPlayers;
+var					float					MinGameDifficulty, MaxGameDifficulty;
+var					int						MinHumanPlayers, MaxHumanPlayers;
 
-var		array<UM_BaseGameInfo.DramaticKillData>		DramaticKills;
+// Do slomo event when was killed a specified number of victims
+struct DramaticKillData
+{
+	var()	config	int		MinKilled;
+	var()	config	float	EventChance;
+	var()	config	float	EventDuration;
+};
+
+var		array<DramaticKillData>				DramaticKills;
 
 //[end] Varibles
 //====================================================================

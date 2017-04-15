@@ -26,8 +26,10 @@ defaultproperties
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      // Recoil
 	 RecoilRate=0.080000
-	 VerticalRecoilRot=(Min=180,Max=245)
-     HorizontalRecoilRot=(Min=-45,Max=50)
+	 RecoilUpRot=(Min=180,Max=245)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=30,Max=46)
+	 RecoilRightRot=(Min=32,Max=50)
 	 
      bPawnRapidFireAnim=True
      bWaitForRelease=False

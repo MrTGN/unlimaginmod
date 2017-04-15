@@ -41,8 +41,13 @@ defaultproperties
 	 FireSoundRef="KF_SP_ThompsonSnd.SP_Thompson_Fire_Single_M"
      StereoFireSoundRef="KF_SP_ThompsonSnd.SP_Thompson_Fire_Single_S"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"
-	 maxVerticalRecoilAngle=145
-     maxHorizontalRecoilAngle=100
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=102,Max=146)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=74,Max=96)
+	 RecoilRightRot=(Min=76,Max=98)
+	 
      AmmoClass=Class'KFMod.SPThompsonAmmo'
      ShakeRotMag=(X=50.000000,Y=58.000000,Z=350.000000)
      ShakeRotRate=(X=5000.000000,Y=5000.000000,Z=5000.000000)

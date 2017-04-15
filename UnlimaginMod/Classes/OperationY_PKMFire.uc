@@ -22,9 +22,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_13"
 	 ShellEjectEmitterClasses(0)=Class'UnlimaginMod.KFShellEjectPKM'
 	 //[end]
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=594
-     maxHorizontalRecoilAngle=262
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=400,Max=600)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=198,Max=250)
+	 RecoilRightRot=(Min=206,Max=260)
+	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=4.400000
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)

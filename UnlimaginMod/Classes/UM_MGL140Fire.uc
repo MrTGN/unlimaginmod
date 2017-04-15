@@ -50,8 +50,13 @@ defaultproperties
 	 //[end]
 	 ProjSpawnOffsets(0)=(X=2.000000,Y=2.000000,Z=-6.000000)
 	 EffectiveRange=3000.000000
-     maxVerticalRecoilAngle=200
-     maxHorizontalRecoilAngle=50
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=142,Max=194)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=30,Max=46)
+	 RecoilRightRot=(Min=32,Max=50)
+
      FireAimedAnims(0)=(Anim="Iron_Fire",Rate=1.000000)
      FireSoundRef="KF_M32Snd.M32_Fire"
      StereoFireSoundRef="KF_M32Snd.M32_FireST"

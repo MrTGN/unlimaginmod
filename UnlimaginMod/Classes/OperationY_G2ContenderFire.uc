@@ -28,9 +28,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
 	 //[end]
 	 EffectiveRange=50000.000000
-     RecoilRate=0.100000
-     maxVerticalRecoilAngle=1280
-     maxHorizontalRecoilAngle=100
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=760,Max=1000)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=80,Max=116)
+	 RecoilRightRot=(Min=82,Max=120)
+
      FireAimedAnims(0)=(Anim="Fire",Rate=1.000000)
      ProjPerFire=1
      ProjSpawnOffsets(0)=(X=0.000000,Y=0.000000,Z=0.000000)

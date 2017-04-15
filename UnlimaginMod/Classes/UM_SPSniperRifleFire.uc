@@ -30,9 +30,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectEBR'
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.120000
-     maxVerticalRecoilAngle=500
-     maxHorizontalRecoilAngle=350
+	 // Recoil
+	 RecoilRate=0.12
+	 RecoilUpRot=(Min=142,Max=480)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=210,Max=260)
+	 RecoilRightRot=(Min=220,Max=280)
+
      FireSoundRef="KF_SP_LongmusketSnd.KFO_Sniper_Fire_M"
      StereoFireSoundRef="KF_SP_LongmusketSnd.KFO_Sniper_Fire_S"
      NoAmmoSoundRef="KF_M14EBRSnd.M14EBR_DryFire"

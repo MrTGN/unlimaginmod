@@ -37,9 +37,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectBullpup'
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=240
-     maxHorizontalRecoilAngle=80
+	 // Recoil
+	 RecoilRate=0.072
+	 RecoilUpRot=(Min=178,Max=238)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=50,Max=78)
+	 RecoilRightRot=(Min=52,Max=80)
+	 
      bPawnRapidFireAnim=True
 	 bWaitForRelease=False
      TransientSoundVolume=1.800000

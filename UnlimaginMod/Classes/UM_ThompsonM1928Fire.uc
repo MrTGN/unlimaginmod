@@ -36,8 +36,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectMP5SMG'
 	 //[end]
-     maxVerticalRecoilAngle=155
-     maxHorizontalRecoilAngle=100
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=102,Max=154)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=64,Max=96)
+	 RecoilRightRot=(Min=68,Max=100)
+	 
 	 AmmoClass=Class'KFMod.ThompsonDrumAmmo'
      ShakeRotMag=(X=54.000000,Y=58.000000,Z=350.000000)
      ShakeRotRate=(X=5000.000000,Y=5000.000000,Z=5000.000000)

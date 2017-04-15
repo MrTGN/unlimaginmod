@@ -223,15 +223,6 @@ function RemoveHead()
 	Super.RemoveHead();
 }
 
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
-{
-	// 200 Damage will be a headshot with the SniperRifle
-	if ( UM_MonsterController(Controller) == None || !bCanBeKnockedDown || Health < 1 || !(Class<UM_BaseDamType_SniperRifle>(damageType) != None && Damage > 200) || Damage < int(float(Default.Health) * KnockedDownHealthPct) )
-		Return False;
-	
-	Return True;
-}
-
 // High damage was taken, make em fall over.
 function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
 {

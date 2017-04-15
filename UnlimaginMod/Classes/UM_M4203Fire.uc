@@ -30,9 +30,13 @@ defaultproperties
 	 FireEndSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop_End_M"
      FireEndStereoSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop_End_S"
      AmbientFireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Loop"
-     RecoilRate=0.064000
-     maxVerticalRecoilAngle=185
-     maxHorizontalRecoilAngle=98
+	 // Recoil
+	 RecoilRate=0.0655
+	 RecoilUpRot=(Min=156,Max=186)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=70,Max=90)
+	 RecoilRightRot=(Min=68,Max=96)
+	 
      FireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Single_M"
      StereoFireSoundRef="KF_M4RifleSnd.M4Rifle_Fire_Single_S"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"

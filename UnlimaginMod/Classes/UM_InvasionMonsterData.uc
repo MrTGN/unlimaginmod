@@ -17,8 +17,7 @@
 	Comment:		 Template class. This object contains all data about monster 
 					 spawn time, wave limits and restrictions.
 ==================================================================================*/
-class UM_InvasionMonsterData extends UM_BaseObject
-	DependsOn(UM_BaseObject);
+class UM_InvasionMonsterData extends UM_BaseObject;
 
 //========================================================================
 //[block] Variables
@@ -44,14 +43,14 @@ var					array< class<UM_BaseMonster> >	SpecialMonsterClasses;		// Class of the c
 // Normal wave limits
 var()				bool							bNoWaveRestrictions;
 var()				array<Range>					WaveSpawnChance;	// N wave spawn Chance (Min - , Max - )
-var()				array<UM_BaseObject.IRange>		WaveSquadLimit;	// N wave limit per squad (Min - , Max - )
+var()				array<IRange>					WaveSquadLimit;	// N wave limit per squad (Min - , Max - )
 var()				array<DeltaData>				WaveDeltaLimit;		// N wave Limit per DeltaTime
 var()				bool							bNoWaveDeltaLimit;
 
 // Boss wave limits
 var()				bool							bNoBossWaveRestrictions;
 var()				Range							BossWaveSpawnChance;
-var()				UM_BaseObject.IRange			BossWaveSquadLimit;
+var()				IRange							BossWaveSquadLimit;
 var()				DeltaData						BossWaveDeltaLimit;
 var()				bool							bNoBossWaveDeltaLimit;
 
@@ -151,7 +150,7 @@ function UpdateDynamicParameters()
 {
 	local	float	GameModif;
 	
-	GameModif = (InvasionGame.LerpNumPlayersModifier + InvasionGame.LerpGameDifficultyModifier) * 0.5;
+	GameModif = (InvasionGame.NumPlayersModifier + InvasionGame.GameDifficultyModifier) * 0.5;
 	
 	// Normal Wave
 	if ( InvasionGame.WaveNum < InvasionGame.FinalWave )  {
@@ -160,7 +159,7 @@ function UpdateDynamicParameters()
 			Return;
 		
 		// CurrentSpawnChance
-		CurrentSpawnChance = Lerp( InvasionGame.LerpGameDifficultyModifier, WaveSpawnChance[InvasionGame.WaveNum].Min, WaveSpawnChance[InvasionGame.WaveNum].Max );
+		CurrentSpawnChance = Lerp( InvasionGame.GameDifficultyModifier, WaveSpawnChance[InvasionGame.WaveNum].Min, WaveSpawnChance[InvasionGame.WaveNum].Max );
 		
 		// CurrentSquadLimit
 		CurrentSquadLimit = Round( Lerp(GameModif, float(WaveSquadLimit[InvasionGame.WaveNum].Min), float(WaveSquadLimit[InvasionGame.WaveNum].Max)) );
@@ -182,7 +181,7 @@ function UpdateDynamicParameters()
 			Return;
 		
 		// CurrentSpawnChance
-		CurrentSpawnChance = Lerp( InvasionGame.LerpGameDifficultyModifier, BossWaveSpawnChance.Min, BossWaveSpawnChance.Max );
+		CurrentSpawnChance = Lerp( InvasionGame.GameDifficultyModifier, BossWaveSpawnChance.Min, BossWaveSpawnChance.Max );
 		
 		// CurrentSquadLimit
 		CurrentSquadLimit = Round( Lerp(GameModif, float(BossWaveSquadLimit.Min), float(BossWaveSquadLimit.Max)) );

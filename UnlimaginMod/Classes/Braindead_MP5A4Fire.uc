@@ -40,9 +40,13 @@ defaultproperties
 	 //[end]
 	 TransientSoundVolume=2.000000
 	 bWaitForRelease=False
-	 RecoilRate=0.060000
-     maxVerticalRecoilAngle=124
-     maxHorizontalRecoilAngle=80
+	 // Recoil
+	 RecoilRate=0.065000
+	 RecoilUpRot=(Min=85,Max=125)
+	 RecoilLeftChance=0.46
+     RecoilLeftRot=(Min=48,Max=80)
+	 RecoilRightRot=(Min=50,Max=80)
+	 
      FireRate=0.075000
 	 AmmoClass=Class'UnlimaginMod.Braindead_MP5A4Ammo'
 	 ShakeRotMag=(X=25.000000,Y=25.000000,Z=125.000000)

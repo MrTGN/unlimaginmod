@@ -29,9 +29,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectMkb'
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=425
-     maxHorizontalRecoilAngle=225
+	 // Recoil
+	 RecoilRate=0.07
+	 RecoilUpRot=(Min=332,Max=424)
+	 RecoilLeftChance=0.44
+     RecoilLeftRot=(Min=164,Max=206)
+	 RecoilRightRot=(Min=172,Max=224)
+	 
      FireSoundRef="KF_mkb42Snd.mkb42_Fire_Single_M"
      StereoFireSoundRef="KF_mkb42Snd.mkb42_Fire_Single_S"
      NoAmmoSoundRef="KF_AK47Snd.AK47_DryFire"

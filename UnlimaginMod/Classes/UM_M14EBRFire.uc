@@ -32,9 +32,13 @@ defaultproperties
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
 	 FireLoopAnims(0)=(Anim="Fire",Rate=1.000000)
 	 FireLoopAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.085000
-     maxVerticalRecoilAngle=1850
-     maxHorizontalRecoilAngle=450
+	 // Recoil
+	 RecoilRate=0.080000
+	 RecoilUpRot=(Min=640,Max=800)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=200,Max=320)
+	 RecoilRightRot=(Min=220,Max=340)
+	 
      FireSoundRef="KF_M14EBRSnd.M14EBR_Fire"
      StereoFireSoundRef="KF_M14EBRSnd.M14EBR_FireST"
      NoAmmoSoundRef="KF_M14EBRSnd.M14EBR_DryFire"

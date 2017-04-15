@@ -17,6 +17,8 @@
 	Comment:		 
 ==================================================================================*/
 class UM_BaseGameInfo extends KFGameType
+	DependsOn(UM_BaseObject)
+	DependsOn(UM_BaseGamePreset)
 	CacheExempt
 	HideDropdown
 	NotPlaceable
@@ -30,13 +32,7 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
 // Do slomo event when was killed a specified number of victims
-struct DramaticKillData
-{
-	var()	config	int		MinKilled;
-	var()	config	float	EventChance;
-	var()	config	float	EventDuration;
-};
-var					array<DramaticKillData>	DramaticKills;
+var					array<UM_BaseGamePreset.DramaticKillData>	DramaticKills;
 
 var					class<Bot>				BotClass;
 

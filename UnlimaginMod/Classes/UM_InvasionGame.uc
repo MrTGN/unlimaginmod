@@ -1179,6 +1179,7 @@ state WaveInProgress
 		WaveMonsters = 0;
 			
 		// Setup wave parameters
+		StopWaveCountDownTime = Level.TimeSeconds;
 		WaveCountDown = CurrentWaveDuration + Min( Round(TimerCounter), 1 );
 		// First Startup Message
 		if ( !bFinalStartup )  {
@@ -1488,18 +1489,18 @@ function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<Da
 				if ( PlayerController(Killer) != None && UM_BaseServerStats(PlayerController(Killer).SteamStatsAndAchievements) != None )
 					UM_BaseServerStats(PlayerController(Killer).SteamStatsAndAchievements).NotifyKilled( Killed, KilledPawn, DamageType );
 			}
-		}
 		
-		if ( Class<Monster>(KilledPawn.Class) != None )  {
-			LastKilledMonsterClass = Class<Monster>(KilledPawn.Class);
-			
-			if ( StopWaveCountDownTime < Level.TimeSeconds )
-				StopWaveCountDownTime = Level.TimeSeconds;
-			
-			if ( Class<UM_BaseMonster>(KilledPawn.Class) != None )  {
-				StopWaveCountDownTime += Class<UM_BaseMonster>(KilledPawn.Class).KilledWaveCountDownExtensionTime;
-			else
-				StopWaveCountDownTime += KillingWaveCountDownExtensionTime;
+			if ( Class<Monster>(KilledPawn.Class) != None )  {
+				LastKilledMonsterClass = Class<Monster>(KilledPawn.Class);
+				
+				if ( StopWaveCountDownTime < Level.TimeSeconds )
+					StopWaveCountDownTime = Level.TimeSeconds;
+				
+				if ( Class<UM_BaseMonster>(KilledPawn.Class) != None )
+					StopWaveCountDownTime += Class<UM_BaseMonster>(KilledPawn.Class).default.KilledWaveCountDownExtensionTime;
+				else
+					StopWaveCountDownTime += KillingWaveCountDownExtensionTime;
+			}
 		}
 	}
 	

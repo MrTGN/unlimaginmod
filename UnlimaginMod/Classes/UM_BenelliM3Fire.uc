@@ -31,9 +31,13 @@ defaultproperties
 	 StereoFireSoundRef="KF_PumpSGSnd.SG_FireST"
      //NoAmmoSound=Sound'KF_PumpSGSnd.SG_DryFire'
 	 NoAmmoSoundRef="KF_PumpSGSnd.SG_DryFire"
-	 KickMomentum=(X=-85.000000,Z=15.000000)
-     maxVerticalRecoilAngle=1450
-     maxHorizontalRecoilAngle=900
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=800,Max=1200)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=480,Max=780)
+	 RecoilRightRot=(Min=500,Max=800)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=0.950000)
 	 FireAnims(0)=(Rate=0.950000)
      ProjPerFire=3

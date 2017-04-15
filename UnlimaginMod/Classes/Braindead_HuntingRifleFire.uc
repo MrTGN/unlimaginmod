@@ -33,9 +33,13 @@ defaultproperties
 	 NoAmmoSoundRef="KF_RifleSnd.Rifle_DryFire"
 	 //[end]
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     RecoilRate=0.100000
-     maxVerticalRecoilAngle=810
-     maxHorizontalRecoilAngle=250
+     // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=680,Max=860)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=142,Max=220)
+	 RecoilRightRot=(Min=162,Max=240)
+
      bWaitForRelease=True
 	 bPawnRapidFireAnim=True
      TransientSoundVolume=2.100000

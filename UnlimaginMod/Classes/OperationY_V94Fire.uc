@@ -24,9 +24,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'UnlimaginMod.OperationY_KFShellEjectM82A1LLI'
 	 //[end]
 	 EffectiveRange=25000.000000
-     RecoilRate=0.100000
-     maxVerticalRecoilAngle=3650
-     maxHorizontalRecoilAngle=100
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=2800,Max=3600)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=80,Max=140)
+	 RecoilRightRot=(Min=90,Max=150)
+
      FireAimedAnims(0)=(Anim="Fire",Rate=1.000000)
      ProjPerFire=1
      ProjSpawnOffsets(0)=(X=2.000000,Y=0.000000,Z=0.000000)

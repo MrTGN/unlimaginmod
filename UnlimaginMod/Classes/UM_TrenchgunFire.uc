@@ -25,9 +25,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectBenelli'
 	 //[end]
-	 KickMomentum=(X=-85.000000,Z=15.000000)
-     maxVerticalRecoilAngle=1500
-     maxHorizontalRecoilAngle=900
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=800,Max=1300)
+	 RecoilLeftChance=0.47
+     RecoilLeftRot=(Min=460,Max=760)
+	 RecoilRightRot=(Min=480,Max=800)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      FireSoundRef="KF_ShotgunDragonsBreathSnd.ShotgunDragon_Fire_Single_M"
      StereoFireSoundRef="KF_ShotgunDragonsBreathSnd.ShotgunDragon_Fire_Single_S"

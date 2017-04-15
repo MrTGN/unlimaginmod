@@ -25,10 +25,14 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'UnlimaginMod.OperationY_KFShellEjectM82A1LLI'
 	 //[end]
 	 EffectiveRange=25000.000000
-     RecoilRate=0.100000
 	 FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
-     maxVerticalRecoilAngle=3600
-     maxHorizontalRecoilAngle=120
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=2800,Max=3400)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=100,Max=160)
+	 RecoilRightRot=(Min=120,Max=180)
+
      bPawnRapidFireAnim=True
      bWaitForRelease=True
      TransientSoundVolume=3.800000

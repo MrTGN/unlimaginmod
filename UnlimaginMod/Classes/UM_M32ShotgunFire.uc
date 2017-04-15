@@ -27,8 +27,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=None
 	 //[end]
      EffectiveRange=700.000000
-     maxVerticalRecoilAngle=1250
-     maxHorizontalRecoilAngle=550
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=800,Max=1200)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=350,Max=550)
+	 RecoilRightRot=(Min=350,Max=550)
+
      FireAimedAnims(0)=(Anim="Iron_Fire",Rate=1.000000)
      FireSoundRef="KF_PumpSGSnd.SG_Fire"
      StereoFireSoundRef="KF_PumpSGSnd.SG_FireST"

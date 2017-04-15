@@ -92,9 +92,13 @@ defaultproperties
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'KFMod.KSGShellEject'
 	 //[end]
-     KickMomentum=(X=-85.000000,Z=14.000000)
-     maxVerticalRecoilAngle=1000
-     maxHorizontalRecoilAngle=500
+	 // Recoil
+	 RecoilRate=0.1
+	 RecoilUpRot=(Min=720,Max=1000)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=300,Max=480)
+	 RecoilRightRot=(Min=320,Max=500)
+
      FireAimedAnims(0)=(Anim="Fire_Iron",Rate=1.000000)
      FireSoundRef="KF_KSGSnd.KSG_Fire_M"
      StereoFireSoundRef="KF_KSGSnd.KSG_Fire_S"

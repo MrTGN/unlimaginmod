@@ -31,9 +31,13 @@ defaultproperties
 	 ShellEjectBones(0)="type19_clip"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectBullpup'
 	 //[end]
-     RecoilRate=0.070000
-     maxVerticalRecoilAngle=245
-     maxHorizontalRecoilAngle=90
+	 // Recoil
+	 RecoilRate=0.070000
+	 RecoilUpRot=(Min=112,Max=160)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=36,Max=62)
+	 RecoilRightRot=(Min=38,Max=68)
+	 
 	 bWaitForRelease=False
      bPawnRapidFireAnim=True
      TransientSoundVolume=1.800000

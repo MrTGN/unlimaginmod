@@ -25,9 +25,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectBullpup'
 	 //[end]
      ProjSpawnOffsets(0)=(X=0.000000,Y=10.000000,Z=0.000000)
-	 RecoilRate=0.025000
-     maxVerticalRecoilAngle=250
-     maxHorizontalRecoilAngle=125
+	 // Recoil
+	 RecoilRate=0.040000
+	 RecoilUpRot=(Min=182,Max=246)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=82,Max=112)
+	 RecoilRightRot=(Min=86,Max=120)
+	 
      TransientSoundVolume=9.000000
      PreFireAnims(0)=(Anim="WeaponFireStart",Rate=1.000000)
      FireLoopAnims(0)=(Anim="WeaponFire",Rate=1.600000)

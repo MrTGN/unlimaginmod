@@ -46,9 +46,13 @@ defaultproperties
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEject9mm'
 	 ShellEjectEmitterClasses(1)=Class'ROEffects.KFShellEject9mm'
 	 //[end]
+	 // Recoil
 	 RecoilRate=0.060000
-     maxVerticalRecoilAngle=180
-     maxHorizontalRecoilAngle=90
+	 RecoilUpRot=(Min=132,Max=176)
+	 RecoilLeftChance=0.5
+     RecoilLeftRot=(Min=52,Max=80)
+	 RecoilRightRot=(Min=52,Max=80)
+	 
      bRandomPitchFireSound=False
      bPawnRapidFireAnim=True
      TransientSoundVolume=2.000000

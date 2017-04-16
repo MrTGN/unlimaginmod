@@ -2857,9 +2857,9 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decapitate
 		if ( HeadHealth < 1 || Damage >= Health )  {
+			RemoveHead();
 			// Head explodes, causing additional hurty.
 			Damage += Damage + int(HealthMax * 0.25);
-			RemoveHead();
 			// Bonuses
 			if ( UM_HumanPawn(instigatedBy) != None )  {
 				// SlowMoCharge

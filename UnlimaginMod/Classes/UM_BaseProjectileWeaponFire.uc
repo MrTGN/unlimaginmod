@@ -972,7 +972,7 @@ function AddRecoil()
 	local	Rotator				NewRecoilRotation;
 	local	KFPlayerController	KFPC;
 	local	Vector				AdjustedVelocity;
-	local	float				AdjustedRecoilScale;
+	local	float				RecoilScale;
 
 	KFPC = KFPlayerController(Instigator.Controller);
 	if ( KFPC != None && !KFPC.bFreeCamera )  {
@@ -990,10 +990,10 @@ function AddRecoil()
 			NewRecoilRotation.Pitch = Round( Lerp(FRand(), RecoilUpRot.Min, RecoilUpRot.Max) );
 			// Left recoil rotation
 			if ( RecoilLeftChance > 0.0 && FRand() <= RecoilLeftChance )
-				NewRecoilRotation.Yaw = -Round( Lerp(FRand(), RecoilLeftRot.Min, RecoilLeftRot.Max) * AimingHorizontalRecoilBonus );
+				NewRecoilRotation.Yaw = -Round( Lerp(FRand(), RecoilLeftRot.Min, RecoilLeftRot.Max) );
 			// Right recoil rotation
 			else
-				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilRightRot.Min, RecoilRightRot.Max) * AimingHorizontalRecoilBonus );
+				NewRecoilRotation.Yaw = Round( Lerp(FRand(), RecoilRightRot.Min, RecoilRightRot.Max) );
 		}
 		// Recoil based on how fast the player is moving
 		if ( RecoilVelocityScale > 0.0 )  {
@@ -1004,35 +1004,26 @@ function AddRecoil()
 				AdjustedVelocity.Z = 0.0;
 				// Reduce the falling recoil in low grav
 				// (RecoilVelocityScale -1.0) because we will adding Pitch and Yaw
-				AdjustedRecoilScale = VSize(AdjustedVelocity) / Instigator.GroundSpeed * (RecoilVelocityScale - 1.0) * 0.5;
-				if ( AdjustedRecoilScale > 0.0 )  {
-					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * AdjustedRecoilScale );
-					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * AdjustedRecoilScale );
+				RecoilScale = (VSize(AdjustedVelocity) / Instigator.GroundSpeed) * (RecoilVelocityScale - 1.0) * 0.5;
+				if ( RecoilScale > 0.0 )  {
+					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * RecoilScale );
+					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * RecoilScale );
 				}
 			}
 			else  {
 				if ( bRecoilIgnoreZVelocity )
 					AdjustedVelocity.Z = 0.0;
 				// (RecoilVelocityScale -1.0) because we adding Pitch and Yaw
-				AdjustedRecoilScale = VSize(AdjustedVelocity) / Instigator.GroundSpeed * (RecoilVelocityScale - 1.0);
-				if ( AdjustedRecoilScale > 0.0 )  {
-					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * AdjustedRecoilScale );
-					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * AdjustedRecoilScale );
+				RecoilScale = (VSize(AdjustedVelocity) / Instigator.GroundSpeed) * (RecoilVelocityScale - 1.0);
+				if ( RecoilScale > 0.0 )  {
+					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * RecoilScale );
+					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * RecoilScale );
 				}
 			}
 		}
-		/*
-		// Recoil based on how much Health the player have
-		if ( RecoilHealthScale > 0.0 )  {
-			NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * VeterancyRecoilModifier + (Instigator.HealthMax / float(Instigator.Health) * RecoilHealthScale) );
-			NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * VeterancyRecoilModifier + (Instigator.HealthMax / float(Instigator.Health) * RecoilHealthScale) );
-		}
-		// else just use VeterancyRecoilModifier
-		else  {	*/
-			NewRecoilRotation.Pitch = Round( float(NewRecoilRotation.Pitch) * VeterancyRecoilModifier );
-			NewRecoilRotation.Yaw = Round( float(NewRecoilRotation.Yaw) * VeterancyRecoilModifier );
-		//}
 		// Perk bouns
+		NewRecoilRotation.Pitch = Round( float(NewRecoilRotation.Pitch) * VeterancyRecoilModifier );
+		NewRecoilRotation.Yaw = Round( float(NewRecoilRotation.Yaw) * VeterancyRecoilModifier );
 		KFPC.SetRecoil( NewRecoilRotation, (RecoilRate * FireSpeedModif) );
  	}
 }

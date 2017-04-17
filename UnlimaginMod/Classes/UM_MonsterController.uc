@@ -847,14 +847,14 @@ state KnockedDown
 Begin:
 	bUseFreezeHack = True;
 	if ( Pawn != None )  {
+		if ( UM_BaseMonster(Pawn) != None )
+			UM_BaseMonster(Pawn).bKnockedDown = True;
 		MoveTarget = None;
 		MoveTimer = -1;
 		Pawn.GroundSpeed = 0.0;
 		Pawn.AccelRate = 0.0;
-		Pawn.Acceleration = vect(0.0,0.0,0.0);
+		Pawn.Acceleration = vect(0,0,0);
 		//Pawn.ShouldCrouch(True);
-		if ( UM_BaseMonster(Pawn) != None )
-			UM_BaseMonster(Pawn).bKnockedDown = True;
 	}
 	FinishAnim(0);
 	//while( KFM.bShotAnim )

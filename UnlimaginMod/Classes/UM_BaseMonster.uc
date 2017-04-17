@@ -96,10 +96,13 @@ var		transient	float				NextPainTime, NextPainAnimTime, NextPainSoundTime;
 
 // Animation
 var					name				RunAnims[8];
+
+//
 var					name				KnockDownAnim;
 var					bool				bCanBeKnockedDown;
-var		transient	bool				bKnockedDown;
 var					float				KnockedDownHealthPct;
+var		transient	bool				bKnockedDown;
+var		transient	float				CurrentKnockedDownTime;
 
 // Decapitation
 var		transient	bool				bHeadlessAnimated, bBleedOut, bDecapitationPlayed;
@@ -2684,6 +2687,12 @@ function PlayKnockDown()
 	bShotAnim = True;
 	SetAnimAction(KnockDownAnim);
 	UM_MonsterController(Controller).GotoState('KnockedDown');
+}
+
+state KnockedDown
+{
+	
+	Begin:
 }
 
 // New Hit FX for Zombies!

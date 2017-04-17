@@ -65,7 +65,6 @@ var(Recoil)		float					RecoilLeftChance;	// 0.0 is always right, 1.0 is always l
 var(Recoil)		UM_BaseObject.IRange	RecoilRightRot;	// Min and Max recoil player camera Right rotation
 var(Recoil)		float			RecoilVelocityScale;	// How much to scale the recoil by based on how fast the player is moving
 var(Recoil)		bool			bRecoilIgnoreZVelocity;	// Ignore Z axis in Velocity vector
-var(Recoil)		float			RecoilHealthScale;	// Recoil based on how much Health the player have
 var(Recoil)		float			AimingVerticalRecoilBonus;	// VerticalRecoil Aiming Bonus
 var(Recoil)		float			AimingHorizontalRecoilBonus;	// HorizontalRecoil Aiming Bonus
 
@@ -1372,7 +1371,6 @@ defaultproperties
 	 ProjSpawnOffsets(0)=(X=0.0,Y=0.0,Z=0.0)
 	 RecoilLeftChance=0.5
 	 RecoilVelocityScale=2.0
-	 RecoilHealthScale=3.0
 	 AimError=10.0
 	 // DamageAtten - attenuate instant-hit/projectile damage by this multiplier
 	 // In fact this class don't use this variable at all. 

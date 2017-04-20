@@ -426,6 +426,11 @@ defaultproperties
 	 MeleeRange=45.000000
 	 GroundSpeed=100.000000
 	 WaterSpeed=80.000000
+	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=130.0
+	 
 	 HeadHeight=1.000000
 	 HeadScale=1.000000
 	 MenuName="Siren"

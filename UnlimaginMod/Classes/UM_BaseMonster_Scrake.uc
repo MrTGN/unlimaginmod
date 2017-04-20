@@ -626,6 +626,11 @@ defaultproperties
 	 MeleeRange=40.000000
 	 GroundSpeed=85.000000
 	 WaterSpeed=75.000000
+	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=160.0
+	 
 	 HeadHeight=2.200000
 	 MenuName="Scrake"
 	 

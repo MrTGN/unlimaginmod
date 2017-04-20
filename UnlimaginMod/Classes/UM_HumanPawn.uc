@@ -45,7 +45,7 @@ var		float						FireSpeedModif;
 var		float						AimRotationDelay;	// Used to decrease the CPU load
 var		transient	float			NextAimRotationTime;
 var		transient	Actor			LastAimTarget;
-var		transient	vector			LastAimTargetLocation;
+var		transient	vector			LastAimLocation;
 var		transient	vector			LastCameraLocation, LastCameraDirection;
 var		transient	rotator			LastCameraRotation;
 
@@ -288,6 +288,14 @@ simulated event PreBeginPlay()
 		// Issue #207
 		SetTimer(1.5, True);
 	}
+}
+
+simulated function class<UM_VeterancyTypes> GetVeterancyClass()
+{
+	if ( UM_PlayerRepInfo == None || UM_PlayerRepInfo.ClientVeteranSkill == None )
+		Return class'UM_VeterancyTypes'; // Just return base class
+	
+	Return UM_PlayerRepInfo.ClientVeteranSkill;
 }
 
 /* FindInventoryType()
@@ -559,6 +567,7 @@ simulated event ClientTrigger()
 		NotifyVeterancyChanged();
 }
 
+// PostNetReceive() disabled because bNetNotify=False in defaultproperties
 simulated event PostNetReceive() { }
 
 function AddVelocity( vector NewVelocity )
@@ -1090,7 +1099,8 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 	local	Actor		SpawnBlocker;
 	
 	UpdateViewPosition();
-	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(1.0, 1.0, 1.0));
+	//SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(1.0, 1.0, 1.0));
+	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True);
 	if ( SpawnBlocker != None )  {
 		//Log("SpawnBlocker found!", Name);
 		LastAimTarget = SpawnBlocker;
@@ -1116,13 +1126,23 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		
 		// adjust aim based on FOV
 		if ( Controller != None )  {
-			BestAim = 0.90;
+			if ( Level.NetMode == NM_Standalone && bAimingHelp )  {
+				BestAim = 0.93;
+				if ( WeaponFire.bInstantHit )
+					BestAim = 0.97;
+				if ( FOVAngle < (DefaultFOV - 8) )
+					BestAim = 0.99;
+			}
+			else if ( WeaponFire.bInstantHit )
+				BestAim = 1.0;
+			else
+				BestAim = 0.9;
 			LastAimTarget = Controller.PickTarget( BestAim, TargetDist, LastCameraDirection, LastCameraLocation, f );
 		}
 		
 		if ( LastAimTarget == None )  {
 			// Tracing from the player camera to find the target
-			foreach TraceActors( Class'Actor', LastAimTarget, LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation )  {
+			foreach TraceActors( Class'Actor', LastAimTarget, LastAimLocation, HitNormal, TraceEnd, LastCameraLocation )  {
 				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self && !LastAimTarget.bHidden
 					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget /*|| LastAimTarget.bBlockActors*/) )
 					Break;	// We have found the Target
@@ -1133,11 +1153,14 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		
 		// Pick any target
 		if ( LastAimTarget == None )
-			LastAimTarget = Trace(LastAimTargetLocation, HitNormal, TraceEnd, LastCameraLocation, True);
+			LastAimTarget = Trace(LastAimLocation, HitNormal, TraceEnd, LastCameraLocation, True);
 		
 		// If we didn't find the Target just get the TraceEnd location
 		if ( LastAimTarget == None )
-			LastAimTargetLocation = TraceEnd;
+			LastAimLocation = TraceEnd;
+		
+		//SquaredDistToTarget = VSizeSquared(LastAimLocation - LastCameraLocation);
+		SquaredDistToTarget = VSizeSquared(LastAimLocation - LastEyePosition);
 	}
 	
 	if ( LastAimTarget != None && Controller != None )  {
@@ -1151,8 +1174,6 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		}
 	}
 
-	//SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastCameraLocation);
-	SquaredDistToTarget = VSizeSquared(LastAimTargetLocation - LastEyePosition);
 	// If target is closer to the screen than the SpawnLocation
 	// or if it closer than 1600.0 uu (~= 0.67 m)
 	//if ( SquaredDistToTarget <= 900.0 || SpawnBlocker != None || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
@@ -1163,7 +1184,7 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		else
 			f = 12.0;
 		// Change SpawnLocation
-		SpawnLocation = LastCameraLocation - Normal(LastCameraLocation - LastAimTargetLocation) * f;
+		SpawnLocation = LastCameraLocation - Normal(LastCameraLocation - LastAimLocation) * f;
 		*/
 		/*
 		SpawnLocation = LastCameraLocation - LastCameraDirection * (CollisionRadius + 12.0);
@@ -1173,8 +1194,8 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		AimRotation = LastViewRotation;
 	}
 	else
-		AimRotation = rotator(LastAimTargetLocation - SpawnLocation);
-		//AimRotation = rotator(Normal(LastAimTargetLocation - SpawnLocation));
+		AimRotation = rotator(LastAimLocation - SpawnLocation);
+		//AimRotation = rotator(Normal(LastAimLocation - SpawnLocation));
 	
 	if ( bOnDrugs )
 		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
@@ -1505,8 +1526,6 @@ function SetWeaponOverlay( Material Mat, float Time, bool Override )
 			WeaponAttachment(Weapon.ThirdPersonActor).SetOverlayMaterial(Mat, Time, Override);
 	}
 }
-
-
 
 // Replicated to the server if was called on the client-side
 function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
@@ -2913,11 +2932,6 @@ simulated event Tick( float DeltaTime )
 {
 	// Server
 	if ( Role == ROLE_Authority )  {
-		// Enable Movement
-		if ( bMovementDisabled && Level.TimeSeconds >= StopDisabledTime )  {
-			bMovementDisabled = False;
-			NetUpdateTime = Level.TimeSeconds - 1.0;
-		}
 		// Operations with Pawn Health
 		if ( bAllowHealthChanging )  {
 			// Overheal Reduction
@@ -3022,11 +3036,14 @@ simulated event Tick( float DeltaTime )
 			StopBurnFX();
 	}
 	
+	//wtf???
+	/*
 	// Reset AnimAction replication.
 	if ( bResetingAnimAct && Level.TimeSeconds > AnimActResetTime )  {
 		bResetingAnimAct = False;
 		AnimAction = '';
 	}
+	*/
 	
 	if ( bDestroyAfterRagDollTick && Physics == PHYS_KarmaRagdoll
 		 && !bProcessedRagTickDestroy && GetRagDollFrames() > 0 )  {
@@ -3114,20 +3131,78 @@ event Timer()
 		IdleWeaponAnim = IdleRestAnim;
 }
 
-// Don't let this pawn move for a certain amount of time
-function DisableMovement( float DisableDuration )
+simulated function bool CanBeGrabbedBy( Pawn Grabber )
 {
-	StopDisabledTime = Level.TimeSeconds + DisableDuration;
-	bMovementDisabled = True;
-	NetUpdateTime = Level.TimeSeconds - 1.0;
+	if ( UM_PlayerRepInfo == None || KFMonster(Grabber) == None )
+		Return True;
+	
+	Return GetVeterancyClass.static.CanBeGrabbed( UM_PlayerRepInfo, KFMonster(Grabber) );
+}
+
+function NotifyGrabbedBy( Pawn Grabber )
+{
+	if ( Grabber == None || UM_PlayerController(Controller) == None || VSizeSquared(Grabber.Location - Location) > 2500.0 )
+		Return;
+	
+	UM_PlayerController(Controller).NotifyGrabbed();
 }
 
 /*	Modify velocity called by physics before applying new velocity for this tick.
 	Velocity,Acceleration, etc. have been updated by the physics, but location hasn't.	*/
-simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
+simulated event ModifyVelocity( float DeltaTime, vector OldVelocity ) { }
+
+// Don't let this pawn move for a certain amount of time
+function DisableMovement( float DisableDuration )
 {
-	if ( bMovementDisabled && Physics == PHYS_Walking )
-		Velocity = Vect(0.0, 0.0, 0.0);
+	StopDisabledTime = Level.TimeSeconds + DisableDuration;
+	GotoState('MovementDisabled');
+}
+
+function EnableMovement()
+{
+	if ( Role < ROLE_Authority || !bMovementDisabled )
+		Return;
+	
+	bMovementDisabled = False;
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+state MovementDisabled
+{
+	function DisableMovement( float DisableDuration )
+	{
+		if ( Level.TimeSeconds < StopDisabledTime )
+			StopDisabledTime += DisableDuration;
+		else
+			StopDisabledTime = Level.TimeSeconds + DisableDuration;
+	}
+	
+	simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
+	{
+		if ( Physics == PHYS_Walking )
+			Velocity = Vect(0,0,0);
+	}
+	
+	function EnableMovement()
+	{
+		Global.EnableMovement();
+		GotoState('');	// exit from this state
+	}
+	
+Begin:
+	// Server only
+	if ( Role < ROLE_Authority )
+		Return;
+	
+	if ( !bMovementDisabled )  {
+		bMovementDisabled = True;
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+	// sleep while MovementDisabled
+	while( Level.TimeSeconds < StopDisabledTime )
+		Sleep(StopDisabledTime - Level.TimeSeconds);
+
+	EnableMovement();
 }
 
 function bool AllowGrenadeTossing()
@@ -3243,9 +3318,9 @@ defaultproperties
 	 SlowMoChargeRegenRate=0.02
 	 SlowMoChargeUpdateAmount=0.1
 	 PlayerDeathMarkClass=Class'PlayerDeathMark'
-	 ViewPositionUpdateDelay=0.001
-	 // 1 ms AimRotation delay
-	 AimRotationDelay=0.001
+	 ViewPositionUpdateDelay=0.002
+	 // 2 ms AimRotation delay
+	 AimRotationDelay=0.002
 	 // HealedMessage
 	 HealedMessage="You have healed"
 	 HealedMessageDelay=0.1

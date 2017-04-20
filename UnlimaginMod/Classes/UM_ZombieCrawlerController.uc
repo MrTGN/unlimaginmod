@@ -50,11 +50,11 @@ function bool IsInPounceDist(actor PTarget)
 	time = vsize(DistVec) / UM_BaseMonster_Crawler(Pawn).PounceSpeed;
 	// vertical change in that time
 	//assumes downward grav only
-	HeightMoved = Pawn.JumpZ * time + 0.5 * Pawn.PhysicsVolume.Gravity.z * time * time;
+	HeightMoved = Pawn.JumpZ * time + 0.5 * Pawn.PhysicsVolume.Gravity.z * Square(time);
 	EndHeight = Pawn.Location.z + HeightMoved;
 
 	//log(Vsize(Pawn.Location - PTarget.Location));
-	if ( (abs(EndHeight - PTarget.Location.Z) < Pawn.CollisionHeight + PTarget.CollisionHeight) && VSize(Pawn.Location - PTarget.Location) < (KFMonster(Pawn).MeleeRange * 5.0) )
+	if ( (abs(EndHeight - PTarget.Location.Z) < (Pawn.CollisionHeight + PTarget.CollisionHeight)) && VSizeSquared(Pawn.Location - PTarget.Location) < Square(KFMonster(Pawn).MeleeRange * 5.0) )
 		Return True;
 	else
 		Return False;
@@ -62,11 +62,11 @@ function bool IsInPounceDist(actor PTarget)
 
 function bool FireWeaponAt(Actor A)
 {
-	local vector aFacing,aToB;
-	local float RelativeDir;
+	local	float	RelativeDir;
 
 	if ( A == None )
 		A = Enemy;
+	
 	if ( A == None || Focus != A )
 		Return False;
 
@@ -75,10 +75,8 @@ function bool FireWeaponAt(Actor A)
 		Monster(Pawn).RangedAttack(Target);
 	}
 	else if ( (LastPounceTime + (4.5 - FRand() * 3.0)) < Level.TimeSeconds )  {
-		aFacing = Normal(Vector(Pawn.Rotation));
 		// Get the vector from A to B
-		aToB = A.Location - Pawn.Location;
-		RelativeDir = aFacing dot aToB;
+		RelativeDir = Normal(Vector(Pawn.Rotation)) dot (A.Location - Pawn.Location);
 		//Facing enemy
 		if ( RelativeDir > 0.85 && IsInPounceDist(A) && UM_BaseMonster_Crawler(Pawn).DoPounce() )
 			LastPounceTime = Level.TimeSeconds;
@@ -91,7 +89,8 @@ function bool NotifyLanded(vector HitNormal)
 {
 	if ( UM_BaseMonster_Crawler(Pawn).bPouncing )  {
 		// restart pathfinding from landing location
-		GotoState('hunting');
+		//GotoState('Hunting');
+		GotoState('ZombieHunt');
 		Return False;
 	}
 	else

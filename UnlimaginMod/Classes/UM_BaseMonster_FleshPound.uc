@@ -653,8 +653,13 @@ defaultproperties
      IdleRifleAnim="PoundIdle"
      RagDeathUpKick=100.000000
      MeleeRange=55.000000
-     GroundSpeed=130.000000
      WaterSpeed=120.000000
+	 GroundSpeed=130.000000
+	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=160.0
+	 
      HeadHeight=2.500000
      HeadScale=1.300000
      MenuName="Flesh Pound"

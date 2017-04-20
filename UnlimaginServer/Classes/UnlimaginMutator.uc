@@ -44,7 +44,7 @@ var()	globalconfig	string					RemoteDatabaseURL, RemotePassword;
 var()	globalconfig	array< ChatIconType >	SmileyTags;
 
 var		array< byte >							LoadInvCategory;
-var		array< class<UM_SRVeterancyTypes> >		LoadPerks;
+var		array< class<UM_VeterancyTypes> >		LoadPerks;
 var		array< class<Pickup> >					LoadInventory;
 //var		array< UM_PlayerController >			PendingPlayers;
 var		array<UM_StatsObject>					ActiveStats;
@@ -93,7 +93,7 @@ event PostBeginPlay()
 {
 	//local int	i, j, l;
 	local int	i, j;
-	local class<UM_SRVeterancyTypes> V;
+	local class<UM_VeterancyTypes> V;
 	local class<Pickup> P;
 	local string S;
 	local byte Cat;
@@ -107,7 +107,7 @@ event PostBeginPlay()
 	// Load perks.
 	for( i=0; i<Perks.Length; i++ )
 	{
-		V = class<UM_SRVeterancyTypes>(DynamicLoadObject(Perks[i],Class'Class'));
+		V = class<UM_VeterancyTypes>(DynamicLoadObject(Perks[i],Class'Class'));
 		if( V!=None )
 		{
 			LoadPerks[LoadPerks.Length] = V;
@@ -602,13 +602,13 @@ defaultproperties
 	GroupName="KFUnlimaginMod"
 	FriendlyName="Unlimagin Mod"
 	Description="Global Killing Floor Mod. Copyright © 2012-2014 Tsiryuta G. N."
-	Perks(0)="UnlimaginMod.UM_SRVetSupportSpec"
-	Perks(1)="UnlimaginMod.UM_SRVetBerserker"
-	Perks(2)="UnlimaginMod.UM_SRVetCommando"
-	Perks(3)="UnlimaginMod.UM_SRVetFieldMedic"
-	Perks(4)="UnlimaginMod.UM_SRVetFirebug"
-	Perks(5)="UnlimaginMod.UM_SRVetSharpshooter"
-	Perks(6)="UnlimaginMod.UM_SRVetDemolitions"
+	Perks(0)="UnlimaginMod.UM_VeterancySupport"
+	Perks(1)="UnlimaginMod.UM_VeterancyBerserker"
+	Perks(2)="UnlimaginMod.UM_VeterancyCommando"
+	Perks(3)="UnlimaginMod.UM_VeterancyFieldMedic"
+	Perks(4)="UnlimaginMod.UM_VeterancyFirebug"
+	Perks(5)="UnlimaginMod.UM_VeterancySharpshooter"
+	Perks(6)="UnlimaginMod.UM_VeterancyDemolitions"
 	MinPerksLevel=0
 	MaxPerksLevel=6
 	RequirementScaling=1

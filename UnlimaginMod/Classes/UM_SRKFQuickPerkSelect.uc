@@ -83,7 +83,7 @@ function bool InternalOnClick(GUIComponent Sender)
 
 function DrawCurrentPerkX( UM_ClientRepInfoLink S, Canvas C, Int PerkIndex)
 {
-	local Class<UM_SRVeterancyTypes> V;
+	local Class<UM_VeterancyTypes> V;
 	local Material M,SM;
 
 	V = S.CachePerks[PerkIndex].PerkClass;

@@ -16,7 +16,7 @@ var int ClientAccknowledged[2],SendIndex,ClientAckSkinNum;
 
 struct FPerksListType
 {
-	var class<UM_SRVeterancyTypes> PerkClass;
+	var class<UM_VeterancyTypes> PerkClass;
 	var byte CurrentLevel;
 };
 var array<FPerksListType> CachePerks;
@@ -206,9 +206,9 @@ simulated final function RepLinkBroken() // Called by GUI when this is noticed.
 	Tick(0);
 }
 
-final function Class<UM_SRVeterancyTypes> PickRandomPerk()
+final function Class<UM_VeterancyTypes> PickRandomPerk()
 {
-	local array< class<UM_SRVeterancyTypes> > CA;
+	local array< class<UM_VeterancyTypes> > CA;
 	local int i;
 
 	for( i=0; i<CachePerks.Length; i++ )
@@ -220,7 +220,7 @@ final function Class<UM_SRVeterancyTypes> PickRandomPerk()
 		Return None;
 	Return CA[Rand(CA.Length)];
 }
-final function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
+final function ServerSelectPerk( Class<UM_VeterancyTypes> VetType )
 {
 	StatObject.ServerSelectPerk(VetType);
 }
@@ -239,7 +239,7 @@ final function SendClientPerks()
 	for( i=0; i<CachePerks.Length; i++ )
 		ClientReceivePerk(i,CachePerks[i].PerkClass,CachePerks[i].CurrentLevel);
 }
-simulated function ClientReceivePerk( int Index, class<UM_SRVeterancyTypes> V, byte Level )
+simulated function ClientReceivePerk( int Index, class<UM_VeterancyTypes> V, byte Level )
 {
 	// Setup correct icon for trader.
 	if ( V.Default.PerkIndex < 255 && V.Default.OnHUDIcon != None )  {

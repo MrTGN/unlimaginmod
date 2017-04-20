@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_SRVetFieldMedic
-//	Parent class:	 UM_SRVeterancyTypes
+//	Class name:		 UM_VeterancyFieldMedic
+//	Parent class:	 UM_VeterancyTypes
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 30.09.2012 20:31
 //================================================================================
-class UM_SRVetFieldMedic extends UM_SRVeterancyTypes
+class UM_VeterancyFieldMedic extends UM_VeterancyTypes
 	Abstract;
 
 static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )

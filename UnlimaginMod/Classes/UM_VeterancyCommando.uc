@@ -1,8 +1,8 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_SRVetCommando
-//	Parent class:	 UM_SRVeterancyTypes
+//	Class name:		 UM_VeterancyCommando
+//	Parent class:	 UM_VeterancyTypes
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 30.09.2012 20:31
 //================================================================================
-class UM_SRVetCommando extends UM_SRVeterancyTypes
+class UM_VeterancyCommando extends UM_VeterancyTypes
 	Abstract;
 
 static function int GetPerkProgressInt( UM_ClientRepInfoLink StatOther, out int FinalInt, byte CurLevel, byte ReqNum )

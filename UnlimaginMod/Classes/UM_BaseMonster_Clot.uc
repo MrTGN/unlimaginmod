@@ -22,94 +22,73 @@ class UM_BaseMonster_Clot extends UM_BaseMonster
 //========================================================================
 //[block] Variables
 
-var     KFPawn  DisabledPawn;           // The pawn that has been disabled by this zombie's grapple
-var     bool    bGrappling;             // This zombie is grappling someone
-var     float   GrappleEndTime;         // When the current grapple should be over
-var()   float   GrappleDuration;        // How long a grapple by this zombie should last
+var					UM_HumanPawn	DisabledPawn;           // The pawn that has been disabled by this zombie's grapple
+var					bool			bGrappling;             // This zombie is grappling someone
+var					float			GrappleEndTime;         // When the current grapple should be over
+var()				float			GrappleDuration;        // How long a grapple by this zombie should last
+var		transient	float			GrappleSquaredRange;
 
-var	float	ClotGrabMessageDelay;	// Amount of time between a player saying "I've been grabbed" message
+var		transient	float			NextGrappleRangeCheckTime;
+var					float			GrappleRangeCheckDelay;
 
 //[end] Varibles
 //====================================================================
 
 //========================================================================
-//[block] Replication
-
-replication
-{
-	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bGrappling;
-}
-
-//[end] Replication
-//====================================================================
-
-//========================================================================
 //[block] Functions
 
-function BreakGrapple()
+// EnemyChanged() called by controller when current enemy changes
+function EnemyChanged()
 {
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	Super.EnemyChanged();
+	if ( LookTarget != None )
+		GrappleSquaredRange = Square(MeleeRange + CollisionRadius + LookTarget.CollisionRadius);
 }
 
 function ClawDamageTarget()
 {
-	local vector PushDir;
-	local KFPawn KFP;
-	local float UsedMeleeDamage;
-
-
-	if ( MeleeDamage > 1 )
-		UsedMeleeDamage = (MeleeDamage - (MeleeDamage * 0.05)) + (MeleeDamage * (FRand() * 0.1));
-	else
+	local	vector			PushDir;
+	local	UM_HumanPawn	NewDisabledPawn;
+	local	float			UsedMeleeDamage;
+	
+	if ( Controller == None || Controller.Target == None )
+		Return;
+	
+	if ( MeleeDamage < 20 )
 		UsedMeleeDamage = MeleeDamage;
+	// Melee damage +/- 5%
+	else
+		UsedMeleeDamage = Round( float(MeleeDamage) * Lerp(FRand(), 0.95, 1.05) );
 
 	// If zombie has latched onto us...
-	if ( MeleeDamageTarget( UsedMeleeDamage, PushDir) )  {
-		KFP = KFPawn(Controller.Target);
+	if ( MeleeDamageTarget(UsedMeleeDamage, PushDir) )  {
 		PlaySound(MeleeAttackHitSound, SLOT_Interact, 2.0);
-		if ( !bDecapitated && KFP != None )  {
-			if ( KFPlayerReplicationInfo(KFP.PlayerReplicationInfo) == None ||
-				 KFP.GetVeteran().static.CanBeGrabbed(KFPlayerReplicationInfo(KFP.PlayerReplicationInfo), self))  {
-				if ( DisabledPawn != None )
-					DisabledPawn.bMovementDisabled = False;
-
-				KFP.DisableMovement(GrappleDuration);
-				DisabledPawn = KFP;
-			}
-		}
-	}
-}
-
-simulated function bool AnimNeedsWait(name TestAnim)
-{
-	if ( TestAnim == 'KnockDown' || TestAnim == 'DoorBash' )
-		Return True;
-
-	Return False;
-}
-
-simulated function int DoAnimAction( name AnimName )
-{
-	if ( AnimName == MeleeAnims[0] || AnimName == MeleeAnims[1] || AnimName == MeleeAnims[2] )  {
-		AnimBlendParams(1, 1.0, 0.1,, FireRootBone);
-		PlayAnim(AnimName,, 0.1, 1);
-		// Randomly send out a message about Clot grabbing you(10% chance)
-		if ( FRand() < 0.10 && LookTarget != None && KFPlayerController(LookTarget.Controller) != None && VSizeSquared(Location - LookTarget.Location) < 2500 &&
-			 Level.TimeSeconds - KFPlayerController(LookTarget.Controller).LastClotGrabMessageTime > ClotGrabMessageDelay && KFPlayerController(LookTarget.Controller).SelectedVeterancy != class'KFVetBerserker' && KFPlayerController(LookTarget.Controller).SelectedVeterancy != class'UM_SRVetBerserker' )  {
-			PlayerController(LookTarget.Controller).Speech('AUTO', 11, "");
-			KFPlayerController(LookTarget.Controller).LastClotGrabMessageTime = Level.TimeSeconds;
-		}
+		NewDisabledPawn = UM_HumanPawn(Controller.Target);
+		if ( bDecapitated || NewDisabledPawn == None || !NewDisabledPawn.CanBeGrabbedBy(self) )
+			Return;
+		
+		if ( DisabledPawn != None && NewDisabledPawn != DisabledPawn )
+			DisabledPawn.EnableMovement();
+		
 		bGrappling = True;
 		GrappleEndTime = Level.TimeSeconds + GrappleDuration;
-
-		Return 1;
+		DisabledPawn = NewDisabledPawn;
+		NewDisabledPawn.DisableMovement(GrappleDuration);
+		NewDisabledPawn.NotifyGrabbedBy(Self);
 	}
+}
 
-	Return Super.DoAnimAction( AnimName );
+function bool IsOutOfGrappleRange()
+{
+	if ( LookTarget == None )
+		Return True;
+	
+	if ( Level.TimeSeconds < NextGrappleRangeCheckTime )
+		Return False;
+	
+	NextGrappleRangeCheckTime = Level.TimeSeconds + GrappleRangeCheckDelay;
+	
+	Return VSizeSquared(LookTarget.Location - Location) > GrappleSquaredRange;
 }
 
 simulated event Tick( float DeltaTime )
@@ -117,17 +96,23 @@ simulated event Tick( float DeltaTime )
 	Super.Tick( DeltaTime );
 
 	if ( Role == ROLE_Authority )  {
-		if ( bShotAnim && LookTarget != None )
+		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
 			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
-		if ( bGrappling && Level.TimeSeconds > GrappleEndTime )
+		// if we move out of melee range, stop doing the grapple animation
+		if ( bGrappling && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
 			bGrappling = False;
+			AnimEnd(1);
+		}
 	}
+}
 
-	// if we move out of melee range, stop doing the grapple animation
-	if ( bGrappling && LookTarget != None && VSize(LookTarget.Location - Location) > (MeleeRange + CollisionRadius + LookTarget.CollisionRadius) )  {
-		bGrappling = False;
-		AnimEnd(1);
-	}
+function BreakGrapple()
+{
+	if ( DisabledPawn == None )
+		Return;
+	
+	DisabledPawn.EnableMovement();
+	DisabledPawn = None;
 }
 
 function RemoveHead()
@@ -140,27 +125,18 @@ function RemoveHead()
 	MeleeDamage *= 2;
 	MeleeRange *= 2;
 
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 }
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 	Super.Died(Killer, DamageType, HitLocation);
 }
 
 simulated event Destroyed()
 {
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 	Super.Destroyed();
 }
 
@@ -169,8 +145,8 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 GrappleRangeCheckDelay=0.1
 	 GrappleDuration=1.500000
-	 ClotGrabMessageDelay=12.000000
 	 MeleeAnims(0)="ClotGrapple"
 	 MeleeAnims(1)="ClotGrappleTwo"
 	 MeleeAnims(2)="ClotGrappleThree"
@@ -189,7 +165,9 @@ defaultproperties
 	 MeleeRange=20.000000
 	 GroundSpeed=105.000000
 	 WaterSpeed=105.000000
-	 JumpZ=340.000000
+	 
+	 JumpZ=340.0
+	 JumpSpeed=160.0
 	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
 	 

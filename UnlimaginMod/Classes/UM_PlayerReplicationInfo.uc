@@ -116,9 +116,9 @@ simulated event PostNetReceive()
 //[block] --- Perk bonuses ---
 function bool AddDefaultVeterancyInventory( UM_HumanPawn Human )
 {
-	if ( Human != None && Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )  {
-		Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.AddStandardEquipment( Human, self );
-		Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.AddAdditionalEquipment( Human, self );
+	if ( Human != None && Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )  {
+		Class<UM_VeterancyTypes>(ClientVeteranSkill).static.AddStandardEquipment( Human, self );
+		Class<UM_VeterancyTypes>(ClientVeteranSkill).static.AddAdditionalEquipment( Human, self );
 		
 		Return True;
 	}
@@ -129,8 +129,8 @@ function bool AddDefaultVeterancyInventory( UM_HumanPawn Human )
 // Perk weapon restriction
 simulated function bool CanUseThisWeapon( Weapon W )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.CanUseThisWeapon(self, W);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.CanUseThisWeapon(self, W);
 	
 	Return True;
 }
@@ -146,8 +146,8 @@ simulated function float GetMovementSpeedModifier()
 // Weapon Fire Spread
 simulated function float GetSpreadModifier( WeaponFire WF )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetSpreadModifier(self, WF);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetSpreadModifier(self, WF);
 	
 	Return 1.0;
 }
@@ -155,24 +155,24 @@ simulated function float GetSpreadModifier( WeaponFire WF )
 // Weapon Fire AimError
 simulated function float GetAimErrorModifier( WeaponFire WF )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetAimErrorModifier(self, WF);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetAimErrorModifier(self, WF);
 	
 	Return 1.0;
 }
 
 simulated function float GetRecoilModifier( WeaponFire WF )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetRecoilModifier(self, WF);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetRecoilModifier(self, WF);
 	
 	Return 1.0;
 }
 
 simulated function float GetShakeViewModifier( WeaponFire WF )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetShakeViewModifier(self, WF);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetShakeViewModifier(self, WF);
 	
 	Return 1.0;
 }
@@ -195,8 +195,8 @@ simulated function float GetHealPotency()
 
 simulated function float GetMaxSlowMoCharge()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetMaxSlowMoCharge(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetMaxSlowMoCharge(Self);
 	
 	if ( HumanOwner != None )
 		Return HumanOwner.default.MaxSlowMoCharge;
@@ -206,24 +206,24 @@ simulated function float GetMaxSlowMoCharge()
 
 simulated function float GetSlowMoChargeRegenModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetSlowMoChargeRegenModifier(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetSlowMoChargeRegenModifier(Self);
 	
 	Return 1.0;
 }
 
 simulated function float GetStaminaRegenModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetStaminaRegenModifier(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetStaminaRegenModifier(Self);
 	
 	Return 1.0;
 }
 
 simulated function float GetStaminaDrainModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetStaminaDrainModifier(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetStaminaDrainModifier(Self);
 	
 	Return 1.0;
 }
@@ -231,8 +231,8 @@ simulated function float GetStaminaDrainModifier()
 // On how much this human can overheal somebody
 simulated function float GetOverhealPotency()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealPotency(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetOverhealPotency(Self);
 	
 	Return 1.0;
 }
@@ -240,8 +240,8 @@ simulated function float GetOverhealPotency()
 // Maximum Health that Human can have when he has been overhealed
 simulated function float GetOverhealedHealthMaxModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetOverhealedHealthMaxModifier(Self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetOverhealedHealthMaxModifier(Self);
 	
 	Return 1.0;
 }
@@ -249,8 +249,8 @@ simulated function float GetOverhealedHealthMaxModifier()
 // New function to reduce taken damage
 simulated function float GetHumanOwnerTakenDamageModifier( Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetHumanTakenDamageModifier(Self, HumanOwner, Aggressor, DamageType);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetHumanTakenDamageModifier(Self, HumanOwner, Aggressor, DamageType);
 	
 	Return 1.0;
 }
@@ -282,48 +282,48 @@ simulated function float GetPawnMaxCarryWeight( float MaxCarryWeight )
 // Pawn Movement Bonus while wielding this weapon
 simulated function float GetWeaponPawnMovementBonus( Weapon W )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetWeaponPawnMovementBonus(self, W);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetWeaponPawnMovementBonus(self, W);
 	
 	Return 1.0;
 }
 
 simulated function float GetPawnJumpModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetPawnJumpModifier(self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetPawnJumpModifier(self);
 	
 	Return 1.0;
 }
 
 simulated function int GetPawnMaxBounce()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetPawnMaxBounce(self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetPawnMaxBounce(self);
 	
 	Return 0;
 }
 
 simulated function float GetIntuitiveShootingModifier()
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetIntuitiveShootingModifier(self);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetIntuitiveShootingModifier(self);
 	
 	Return 1.0;
 }
 
 simulated function float GetProjectilePenetrationBonus( Class<UM_BaseProjectile> ProjClass )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetProjectilePenetrationBonus(self, ProjClass);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetProjectilePenetrationBonus(self, ProjClass);
 	
 	Return 1.0;
 }
 
 simulated function float GetProjectileBounceBonus( Class<UM_BaseProjectile> ProjClass )
 {
-	if ( Class<UM_SRVeterancyTypes>(ClientVeteranSkill) != None )
-		Return Class<UM_SRVeterancyTypes>(ClientVeteranSkill).static.GetProjectileBounceBonus(self, ProjClass);
+	if ( Class<UM_VeterancyTypes>(ClientVeteranSkill) != None )
+		Return Class<UM_VeterancyTypes>(ClientVeteranSkill).static.GetProjectileBounceBonus(self, ProjClass);
 	
 	Return 1.0;
 }

@@ -13,7 +13,7 @@ function ChangeCharacter( string CN );
 function ApplyCharacter( string CN );
 
 function ServerSelectPerkName( name N );
-function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType );
+function ServerSelectPerk( Class<UM_VeterancyTypes> VetType );
 
 function NotifyStatChanged();
 

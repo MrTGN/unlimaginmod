@@ -82,8 +82,8 @@ function AddPlayer( KFPlayerReplicationInfo PRI, int Index, Canvas C )
 
 	if ( PRI.ClientVeteranSkill != None )  {
 		PlayerBoxes[Index].PlayerVetLabel.Caption = "Lv" @ PRI.ClientVeteranSkillLevel @ PRI.ClientVeteranSkill.default.VeterancyName;
-		if ( Class<UM_SRVeterancyTypes>(PRI.ClientVeteranSkill) != None )  {
-			Class<UM_SRVeterancyTypes>(PRI.ClientVeteranSkill).Static.PreDrawPerk(C,PRI.ClientVeteranSkillLevel,PlayerBoxes[Index].PlayerPerk.Image,M);
+		if ( Class<UM_VeterancyTypes>(PRI.ClientVeteranSkill) != None )  {
+			Class<UM_VeterancyTypes>(PRI.ClientVeteranSkill).Static.PreDrawPerk(C,PRI.ClientVeteranSkillLevel,PlayerBoxes[Index].PlayerPerk.Image,M);
 			PlayerBoxes[Index].PlayerPerk.ImageColor = C.DrawColor;
 		}
 		else  {
@@ -311,8 +311,8 @@ function DrawPerk(Canvas Canvas)
 
 	// Draw Icon
 	Canvas.SetPos(TempX, TempY);
-	if ( Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill) != None )
-		Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill).Static.PreDrawPerk(Canvas,KFPRI.ClientVeteranSkillLevel,M,SM);
+	if ( Class<UM_VeterancyTypes>(KFPRI.ClientVeteranSkill) != None )
+		Class<UM_VeterancyTypes>(KFPRI.ClientVeteranSkill).Static.PreDrawPerk(Canvas,KFPRI.ClientVeteranSkillLevel,M,SM);
 	else 
 		M = KFPRI.ClientVeteranSkill.default.OnHUDIcon;
 	Canvas.DrawTile(M, IconSize, IconSize, 0, 0, M.MaterialUSize(), M.MaterialVSize());
@@ -342,7 +342,7 @@ function DrawPerk(Canvas Canvas)
 	if(  CurrentVeterancy != KFPRI.ClientVeteranSkill || CurrentVeterancyLevel != LevelIndex )  {
 		CurrentVeterancy = KFPRI.ClientVeteranSkill;
 		CurrentVeterancyLevel = LevelIndex;
-		lb_PerkEffects.SetContent(Class<UM_SRVeterancyTypes>(KFPRI.ClientVeteranSkill).Static.GetVetInfoText(LevelIndex,1));
+		lb_PerkEffects.SetContent(Class<UM_VeterancyTypes>(KFPRI.ClientVeteranSkill).Static.GetVetInfoText(LevelIndex,1));
 	}
 }
 

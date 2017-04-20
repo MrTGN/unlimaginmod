@@ -224,9 +224,11 @@ function RemoveHead()
 }
 
 // High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+function CheckForKnockDown( int Damage, class<DamageType> DamageType )
 {
-	Return UM_MonsterController(Controller) != None && bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 && ( (Class<UM_BaseDamType_SniperRifle>(damageType) != None && Damage > 200) || Damage >= int(HealthMax * KnockedDownHealthPct) );
+	if ( bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 
+		 && ((Class<UM_BaseDamType_SniperRifle>(damageType) != None && Damage > 200) || Damage >= int(HealthMax * KnockedDownHealthPct) || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) )
+		SendToKnockDown();
 }
 
 //[end] Functions
@@ -260,6 +262,11 @@ defaultproperties
      MeleeRange=30.000000
      GroundSpeed=115.000000
      WaterSpeed=102.000000
+	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=150.0
+	 
      HeadHeight=1.000000
      HeadScale=1.500000
      AmbientSoundScaling=8.000000

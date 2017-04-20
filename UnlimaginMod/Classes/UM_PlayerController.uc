@@ -24,6 +24,9 @@ var					bool			bDrawBallisticCollision;
 
 var		transient	float			StopRecoilTime;
 
+// Grabbed Message
+var		transient	float			NextGrabbedMessageTime;
+var					float			GrabbedMessageDelay;
 
 replication
 {
@@ -784,12 +787,21 @@ function BecomeActivePlayer()
 	ClientBecameActivePlayer();
 }
 
+function NotifyGrabbed()
+{
+	if ( Role < ROLE_Authority || Level.TimeSeconds < NextGrabbedMessageTime )
+		Return;
+	
+	NextGrabbedMessageTime = Level.TimeSeconds + GrabbedMessageDelay;
+	Speech('AUTO', 11, "");
+}
+
 auto state PlayerWaiting
 {
 	// hax to open menu when player joins the game
 	simulated event BeginState()
 	{
-		if ( Role == ROLE_Authority )
+		if ( Role > ROLE_SimulatedProxy )
 			Super(PlayerController).BeginState();
 
 		bRequestedSteamData = False;
@@ -852,7 +864,7 @@ auto state PlayerWaiting
 
 	simulated event EndState()
 	{
-		if ( Role == ROLE_Authority )
+		if ( Role > ROLE_SimulatedProxy )
 			Super(PlayerController).EndState();
 
 		if ( Level.NetMode != NM_DedicatedServer )
@@ -1166,6 +1178,17 @@ function WeaponShakeView(
 }
 //[end]
 
+function InstantWarnTarget(Actor Target, FireProperties FiredAmmunition, vector FireDir)
+{
+	if ( FiredAmmunition.bInstantHit && Pawn(Target) != None && Pawn(Target).Controller != None )  {
+		if ( VSizeSquared(Target.Location - Pawn.Location) < Square(Target.CollisionRadius) )
+			Return;
+		
+		if ( FRand() < FiredAmmunition.WarnTargetPct )
+			Pawn(Target).Controller.ReceiveWarning(Pawn, -1, FireDir);
+	}
+}
+
 // Old Aim function
 function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int aimerror)
 {
@@ -1177,9 +1200,9 @@ function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int
 		Return Super.AdjustAim(FiredAmmunition, projStart, aimerror);
 	
 	if ( FiredAmmunition.bInstantHit )
-		TraceRange = 10000.f;
+		TraceRange = 10000.0;
 	else 
-		TraceRange = 4000.f;
+		TraceRange = 4000.0;
 
 	PlayerCalcView(CamActor, CamPos, CamRot);
 	foreach Pawn.TraceActors(Class'Actor', Other, HitLocation, HitNormal, (CamPos + TraceRange * vector(CamRot)), CamPos)  {
@@ -1371,7 +1394,7 @@ simulated function SendSelectedVeterancyToServer(optional bool bForceChange)
 function SelectVeterancy(class<KFVeterancyTypes> VetSkill, optional bool bForceChange)
 {
 	if ( UM_BaseServerStats(SteamStatsAndAchievements) != None )
-		UM_BaseServerStats(SteamStatsAndAchievements).ServerSelectPerk(Class<UM_SRVeterancyTypes>(VetSkill));
+		UM_BaseServerStats(SteamStatsAndAchievements).ServerSelectPerk(Class<UM_VeterancyTypes>(VetSkill));
 }
 
 // Allow clients fix the behindview bug themself
@@ -1721,8 +1744,9 @@ state Dead
 					Pawn.Suicide();
 				Pawn = None;
 			}
-			Super(UnrealPlayer).BeginState();
 		}
+		if ( Role > ROLE_SimulatedProxy )
+			Super(UnrealPlayer).BeginState();
 		
 		if ( HudKillingFloor(myHUD) != None )  {
 			HudKillingFloor(myHUD).bDisplayDeathScreen = True;
@@ -1815,7 +1839,7 @@ state Dead
 
 	simulated event EndState()
 	{
-		if ( Role == ROLE_Authority )
+		if ( Role > ROLE_SimulatedProxy )
 			Super(UnrealPlayer).EndState();
 		
 		if ( HudKillingFloor(myHUD) != None )
@@ -1898,6 +1922,7 @@ state GameEnded
 defaultproperties
 {
 	ShowActorDuration=4.0
+	GrabbedMessageDelay=12.0
 	PlayerReplicationInfoClass="UnlimaginMod.UM_PlayerReplicationInfo"
 	InputClass=None
 	InputClassName="UnlimaginMod.UM_PlayerInput"

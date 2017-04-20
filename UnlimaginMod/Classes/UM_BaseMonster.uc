@@ -44,7 +44,8 @@ var					float				ExtraHealthChance;
 var					range				HealthScaleRange, ExtraHealthScaleRange;
 var					range				HeadHealthScaleRange, ExtraHeadHealthScaleRange;
 // Monster Jump ZAxis height scale
-var					range				JumpZScaleRange;
+var					range				JumpScaleRange; // Vertical jump speed (JumpZ) scale
+var					float				JumpSpeed;	// Horizontal jump speed
 // Monster MeleeRange
 var					range				MeleeRangeScale;
 // Monster Damage
@@ -97,12 +98,21 @@ var		transient	float				NextPainTime, NextPainAnimTime, NextPainSoundTime;
 // Animation
 var					name				RunAnims[8];
 
-//
+// KnockDown
 var					name				KnockDownAnim;
 var					bool				bCanBeKnockedDown;
 var					float				KnockedDownHealthPct;
 var		transient	bool				bKnockedDown;
-var		transient	float				CurrentKnockedDownTime;
+
+// CumulativeDamage - damage taked in the course of time
+var					float				CumulativeDamageDuration;
+var		transient	bool				bResetCumulativeDamage;
+var		transient	int					CumulativeDamage;
+var		transient	float				CumulativeDamageResetTime;
+
+
+// DoorBashing
+var					name				DoorBashAnim;
 
 // Decapitation
 var		transient	bool				bHeadlessAnimated, bBleedOut, bDecapitationPlayed;
@@ -131,6 +141,9 @@ replication
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum, NextHitAnimNum;
+	
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
+		JumpSpeed;
 	
 	// Headshot debugging
 	reliable if ( Role == ROLE_Authority )
@@ -331,7 +344,7 @@ function AddVelocity( vector NewVelocity )
 	if ( Physics == PHYS_Falling && AIController(Controller) != None )
 		ImpactVelocity += NewVelocity;
 	
-	if ( Physics == PHYS_Walking || ((Physics == PHYS_Ladder || Physics == PHYS_Spider) && NewVelocity.Z > Default.JumpZ) )
+	if ( Physics == PHYS_Walking || ((Physics == PHYS_Ladder || Physics == PHYS_Spider) && NewVelocity.Z > JumpZ) )
 		SetPhysics(PHYS_Falling);
 	
 	if ( Velocity.Z > 380.0 && NewVelocity.Z > 0.0 )
@@ -497,15 +510,15 @@ simulated event PostBeginPlay()
 			HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
 			//[end]
 				
-			//floats
+			// floats
 			//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
-			//SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst * RandMult), 1.0 );
-			//SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand * RandMult), 1.0 );
-			//JumpZ = default.JumpZ * DrawScale * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
-			JumpZ = default.JumpZ * Lerp( FRand(), JumpZScaleRange.Min, JumpZScaleRange.Max );
-			//int
-			ScreamDamage = Max( Round(DifficultyDamageModifer() * default.ScreamDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
-			MeleeDamage = Max( Round(DifficultyDamageModifer() * default.MeleeDamage * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+			SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst), 1.0 );
+			SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand), 1.0 );
+			JumpZ = default.JumpZ * Lerp( FRand(), JumpScaleRange.Min, JumpScaleRange.Max );
+			JumpSpeed = default.JumpSpeed * Lerp( FRand(), JumpScaleRange.Min, JumpScaleRange.Max );
+			// ints
+			ScreamDamage = Max( Round(DifficultyDamageModifer() * float(default.ScreamDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+			MeleeDamage = Max( Round(DifficultyDamageModifer() * float(default.MeleeDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 
 			
 			//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
@@ -753,6 +766,11 @@ event Bump(actor Other)
 	}
 }
 
+function SetGroundSpeed(float NewGroundSpeed)
+{
+	GroundSpeed = NewGroundSpeed;
+}
+
 // Return True if we can do the Zombie speed adjust that gets the Zeds
 // to the player faster if they can't be seen
 function bool CanSpeedAdjust()
@@ -763,15 +781,13 @@ function bool CanSpeedAdjust()
 function StandaloneRelevantCheck()
 {
 	local	PlayerController	P;
-	local	float				DistSquared;
 	
 	if ( (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
 		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
 			P = Level.GetLocalPlayerController();
 			if ( P != None && P.Pawn != None )  {
 				LastViewCheckTime = Level.TimeSeconds;
-				DistSquared = VSizeSquared(P.Pawn.Location - Location);
-				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
+				if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
 					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
 					LastSeenOrRelevantTime = Level.TimeSeconds;
 					SetGroundSpeed(OriginalGroundSpeed);
@@ -790,15 +806,13 @@ function StandaloneRelevantCheck()
 function ListenServerRelevantCheck()
 {
 	local	PlayerController	P;
-	local	float				DistSquared;
 	
 	if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 && (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
 		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
 			P = Level.GetLocalPlayerController();
 			if ( P != None && P.Pawn != None )  {
 				LastViewCheckTime = Level.TimeSeconds;
-				DistSquared = VSizeSquared(P.Pawn.Location - Location);
-				if ( (!P.Pawn.Region.Zone.bDistanceFog || (DistSquared < Square(P.Pawn.Region.Zone.DistanceFogEnd))) &&
+				if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
 					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
 					LastSeenOrRelevantTime = Level.TimeSeconds;
 					SetGroundSpeed(OriginalGroundSpeed);
@@ -1002,6 +1016,124 @@ simulated function SpawnSeveredGiblet( class<SeveredAppendage> GibClass, Vector 
 	// Give a little upward motion to the decapitated head
 	if ( class<SeveredHead>(GibClass) != None )
 		Giblet.Velocity.Z += 50.0;
+}
+
+// EnemyChanged() called by controller when current enemy changes
+function EnemyChanged()
+{
+	if ( Controller != None )
+		LookTarget = Controller.Enemy;
+}
+
+// Give zombies forward momentum with jumps.
+function bool DoJump( bool bUpdating )
+{
+	if ( !bIsCrouched && !bWantsToCrouch && (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider) )  {
+		PlayOwnedSound(JumpSound, SLOT_Pain, GruntVolume,,80);
+		if ( Role == ROLE_Authority )  {
+			if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
+				MakeNoise(0.1 * Level.Game.GameDifficulty);
+			if ( bCountJumps && Inventory != None )
+				Inventory.OwnerEvent('Jumped');
+		}
+		
+		if ( Physics == PHYS_Spider )
+			Velocity = JumpZ * Floor;
+		else if ( Physics == PHYS_Ladder )
+			Velocity.Z = 0;
+		else  {
+			Velocity = Normal(Rotation) * JumpSpeed;
+			Velocity.Z = JumpZ;
+		}
+
+		if ( Base != None && !Base.bWorldGeometry )  {
+			Velocity.Z += Base.Velocity.Z;
+			Velocity.X += Base.Velocity.X;
+		}
+		SetPhysics(PHYS_Falling);
+		
+		Return True;
+	}
+	
+	Return False;
+}
+
+function bool MeleeDamageTarget(int HitDamage, vector PushDir)
+{
+	local	vector		HitLocation, HitNormal;
+	local	Actor		HitActor;
+	local	Name		TearBone;
+	local	float		F;
+	
+	if ( Role < ROLE_Authority || Controller == None || Controller.Target == None || bSTUNNED || DECAP )
+		Return False;
+	
+	if ( KFDoorMover(Controller.Target) != None )  {
+		Controller.Target.TakeDamage(HitDamage, self , Location, PushDir, CurrentDamType);
+		Return True;
+	}
+	
+	F = FMax(CollisionHeight, Controller.Target.CollisionHeight) + 0.5 * FMin(CollisionHeight, Controller.Target.CollisionHeight);
+	// check if still in melee range
+	if ( (Physics == PHYS_Flying || Physics == PHYS_Swimming || Abs(Location.Z - Controller.Target.Location.Z) <= F) && 
+		 VSize(Controller.Target.Location - Location) <= (float(MeleeRange) * 1.4 + Controller.Target.CollisionRadius + CollisionRadius) )  {
+		// Trace to find a victim
+		HitActor = Trace(HitLocation, HitNormal, Controller.Target.Location, (Location + EyePosition()), True);
+		if ( HitActor == None )
+			Return False;
+		
+		// If the trace wouldn't hit a pawn, check for the blocking mover or world geometry
+		if ( Pawn(HitActor) == None )  {
+			HitActor = Trace(HitLocation, HitNormal, Controller.Target.Location, Location, false);
+			if ( HitActor != None )
+				Return False;
+		}
+
+		// Do more damage if you are attacking another zed so that zeds don't just stand there whacking each other forever! - Ramm
+		if ( KFMonster(Controller.Target) != None )  {
+			Controller.Target.TakeDamage(Round(float(HitDamage) * DamageToMonsterScale), self, HitLocation, PushDir, CurrentDamType);
+			Return True;
+		}
+		
+		Controller.Target.TakeDamage(HitDamage, self, HitLocation, PushDir, CurrentDamType);
+		// Check for killed Human
+		if ( KFHumanPawn(Controller.Target) != None && KFHumanPawn(Controller.Target).Health < 1 )  {
+			// Blood effects
+			if ( !class'GameInfo'.static.UseLowGore() )  {
+				Spawn(class'KFMod.FeedingSpray', self,, Controller.Target.Location, rotator(PushDir));
+				KFHumanPawn(Controller.Target).SpawnGibs(rotator(PushDir), 1);
+				TearBone = Controller.Target.GetClosestBone(HitLocation, PushDir, F);
+				if ( TearBone != '' )
+					KFHumanPawn(Controller.Target).HideBone(TearBone);
+			}
+			// Give us some Health back
+			if ( Health <= (HealthMax * (1.0 - FeedThreshold)) )
+				Health += Round(FeedThreshold * HealthMax * float(Health) / HealthMax);
+		}
+
+		Return True;
+	}
+
+	Return False;
+}
+
+function ClawDamageTarget()
+{
+	local	vector	PushDir;
+	local	float	UsedMeleeDamage;
+
+	if ( Controller == None || Controller.Target == None )
+		Return;
+	
+	if ( MeleeDamage < 20 )
+		UsedMeleeDamage = MeleeDamage;
+	// Melee damage +/- 5%
+	else
+		UsedMeleeDamage = Round( float(MeleeDamage) * Lerp(FRand(), 0.95, 1.05) );
+	
+	PushDir = damageForce * Normal(Controller.Target.Location - Location);
+	if ( MeleeDamageTarget(UsedMeleeDamage, PushDir) )
+		PlaySound(MeleeAttackHitSound, SLOT_Interact, 2.0);
 }
 
 //[Block] Animation functions
@@ -1707,11 +1839,15 @@ simulated function int DoAnimAction( name AnimName )
 
 simulated function bool AnimNeedsWait(name TestAnim)
 {
-	Return ExpectingChannel == 0;
+	Return TestAnim == KnockDownAnim || TestAnim == DoorBashAnim || ExpectingChannel == 0;
 }
 
 simulated event SetAnimAction(name NewAction)
 {
+	if ( bWaitForAnim && Level.NetMode != NM_Client )
+		Return;
+	
+	AnimAction = NewAction;
 	if ( NewAction == '' )
 		Return;
 	
@@ -1722,8 +1858,12 @@ simulated event SetAnimAction(name NewAction)
 		if ( Role == ROLE_Authority )
 			NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
 	}
-	else if ( NewAction == 'DoorBash' )
-		CurrentDamtype = ZombieDamType[Rand(3)];
+	else if ( NewAction == 'DoorBash' )  {
+		CurrentDamtype = ZombieDamType[NextMeleeAnimNum];
+		// Rand NextMeleeAnimNum on the server
+		if ( Role == ROLE_Authority )
+			NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
+	}
 	
 	ExpectingChannel = DoAnimAction(NewAction);
 	bWaitForAnim = AnimNeedsWait(NewAction);
@@ -1765,6 +1905,72 @@ simulated event AnimEnd(int Channel)
 		PlayVictoryAnimation();
 }
 //[End]
+
+function CorpseAttack(Actor A)
+{
+	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated )
+		Return;
+	
+	Velocity.X = 0;
+	Velocity.Y = 0;
+	Acceleration = vect(0,0,0);
+	bShotAnim = True;
+	SetAnimAction('ZombieFeed');
+	Health = Min( (Health + 1 + Rand(3)), int(float(Default.Health) * 1.5) );
+}
+
+function bool CanAttack(Actor A)
+{
+	if ( A == None || bSTUNNED || DECAP )
+		Return False;
+
+	if ( KFDoorMover(A) != None )
+		Return True;
+	
+	if ( KFHumanPawn(A) != None && KFHumanPawn(A).Health < 1 )
+		Return VSize(A.Location - Location) < (MeleeRange + CollisionRadius);
+	else 
+		Return VSize(A.Location - Location) < (MeleeRange + CollisionRadius + A.CollisionRadius);
+}
+
+function RangedAttack(Actor A)
+{
+	if ( bShotAnim || Physics == PHYS_Swimming || !CanAttack(A) )
+		Return;
+	
+	bShotAnim = True;
+	SetAnimAction('Claw');
+	Controller.bPreparingMove = True;
+	Acceleration = vect(0,0,0);
+}
+
+function DoorAttack(Actor A)
+{
+	if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming )
+		Return;
+	
+	bShotAnim = True;
+	SetAnimAction('DoorBash');
+	GotoState('DoorBashing');
+}
+
+state DoorBashing
+{
+	simulated function bool HitCanInterruptAction()
+	{
+		Return False;
+	}
+	
+	simulated event Tick(float DeltaTime)
+	{
+		Global.Tick(DeltaTime);
+	}
+	
+Begin:
+	FinishAnim(ExpectingChannel);
+	Sleep(0.1);
+	GoToState('');
+}
 
 State ZombieDying
 {
@@ -1918,53 +2124,59 @@ ignores AnimEnd, Trigger, Bump, HitWall, HeadVolumeChange, PhysicsVolumeChange, 
 // Set the zed to the zapped behavior
 simulated function SetZappedBehavior()
 {
-	if ( Role == Role_Authority )  {
-		Intelligence = BRAINS_Retarded; // burning dumbasses!
-		SetGroundSpeed(OriginalGroundSpeed * ZappedSpeedMod);
-		AirSpeed *= ZappedSpeedMod;
-		WaterSpeed *= ZappedSpeedMod;
-		// Make them less accurate while they are burning
-		if ( Controller != None )
-		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
-	}
 	// Set burning walk anim
 	AnimateBurning();
+	// Server code next
+	if ( Role < Role_Authority )
+		Return;
+	
+	Intelligence = BRAINS_Retarded; // burning dumbasses!
+	SetGroundSpeed(OriginalGroundSpeed * ZappedSpeedMod);
+	AirSpeed *= ZappedSpeedMod;
+	WaterSpeed *= ZappedSpeedMod;
+	// Make them less accurate while they are burning
+	if ( Controller != None )
+		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
 }
 
 // Turn off the on-fire behavior
 simulated function UnSetZappedBehavior()
 {
-	if ( Role == Role_Authority )  {
-		Intelligence = default.Intelligence;
-		if ( bBurnified )
-			SetGroundSpeed(OriginalGroundSpeed * 0.80);
-		else
-			SetGroundSpeed(OriginalGroundSpeed);
-		AirSpeed = default.AirSpeed;
-		WaterSpeed = default.WaterSpeed;
-		// Set normal accuracy
-		if ( Controller != None )
-		   MonsterController(Controller).Accuracy = MonsterController(Controller).default.Accuracy;
-	}
 	// restore regular anims
 	AnimateDefault();
+	// Server code next
+	if ( Role < Role_Authority )
+		Return;
+	
+	Intelligence = default.Intelligence;
+	if ( bBurnified )
+		SetGroundSpeed(OriginalGroundSpeed * 0.8);
+	else
+		SetGroundSpeed(OriginalGroundSpeed);
+	AirSpeed = default.AirSpeed;
+	WaterSpeed = default.WaterSpeed;
+	// Set normal accuracy
+	if ( Controller != None )
+		MonsterController(Controller).Accuracy = MonsterController(Controller).default.Accuracy;
 }
 
 // Set the zed to the on fire behavior
 simulated function SetBurningBehavior()
 {
-	if ( Role == Role_Authority )  {
-		Intelligence = BRAINS_Retarded; // burning dumbasses!
-		SetGroundSpeed(OriginalGroundSpeed * 0.8);
-		AirSpeed *= 0.8;
-		WaterSpeed *= 0.8;
-
-		// Make them less accurate while they are burning
-		if ( Controller != None )
-		   MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
-	}
 	// Set burning walk anim
 	AnimateBurning();
+	// Server code next
+	if ( Role < Role_Authority )
+		Return;
+
+	Intelligence = BRAINS_Retarded; // burning dumbasses!
+	SetGroundSpeed(OriginalGroundSpeed * 0.8);
+	AirSpeed *= 0.8;
+	WaterSpeed *= 0.8;
+
+	// Make them less accurate while they are burning
+	if ( Controller != None )
+		MonsterController(Controller).Accuracy = -5;  // More chance of missing. (he's burning now, after all) :-D
 }
 
 simulated function StartBurnFX()
@@ -2080,13 +2292,18 @@ simulated event Tick( float DeltaTime )
 	if ( bDecapitated && !bHeadlessAnimated )
 		AnimateHeadless();
 	
-	if ( Controller != None )
-		LookTarget = Controller.Enemy;
-	
 	// If the Zed has been bleeding long enough, make it die
-	if ( Role == ROLE_Authority && bDecapitated && bBleedOut && Level.TimeSeconds > BleedOutTime )  {
-		bBleedOut = False;
-		Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
+	if ( Role == ROLE_Authority )  {
+		// ResetCumulativeDamage
+		if ( bResetCumulativeDamage && Level.TimeSeconds > CumulativeDamageResetTime )  {
+			bResetCumulativeDamage = False;
+			CumulativeDamage = 0;
+		}
+		// Do BleedOut death
+		if ( bBleedOut && Level.TimeSeconds > BleedOutTime )  {
+			bBleedOut = False;
+			Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
+		}
 	}
 	
 	//SPLATTER!!!!!!!!!
@@ -2329,20 +2546,6 @@ simulated function DoDamageFX( Name boneName, int Damage, class<DamageType> Dama
 	}
 }
 
-function RangedAttack(Actor A)
-{
-	if ( bShotAnim || Physics == PHYS_Swimming )
-		Return;
-	else if ( CanAttack(A) )  {
-		bShotAnim = True;
-		SetAnimAction('Claw');
-		//PlaySound(sound'Claw2s', SLOT_None); KFTODO: Replace this
-		Controller.bPreparingMove = True;
-		Acceleration = vect(0,0,0);
-		Return;
-	}
-}
-
 // Overridden so that anims don't get interrupted on the server if one is already playing
 function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 {
@@ -2554,7 +2757,7 @@ function PlayDirectionalHit(Vector HitLoc)
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
 	// No anim if we're burning, we're already playing an anim
-	if ( !bKnockedDown && Level.TimeSeconds >= NextPainAnimTime && !(bCrispified && bBurnified) )  {
+	if ( Level.TimeSeconds >= NextPainAnimTime && !(bCrispified && bBurnified) )  {
 		if ( Damage > 4 )
 			PlayDirectionalHit(HitLocation);
 		else if (DamageType.name == 'DamTypeShotgun' || DamageType.name == 'DamTypeDBShotgun'
@@ -2673,26 +2876,73 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 	NextPainTime = Level.TimeSeconds + 0.1;
 }
 
-// High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+function SendToKnockDown(optional float KnockDownDuration)
 {
-	Return UM_MonsterController(Controller) != None && bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 && Damage >= int(HealthMax * KnockedDownHealthPct);
+	if ( UM_MonsterController(Controller) == None )
+		Return;
+	
+	if ( KnockDownDuration > 0.0 )
+		UM_MonsterController(Controller).SetKnockDownEndTime( KnockDownDuration );
+	
+	GotoState('KnockedDown');
 }
 
-function PlayKnockDown()
+// High damage was taken, make em fall over.
+function CheckForKnockDown( int Damage, class<DamageType> DamageType )
 {
-	//if ( Physics == PHYS_Falling )
-		//SetPhysics(PHYS_Walking);
-	
-	bShotAnim = True;
-	SetAnimAction(KnockDownAnim);
-	UM_MonsterController(Controller).GotoState('KnockedDown');
+	if ( bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 
+		 && (Damage >= int(HealthMax * KnockedDownHealthPct) || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) )
+		SendToKnockDown();
 }
 
 state KnockedDown
 {
+	function PlayKnockDown()
+	{
+		bShotAnim = True;
+		SetAnimAction(KnockDownAnim);
+	}
 	
-	Begin:
+	event BeginState()
+	{
+		if ( UM_MonsterController(Controller) == None )  {
+			GotoState('');
+			Return;
+		}
+			
+		bKnockedDown = True;
+		PlayKnockDown();
+		if ( UM_MonsterController(Controller) != None )
+			UM_MonsterController(Controller).GotoState('KnockedDown');
+		
+		SetGroundSpeed(0.0);
+		AccelRate = 0.0;
+		Acceleration = vect(0,0,0);
+	}
+	
+	function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
+	{
+		if ( Level.TimeSeconds < NextPainSoundTime )
+			Return;
+
+		NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
+		if ( class<DamTypeBurned>(DamageType) == None && class<DamTypeFlamethrower>(DamageType) == None )
+			PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400);
+	}
+	
+	function SendToKnockDown(optional float KnockDownDuration)
+	{
+		if ( UM_MonsterController(Controller) != None && KnockDownDuration > 0.0 )
+			UM_MonsterController(Controller).SetKnockDownTime( KnockDownDuration );
+	}
+	
+	function EndKnockDown()
+	{
+		AccelRate = default.AccelRate;
+		SetGroundSpeed(OriginalGroundSpeed);
+		bKnockedDown = False;
+		GoToState(''); // exit from this state
+	}
 }
 
 // New Hit FX for Zombies!
@@ -2702,14 +2952,12 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 	local	Vector					HitRay;
 	local	Name					HitBone;
 	local	float					HitBoneDist;
-	local	bool					bShowEffects, bRecentHit;
+	local	bool					bShowEffects;
 
-	bRecentHit = (Level.TimeSeconds - LastPainTime) < 0.2;
 	if ( Damage < 1 )
 		Return;
 	
-	if ( CheckForKnockDown(Damage, DamageType) )
-		PlayKnockDown();
+	CheckForKnockDown(Damage, DamageType);
 	// Call the modified version of the original Pawn playhit
 	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
 
@@ -2729,8 +2977,8 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 		CalcHitLoc( HitLocation, HitRay, HitBone, HitBoneDist );
 		// Do a zapped effect is someone shoots us and we're zapped to help show that the zed is taking more damage
 		if ( bZapped && DamageType.name != 'DamTypeZEDGun' )  {
-			PlaySound(class'ZedGunProjectile'.default.ExplosionSound,,class'ZedGunProjectile'.default.ExplosionSoundVolume);
-			Spawn(class'ZedGunProjectile'.default.ExplosionEmitter,,,HitLocation + HitNormal*20,rotator(HitNormal));
+			PlaySound(class'ZedGunProjectile'.default.ExplosionSound,, class'ZedGunProjectile'.default.ExplosionSoundVolume);
+			Spawn(class'ZedGunProjectile'.default.ExplosionEmitter,,, (HitLocation + HitNormal * 20.0), rotator(HitNormal));
 		}
 	}
 	else  {
@@ -2743,14 +2991,12 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 		HitBone = 'head';
 
 	if ( InstigatedBy != None )
-		HitNormal = Normal( Normal(InstigatedBy.Location-HitLocation) + VRand() * 0.2 + vect(0,0,2.8) );
+		HitNormal = Normal( Normal(InstigatedBy.Location - HitLocation) + VRand() * 0.2 + vect(0,0,2.8) );
 	else
 		HitNormal = Normal( Vect(0,0,1) + VRand() * 0.2 + vect(0,0,2.8) );
 
-	//log("HitLocation "$Hitlocation) ;
-
-	if ( DamageType.Default.bCausesBlood && Level.Game != None && !class'GameInfo'.static.NoBlood() && !class'GameInfo'.static.UseLowGore() && (!bRecentHit || FRand() > 0.8) )  {
-		if ( Momentum != Vect(0.0, 0.0, 0.0) )
+	if ( DamageType.Default.bCausesBlood && Level.Game != None && !class'GameInfo'.static.NoBlood() && !class'GameInfo'.static.UseLowGore() && (Level.TimeSeconds > NextPainTime || FRand() > 0.8) )  {
+		if ( Momentum != Vect(0, 0, 0) )
 			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Momentum) );
 		else if ( InstigatedBy != None )
 			Spawn( ProjectileBloodSplatClass, InstigatedBy,, HitLocation, rotator(Location - InstigatedBy.Location) );
@@ -2770,6 +3016,19 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 
 	if ( DamageType.default.DamageOverlayMaterial != None && Damage > 0 ) // additional check in case shield absorbed
 		SetOverlayMaterial( DamageType.default.DamageOverlayMaterial, DamageType.default.DamageOverlayTime, false );
+}
+
+function AddCumulativeDamage(int NewDamage)
+{
+	if ( NewDamage < 1 )
+		Return;
+	
+	if ( !bResetCumulativeDamage )  {
+		CumulativeDamageResetTime = Level.TimeSeconds + CumulativeDamageDuration;
+		bResetCumulativeDamage = True;
+	}
+	
+	CumulativeDamage += NewDamage;
 }
 
 // Process the damaging and Return the amount of taken damage
@@ -2901,6 +3160,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	if ( HitLocation == vect(0.0, 0.0, 0.0) )
 		HitLocation = Location;
 	
+	AddCumulativeDamage(Damage);
 	// Last Damage
 	LastDamageAmount = Damage;
 	LastDamagedBy = InstigatedBy;
@@ -3049,26 +3309,6 @@ function PushAwayZombie(Vector NewVelocity)
 		Controller.SetFall();
 }
 
-/*
-function PushAwayZombie(vector PushAwayDirection, float PushAwayPower)
-{
-	if ( PushAwayPower > Mass )  {
-		AnimEnd(1);
-		bShotAnim = True;
-		bNoJumpAdjust = True;
-		Acceleration = vect(0, 0, 0);
-		Velocity = (PushAwayPower - Mass) * Normal(PushAwayDirection);
-		Velocity.Z += 100.000000;
-		UM_MonsterController(Controller).bUseFreezeHack = True;
-		if ( Controller != None && UM_MonsterController(Controller) != None
-			&& !Controller.IsInState('ZombiePushedAway') )
-			Controller.GotoState('ZombiePushedAway');
-		SetPhysics(PHYS_Falling);
-		if ( Controller != None )
-			Controller.SetFall();
-	}
-} */
-
 function Dazzle(float TimeScale)
 {
 	AnimEnd(1);
@@ -3091,6 +3331,8 @@ defaultproperties
 {
 	 HeadHitPointName="HitPoint_Head"
 	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
+	 
+	 CumulativeDamageDuration=0.05
 	 
 	 Intelligence=BRAINS_Mammal
 	 
@@ -3120,8 +3362,12 @@ defaultproperties
 	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 // Monster HeadHealth
 	 HeadHealthScaleRange=(Min=0.92,Max=1.08)
+	 GroundSpeed=140.000000
+	 HiddenGroundSpeed=300.000000
 	 // JumpZ
-	 JumpZScaleRange=(Min=1.0,Max=1.2)
+	 JumpZ=320.0
+	 JumpSpeed=180.0
+	 JumpScaleRange=(Min=1.0,Max=1.2)
 	 // MeleeRange
 	 MeleeRangeScale=(Min=0.95,Max=1.05)
 	 // DamageScale
@@ -3137,95 +3383,97 @@ defaultproperties
 	 ExtraHealthScaleRange=(Min=1.15,Max=2.0)
 	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
 	 bPhysicsAnimUpdate=True
-     bDoTorsoTwist=True
+	 bDoTorsoTwist=True
 	 // KnockDownAnim
 	 bCanBeKnockedDown=True
 	 KnockDownAnim="KnockDown"
 	 KnockedDownHealthPct=0.65
+	 // DoorBash
+	 DoorBashAnim="DoorBash"
 	 // MeleeAnims
 	 MeleeAnims(0)="Claw"
-     MeleeAnims(1)="Claw2"
-     MeleeAnims(2)="Claw3"
-     // HitAnims
+	 MeleeAnims(1)="Claw2"
+	 MeleeAnims(2)="Claw3"
+	 // HitAnims
 	 HitAnims(0)="HitF"
-     HitAnims(1)="HitF2"
-     HitAnims(2)="HitF3"
+	 HitAnims(1)="HitF2"
+	 HitAnims(2)="HitF3"
 	 KFHitFront="HitReactionF"
-     KFHitBack="HitReactionB"
-     KFHitLeft="HitReactionL"
-     KFHitRight="HitReactionR"
+	 KFHitBack="HitReactionB"
+	 KFHitLeft="HitReactionL"
+	 KFHitRight="HitReactionR"
 	 // MovementAnims
 	 MovementAnims(0)="RunF"
-     MovementAnims(1)="RunB"
-     MovementAnims(2)="RunL"
-     MovementAnims(3)="RunR"
+	 MovementAnims(1)="RunB"
+	 MovementAnims(2)="RunL"
+	 MovementAnims(3)="RunR"
 	 TurnLeftAnim="TurnLeft"
-     TurnRightAnim="TurnRight"
+	 TurnRightAnim="TurnRight"
 	 // WalkAnims
 	 WalkAnims(0)="WalkF"
-     WalkAnims(1)="WalkB"
-     WalkAnims(2)="WalkL"
-     WalkAnims(3)="WalkR"
+	 WalkAnims(1)="WalkB"
+	 WalkAnims(2)="WalkL"
+	 WalkAnims(3)="WalkR"
 	 // HeadlessWalkAnims
 	 HeadlessWalkAnims(0)="WalkF_Headless"
-     HeadlessWalkAnims(1)="WalkB_Headless"
-     HeadlessWalkAnims(2)="WalkL_Headless"
-     HeadlessWalkAnims(3)="WalkR_Headless"
-     // BurningWalkFAnims
+	 HeadlessWalkAnims(1)="WalkB_Headless"
+	 HeadlessWalkAnims(2)="WalkL_Headless"
+	 HeadlessWalkAnims(3)="WalkR_Headless"
+	 // BurningWalkFAnims
 	 BurningWalkFAnims(0)="WalkF_Fire"
-     BurningWalkFAnims(1)="WalkF_Fire"
-     BurningWalkFAnims(2)="WalkF_Fire"
-     // BurningWalkAnims
+	 BurningWalkFAnims(1)="WalkF_Fire"
+	 BurningWalkFAnims(2)="WalkF_Fire"
+	 // BurningWalkAnims
 	 BurningWalkAnims(0)="WalkB_Fire"
-     BurningWalkAnims(1)="WalkL_Fire"
-     BurningWalkAnims(2)="WalkR_Fire"
+	 BurningWalkAnims(1)="WalkL_Fire"
+	 BurningWalkAnims(2)="WalkR_Fire"
 	 // CrouchAnims
 	 CrouchAnims(0)="Crouch"
-     CrouchAnims(1)="Crouch"
-     CrouchAnims(2)="Crouch"
-     CrouchAnims(3)="Crouch"
+	 CrouchAnims(1)="Crouch"
+	 CrouchAnims(2)="Crouch"
+	 CrouchAnims(3)="Crouch"
 	 // SwimAnims
 	 SwimAnims(0)="SwimF"
-     SwimAnims(1)="SwimB"
-     SwimAnims(2)="SwimL"
-     SwimAnims(3)="SwimR"
+	 SwimAnims(1)="SwimB"
+	 SwimAnims(2)="SwimL"
+	 SwimAnims(3)="SwimR"
 	 // AirAnims
 	 AirAnims(0)="InAir"
-     AirAnims(1)="InAir"
-     AirAnims(2)="InAir"
-     AirAnims(3)="InAir"
+	 AirAnims(1)="InAir"
+	 AirAnims(2)="InAir"
+	 AirAnims(3)="InAir"
 	 // TakeoffAnims
 	 TakeoffAnims(0)="Jump"
-     TakeoffAnims(1)="Jump"
-     TakeoffAnims(2)="Jump"
-     TakeoffAnims(3)="Jump"
-     // LandAnims
+	 TakeoffAnims(1)="Jump"
+	 TakeoffAnims(2)="Jump"
+	 TakeoffAnims(3)="Jump"
+	 // LandAnims
 	 LandAnims(0)="Landed"
-     LandAnims(1)="Landed"
-     LandAnims(2)="Landed"
-     LandAnims(3)="Landed"
+	 LandAnims(1)="Landed"
+	 LandAnims(2)="Landed"
+	 LandAnims(3)="Landed"
 	 // DoubleJumpAnims
-     DoubleJumpAnims(0)="Jump"
-     DoubleJumpAnims(1)="Jump"
-     DoubleJumpAnims(2)="Jump"
-     DoubleJumpAnims(3)="Jump"
-     // DodgeAnims
+	 DoubleJumpAnims(0)="Jump"
+	 DoubleJumpAnims(1)="Jump"
+	 DoubleJumpAnims(2)="Jump"
+	 DoubleJumpAnims(3)="Jump"
+	 // DodgeAnims
 	 DodgeAnims(0)="DodgeF"
-     DodgeAnims(1)="DodgeB"
-     DodgeAnims(2)="DodgeL"
-     DodgeAnims(3)="DodgeR"
+	 DodgeAnims(1)="DodgeB"
+	 DodgeAnims(2)="DodgeL"
+	 DodgeAnims(3)="DodgeR"
 	 // IdleAnim
 	 HeadlessIdleAnim="Idle_Headless"
 	 IdleHeavyAnim="Idle_LargeZombie"
-     IdleRifleAnim="Idle_LargeZombie"
+	 IdleRifleAnim="Idle_LargeZombie"
 	 IdleCrouchAnim="Idle_LargeZombie"
-     IdleWeaponAnim="Idle_LargeZombie"
-     IdleRestAnim="Idle_LargeZombie"
+	 IdleWeaponAnim="Idle_LargeZombie"
+	 IdleRestAnim="Idle_LargeZombie"
 	 // FireAnim
 	 FireHeavyRapidAnim="MeleeAttack"
-     FireHeavyBurstAnim="MeleeAttack"
-     FireRifleRapidAnim="MeleeAttack"
-     FireRifleBurstAnim="MeleeAttack"
+	 FireHeavyBurstAnim="MeleeAttack"
+	 FireRifleRapidAnim="MeleeAttack"
+	 FireRifleBurstAnim="MeleeAttack"
 	 // ZombieDamType
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_Melee'
 	 ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_Melee'

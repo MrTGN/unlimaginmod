@@ -18,7 +18,7 @@ var		class<Projectile>	SecondProjectileClass;
 var		int					AltProjPerFire;
 var		float				AltSpread;
 
-function UpdateFireProperties( Class<UM_SRVeterancyTypes> SRVT )
+function UpdateFireProperties( Class<UM_VeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
 	

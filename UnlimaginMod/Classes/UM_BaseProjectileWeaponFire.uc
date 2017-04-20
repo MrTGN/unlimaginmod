@@ -858,7 +858,7 @@ function float GetAimError()
 	Return CurrentAimError;
 }
 
-function UpdateFireProperties( Class<UM_SRVeterancyTypes> SRVT )
+function UpdateFireProperties( Class<UM_VeterancyTypes> SRVT )
 {
 	local	byte	DefPerkIndex;
 	
@@ -1003,7 +1003,7 @@ function AddRecoil()
 				AdjustedVelocity.Z = 0.0;
 				// Reduce the falling recoil in low grav
 				// (RecoilVelocityScale -1.0) because we will adding Pitch and Yaw
-				RecoilScale = (VSize(AdjustedVelocity) / Instigator.GroundSpeed) * (RecoilVelocityScale - 1.0) * 0.5;
+				RecoilScale = (VSizeSquared(AdjustedVelocity) / Square(Instigator.GroundSpeed)) * (RecoilVelocityScale - 1.0) * 0.5;
 				if ( RecoilScale > 0.0 )  {
 					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * RecoilScale );
 					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * RecoilScale );
@@ -1013,7 +1013,7 @@ function AddRecoil()
 				if ( bRecoilIgnoreZVelocity )
 					AdjustedVelocity.Z = 0.0;
 				// (RecoilVelocityScale -1.0) because we adding Pitch and Yaw
-				RecoilScale = (VSize(AdjustedVelocity) / Instigator.GroundSpeed) * (RecoilVelocityScale - 1.0);
+				RecoilScale = (VSizeSquared(AdjustedVelocity) / Square(Instigator.GroundSpeed)) * (RecoilVelocityScale - 1.0);
 				if ( RecoilScale > 0.0 )  {
 					NewRecoilRotation.Pitch += Round( float(NewRecoilRotation.Pitch) * RecoilScale );
 					NewRecoilRotation.Yaw += Round( float(NewRecoilRotation.Yaw) * RecoilScale );
@@ -1075,7 +1075,7 @@ event ModeDoFire()
 	// server
     if ( Weapon.Role == ROLE_Authority )  {
 		// Updating spread and projectile info. 
-		UpdateFireProperties( Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill) );
+		UpdateFireProperties( Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill) );
 		Weapon.ConsumeAmmo(ThisModeNum, Load);
 		DoFireEffect();
 		AddKickMomentum();

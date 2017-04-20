@@ -1865,6 +1865,10 @@ defaultproperties
 	 MeleeRange=10.000000
 	 GroundSpeed=120.000000
 	 WaterSpeed=120.000000
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=180.0
+	 
 	 HeadScale=1.300000
 	 MenuName="Patriarch"
 	 // MovementAnims

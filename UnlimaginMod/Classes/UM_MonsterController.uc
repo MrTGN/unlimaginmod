@@ -15,6 +15,7 @@
 class UM_MonsterController extends KFMonsterController;
 
 //var		float	MyDazzleTime;
+var		transient	float				KnockDownEndTime;
 
 function InitPlayerReplicationInfo()
 {
@@ -52,6 +53,86 @@ event PostBeginPlay()
 		bUseThreatAssessment = True;
 }
 
+function bool TryToDuck(vector duckDir, bool bReversed)
+{
+	local	vector	HitLocation, HitNormal, Extent;
+	local	Actor	HitActor;
+	local	bool	bSuccess, bDuckLeft;
+
+	if ( Pawn.PhysicsVolume.bWaterVolume || Pawn.PhysicsVolume.Gravity.Z > Pawn.PhysicsVolume.Default.Gravity.Z )
+		Return False;
+
+	duckDir.Z = 0;
+	bDuckLeft = !bReversed;
+	Extent = Pawn.GetCollisionExtent();
+	HitActor = Trace(HitLocation, HitNormal, Pawn.Location + 240 * duckDir, Pawn.Location, false, Extent);
+	bSuccess = ( HitActor == None || (VSizeSquared(HitLocation - Pawn.Location) > 22500.0) );
+	if ( !bSuccess )  {
+		bDuckLeft = !bDuckLeft;
+		duckDir *= -1;
+		HitActor = Trace(HitLocation, HitNormal, Pawn.Location + 240.0 * duckDir, Pawn.Location, false, Extent);
+		bSuccess = ( HitActor == None || (VSizeSquared(HitLocation - Pawn.Location) > 22500.0) );
+	}
+	
+	if ( !bSuccess )
+		Return False;
+
+	if ( HitActor == None )
+		HitLocation = Pawn.Location + 240 * duckDir;
+
+	HitActor = Trace(HitLocation, HitNormal, HitLocation - MAXSTEPHEIGHT * vect(0,0,1), HitLocation, false, Extent);
+	if ( HitActor == None )
+		Return False;
+
+	if ( bDuckLeft )
+		UnrealPawn(Pawn).CurrentDir = DCLICK_Left;
+	else
+		UnrealPawn(Pawn).CurrentDir = DCLICK_Right;
+	UnrealPawn(Pawn).Dodge(UnrealPawn(Pawn).CurrentDir);
+	
+	Return True;
+}
+
+function ReceiveWarning(Pawn Shooter, float ProjSpeed, vector FireDir)
+{
+	local	float	EnemyDist, DodgeSkill;
+	local	vector	X,Y,Z, EnemyDir;
+
+	// AI controlled creatures may duck if not falling
+	DodgeSkill = Skill + Monster(Pawn).DodgeSkillAdjust;
+	if ( Pawn.Health < 1 || !Monster(Pawn).bCanDodge || DodgeSkill < 4 || Enemy == None ||
+		|| Pawn.Physics == PHYS_Falling || Pawn.Physics == PHYS_Swimming || FRand() > (0.2 * DodgeSkill - 0.4) )
+		Return;
+
+	// and projectile time is long enough
+	EnemyDist = VSize(Shooter.Location - Pawn.Location);
+	if ( (EnemyDist / ProjSpeed) < (0.11 + 0.15 * FRand()) )
+		Return;
+	
+	// only if tight FOV
+	GetAxes(Pawn.Rotation,X,Y,Z);
+	EnemyDir = (Shooter.Location - Pawn.Location) / EnemyDist;
+	if ( (EnemyDir Dot X) < 0.8 )
+		Return;
+	
+	if ( (FireDir Dot Y) > 0.0 )  {
+		TryToDuck(-Y, True);
+	}
+	else
+		TryToDuck(Y, False);
+}
+
+function InstantWarnTarget(Actor Target, FireProperties FiredAmmunition, vector FireDir)
+{
+	if ( FiredAmmunition.bInstantHit && Pawn(Target) != None && Pawn(Target).Controller != None )  {
+		if ( VSizeSquared(Target.Location - Pawn.Location) < Square(Target.CollisionRadius) )
+			Return;
+		
+		if ( FRand() < FiredAmmunition.WarnTargetPct )
+			Pawn(Target).Controller.ReceiveWarning(Pawn, -1, FireDir);
+	}
+}
+
 event bool NotifyLanded(vector HitNormal)
 {
 	local	vector	Vel2D;
@@ -80,7 +161,7 @@ event Tick(float DeltaTime)
 	if ( bAboutToGetDoor )  {
 		bAboutToGetDoor = False;
 		if ( TargetDoor != None )
-        	BreakUpDoor(TargetDoor, True);
+			BreakUpDoor(TargetDoor, True);
 	}
 }
 
@@ -174,6 +255,83 @@ function bool FindFreshBody()
 	Return True;
 }
 
+function bool FindBestPathToward(Actor A, bool bCheckedReach, bool bAllowDetour)
+{
+	local	vector	HitLoc, HitNorm;
+
+	if ( A == None )
+		Return False; // Shouldn't get to this, but just in case.
+	
+	RouteCache[1] = None;
+	if ( !bCheckedReach && ActorReachable(A) )
+		MoveTarget = A;
+	else  {
+		// Sometimes they may attempt to find another way around if this way leads to i.e. a welded door.
+		if ( ExtraCostWay != None )
+			ExtraCostWay.ExtraCost += 200;
+		
+		if ( BlockedWay != None )  {
+			BlockedWay.ExtraCost += 10000;
+			MoveTarget = FindPathToward(A);
+			BlockedWay.ExtraCost -= 10000;
+		}
+		else 
+			MoveTarget = FindPathToward(A);
+		
+		if ( ExtraCostWay != None )
+			ExtraCostWay.ExtraCost -= 200;
+		
+		if ( MoveTarget != None )  {
+			if ( LastResult == MoveTarget )  {
+				if ( NavigationPoint(MoveTarget) != None && NumAttmpts > 3 && FRand() < 0.6 )  {
+					BlockedWay = NavigationPoint(MoveTarget);
+					LastResult = None;
+					NumAttmpts = 0;
+					
+					Return FindBestPathToward(A, True, bAllowDetour);
+				}
+				else
+					++NumAttmpts;
+			}
+			else 
+				NumAttmpts = 0;
+			
+			LastResult = MoveTarget;
+			if ( NavigationPoint(MoveTarget) != None && KFMonster(Trace(HitLoc, HitNorm,MoveTarget.Location, Pawn.Location, True)) != None )  {
+				ExtraCostWay = NavigationPoint(MoveTarget);
+				ExtraCostWay.ExtraCost += 200;
+				MoveTarget = FindPathToward(A); // Might consider taking another path if zombie is blocking this one.
+				ExtraCostWay.ExtraCost -= 200;
+			}
+		}
+	}
+	
+	if ( MoveTarget != None )  {
+		if ( RouteCache[1] != None && ActorReachable(RouteCache[1]) )
+			MoveTarget = RouteCache[1];
+		
+		if ( KFM.bCanDistanceAttackDoors )  {
+			A = Trace(HitLoc, HitNorm, MoveTarget.Location, Pawn.Location, False);
+			if ( KFDoorMover(A) != None && KFDoorMover(A).bSealed )  {
+				TargetDoor = KFDoorMover(A);
+				bAboutToGetDoor = True;
+			}
+		}
+		
+		Return True;
+	}
+	
+	if ( A == Enemy && A != None )  {
+		FailedHuntTime = Level.TimeSeconds;
+		FailedHuntEnemy = Enemy;
+	}
+	
+	if ( bSoaking && Physics != PHYS_Falling )
+		SoakStop("COULDN'T FIND BEST PATH TO "$A);
+	
+	Return False;
+}
+
 state CorpseFeeding
 {
 ignores EnemyNotVisible,SeePlayer,HearNoise,NotifyBump;
@@ -197,10 +355,10 @@ ignores EnemyNotVisible,SeePlayer,HearNoise,NotifyBump;
 Begin:
 	WaitForLanding();
 	While ( TargetCorpse != None && !ActorReachable(TargetCorpse) )  {
-		if ( !FindBestPathToward(TargetCorpse,True,False) )
+		if ( !FindBestPathToward(TargetCorpse, True, False) )
 			WhatToDoNext(33);
 		
-		MoveToward(MoveTarget,MoveTarget);
+		MoveToward(MoveTarget, MoveTarget);
 	}
 	
 	if ( TargetCorpse == None )
@@ -238,6 +396,39 @@ function bool EnemyVisible()
 	Return bEnemyIsVisible;
 }
 
+function SetEnemyInfo(bool bNewEnemyVisible)
+{
+	AcquireTime = Level.TimeSeconds;
+	if ( bNewEnemyVisible )  {
+		LastSeenTime = Level.TimeSeconds;
+		LastSeenPos = Enemy.Location;
+		LastSeeingPos = Pawn.Location;
+		bEnemyInfoValid = True;
+	}
+	else  {
+		LastSeenTime = -1000;
+		bEnemyInfoValid = False;
+	}
+}
+
+// EnemyChanged() called when current enemy changes
+function EnemyChanged(bool bNewEnemyVisible)
+{
+	bEnemyAcquired = false;
+	SetEnemyInfo(bNewEnemyVisible);
+	if ( UM_BaseMonster(Pawn) != None )  {
+		UM_BaseMonster(Pawn).EnemyChanged();
+		UM_BaseMonster(Pawn).PlayChallengeSound();
+	}
+}
+
+function ChangeEnemy(Pawn NewEnemy, bool bCanSeeNewEnemy)
+{
+	OldEnemy = Enemy;
+	Enemy = NewEnemy;
+	EnemyChanged(bCanSeeNewEnemy);
+}
+
 function bool FindNewEnemy()
 {
 	local	byte			i;
@@ -254,7 +445,7 @@ function bool FindNewEnemy()
 	GameInfo = UM_BaseGameInfo(Level.Game);
 	if ( GameInfo == None || GameInfo.PlayerList.Length < 1 )
 		Return False;
-	
+
 	for ( i = 0; i < GameInfo.PlayerList.Length; ++i )  {
 		Human = UM_HumanPawn(GameInfo.PlayerList[i].Pawn);
 		if ( Human == None || Human.Health < 1 || Human.bPendingDelete )
@@ -282,7 +473,7 @@ function bool FindNewEnemy()
 	}
 
 	if ( BestEnemy != None )  {
-		ChangeEnemy(BestEnemy,bSeeBest);
+		ChangeEnemy(BestEnemy, bSeeBest);
 		Return True;
 	}
 
@@ -624,7 +815,7 @@ state ZombieHunt
 		if ( FindFreshBody() )
 			Return;
 		
-		if ( Enemy != None && !KFM.bCannibal && Enemy.Health <= 0 )  {
+		if ( Enemy != None && !KFM.bCannibal && Enemy.Health < 1 )  {
 			Enemy = None;
 			WhatToDoNext(23);
 			Return;
@@ -643,7 +834,7 @@ state ZombieHunt
 				PathFindState = 2;
 				Return;
 			}
-			else if ( FindBestPathToward(InitialPathGoal, true,true) )
+			else if ( FindBestPathToward(InitialPathGoal, True, True) )
 				Return;
 			else 
 				PathFindState = 2;
@@ -652,7 +843,7 @@ state ZombieHunt
 		if ( Pawn.JumpZ > 0 )
 			Pawn.bCanJump = True;
 
-		if ( KFM.Intelligence==BRAINS_Retarded && FRand() < 0.25 )  {
+		if ( KFM.Intelligence == BRAINS_Retarded && FRand() < 0.25 )  {
 			Destination = Pawn.Location + VRand() * 200.0;
 			Return;
 		}
@@ -671,10 +862,10 @@ state ZombieHunt
 		ViewSpot = Pawn.Location + Pawn.BaseEyeHeight * vect(0,0,1);
 		bCanSeeLastSeen = bEnemyInfoValid && FastTrace(LastSeenPos, ViewSpot);
 
-		if ( FindBestPathToward(Enemy, true,true) )
+		if ( FindBestPathToward(Enemy, True, True) )
 			Return;
 
-		if ( bSoaking && (Physics != PHYS_Falling) )
+		if ( bSoaking && Physics != PHYS_Falling )
 			SoakStop("COULDN'T FIND PATH TO ENEMY "$Enemy);
 
 		MoveTarget = None;
@@ -685,8 +876,8 @@ state ZombieHunt
 		}
 
 		Destination = LastSeeingPos;
-		bEnemyInfoValid = false;
-		if ( FastTrace(Enemy.Location, ViewSpot) && VSize(Pawn.Location - Destination) > Pawn.CollisionRadius )  {
+		bEnemyInfoValid = False;
+		if ( FastTrace(Enemy.Location, ViewSpot) && VSizeSquared(Pawn.Location - Destination) > Square(Pawn.CollisionRadius) )  {
 			SeePlayer(Enemy);
 			Return;
 		}
@@ -759,6 +950,26 @@ function bool EnemyThreatChanged()
 	Return False;
 }
 
+function DoTacticalMove() {}
+
+function DoCharge()
+{
+	if ( Pawn == None )
+		Return;
+	
+	if ( Enemy.PhysicsVolume.bWaterVolume )  {
+		if ( !Pawn.bCanSwim )  {
+			DoTacticalMove();
+			Return;
+		}
+	}
+	else  {
+		if ( KFM.MeleeRange != KFM.default.MeleeRange )
+			KFM.MeleeRange = KFM.default.MeleeRange;
+		GotoState('ZombieCharge');
+	}
+
+}
 
 function FightEnemy(bool bCanCharge)
 {
@@ -774,9 +985,6 @@ function FightEnemy(bool bCanCharge)
 		FindNewEnemy();
 
 	if ( Enemy == FailedHuntEnemy && Level.TimeSeconds == FailedHuntTime )  {
-		//if ( Enemy.Controller.bIsPlayer )
-		//FindNewEnemy();
-
 		if ( Enemy == FailedHuntEnemy )  {
 			GoalString = "FAILED HUNT - HANG OUT";
 			if ( EnemyVisible() )
@@ -816,6 +1024,15 @@ WaitForAnim:
 		SoakStop("STUCK IN KICKING!!!");
 }
 
+function SetKnockDownTime(float KnockDownDuration)
+{
+	if ( KnockDownDuration <= 0.0 )
+		Return;
+	
+	if ( Level.TimeSeconds >= KnockDownEndTime || KnockDownDuration > (KnockDownEndTime - Level.TimeSeconds) )
+		KnockDownEndTime = Level.TimeSeconds + KnockDownDuration;
+}
+
 state KnockedDown
 {
 	ignores SeePlayer, HearNoise, Timer, EnemyNotVisible, NotifyBump, Startle;
@@ -826,71 +1043,26 @@ state KnockedDown
 	event AnimEnd(int Channel)
 	{
 		Pawn.AnimEnd(Channel);
-		//if ( !Monster(Pawn).bShotAnim )
-			//WhatToDoNext(99);
 	}
-	
-	/*
-	event Tick( float Delta )
-	{
-		Global.Tick(Delta);
-		if ( bUseFreezeHack )  {
-			MoveTarget = None;
-			MoveTimer = -1;
-			Pawn.Acceleration = vect(0.0,0.0,0.0);
-			Pawn.GroundSpeed = 1;
-			Pawn.AccelRate = 0;
-		}
-	}	*/
-	
 
 Begin:
-	bUseFreezeHack = True;
-	if ( Pawn != None )  {
-		if ( UM_BaseMonster(Pawn) != None )
-			UM_BaseMonster(Pawn).bKnockedDown = True;
-		MoveTarget = None;
-		MoveTimer = -1;
-		Pawn.GroundSpeed = 0.0;
-		Pawn.AccelRate = 0.0;
-		Pawn.Acceleration = vect(0,0,0);
-		//Pawn.ShouldCrouch(True);
-	}
+	MoveTarget = None;
+	MoveTimer = -1;
+
+WaitForAnimEnd:
 	FinishAnim(0);
-	//while( KFM.bShotAnim )
-		//Sleep(0.1);
-	
-	if ( Pawn != None )  {
-		Pawn.AccelRate = Pawn.Default.AccelRate;
-		if ( UM_BaseMonster(Pawn) != None )  {
-			UM_BaseMonster(Pawn).bKnockedDown = False;
-			UM_BaseMonster(Pawn).SetGroundSpeed(UM_BaseMonster(Pawn).OriginalGroundSpeed);
-		}
-		else
-			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-		//Pawn.ShouldCrouch(False);
+	if ( Level.TimeSeconds < KnockDownEndTime )  {
+		if ( UM_HumanPawn(Pawn) != None )
+			UM_HumanPawn(Pawn).PlayKnockDown();
+		GoTo('WaitForAnimEnd');
 	}
-	bUseFreezeHack = False;
 	
-	//WhatToDoNext(152);
+	if ( UM_HumanPawn(Pawn) != None )
+		UM_HumanPawn(Pawn).EndKnockDown();
+	
 	WhatToDoNext(99);
 	if ( bSoaking )
 		SoakStop("STUCK IN KnockDown!!!");
-
-/*
-End:
-	bUseFreezeHack = False;
-	if ( Pawn != None )  {
-		Pawn.AccelRate = Pawn.Default.AccelRate;
-		if ( UM_BaseMonster(Pawn) != None )  {
-			UM_BaseMonster(Pawn).bKnockedDown = False;
-			UM_BaseMonster(Pawn).SetGroundSpeed(UM_BaseMonster(Pawn).OriginalGroundSpeed);
-		}
-		else
-			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-		//Pawn.ShouldCrouch(False);
-	}
-*/
 }
 
 // State for being scared of something, the bot attempts to move away from it
@@ -901,7 +1073,7 @@ state ZombiePushedAway
 Begin:
 	WaitForLanding();
 	Sleep(0.4);
-	WhatToDoNext(11);
+	WhatToDoNext(99);
 }
 
 state IamDazzled
@@ -911,7 +1083,7 @@ state IamDazzled
 Begin:
 	//Sleep(MyDazzleTime);
 	Sleep(10);
-	WhatToDoNext(11);
+	WhatToDoNext(99);
 }
 
 defaultproperties

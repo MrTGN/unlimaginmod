@@ -594,10 +594,10 @@ function DrawPlayerInfo(Canvas C, Pawn P, float ScreenLocX, float ScreenLocY)
 
 	OffsetX = (36.f * VeterancyMatScaleFactor * 0.6) - (HealthIconSize + 2.0);
 
-	if ( Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill)!=None &&
+	if ( Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill)!=None &&
 		 KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill.default.OnHUDIcon!=None )
 	{
-		TempLevel = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill).Static.PreDrawPerk(C,
+		TempLevel = Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkill).Static.PreDrawPerk(C,
 					KFPlayerReplicationInfo(P.PlayerReplicationInfo).ClientVeteranSkillLevel,
 					TempMaterial,TempStarMaterial);
 
@@ -823,7 +823,7 @@ simulated function DrawHudPassA(Canvas C)
 	local	int				i, TempLevel;
 	local	float			TempX, TempY, TempSize;
 	local	byte			Counter;
-	local	class<UM_SRVeterancyTypes>	SV;
+	local	class<UM_VeterancyTypes>	SV;
 	local	UM_HumanPawn	HumanPawn;
 
 	KFHPawn = KFHumanPawn(PawnOwner);
@@ -1114,7 +1114,7 @@ simulated function DrawHudPassA(Canvas C)
 	}
 
 	if( KFPlayerReplicationInfo(PawnOwnerPRI)!=None )
-		SV = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(PawnOwnerPRI).ClientVeteranSkill);
+		SV = Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(PawnOwnerPRI).ClientVeteranSkill);
 
 	if ( SV!=None )
 		SV.Static.SpecialHUDInfo(KFPlayerReplicationInfo(PawnOwnerPRI), C);

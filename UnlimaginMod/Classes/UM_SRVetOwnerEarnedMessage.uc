@@ -20,9 +20,9 @@ static function RenderComplexMessage(
 	XPos = Canvas.CurX;
 	YPos = Canvas.CurY;
 	Canvas.DrawTextClipped(MessageString);
-	if ( Class<UM_SRVeterancyTypes>(OptionalObject) != None )  {
+	if ( Class<UM_VeterancyTypes>(OptionalObject) != None )  {
 		A = Canvas.DrawColor.A;
-		Class<UM_SRVeterancyTypes>(OptionalObject).Static.PreDrawPerk(Canvas,Switch,M1,M2);
+		Class<UM_VeterancyTypes>(OptionalObject).Static.PreDrawPerk(Canvas,Switch,M1,M2);
 		Canvas.DrawColor.A = A;
 		if ( M1 != None )  {
 			Canvas.TextSize(MessageString,XS,YS);

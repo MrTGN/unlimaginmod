@@ -617,6 +617,10 @@ defaultproperties
 	 GroundSpeed=75.000000
 	 WaterSpeed=102.000000
 	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=110.0
+	 
 	 HeadHeight=2.500000
 	 HeadScale=1.500000
 	 AmbientSoundScaling=8.000000

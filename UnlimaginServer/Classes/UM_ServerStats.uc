@@ -6,7 +6,7 @@ var		UM_StatsObject				MyStatsObject;
 var		UnlimaginMutator			MutatorOwner;
 var		bool						bHasChanged, bStatsChecking, bStHasInit;
 var		bool						bHadSwitchedVet,bSwitchIsOKNow;
-var		class<UM_SRVeterancyTypes>	SelectingPerk;
+var		class<UM_VeterancyTypes>	SelectingPerk;
 
 
 function int GetID()
@@ -210,7 +210,7 @@ function ServerSelectPerkName( name N )
 	}
 }
 
-final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
+final function bool SelectionOK( Class<UM_VeterancyTypes> VetType )
 {
 	local	byte	i;
 
@@ -222,7 +222,7 @@ final function bool SelectionOK( Class<UM_SRVeterancyTypes> VetType )
 	Return False;
 }
 
-function ServerSelectPerk( Class<UM_SRVeterancyTypes> VetType )
+function ServerSelectPerk( Class<UM_VeterancyTypes> VetType )
 {
 	local	UM_PlayerReplicationInfo	UMPRI;
 	local	byte	i;

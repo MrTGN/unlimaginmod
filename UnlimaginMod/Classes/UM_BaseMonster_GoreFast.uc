@@ -351,6 +351,11 @@ defaultproperties
 	 MeleeRange=30.000000
 	 GroundSpeed=120.000000
 	 WaterSpeed=140.000000
+	 
+	 // JumpZ
+	 JumpZ=320.0
+	 JumpSpeed=180.0
+	 
 	 HeadHeight=2.500000
 	 HeadScale=1.500000
 	 MenuName="Gorefast"

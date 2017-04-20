@@ -185,8 +185,8 @@ simulated event UpdateScoreBoard(Canvas Canvas)
 
 		// Display perks.
 		if ( KFPlayerReplicationInfo(PRI) != None 
-			 && Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(PRI).ClientVeteranSkill) != None )  {
-			Stars = Class<UM_SRVeterancyTypes>(KFPlayerReplicationInfo(PRI).ClientVeteranSkill).Static.PreDrawPerk(Canvas, KFPlayerReplicationInfo(PRI).ClientVeteranSkillLevel, VeterancyBox, StarBox);
+			 && Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(PRI).ClientVeteranSkill) != None )  {
+			Stars = Class<UM_VeterancyTypes>(KFPlayerReplicationInfo(PRI).ClientVeteranSkill).Static.PreDrawPerk(Canvas, KFPlayerReplicationInfo(PRI).ClientVeteranSkillLevel, VeterancyBox, StarBox);
 			if ( VeterancyBox != None )
 				DrawPerkWithStars(Canvas,VetXPos,HeaderOffsetY+(PlayerBoxSizeY+BoxSpaceY)*i,PlayerBoxSizeY,Stars,VeterancyBox,StarBox);
 			

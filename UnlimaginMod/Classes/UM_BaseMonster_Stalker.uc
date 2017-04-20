@@ -22,32 +22,23 @@ class UM_BaseMonster_Stalker extends UM_BaseMonster
 //========================================================================
 //[block] Variables
 
-var		float			NextCheckTime, LastUncloakTime;
-var		KFHumanPawn		LocalKFHumanPawn;
+var		transient	float			NextCheckTime, LastUncloakTime;
+var					KFHumanPawn		LocalKFHumanPawn;
+var(Display) 	array<Material> 	UnCloakedSkins;
 
-// From CloatBase
-var		KFPawn			DisabledPawn;	// The pawn that has been disabled by this zombie's grapple
-var		bool			bGrappling;		// This zombie is grappling someone
-var		float			GrappleEndTime;		// When the current grapple should be over
-var()	float			GrappleDuration;	// How long a grapple by this zombie should last
-var		float			GrabMessageDelay;	// Amount of time between a player saying "I've been grabbed" message
-var		float			GrabChance, MinGrabChance, MaxGrabChance;
+var					UM_HumanPawn	DisabledPawn;           // The pawn that has been disabled by this zombie's grapple
+var					bool			bGrappling;             // This zombie is grappling someone
+var					float			GrappleEndTime;         // When the current grapple should be over
+var()				float			GrappleDuration;        // How long a grapple by this zombie should last
+var		transient	float			GrappleSquaredRange;
 
-var(Display) array<Material> 	UnCloakedSkins;
+var		transient	float			NextGrappleRangeCheckTime;
+var					float			GrappleRangeCheckDelay;
+
+var					range			GrabChance;
+var		transient	float			CurrentGrabChance;
 
 //[end] Varibles
-//====================================================================
-
-//========================================================================
-//[block] Replication
-
-replication
-{
-	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bGrappling;
-}
-
-//[end] Replication
 //====================================================================
 
 //========================================================================
@@ -55,8 +46,8 @@ replication
 
 simulated event PostBeginPlay()
 {
-	//Randomizing GrabChance
-	GrabChance = default.GrabChance * Lerp( FRand(), MinGrabChance, MaxGrabChance );
+	if ( Role == ROLE_Authority )
+		CurrentGrabChance = Lerp( FRand(), GrabChance.Min, GrabChance.Max );
 	CloakStalker();
 	Super.PostBeginPlay();
 }
@@ -74,84 +65,67 @@ simulated event PostNetBeginPlay()
 	}
 }
 
+// EnemyChanged() called by controller when current enemy changes
+function EnemyChanged()
+{
+	Super.EnemyChanged();
+	if ( LookTarget != None )
+		GrappleSquaredRange = Square(MeleeRange + CollisionRadius + LookTarget.CollisionRadius);
+}
+
 function ClawDamageTarget()
 {
-	local vector PushDir;
-	local KFPawn KFP;
-	local float UsedMeleeDamage;
-
-	if ( MeleeDamage > 1 )
-	   UsedMeleeDamage = (MeleeDamage - (MeleeDamage * 0.05)) + (MeleeDamage * (FRand() * 0.1));
-	else
-	   UsedMeleeDamage = MeleeDamage;
-
-	if ( Controller != None && Controller.Target != None )
-		PushDir = (damageForce * Normal(Controller.Target.Location - Location));
-	else 
-		PushDir = damageForce * vector(Rotation);
+	local	vector			PushDir;
+	local	UM_HumanPawn	NewDisabledPawn;
+	local	float			UsedMeleeDamage;
 	
-	// Melee damage is +/- 10% of default
-	if ( MeleeDamageTarget(UsedMeleeDamage, PushDir) )  {
-		KFP = KFPawn(Controller.Target);
-		PlaySound(MeleeAttackHitSound, SLOT_Interact, 2.0);
-		if ( !bDecapitated && KFP != None && FRand() <= GrabChance && ( KFPlayerReplicationInfo(KFP.PlayerReplicationInfo) == None ||
-			 KFP.GetVeteran().static.CanBeGrabbed(KFPlayerReplicationInfo(KFP.PlayerReplicationInfo), self)) )  {
-			if ( DisabledPawn != None )
-				DisabledPawn.bMovementDisabled = False;
+	if ( Controller == None || Controller.Target == None )
+		Return;
+	
+	if ( MeleeDamage < 20 )
+		UsedMeleeDamage = MeleeDamage;
+	// Melee damage +/- 5%
+	else
+		UsedMeleeDamage = Round( float(MeleeDamage) * Lerp(FRand(), 0.95, 1.05) );
 
-			KFP.DisableMovement(GrappleDuration);
-			DisabledPawn = KFP;
-		}
+	// If zombie has latched onto us...
+	if ( MeleeDamageTarget(UsedMeleeDamage, PushDir) )  {
+		PlaySound(MeleeAttackHitSound, SLOT_Interact, 2.0);
+		NewDisabledPawn = UM_HumanPawn(Controller.Target);
+		if ( bDecapitated || NewDisabledPawn == None || !NewDisabledPawn.CanBeGrabbedBy(self) || FRand() > CurrentGrabChance )
+			Return;
+		
+		if ( DisabledPawn != None && NewDisabledPawn != DisabledPawn )
+			DisabledPawn.EnableMovement();
+		
+		bGrappling = True;
+		GrappleEndTime = Level.TimeSeconds + GrappleDuration;
+		DisabledPawn = NewDisabledPawn;
+		NewDisabledPawn.DisableMovement(GrappleDuration);
+		NewDisabledPawn.NotifyGrabbedBy(Self);
 	}
 }
 
 simulated event SetAnimAction(name NewAction)
 {
-	if ( NewAction == 'Claw' || NewAction == MeleeAnims[0] ||
-		 NewAction == MeleeAnims[1] || NewAction == MeleeAnims[2] )
+	if ( NewAction == 'Claw' || NewAction == MeleeAnims[0] || NewAction == MeleeAnims[1] || NewAction == MeleeAnims[2] )
 		UncloakStalker();
 	
 	Super.SetAnimAction(NewAction);
-}
-
-simulated function int DoAnimAction( name AnimName )
-{
-	if ( AnimName == MeleeAnims[0] || AnimName == MeleeAnims[1] || AnimName == MeleeAnims[2] )  {
-		AnimBlendParams(1, 1.0, 0.1,, FireRootBone);
-		PlayAnim(AnimName,, 0.1, 1);
-
-		// Randomly send out a message about Clot grabbing you(10% chance)
-		if ( FRand() < 0.10 && LookTarget != None && KFPlayerController(LookTarget.Controller) != None &&
-			 VSizeSquared(Location - LookTarget.Location) < 2500 /* (MeleeRange + 20)^2 */ &&
-			 Level.TimeSeconds - KFPlayerController(LookTarget.Controller).LastClotGrabMessageTime > GrabMessageDelay &&
-			 KFPlayerController(LookTarget.Controller).SelectedVeterancy != class'KFVetBerserker' &&
-			 KFPlayerController(LookTarget.Controller).SelectedVeterancy != class'UM_SRVetBerserker' )
-		{
-			PlayerController(LookTarget.Controller).Speech('AUTO', 11, "");
-			KFPlayerController(LookTarget.Controller).LastClotGrabMessageTime = Level.TimeSeconds;
-		}
-
-		bGrappling = True;
-		GrappleEndTime = Level.TimeSeconds + GrappleDuration;
-
-		Return 1;
-	}
-
-	Return Super.DoAnimAction( AnimName );
 }
 
 simulated event Tick( float DeltaTime )
 {
 	Super.Tick( DeltaTime );
 
-	// From CloatBase
-	if ( Role == ROLE_Authority && bGrappling && Level.TimeSeconds > GrappleEndTime )
-		bGrappling = False;
-
-	// if we move out of melee range, stop doing the grapple animation
-	if ( bGrappling && LookTarget != None && VSize(LookTarget.Location - Location) > (MeleeRange + CollisionRadius + LookTarget.CollisionRadius) )  {
-		bGrappling = False;
-		AnimEnd(1);
+	if ( Role == ROLE_Authority )  {
+		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
+			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
+		// if we move out of melee range, stop doing the grapple animation
+		if ( bGrappling && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
+			bGrappling = False;
+			AnimEnd(1);
+		}
 	}
 
 	if ( Level.NetMode != NM_DedicatedServer )  {
@@ -305,14 +279,20 @@ function SetZapped(float ZapAmount, Pawn Instigator)
 	ZappedBy = Instigator;
 }
 
+function BreakGrapple()
+{
+	if ( DisabledPawn == None )
+		Return;
+	
+	DisabledPawn.EnableMovement();
+	DisabledPawn = None;
+}
+
 function RemoveHead()
 {
 	Super.RemoveHead();
 
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 	
 	if ( !bCrispified )
 		Skins = UnCloakedSkins;
@@ -320,10 +300,7 @@ function RemoveHead()
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 	Super.Died(Killer, damageType, HitLocation);
 }
 
@@ -342,47 +319,8 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 
 simulated event Destroyed()
 {
-	if ( DisabledPawn != None )  {
-		DisabledPawn.bMovementDisabled = False;
-		DisabledPawn = None;
-	}
+	BreakGrapple();
 	Super.Destroyed();
-}
-
-// Give her the ability to spring.
-function bool DoJump( bool bUpdating )
-{
-	if ( !bIsCrouched && !bWantsToCrouch && (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider) )  {
-		if ( Role == ROLE_Authority )  {
-			if ( Level.Game != None && Level.Game.GameDifficulty > 2.0 )
-				MakeNoise(0.1 * Level.Game.GameDifficulty);
-			if ( bCountJumps && Inventory != None )
-				Inventory.OwnerEvent('Jumped');
-		}
-		
-		if ( Physics == PHYS_Spider )
-			Velocity = JumpZ * Floor;
-		else if ( Physics == PHYS_Ladder )
-			Velocity.Z = 0;
-		else if ( bIsWalking )  {
-			Velocity.Z = Default.JumpZ;
-			Velocity.X = (Default.JumpZ * 0.6);
-		}
-		else  {
-			Velocity.Z = JumpZ;
-			Velocity.X = (JumpZ * 0.6);
-		}
-		
-		if ( Base != None && !Base.bWorldGeometry )  {
-			Velocity.Z += Base.Velocity.Z;
-			Velocity.X += Base.Velocity.X;
-		}
-		SetPhysics(PHYS_Falling);
-		
-		Return True;
-	}
-	
-	Return False;
 }
 
 //[end] Functions
@@ -391,11 +329,9 @@ function bool DoJump( bool bUpdating )
 defaultproperties
 {
 	 Intelligence=BRAINS_Human
-	 
-	 MinGrabChance=0.200000
-	 MaxGrabChance=0.800000
+	 GrappleRangeCheckDelay=0.1
+	 GrabChance=(Min=0.0,Max=0.75)
 	 GrappleDuration=1.500000
-	 GrabMessageDelay=12.000000
 	 
 	 MeleeDamage=9
 	 damageForce=5000
@@ -414,7 +350,11 @@ defaultproperties
 	 MeleeRange=30.000000
 	 GroundSpeed=200.000000
 	 WaterSpeed=180.000000
-	 JumpZ=350.000000
+	 
+	 // JumpZ
+	 JumpZ=350.0
+	 JumpSpeed=220.0
+	 
 	 HeadHeight=2.500000
 	 MenuName="Stalker"
 	 // MeleeAnims

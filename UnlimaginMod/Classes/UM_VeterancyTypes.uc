@@ -1,6 +1,6 @@
 // Written by .:..: (2009)
 // Base class of all server veterancy types
-class UM_SRVeterancyTypes extends KFVeterancyTypes
+class UM_VeterancyTypes extends KFVeterancyTypes
 	Abstract;
 
 //========================================================================

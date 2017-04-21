@@ -88,6 +88,9 @@ var		transient	float				LastSeenCheckTime;
 
 var					float				KilledWaveCountDownExtensionTime;
 
+var		transient	float				NextRelevanceCheckTime;
+var					float				RelevanceCheckDelay;
+
 // Headshot debugging
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
 var					vector              LastServerHeadLocation;
@@ -778,53 +781,64 @@ function bool CanSpeedAdjust()
 	Return !bDecapitated && !bZapped;
 }
 
-function StandaloneRelevantCheck()
+function StandaloneRelevanceCheck()
 {
 	local	PlayerController	P;
 	
-	if ( (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
-		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
-			P = Level.GetLocalPlayerController();
-			if ( P != None && P.Pawn != None )  {
-				LastViewCheckTime = Level.TimeSeconds;
-				if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
-					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
-					LastSeenOrRelevantTime = Level.TimeSeconds;
-					SetGroundSpeed(OriginalGroundSpeed);
-				}
-				else
-					SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
-			}
-		}
-	}
-	else  {
+	if ( (Level.TimeSeconds - LastRenderTime) <= 5.0 )  {
 		LastSeenOrRelevantTime = Level.TimeSeconds;
-		SetGroundSpeed(OriginalGroundSpeed);
+		if ( GroundSpeed != OriginalGroundSpeed )
+			SetGroundSpeed(OriginalGroundSpeed);
+	}
+	else if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
+		P = Level.GetLocalPlayerController();
+		if ( P == None || P.Pawn == None )
+			Return;
+		
+		LastViewCheckTime = Level.TimeSeconds;
+		if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
+			FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
+			LastSeenOrRelevantTime = Level.TimeSeconds;
+			SetGroundSpeed(OriginalGroundSpeed);
+		}
+		else
+			SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
 	}
 }
 
-function ListenServerRelevantCheck()
+function DedicatedServerRelevanceCheck()
+{
+	if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 )
+		SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
+	else  {
+		LastSeenOrRelevantTime = Level.TimeSeconds;
+		if ( GroundSpeed != OriginalGroundSpeed )
+			SetGroundSpeed(OriginalGroundSpeed);
+	}
+}
+
+function ListenServerRelevanceCheck()
 {
 	local	PlayerController	P;
 	
-	if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 && (Level.TimeSeconds - LastRenderTime) > 5.0 )  {
-		if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
-			P = Level.GetLocalPlayerController();
-			if ( P != None && P.Pawn != None )  {
-				LastViewCheckTime = Level.TimeSeconds;
-				if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
-					FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
-					LastSeenOrRelevantTime = Level.TimeSeconds;
-					SetGroundSpeed(OriginalGroundSpeed);
-				}
-				else
-					SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
-			}
-		}
-	}
-	else  {
+	if ( (Level.TimeSeconds - LastReplicateTime) <= 0.5 || (Level.TimeSeconds - LastRenderTime) <= 5.0 )  {
 		LastSeenOrRelevantTime = Level.TimeSeconds;
-		SetGroundSpeed(OriginalGroundSpeed);
+		if ( GroundSpeed != OriginalGroundSpeed )
+			SetGroundSpeed(OriginalGroundSpeed);
+	}
+	else if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
+		P = Level.GetLocalPlayerController();
+		if ( P == None || P.Pawn == None )
+			Return;
+		
+		LastViewCheckTime = Level.TimeSeconds;
+		if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
+			FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
+			LastSeenOrRelevantTime = Level.TimeSeconds;
+			SetGroundSpeed(OriginalGroundSpeed);
+		}
+		else
+			SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
 	}
 }
 
@@ -1828,18 +1842,16 @@ simulated function int DoAnimAction( name AnimName )
 	if ( AnimName == HitAnims[0] || AnimName == HitAnims[1] || AnimName == HitAnims[2] || AnimName == KFHitFront || AnimName == KFHitBack || AnimName == KFHitRight || AnimName == KFHitLeft )  {
 		AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
 		PlayAnim(AnimName, , 0.1, 1);
-		
 		Return 1;
 	}
 
 	PlayAnim(AnimName, ,0.1, 0);
-	
 	Return 0;
 }
 
 simulated function bool AnimNeedsWait(name TestAnim)
 {
-	Return TestAnim == KnockDownAnim || TestAnim == DoorBashAnim || ExpectingChannel == 0;
+	Return ExpectingChannel == 0 || TestAnim == KnockDownAnim || TestAnim == DoorBashAnim;
 }
 
 simulated event SetAnimAction(name NewAction)
@@ -1908,7 +1920,7 @@ simulated event AnimEnd(int Channel)
 
 function CorpseAttack(Actor A)
 {
-	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated )
+	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || bKnockedDown )
 		Return;
 	
 	Velocity.X = 0;
@@ -1921,7 +1933,7 @@ function CorpseAttack(Actor A)
 
 function bool CanAttack(Actor A)
 {
-	if ( A == None || bSTUNNED || DECAP )
+	if ( A == None || bSTUNNED || DECAP || bKnockedDown )
 		Return False;
 
 	if ( KFDoorMover(A) != None )
@@ -1944,18 +1956,32 @@ function RangedAttack(Actor A)
 	Acceleration = vect(0,0,0);
 }
 
-function DoorAttack(Actor A)
+function PlayDoorBashing()
 {
-	if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming )
-		Return;
-	
+	SetGroundSpeed(0.0);
+	AccelRate = 0.0;
+	Acceleration = vect(0,0,0);
 	bShotAnim = True;
 	SetAnimAction('DoorBash');
+}
+
+function EndDoorBashing()
+{
+	AccelRate = Pawn.Default.AccelRate;
+	SetGroundSpeed(OriginalGroundSpeed);
+}
+
+function DoorAttack(Actor A)
+{
+	if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming || bKnockedDown )
+		Return;
+	
+	PlayDoorBashing();
 	GotoState('DoorBashing');
 }
 
 state DoorBashing
-{
+{	
 	simulated function bool HitCanInterruptAction()
 	{
 		Return False;
@@ -1966,10 +1992,19 @@ state DoorBashing
 		Global.Tick(DeltaTime);
 	}
 	
-Begin:
-	FinishAnim(ExpectingChannel);
-	Sleep(0.1);
-	GoToState('');
+	function DoorAttack(Actor A)
+	{
+		if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming || bKnockedDown )
+			Return;
+		
+		PlayDoorBashing();
+	}
+	
+	function EndDoorBashing()
+	{
+		Global.EndDoorBashing();
+		GoToState('');
+	}
 }
 
 State ZombieDying
@@ -2268,19 +2303,17 @@ simulated event Tick( float DeltaTime )
 	// Make Zeds move faster if they aren't net relevant, or noone has seen them
 	// in a while. This well get the Zeds to the player in larger groups, and
 	// quicker - Ramm
-	if ( Level.NetMode != NM_Client && CanSpeedAdjust() )  {
+	if ( Level.NetMode != NM_Client && Level.TimeSeconds >= NextRelevanceCheckTime && CanSpeedAdjust() )  {
+		NextRelevanceCheckTime = Level.TimeSeconds + RelevanceCheckDelay;
+		// NM_Standalone
 		if ( Level.NetMode == NM_Standalone )
-			StandaloneRelevantCheck();
-		else if ( Level.NetMode == NM_DedicatedServer )  {
-			if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 )
-				SetGroundSpeed(default.GroundSpeed * (300.0 / default.GroundSpeed));
-			else  {
-				LastSeenOrRelevantTime = Level.TimeSeconds;
-				SetGroundSpeed(OriginalGroundSpeed);
-			}
-		}
-		else if ( Level.NetMode == NM_ListenServer )
-			ListenServerRelevantCheck();
+			StandaloneRelevanceCheck();
+		// NM_DedicatedServer
+		else if ( Level.NetMode == NM_DedicatedServer )
+			DedicatedServerRelevanceCheck();
+		// NM_ListenServer
+		else
+			ListenServerRelevanceCheck();
 	}
 	
 	/*
@@ -2876,6 +2909,23 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 	NextPainTime = Level.TimeSeconds + 0.1;
 }
 
+function PlayKnockDown()
+{
+	bKnockedDown = True;
+	SetGroundSpeed(0.0);
+	AccelRate = 0.0;
+	Acceleration = vect(0,0,0);
+	bShotAnim = True;
+	SetAnimAction(KnockDownAnim);
+}
+
+function EndKnockDown()
+{
+	AccelRate = default.AccelRate;
+	SetGroundSpeed(OriginalGroundSpeed);
+	bKnockedDown = False;
+}
+
 function SendToKnockDown(optional float KnockDownDuration)
 {
 	if ( UM_MonsterController(Controller) == None )
@@ -2884,6 +2934,7 @@ function SendToKnockDown(optional float KnockDownDuration)
 	if ( KnockDownDuration > 0.0 )
 		UM_MonsterController(Controller).SetKnockDownEndTime( KnockDownDuration );
 	
+	PlayKnockDown();
 	GotoState('KnockedDown');
 }
 
@@ -2897,27 +2948,18 @@ function CheckForKnockDown( int Damage, class<DamageType> DamageType )
 
 state KnockedDown
 {
-	function PlayKnockDown()
+	function EndKnockDown()
 	{
-		bShotAnim = True;
-		SetAnimAction(KnockDownAnim);
+		Global.EndKnockDown();
+		GoToState(''); // exit from this state
 	}
 	
 	event BeginState()
 	{
-		if ( UM_MonsterController(Controller) == None )  {
-			GotoState('');
-			Return;
-		}
-			
-		bKnockedDown = True;
-		PlayKnockDown();
 		if ( UM_MonsterController(Controller) != None )
 			UM_MonsterController(Controller).GotoState('KnockedDown');
-		
-		SetGroundSpeed(0.0);
-		AccelRate = 0.0;
-		Acceleration = vect(0,0,0);
+		else
+			EndKnockDown();
 	}
 	
 	function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
@@ -2934,14 +2976,6 @@ state KnockedDown
 	{
 		if ( UM_MonsterController(Controller) != None && KnockDownDuration > 0.0 )
 			UM_MonsterController(Controller).SetKnockDownTime( KnockDownDuration );
-	}
-	
-	function EndKnockDown()
-	{
-		AccelRate = default.AccelRate;
-		SetGroundSpeed(OriginalGroundSpeed);
-		bKnockedDown = False;
-		GoToState(''); // exit from this state
 	}
 }
 
@@ -3329,6 +3363,7 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
+	 RelevanceCheckDelay=0.1
 	 HeadHitPointName="HitPoint_Head"
 	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
 	 

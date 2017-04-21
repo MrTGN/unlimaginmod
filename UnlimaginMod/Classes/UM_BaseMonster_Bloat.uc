@@ -46,51 +46,39 @@ var	Class<Projectile>		BileProjectileClass;
 // don't interrupt the bloat while he is puking
 simulated function bool HitCanInterruptAction()
 {
-	if ( bShotAnim )
-		Return False;
-
-	Return True;
+	Return !bShotAnim;
 }
 
-function DoorAttack(Actor A)
+state DoorBashing
 {
-	if ( bShotAnim || Physics == PHYS_Swimming )
-		Return;
-	else if ( A != None )  {
-		bShotAnim = True;
-		if ( !bDecapitated && bDistanceAttackingDoor )
-			SetAnimAction('ZombieBarf');
-		else  {
-			SetAnimAction('DoorBash');
-			GotoState('DoorBashing');
-		}
-	}
+	Begin:
+	bShotAnim = True;
+	if ( !bDecapitated && bDistanceAttackingDoor )
+		SetAnimAction('ZombieBarf');
+	else
+		SetAnimAction('DoorBash');
+	FinishAnim(ExpectingChannel);
+	Sleep(0.1);
+	GoToState('');
 }
 
 function RangedAttack(Actor A)
 {
-	local int LastFireTime;
-	local float ChargeChance;
+	local	float	ChargeChance;
 
-	if ( bShotAnim )
+	if ( bShotAnim || Physics == PHYS_Swimming )
 		Return;
 
-	if ( Physics == PHYS_Swimming )  {
-		SetAnimAction(MeleeAnims[Rand(3)]);
+	// if in melee range
+	if ( VSizeSquared(A.Location - Location) <= Square(MeleeRange + CollisionRadius + A.CollisionRadius) )  {
 		bShotAnim = True;
-		LastFireTime = Level.TimeSeconds;
-	}
-	else if ( VSize(A.Location - Location) < (MeleeRange + CollisionRadius + A.CollisionRadius) )  {
-		bShotAnim = True;
-		LastFireTime = Level.TimeSeconds;
-		SetAnimAction(MeleeAnims[Rand(3)]);
+		SetAnimAction('Claw');
 		//PlaySound(sound'Claw2s', SLOT_Interact); KFTODO: Replace this
 		Controller.bPreparingMove = True;
 		Acceleration = vect(0,0,0);
 	}
-	else if ( (KFDoorMover(A) != None || VSize(A.Location-Location) <= 250) && !bDecapitated )  {
+	else if ( !bDecapitated && (KFDoorMover(A) != None || VSizeSquared(A.Location - Location) <= 62500.0) )  {
 		bShotAnim = True;
-
 		// Decide what chance the bloat has of charging during a puke attack
 		if( Level.Game.GameDifficulty < 2.0 )
 			ChargeChance = 0.2;
@@ -102,10 +90,10 @@ function RangedAttack(Actor A)
 			ChargeChance = 0.8;
 
 		// Randomly do a moving attack so the player can't kite the zed
-		if ( FRand() < ChargeChance )  {
+		if ( FRand() <= ChargeChance )  {
 			SetAnimAction('ZombieBarfMoving');
 			RunAttackTimeout = GetAnimDuration('ZombieBarf', 1.0);
-			bMovingPukeAttack=True;
+			bMovingPukeAttack = True;
 		}
 		else  {
 			SetAnimAction('ZombieBarf');
@@ -117,6 +105,34 @@ function RangedAttack(Actor A)
 		if ( FRand() < 0.03 && KFHumanPawn(A) != None && PlayerController(KFHumanPawn(A).Controller) != None )
 			PlayerController(KFHumanPawn(A).Controller).Speech('AUTO', 7, "");
 	}
+}
+
+/*ToDo: #Важно!!! переход в новый state всегда локальный и не реплицируется клиентам.
+	Поэтому переопределенные simulated функции будут работать на клиенте только в том случае, если и на клиенте объект перешел в этот stete.
+*/
+state MovingAttack
+{
+	simulated event BeginState()
+	{
+		Log("Begin MovingAttack state",Name);
+	}
+	
+	simulated event EndState()
+	{
+		Log("End MovingAttack state",Name);
+	}
+}
+
+simulated function int DoAnimAction( name AnimName )
+{
+	if ( AnimName == 'ZombieBarfMoving' )  {
+		AnimBlendParams(1, 1.0, 0.0,, FireRootBone);
+		PlayAnim('ZombieBarf',, 0.1, 1);
+
+		Return 1;
+	}
+	
+	Return Super.DoAnimAction(AnimName);
 }
 
 // Overridden to handle playing upper body only attacks when moving
@@ -251,7 +267,7 @@ simulated event Tick( float DeltaTime )
 				bMovingPukeAttack = False;
 			}
 		}
-		// Keep the gorefast moving toward its target when attacking
+		// Keep the bloat moving toward its target when attacking
 		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
 		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 	}
@@ -587,7 +603,7 @@ defaultproperties
 	 KilledWaveCountDownExtensionTime=5.0
 	 
 	 BileExplosion=Class'KFMod.BileExplosion'
-     BileExplosionHeadless=Class'KFMod.BileExplosionHeadless'
+	 BileExplosionHeadless=Class'KFMod.BileExplosionHeadless'
 	 BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
 	 ExtraSpeedScaleRange=(Max=2.8)
 	 MeleeAnims(0)="BloatChop2"
@@ -627,9 +643,9 @@ defaultproperties
 	 MenuName="Bloat"
 	 // MovementAnims
 	 MovementAnims(0)="WalkBloat"
-     MovementAnims(1)="WalkBloat"
-     MovementAnims(2)="RunL"
-     MovementAnims(3)="RunR"
+	 MovementAnims(1)="WalkBloat"
+	 MovementAnims(2)="RunL"
+	 MovementAnims(3)="RunR"
 	 // WalkAnims
 	 WalkAnims(0)="WalkBloat"
 	 WalkAnims(1)="WalkBloat"
@@ -637,14 +653,14 @@ defaultproperties
 	 WalkAnims(3)="RunR"
 	 // AirAnims
 	 AirAnims(0)="InAir"
-     AirAnims(1)="InAir"
-     AirAnims(2)="InAir"
-     AirAnims(3)="InAir"
+	 AirAnims(1)="InAir"
+	 AirAnims(2)="InAir"
+	 AirAnims(3)="InAir"
 	 // LandAnims
 	 LandAnims(0)="Landed"
-     LandAnims(1)="Landed"
-     LandAnims(2)="Landed"
-     LandAnims(3)="Landed"
+	 LandAnims(1)="Landed"
+	 LandAnims(2)="Landed"
+	 LandAnims(3)="Landed"
 	 IdleCrouchAnim="BloatIdle"
 	 IdleWeaponAnim="BloatIdle"
 	 IdleRestAnim="BloatIdle"

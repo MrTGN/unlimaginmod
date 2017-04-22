@@ -605,7 +605,7 @@ defaultproperties
 	 BileExplosion=Class'KFMod.BileExplosion'
 	 BileExplosionHeadless=Class'KFMod.BileExplosionHeadless'
 	 BileProjectileClass=Class'UnlimaginMod.UM_BloatVomit'
-	 ExtraSpeedScaleRange=(Max=2.8)
+	 AlphaSpeedScaleRange=(Max=2.8)
 	 MeleeAnims(0)="BloatChop2"
 	 MeleeAnims(1)="BloatChop2"
 	 MeleeAnims(2)="BloatChop2"
@@ -619,8 +619,8 @@ defaultproperties
 	 bFatAss=True
 	 KFRagdollName="Bloat_Trip"
 	 PuntAnim="BloatPunt"
-	 //Intelligence=BRAINS_Stupid
-	 Intelligence=BRAINS_Mammal
+	 Intelligence=BRAINS_Stupid
+	 AlphaIntelligence=BRAINS_Mammal
 	 bCanDistanceAttackDoors=True
 	 SeveredArmAttachScale=1.100000
 	 SeveredLegAttachScale=1.300000

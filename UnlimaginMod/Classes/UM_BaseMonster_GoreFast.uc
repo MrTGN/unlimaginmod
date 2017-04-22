@@ -351,7 +351,8 @@ defaultproperties
 	 MeleeRange=30.000000
 	 GroundSpeed=120.000000
 	 WaterSpeed=140.000000
-	 
+	 Intelligence=BRAINS_Mammal
+	 AlphaIntelligence=BRAINS_Human
 	 // JumpZ
 	 JumpZ=320.0
 	 JumpSpeed=180.0

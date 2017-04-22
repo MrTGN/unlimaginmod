@@ -208,8 +208,8 @@ defaultproperties
 	 PoisonousMaterial=Combiner'kf_fx_trip_t.siren.siren_scream_cmb'
 	 PoisonDamageType=Class'UnlimaginMod.UM_ZombieDamType_CrawlerPoison'
 	 PoisonDamageRandRange=(Min=6.0,Max=8.0)
-	 ExtraSpeedChance=0.200000
-	 ExtraSpeedScaleRange=(Min=1.2,Max=2.4)
+	 AlphaSpeedChance=0.25
+	 AlphaSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // Extra Sizes
 	 ExtraSizeScaleRange=(Min=0.52,Max=1.3)
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
@@ -223,8 +223,8 @@ defaultproperties
      damageForce=5000
      KFRagdollName="Crawler_Trip"
      CrispUpThreshhold=10
-     //Intelligence=BRAINS_Mammal
-	 Intelligence=BRAINS_Human
+     Intelligence=BRAINS_Mammal
+	 AlphaIntelligence=BRAINS_Human
      SeveredArmAttachScale=0.800000
      SeveredLegAttachScale=0.850000
      SeveredHeadAttachScale=1.100000

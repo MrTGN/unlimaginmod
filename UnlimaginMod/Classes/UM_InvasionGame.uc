@@ -1060,13 +1060,14 @@ function RespawnJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].NotRelevantMoreThan(45.0) )  {
-			NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
-			AliveMonsterList[i].Suicide();
-			AliveMonsterList.Remove(i, 1);
-			--WaveMonsters;
-			--i;
-		}
+		if ( AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 45.0 )
+			Continue; // Skip
+		// Kill this lazy monster
+		NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
+		AliveMonsterList[i].Suicide();
+		AliveMonsterList.Remove(i, 1);
+		--WaveMonsters;
+		--i;
 	}
 	// Respawn Jammed Monsters
 	SpawnNextMonsterSquad();
@@ -1081,14 +1082,13 @@ function KillJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].NotRelevantMoreThan(5.0) )  {
-			AliveMonsterList[i].Suicide();
-			AliveMonsterList.Remove(i, 1);
-			--WaveMonsters;
-			--i;
-		}
-		else
-			AliveMonsterList[i].LifeSpan = FClamp( AliveMonsterList[i].LifeSpan, 5.0, 30.0 );
+		if ( AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 10.0 )
+			Continue; // Skip
+		// Kill this lazy monster
+		AliveMonsterList[i].Suicide();
+		AliveMonsterList.Remove(i, 1);
+		--WaveMonsters;
+		--i;
 	}
 	// Updating NumMonsters
 	NumMonsters = AliveMonsterList.Length;
@@ -1610,7 +1610,7 @@ defaultproperties
 	 MinSquadSpawnCheckDelay=0.1
 	 MaxMonsters=1000
 	 MaxAliveMonsters=40
-	 JammedMonstersCheckDelay=15.0
+	 JammedMonstersCheckDelay=10.0
 	 ShopListUpdateDelay=1.0
 	 ZedSpawnListUpdateDelay=5.0
 	 SpawningVolumeUpdateDelay=10.0

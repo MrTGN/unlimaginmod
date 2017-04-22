@@ -29,20 +29,30 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 var		class<DamageType>				FallingDamageType;
 var		class<DamageType>				LavaDamageType;
 
-var					bool				bRandomSizeAdjusted, bThisIsMiniBoss;
+var					bool				bRandomSizeAdjusted;
+
+var					bool				bIsAlphaMonster;
+var					EIntelligence		AlphaIntelligence;
 
 var					range				MassScaleRange;
 var					range				SoundsPitchRange;
+
 //	Monster Size
+var					range				SizeScaleRange;
 var					float				ExtraSizeChance;
-var					range				SizeScaleRange, ExtraSizeScaleRange;
+var					range				ExtraSizeScaleRange;
+
 // Monster Speed
-var					float				ExtraSpeedChance;
-var					range				SpeedScaleRange, ExtraSpeedScaleRange;
+var					range				SpeedScaleRange;
+var					float				AlphaSpeedChance;
+var					range				AlphaSpeedScaleRange;
+
 // Monster Health
-var					float				ExtraHealthChance;
-var					range				HealthScaleRange, ExtraHealthScaleRange;
-var					range				HeadHealthScaleRange, ExtraHeadHealthScaleRange;
+var					range				HealthScaleRange;
+var					range				HeadHealthScaleRange;
+var					float				AlphaHealthChance;
+var					range				AlphaHealthScaleRange;
+
 // Monster Jump ZAxis height scale
 var					range				JumpScaleRange; // Vertical jump speed (JumpZ) scale
 var					float				JumpSpeed;	// Horizontal jump speed
@@ -84,12 +94,14 @@ var		transient	bool				bAddedToMonsterList;
 var					float				ImpressiveKillChance;
 var					float				ImpressiveKillDuration;
 
-var		transient	float				LastSeenCheckTime;
-
 var					float				KilledWaveCountDownExtensionTime;
 
-var		transient	float				NextRelevanceCheckTime;
-var					float				RelevanceCheckDelay;
+var		transient	float				NextPlayersSeenCheckTime, LastPlayersSeenTime;
+var					float				PlayersSeenCheckDelay;
+var		transient	bool				bPlayersCanSeeMe;
+
+var		transient	float				NextSpeedAdjustCheckTime;
+var					float				SpeedAdjustCheckDelay;
 
 // Headshot debugging
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
@@ -140,7 +152,7 @@ var					byte				NextHitAnimNum;
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
-		bThisIsMiniBoss;
+		bIsAlphaMonster;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum, NextHitAnimNum;
@@ -177,7 +189,13 @@ function RandomizeMonsterSizes()
 {
 	local	float	RandomSizeMult, NewDrawScale;
 	
-	RandomSizeMult = BaseActor.static.GetExtraRandRangeFloat( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
+	// Not Extra
+	if ( FRand() > ExtraSizeChance )
+		RandomSizeMult = Lerp( FRand(), SizeScaleRange.Min, SizeScaleRange.Max );
+	// Extra
+	else
+		RandomSizeMult = Lerp( FRand(), ExtraSizeScaleRange.Min, ExtraSizeScaleRange.Max );
+	
 	// DrawScale
 	NewDrawScale = default.DrawScale * RandomSizeMult;
 	SetDrawScale(NewDrawScale);
@@ -221,7 +239,12 @@ function RandomizeMonsterSizes()
 	if ( Role < ROLE_Authority )
 		Return;
 	
-	RandomSizeMult = BaseActor.static.GetExtraRandRangeFloat( SizeScaleRange, ExtraSizeChance, ExtraSizeScaleRange );
+	// Not Extra
+	if ( FRand() > ExtraSizeChance )
+		RandomSizeMult = Lerp( FRand(), SizeScaleRange.Min, SizeScaleRange.Max );
+	// Extra
+	else
+		RandomSizeMult = Lerp( FRand(), ExtraSizeScaleRange.Min, ExtraSizeScaleRange.Max );
 	
 	// DrawScale
 	NewDrawScale = default.DrawScale * RandomSizeMult;
@@ -364,18 +387,12 @@ function CalcAmbientRelevancyScale()
 
 event PreBeginPlay()
 {
-	LastSeenCheckTime = Level.TimeSeconds;
 	/*
 	if ( !bRandomSizeAdjusted )
 		RandomizeMonsterSizes();
 	*/
 	Super(Pawn).PreBeginPlay();
 	CalcAmbientRelevancyScale();
-}
-
-function bool NotRelevantMoreThan( float NotSeenTime )
-{
-	Return (Level.TimeSeconds - LastSeenCheckTime) > NotSeenTime && (Level.TimeSeconds - LastSeenOrRelevantTime) > NotSeenTime;
 }
 
 // Rand next anim nums on the server
@@ -397,11 +414,89 @@ function ServerRandNextAnims()
 	NextHitAnimNum = Rand(ArrayCount(HitAnims));
 }
 
-simulated event PostBeginPlay()
+// Difficulty Scaling
+function AdjustGameDifficulty()
 {
 	local	float	RandMult;
 	local	float	MovementSpeedDifficultyScale;
 	
+	if ( Role < ROLE_Authority || bDiffAdjusted || Level.Game == None )
+		Return;
+	
+	bDiffAdjusted = True;
+	
+	if ( Level.Game.NumPlayers <= 3 )
+		HiddenGroundSpeed = default.HiddenGroundSpeed;
+	else if ( Level.Game.NumPlayers <= 5 )
+		HiddenGroundSpeed = default.HiddenGroundSpeed * 1.3;
+	else if ( Level.Game.NumPlayers >= 6 )
+		HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
+
+	if ( Level.Game.GameDifficulty < 2.0 )
+		MovementSpeedDifficultyScale = 0.9;
+	else if( Level.Game.GameDifficulty < 4.0 )
+		MovementSpeedDifficultyScale = 1.0;
+	else if( Level.Game.GameDifficulty < 5.0 )
+		MovementSpeedDifficultyScale = 1.1;
+	else if( Level.Game.GameDifficulty < 7.0 )
+		MovementSpeedDifficultyScale = 1.2;
+	else // Hardest difficulty
+		MovementSpeedDifficultyScale = 1.3;
+
+	if ( CurrentDamType == None )
+		CurrentDamType = ZombieDamType[NextMeleeAnimNum];
+	
+	//[block] Speed Randomization
+	AirSpeed *= MovementSpeedDifficultyScale;
+	if ( FRand() > AlphaSpeedChance )
+		RandMult = Lerp( FRand(), SpeedScaleRange.Min, SpeedScaleRange.Max );
+	else  {
+		bIsAlphaMonster = True;
+		RandMult = Lerp( FRand(), AlphaSpeedScaleRange.Min, AlphaSpeedScaleRange.Max );
+	}
+	GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
+	WaterSpeed *= MovementSpeedDifficultyScale * RandMult;
+	JumpSpeed *= MovementSpeedDifficultyScale * RandMult;
+	// Store the difficulty adjusted ground speed to restore if we change it elsewhere
+	OriginalGroundSpeed = GroundSpeed;
+	//[end]
+	
+	//[block] Healths Randomization
+	// Health
+	if ( FRand() > AlphaHealthChance )
+		RandMult = Lerp( FRand(), HealthScaleRange.Min, HealthScaleRange.Max );
+	else  {
+		bIsAlphaMonster = True;
+		RandMult = Lerp( FRand(), AlphaHealthScaleRange.Min, AlphaHealthScaleRange.Max );
+	}
+	Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
+	HealthMax = float(Health);
+	// HeadHealth
+	if ( bIsAlphaMonster )
+		RandMult *= Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
+	else
+		RandMult = Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
+	HeadHealth = default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer();
+	//[end]
+		
+	// Jump
+	RandMult = Lerp( FRand(), JumpScaleRange.Min, JumpScaleRange.Max );
+	JumpZ = default.JumpZ * RandMult;
+	JumpSpeed = default.JumpSpeed * RandMult;
+	
+	//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
+	SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst), 1.0 );
+	SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand), 1.0 );
+	// ints
+	ScreamDamage = Max( Round(DifficultyDamageModifer() * float(default.ScreamDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+	MeleeDamage = Max( Round(DifficultyDamageModifer() * float(default.MeleeDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
+	
+	if ( bIsAlphaMonster && AlphaIntelligence > Intelligence )
+		Intelligence = AlphaIntelligence;
+}
+
+simulated event PostBeginPlay()
+{
 	// Store default.MovementAnims[0] to AdditionalWalkAnims
 	if ( AdditionalWalkAnims.Length > 0 )
 		AdditionalWalkAnims[AdditionalWalkAnims.length] = default.MovementAnims[0];
@@ -459,90 +554,7 @@ simulated event PostBeginPlay()
 	bSTUNNED = False;
 	DECAP = False;
 	if ( Role == ROLE_Authority )  {
-		
-		// Difficulty Scaling
-		if ( !bDiffAdjusted && Level.Game != None )  {
-			//log(self$" Beginning ground speed "$default.GroundSpeed);
-			if ( Level.Game.NumPlayers <= 3 )
-				HiddenGroundSpeed = default.HiddenGroundSpeed;
-			else if ( Level.Game.NumPlayers <= 5 )
-				HiddenGroundSpeed = default.HiddenGroundSpeed * 1.3;
-			else if ( Level.Game.NumPlayers >= 6 )
-				HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
-
-			if( Level.Game.GameDifficulty < 2.0 )
-				MovementSpeedDifficultyScale = 0.9;
-			else if( Level.Game.GameDifficulty < 4.0 )
-				MovementSpeedDifficultyScale = 1.0;
-			else if( Level.Game.GameDifficulty < 5.0 )
-				MovementSpeedDifficultyScale = 1.1;
-			else if( Level.Game.GameDifficulty < 7.0 )
-				MovementSpeedDifficultyScale = 1.2;
-			else // Hardest difficulty
-				MovementSpeedDifficultyScale = 1.3;
-
-			if ( CurrentDamType == None )
-				CurrentDamType = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-			
-			//[block] Speed Randomization
-			AirSpeed *= MovementSpeedDifficultyScale;
-			RandMult = BaseActor.static.GetExtraRandRangeFloat( SpeedScaleRange, ExtraSpeedChance, ExtraSpeedScaleRange );
-			if ( RandMult > SpeedScaleRange.Max )
-				bThisIsMiniBoss = True;
-			GroundSpeed *= MovementSpeedDifficultyScale * RandMult;
-			WaterSpeed *= MovementSpeedDifficultyScale * RandMult;
-			// Store the difficulty adjusted ground speed to restore if we change it elsewhere
-			OriginalGroundSpeed = GroundSpeed;
-			//log(self$" Scaled ground speed "$GroundSpeed$" Difficulty "$Level.Game.GameDifficulty$" MovementSpeedDifficultyScale "$MovementSpeedDifficultyScale);
-			//[end]
-			
-			//[block] Healths Randomization
-			// Health
-			RandMult = BaseActor.static.GetExtraRandRangeFloat( HealthScaleRange, ExtraHealthChance, ExtraHealthScaleRange );
-			Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
-			HealthMax = float(Health);
-			
-			// HeadHealth
-			if ( RandMult > HealthScaleRange.Max )  {
-				bThisIsMiniBoss = True;
-				RandMult = Lerp( FRand(), ExtraHeadHealthScaleRange.Min, ExtraHeadHealthScaleRange.Max );
-			}
-			else
-				RandMult = Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
-
-			HeadHealth = FMin( (default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer()), (HealthMax - 10.0) );
-			//[end]
-				
-			// floats
-			//RandMult = Lerp( FRand(), DamageScaleRange.Min, DamageScaleRange.Max );
-			SpinDamConst = FMax( (DifficultyDamageModifer() * default.SpinDamConst), 1.0 );
-			SpinDamRand = FMax( (DifficultyDamageModifer() * default.SpinDamRand), 1.0 );
-			JumpZ = default.JumpZ * Lerp( FRand(), JumpScaleRange.Min, JumpScaleRange.Max );
-			JumpSpeed = default.JumpSpeed * Lerp( FRand(), JumpScaleRange.Min, JumpScaleRange.Max );
-			// ints
-			ScreamDamage = Max( Round(DifficultyDamageModifer() * float(default.ScreamDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
-			MeleeDamage = Max( Round(DifficultyDamageModifer() * float(default.MeleeDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
-
-			
-			//log(self$" HealthMax "$HealthMax$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-			//log(self$" Health "$Health$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-			//log(self$" HeadHealth "$HeadHealth$" GameDifficulty "$Level.Game.GameDifficulty$" NumPlayersHealthModifer "$NumPlayersHealthModifer());
-			
-			// ToDo: need to somehow distinguish a miniboss among other monsters
-			/*
-			if ( bThisIsMiniBoss )  {
-				
-			} */
-
-			bDiffAdjusted = True;
-		}
-		
-		/*
-		// Landing to the Ground
-		Move( Location + Vect(0.0, 0.0, 12.0) );
-		SetPhysics(PHYS_Falling);
-		*/
-		
+		AdjustGameDifficulty();
 		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
 			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList( self );
 	}
@@ -563,6 +575,9 @@ simulated event PostNetBeginPlay()
 	
 	if ( Role == ROLE_Authority )
 		Return;
+	
+	if ( bIsAlphaMonster && AlphaIntelligence > Intelligence )
+		Intelligence = AlphaIntelligence;
 	
 	if ( Controller != None )  {
 		if ( Controller.Pawn == None )
@@ -769,8 +784,44 @@ event Bump(actor Other)
 	}
 }
 
+simulated function bool IsRelevant()
+{
+	if ( Level.NetMode == NM_Standalone || Level.NetMode == NM_Client )
+		Return (Level.TimeSeconds - LastRenderTime) <= 3.0;
+	
+	if ( Level.NetMode == NM_DedicatedServer )
+		Return (Level.TimeSeconds - LastReplicateTime) <= 0.5;
+	
+	if ( Level.NetMode == NM_ListenServer )
+		Return (Level.TimeSeconds - LastReplicateTime) <= 0.5 || (Level.TimeSeconds - LastRenderTime) <= 3.0;
+	
+	Return False;
+}
+
+function CheckPlayersCanSeeMe()
+{
+	NextPlayersSeenCheckTime = Level.TimeSeconds + PlayersSeenCheckDelay;
+	if ( PlayerCanSeeMe() )  {
+		bPlayersCanSeeMe = True;
+		LastPlayersSeenTime = Level.TimeSeconds;
+	}
+	else
+		bPlayersCanSeeMe = False;
+}
+
+function bool NotSeenMoreThan( float NotSeenTime )
+{
+	if ( NotSeenTime <= 0.0 || bPlayersCanSeeMe )
+		Return False;
+	
+	Return (Level.TimeSeconds - LastPlayersSeenTime) > NotSeenTime;
+}
+
 function SetGroundSpeed(float NewGroundSpeed)
 {
+	if ( NewGroundSpeed == GroundSpeed )
+		Return;
+	
 	GroundSpeed = NewGroundSpeed;
 }
 
@@ -778,68 +829,27 @@ function SetGroundSpeed(float NewGroundSpeed)
 // to the player faster if they can't be seen
 function bool CanSpeedAdjust()
 {
-	Return !bDecapitated && !bZapped;
-}
-
-function StandaloneRelevanceCheck()
-{
-	local	PlayerController	P;
+	if ( Level.NetMode == NM_Client || Level.TimeSeconds < NextSpeedAdjustCheckTime )
+		Return False;
 	
-	if ( (Level.TimeSeconds - LastRenderTime) <= 5.0 )  {
-		LastSeenOrRelevantTime = Level.TimeSeconds;
-		if ( GroundSpeed != OriginalGroundSpeed )
-			SetGroundSpeed(OriginalGroundSpeed);
-	}
-	else if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
-		P = Level.GetLocalPlayerController();
-		if ( P == None || P.Pawn == None )
-			Return;
-		
-		LastViewCheckTime = Level.TimeSeconds;
-		if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
-			FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
-			LastSeenOrRelevantTime = Level.TimeSeconds;
-			SetGroundSpeed(OriginalGroundSpeed);
-		}
-		else
-			SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
-	}
-}
-
-function DedicatedServerRelevanceCheck()
-{
-	if ( (Level.TimeSeconds - LastReplicateTime) > 0.5 )
-		SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
-	else  {
-		LastSeenOrRelevantTime = Level.TimeSeconds;
-		if ( GroundSpeed != OriginalGroundSpeed )
-			SetGroundSpeed(OriginalGroundSpeed);
-	}
-}
-
-function ListenServerRelevanceCheck()
-{
-	local	PlayerController	P;
+	NextSpeedAdjustCheckTime = Level.TimeSeconds + SpeedAdjustCheckDelay;
 	
-	if ( (Level.TimeSeconds - LastReplicateTime) <= 0.5 || (Level.TimeSeconds - LastRenderTime) <= 5.0 )  {
+	Return !bDecapitated && !bZapped && !bKnockedDown;
+}
+
+// Make Zeds move faster if they aren't net relevant, or noone has seen them
+// in a while. This well get the Zeds to the player in larger groups, and
+// quicker - Ramm
+function AdjustGroundSpeed()
+{
+	if ( bPlayersCanSeeMe || IsRelevant() )  {
 		LastSeenOrRelevantTime = Level.TimeSeconds;
-		if ( GroundSpeed != OriginalGroundSpeed )
-			SetGroundSpeed(OriginalGroundSpeed);
+		SetGroundSpeed(OriginalGroundSpeed);
+		Return;
 	}
-	else if ( (Level.TimeSeconds - LastViewCheckTime) > 1.0 )  {
-		P = Level.GetLocalPlayerController();
-		if ( P == None || P.Pawn == None )
-			Return;
-		
-		LastViewCheckTime = Level.TimeSeconds;
-		if ( (!P.Pawn.Region.Zone.bDistanceFog || VSizeSquared(P.Pawn.Location - Location) < Square(P.Pawn.Region.Zone.DistanceFogEnd)) &&
-			FastTrace((Location + EyePosition()), (P.Pawn.Location + P.Pawn.EyePosition())) )  {
-			LastSeenOrRelevantTime = Level.TimeSeconds;
-			SetGroundSpeed(OriginalGroundSpeed);
-		}
-		else
-			SetGroundSpeed(default.GroundSpeed * (HiddenGroundSpeed / default.GroundSpeed));
-	}
+	
+	if ( (Level.TimeSeconds - LastPlayersSeenTime) > 1.0 )
+		SetGroundSpeed(HiddenGroundSpeed);
 }
 
 function ClientDying(class<DamageType> DamageType, vector HitLocation) { }
@@ -1310,16 +1320,15 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 		if ( PlayerController(OldController) != None && PlayerController(OldController).ViewTarget == self )
 			PlayersRagdoll = True;
 		
-		// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
-		// For a listen server, use LastSeenOrRelevantTime instead of render time so
-		// monsters don't disappear for other players that the host can't see - Ramm
-		if ( Level.NetMode == NM_ListenServer && Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && ((Level.TimeSeconds - LastSeenOrRelevantTime) > 3.0 || bGibbed) )  {
-			bDestroyNextTick = True;
-			TimeSetDestroyNextTickTime = Level.TimeSeconds;
-			Return;
-		}
-		else if ( Level.NetMode != NM_ListenServer && Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && ((Level.TimeSeconds - LastRenderTime) > 3.0 || bGibbed) ) {
-			Destroy();
+		if ( Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && (!IsRelevant() || bGibbed) )  {
+			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
+			if ( Level.NetMode == NM_ListenServer )  {
+				TimeSetDestroyNextTickTime = Level.TimeSeconds + 0.005;
+				bDestroyNextTick = True;
+			}
+			else
+				Destroy();
+			
 			Return;
 		}
 
@@ -1635,8 +1644,8 @@ simulated function ProcessHitFX()
 			bGibbed = True;
 			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
 			if ( Level.NetMode == NM_ListenServer )  {
+				TimeSetDestroyNextTickTime = Level.TimeSeconds + 0.005;
 				bDestroyNextTick = True;
-				TimeSetDestroyNextTickTime = Level.TimeSeconds;
 			}
 			else
 				Destroy();
@@ -1987,6 +1996,11 @@ state DoorBashing
 		Return False;
 	}
 	
+	function bool CanSpeedAdjust()
+	{
+		Return False;
+	}
+	
 	simulated event Tick(float DeltaTime)
 	{
 		Global.Tick(DeltaTime);
@@ -2300,22 +2314,6 @@ simulated event Tick( float DeltaTime )
 	if ( bDestroyNextTick && Level.TimeSeconds > TimeSetDestroyNextTickTime )
 		Destroy();
 	
-	// Make Zeds move faster if they aren't net relevant, or noone has seen them
-	// in a while. This well get the Zeds to the player in larger groups, and
-	// quicker - Ramm
-	if ( Level.NetMode != NM_Client && Level.TimeSeconds >= NextRelevanceCheckTime && CanSpeedAdjust() )  {
-		NextRelevanceCheckTime = Level.TimeSeconds + RelevanceCheckDelay;
-		// NM_Standalone
-		if ( Level.NetMode == NM_Standalone )
-			StandaloneRelevanceCheck();
-		// NM_DedicatedServer
-		else if ( Level.NetMode == NM_DedicatedServer )
-			DedicatedServerRelevanceCheck();
-		// NM_ListenServer
-		else
-			ListenServerRelevanceCheck();
-	}
-	
 	/*
 	if ( bResetAnimAct && Level.TimeSeconds >= ResetAnimActTime )  {
 		AnimAction = '';
@@ -2325,14 +2323,19 @@ simulated event Tick( float DeltaTime )
 	if ( bDecapitated && !bHeadlessAnimated )
 		AnimateHeadless();
 	
-	// If the Zed has been bleeding long enough, make it die
+	// Server side code
 	if ( Role == ROLE_Authority )  {
+		if ( Level.TimeSeconds > NextPlayersSeenCheckTime )
+			CheckPlayersCanSeeMe();
+		// Hidden monster SpeedAdjust
+		if ( CanSpeedAdjust() )
+			AdjustGroundSpeed();
 		// ResetCumulativeDamage
 		if ( bResetCumulativeDamage && Level.TimeSeconds > CumulativeDamageResetTime )  {
 			bResetCumulativeDamage = False;
 			CumulativeDamage = 0;
 		}
-		// Do BleedOut death
+		// If the Zed has been bleeding long enough, make it die
 		if ( bBleedOut && Level.TimeSeconds > BleedOutTime )  {
 			bBleedOut = False;
 			Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
@@ -2962,6 +2965,11 @@ state KnockedDown
 			EndKnockDown();
 	}
 	
+	function bool CanSpeedAdjust()
+	{
+		Return False;
+	}
+	
 	function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 	{
 		if ( Level.TimeSeconds < NextPainSoundTime )
@@ -3363,7 +3371,8 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
-	 RelevanceCheckDelay=0.1
+	 SpeedAdjustCheckDelay=0.5
+	 PlayersSeenCheckDelay=1.0
 	 HeadHitPointName="HitPoint_Head"
 	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
 	 
@@ -3391,12 +3400,22 @@ defaultproperties
 	 MassScaleRange=(Min=0.95,Max=1.05)
 	 // Monster Size
 	 SizeScaleRange=(Min=0.85,Max=1.15)
+	 // Extra Sizes
+	 ExtraSizeChance=0.150000
+	 ExtraSizeScaleRange=(Min=0.6,Max=1.3)
 	 // Monster Speed
 	 SpeedScaleRange=(Min=0.9,Max=1.1)
+	 // Extra Speed
+	 AlphaSpeedChance=0.2
+	 AlphaSpeedScaleRange=(Min=1.2,Max=2.0)
 	 // Monster Health
 	 HealthScaleRange=(Min=0.9,Max=1.1)
+	 // Extra Health
+	 AlphaHealthChance=0.2
+	 AlphaHealthScaleRange=(Min=1.2,Max=2.0)
 	 // Monster HeadHealth
 	 HeadHealthScaleRange=(Min=0.92,Max=1.08)
+	 
 	 GroundSpeed=140.000000
 	 HiddenGroundSpeed=300.000000
 	 // JumpZ
@@ -3407,16 +3426,6 @@ defaultproperties
 	 MeleeRangeScale=(Min=0.95,Max=1.05)
 	 // DamageScale
 	 DamageScaleRange=(Min=0.9,Max=1.1)
-	 // Extra Sizes
-	 ExtraSizeChance=0.150000
-	 ExtraSizeScaleRange=(Min=0.6,Max=1.3)
-	 // Extra Speed
-	 ExtraSpeedChance=0.200000
-	 ExtraSpeedScaleRange=(Min=1.2,Max=2.0)
-	 // Extra Health
-	 ExtraHealthChance=0.200000
-	 ExtraHealthScaleRange=(Min=1.15,Max=2.0)
-	 ExtraHeadHealthScaleRange=(Min=1.1,Max=1.9)
 	 bPhysicsAnimUpdate=True
 	 bDoTorsoTwist=True
 	 // KnockDownAnim

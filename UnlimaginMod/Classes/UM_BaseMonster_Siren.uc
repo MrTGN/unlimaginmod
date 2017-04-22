@@ -388,9 +388,9 @@ defaultproperties
 	 KilledWaveCountDownExtensionTime=6.0
 	 ImpressiveKillChance=0.05
 	 
-	 Intelligence=BRAINS_Mammal
+	 Intelligence=BRAINS_Human
 	 
-	 ExtraSpeedScaleRange=(Min=1.2,Max=2.5)
+	 AlphaSpeedScaleRange=(Min=1.2,Max=2.5)
 	 ScreamRadius=700
 	 ScreamDamageType=Class'UnlimaginMod.UM_ZombieDamType_SirenScream'
 	 ScreamForce=-150000

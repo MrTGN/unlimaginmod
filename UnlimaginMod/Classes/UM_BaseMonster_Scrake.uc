@@ -616,6 +616,7 @@ defaultproperties
 	 
 	 bMeleeStunImmune=True
 	 Intelligence=BRAINS_Mammal
+	 AlphaIntelligence=BRAINS_Human
 	 SeveredArmAttachScale=1.100000
 	 SeveredLegAttachScale=1.100000
 	 PoundRageBumpDamScale=0.010000

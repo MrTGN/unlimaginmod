@@ -61,19 +61,6 @@ struct	SoundData
 //========================================================================
 //[block] Functions
 
-simulated static final function float GetExtraRandRangeFloat( 
-	range 	FR, 
-	float	ExtraRangeChance,
-	range	EFR )
-{
-	// Not Extra Range
-	if ( FRand() > ExtraRangeChance )
-		Return Lerp( FRand(), FR.Min, FR.Max );
-	// Extra Range
-	else
-		Return Lerp( FRand(), EFR.Min, EFR.Max );
-}
-
 // RandPitch
 simulated static final function float GetRandPitch( range PitchRange )
 {

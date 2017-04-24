@@ -45,7 +45,6 @@ simulated event PostBeginPlay()
 {
 	// Randomizing RunAttackTimeout
 	if ( Level.Game != None && !bDiffAdjusted )  {
-		RunAttackTimeout *= Lerp( FRand(), 0.9, 1.1 );
 		RunGroundSpeedScale *= Lerp( FRand(), 0.85, 1.15 );
 	}
 	

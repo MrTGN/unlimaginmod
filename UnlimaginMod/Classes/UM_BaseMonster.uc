@@ -110,6 +110,8 @@ var					vector              LastServerHeadLocation;
 // PlayHit Delays
 var		transient	float				NextPainTime, NextPainAnimTime, NextPainSoundTime;
 
+var		transient	bool				bMovingAttack;
+var		transient	bool				bMovementDisabled;
 // Animation
 var					name				RunAnims[8];
 
@@ -1927,6 +1929,66 @@ simulated event AnimEnd(int Channel)
 }
 //[End]
 
+// Keep moving toward the target until the timer runs out (anim finishes)
+state MovingAttack
+{
+	simulated event Tick( float DeltaTime )
+	{
+		Global.Tick( DeltaTime );
+		
+		if ( Role <= ROLE_Authority )
+			Return;
+		
+		// Keep monster moving toward its target when attacking
+		if ( bMovingAttack && LookTarget != None )
+		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
+	}
+
+Begin:
+	bMovingAttack = True;
+	while( bShotAnim )
+		FinishAnim(ExpectingChannel);
+	
+	bMovingAttack = False;
+	GotoState('');
+}
+
+function DisableMovement()
+{
+	if ( bMovementDisabled )
+		Return;
+	
+	bMovementDisabled = True;
+	SetGroundSpeed(0.0);
+	AccelRate = 0.0;
+	Acceleration = vect(0,0,0);
+	GotoState('MovementDisabled')
+}
+
+function EnableMovement()
+{
+	if ( !bMovementDisabled )
+		Return;
+	
+	bMovementDisabled = False;
+	AccelRate = default.AccelRate;
+	SetGroundSpeed(OriginalGroundSpeed);
+}
+
+state MovementDisabled
+{
+	function EnableMovement()
+	{
+		Global.EnableMovement();
+		GoToState(''); // exit from this state
+	}
+	
+	function bool CanSpeedAdjust()
+	{
+		Return False;
+	}
+}
+
 function CorpseAttack(Actor A)
 {
 	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || bKnockedDown )
@@ -1949,9 +2011,9 @@ function bool CanAttack(Actor A)
 		Return True;
 	
 	if ( KFHumanPawn(A) != None && KFHumanPawn(A).Health < 1 )
-		Return VSize(A.Location - Location) < (MeleeRange + CollisionRadius);
+		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius);
 	else 
-		Return VSize(A.Location - Location) < (MeleeRange + CollisionRadius + A.CollisionRadius);
+		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius + A.CollisionRadius);
 }
 
 function RangedAttack(Actor A)
@@ -1991,7 +2053,7 @@ function DoorAttack(Actor A)
 
 state DoorBashing
 {	
-	simulated function bool HitCanInterruptAction()
+	function bool HitCanInterruptAction()
 	{
 		Return False;
 	}
@@ -2008,7 +2070,7 @@ state DoorBashing
 	
 	function DoorAttack(Actor A)
 	{
-		if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming || bKnockedDown )
+		if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming )
 			Return;
 		
 		PlayDoorBashing();
@@ -2407,9 +2469,7 @@ function KickActor()
 	KickTarget.KAddImpulse(ImpactVector, KickLocation);
 	Acceleration = vect(0,0,0);
 	Velocity = vect(0,0,0);
-	if ( UM_MonsterController(Controller) != None )
-		UM_MonsterController(controller).GotoState('Kicking');
-	else if ( KFMonsterController(Controller) != None )
+	if ( KFMonsterController(Controller) != None )
 		KFMonsterController(controller).GotoState('Kicking');
 	bShotAnim = True;
 }
@@ -2739,9 +2799,9 @@ function RemoveHead()
 }
 
 // Implemented in subclasses - return false if there is some action that we don't want the direction hit to interrupt
-simulated function bool HitCanInterruptAction()
+function bool HitCanInterruptAction()
 {
-	Return True;
+	Return !bShotAnim;
 }
 
 //simulated function PlayDirectionalHit(Vector HitLoc)

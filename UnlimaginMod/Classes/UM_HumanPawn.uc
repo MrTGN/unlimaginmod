@@ -86,6 +86,7 @@ var		transient	bool			bIsTakingBurnDamage;
 var		class<DamageType>			FallingDamageType;
 var		class<DamageType>			LavaDamageType;
 
+var		transient	float			MovementDisabledEndTime;
 // Movement Modifiers
 var		float						HealthMovementModifier;
 var		float						CarryWeightMovementModifier;
@@ -3149,12 +3150,23 @@ function NotifyGrabbedBy( Pawn Grabber )
 
 /*	Modify velocity called by physics before applying new velocity for this tick.
 	Velocity,Acceleration, etc. have been updated by the physics, but location hasn't.	*/
-simulated event ModifyVelocity( float DeltaTime, vector OldVelocity ) { }
+simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
+{
+	if ( bMovementDisabled && Physics == PHYS_Walking )
+		Velocity = Vect(0.0, 0.0, 0.0);
+}
 
 // Don't let this pawn move for a certain amount of time
 function DisableMovement( float DisableDuration )
 {
-	StopDisabledTime = Level.TimeSeconds + DisableDuration;
+	if ( Role < ROLE_Authority || DisableDuration <= 0.0 )
+		Return;
+	
+	if ( !bMovementDisabled )  {
+		bMovementDisabled = True;
+		NetUpdateTime = Level.TimeSeconds - 1.0;
+	}
+	MovementDisabledEndTime = Level.TimeSeconds + DisableDuration;
 	GotoState('MovementDisabled');
 }
 
@@ -3171,16 +3183,11 @@ state MovementDisabled
 {
 	function DisableMovement( float DisableDuration )
 	{
-		if ( Level.TimeSeconds < StopDisabledTime )
-			StopDisabledTime += DisableDuration;
-		else
-			StopDisabledTime = Level.TimeSeconds + DisableDuration;
-	}
-	
-	simulated event ModifyVelocity( float DeltaTime, vector OldVelocity )
-	{
-		if ( Physics == PHYS_Walking )
-			Velocity = Vect(0,0,0);
+		if ( DisableDuration <= 0.0 )
+			Return;
+		
+		if ( Level.TimeSeconds >= MovementDisabledEndTime || DisableDuration > (MovementDisabledEndTime - Level.TimeSeconds) )
+			MovementDisabledEndTime = Level.TimeSeconds + DisableDuration;
 	}
 	
 	function EnableMovement()
@@ -3190,17 +3197,9 @@ state MovementDisabled
 	}
 	
 Begin:
-	// Server only
-	if ( Role < ROLE_Authority )
-		Return;
-	
-	if ( !bMovementDisabled )  {
-		bMovementDisabled = True;
-		NetUpdateTime = Level.TimeSeconds - 1.0;
-	}
 	// sleep while MovementDisabled
-	while( Level.TimeSeconds < StopDisabledTime )
-		Sleep(StopDisabledTime - Level.TimeSeconds);
+	while( Level.TimeSeconds < MovementDisabledEndTime )
+		Sleep(MovementDisabledEndTime - Level.TimeSeconds);
 
 	EnableMovement();
 }

@@ -43,30 +43,23 @@ var	Class<Projectile>		BileProjectileClass;
 //========================================================================
 //[block] Functions
 
-// don't interrupt the bloat while he is puking
-simulated function bool HitCanInterruptAction()
+function PlayDoorBashing()
 {
-	Return !bShotAnim;
-}
-
-state DoorBashing
-{
-	Begin:
+	SetGroundSpeed(0.0);
+	AccelRate = 0.0;
+	Acceleration = vect(0,0,0);
 	bShotAnim = True;
 	if ( !bDecapitated && bDistanceAttackingDoor )
 		SetAnimAction('ZombieBarf');
 	else
 		SetAnimAction('DoorBash');
-	FinishAnim(ExpectingChannel);
-	Sleep(0.1);
-	GoToState('');
 }
 
 function RangedAttack(Actor A)
 {
 	local	float	ChargeChance;
 
-	if ( bShotAnim || Physics == PHYS_Swimming )
+	if ( A == None || bSTUNNED || bShotAnim || DECAP || Physics == PHYS_Swimming )
 		Return;
 
 	// if in melee range
@@ -88,38 +81,21 @@ function RangedAttack(Actor A)
 			ChargeChance = 0.6;
 		else // Hardest difficulty
 			ChargeChance = 0.8;
-
-		// Randomly do a moving attack so the player can't kite the zed
-		if ( FRand() <= ChargeChance )  {
-			SetAnimAction('ZombieBarfMoving');
-			RunAttackTimeout = GetAnimDuration('ZombieBarf', 1.0);
-			bMovingPukeAttack = True;
-		}
-		else  {
+		
+		if ( FRand() > ChargeChance )  {
 			SetAnimAction('ZombieBarf');
 			Controller.bPreparingMove = True;
 			Acceleration = vect(0,0,0);
 		}
+		// Randomly do a moving attack so the player can't kite the zed
+		else  {
+			SetAnimAction('ZombieBarfMoving');
+			GotoState('MovingAttack');
+		}
 
 		// Randomly send out a message about Bloat Vomit burning(3% chance)
-		if ( FRand() < 0.03 && KFHumanPawn(A) != None && PlayerController(KFHumanPawn(A).Controller) != None )
+		if ( FRand() <= 0.05 && KFHumanPawn(A) != None && PlayerController(KFHumanPawn(A).Controller) != None )
 			PlayerController(KFHumanPawn(A).Controller).Speech('AUTO', 7, "");
-	}
-}
-
-/*ToDo: #Важно!!! переход в новый state всегда локальный и не реплицируется клиентам.
-	Поэтому переопределенные simulated функции будут работать на клиенте только в том случае, если и на клиенте объект перешел в этот stete.
-*/
-state MovingAttack
-{
-	simulated event BeginState()
-	{
-		Log("Begin MovingAttack state",Name);
-	}
-	
-	simulated event EndState()
-	{
-		Log("End MovingAttack state",Name);
 	}
 }
 
@@ -134,62 +110,6 @@ simulated function int DoAnimAction( name AnimName )
 	
 	Return Super.DoAnimAction(AnimName);
 }
-
-// Overridden to handle playing upper body only attacks when moving
-simulated event SetAnimAction(name NewAction)
-{
-	local int meleeAnimIndex;
-	local bool bWantsToAttackAndMove;
-
-	if ( NewAction == '' )
-		Return;
-
-	if ( NewAction == 'ZombieBarfMoving' )
-		bWantsToAttackAndMove = True;
-	else
-		bWantsToAttackAndMove = False;
-
-	if ( NewAction == 'DoorBash' )
-		CurrentDamtype = ZombieDamType[Rand(3)];
-	else  {
-		for ( meleeAnimIndex = 0; meleeAnimIndex < 2; meleeAnimIndex++ )  {
-			if ( NewAction == MeleeAnims[meleeAnimIndex] )  {
-				CurrentDamtype = ZombieDamType[meleeAnimIndex];
-				Break;
-			}
-		}
-	}
-
-	if ( bWantsToAttackAndMove )
-		ExpectingChannel = AttackAndMoveDoAnimAction(NewAction);
-	else
-		ExpectingChannel = DoAnimAction(NewAction);
-
-	if ( !bWantsToAttackAndMove && AnimNeedsWait(NewAction) )
-		bWaitForAnim = True;
-	else
-		bWaitForAnim = False;
-
-	if ( Level.NetMode != NM_Client )  {
-		AnimAction = NewAction;
-		bResetAnimAct = True;
-		ResetAnimActTime = Level.TimeSeconds + 0.3;
-	}
-}
-
-// Handle playing the anim action on the upper body only if we're attacking and moving
-simulated function int AttackAndMoveDoAnimAction( name AnimName )
-{
-	if( AnimName=='ZombieBarfMoving' )  {
-		AnimBlendParams(1, 1.0, 0.0,, FireRootBone);
-		PlayAnim('ZombieBarf',, 0.1, 1);
-
-		Return 1;
-	}
-	else
-		Return Super.DoAnimAction( AnimName );
-}
-
 
 function PlayDyingSound()
 {
@@ -250,27 +170,12 @@ function SpawnTwoShots()
 	//ToggleAuxCollision(True);
 }
 
-
 simulated event Tick( float DeltaTime )
 {
 	local Vector BileExplosionLoc;
 	local FleshHitEmitter GibBileExplosion;
 
 	Super.Tick( DeltaTime );
-
-	if ( Role == ROLE_Authority && bMovingPukeAttack )  {
-		// Keep moving toward the target until the timer runs out (anim finishes)
-		if ( RunAttackTimeout > 0 )  {
-			RunAttackTimeout -= DeltaTime;
-			if ( RunAttackTimeout <= 0 )  {
-				RunAttackTimeout = 0;
-				bMovingPukeAttack = False;
-			}
-		}
-		// Keep the bloat moving toward its target when attacking
-		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
-		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
-	}
 
 	// Hack to force animation updates on the server for the bloat if he is relevant to someone
 	// He has glitches when some of his animations don't play on the server. If we
@@ -304,7 +209,7 @@ simulated event Tick( float DeltaTime )
 
 function BileBomb()
 {
-	BloatJet = spawn(class'BileJet', self,,Location,Rotator(-PhysicsVolume.Gravity));
+	BloatJet = Spawn(class'BileJet', self,,Location,Rotator(-PhysicsVolume.Gravity));
 }
 
 function PlayDyingAnimation(class<DamageType> DamageType, vector HitLoc)

@@ -376,7 +376,7 @@ Begin:
 		While( KFM.bShotAnim )
 			Sleep(0.1);
 		
-		if ( Enemy != None && VSize(Enemy.Location - Pawn.Location) < 500 && CanSee(Enemy) )
+		if ( Enemy != None && VSizeSquared(Enemy.Location - Pawn.Location) < 250000.0 && CanSee(Enemy) )
 			WhatToDoNext(37); // Can't look, eating.
 	}
 	
@@ -789,50 +789,40 @@ function NotifyTakeHit(Pawn InstigatedBy, vector HitLocation, int Damage, class<
 	DamageAttitudeTo(InstigatedBy, Damage);
 }
 
-
 state WaitForAnim
 {
 	ignores SeePlayer, HearNoise, Timer, EnemyNotVisible, NotifyBump, Startle;
 
-	event BeginState()
-	{
-		bUseFreezeHack = False;
-	}
+	event BeginState() { }
 	
 	// Don't do this in this state
-	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
+	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin) { }
 
 	event AnimEnd(int Channel)
 	{
 		Pawn.AnimEnd(Channel);
-		if ( !Monster(Pawn).bShotAnim )
-			WhatToDoNext(99);
 	}
 
 	event Tick( float Delta )
 	{
 		Global.Tick(Delta);
-		if ( bUseFreezeHack )  {
-			MoveTarget = None;
-			MoveTimer = -1;
-			Pawn.Acceleration = vect(0.0,0.0,0.0);
-			Pawn.GroundSpeed = 1;
-			Pawn.AccelRate = 0;
-		}
 	}
 	
 	event EndState()
 	{
-		if ( Pawn != None )  {
-			Pawn.AccelRate = Pawn.Default.AccelRate;
-			Pawn.GroundSpeed = Pawn.Default.GroundSpeed;
-		}
-		bUseFreezeHack = False;
+		if ( UM_BaseMonster(Pawn) != None )
+			UM_BaseMonster(Pawn).EnableMovement();
 	}
 
 Begin:
-	While( KFM.bShotAnim )
-		Sleep(0.15);
+	if ( UM_BaseMonster(Pawn) == None )
+		WhatToDoNext(99);
+	
+	MoveTarget = None;
+	MoveTimer = -1;
+	UM_BaseMonster(Pawn).DisableMovement();
+	while( KFM.bShotAnim )
+		FinishAnim(0);
 
 	WhatToDoNext(99);
 }
@@ -1014,6 +1004,11 @@ state DoorBashing
 	event Timer()
 	{
 		Disable('NotifyBump');
+	}
+	
+	event Tick( float Delta )
+	{
+		Global.Tick(Delta);
 	}
 
 	function AttackDoor()
@@ -1350,7 +1345,7 @@ Begin:
 		WhatToDoNext(16);
 	
 WaitForAnim:
-	While( KFM.bShotAnim )
+	while( KFM.bShotAnim )
 		FinishAnim(0);
 	if ( !FindBestPathToward(Enemy, False, True) )
 		GotoState('TacticalMove');
@@ -1433,12 +1428,8 @@ state Kicking
 Begin:
 
 WaitForAnim:
-	if ( KFM.bShotAnim && KickTarget != None )  {
-		//MoveToward(KickTarget,FaceActor(1),,false ); //,GetDesiredOffset(),ShouldStrafeTo(MoveTarget));
-		Sleep(0.1);
-		Goto('WaitForAnim');
-	}
-
+	while( KFM.bShotAnim && KickTarget != None )
+		FinishAnim(0);
 
 	WhatToDoNext(152);
 	if ( bSoaking )
@@ -1471,7 +1462,8 @@ Begin:
 	MoveTimer = -1;
 
 WaitForAnimEnd:
-	FinishAnim(0);
+	if ( KFM.bShotAnim )
+		FinishAnim(0);
 	if ( Level.TimeSeconds < KnockDownEndTime )  {
 		if ( UM_HumanPawn(Pawn) != None )
 			UM_HumanPawn(Pawn).PlayKnockDown();

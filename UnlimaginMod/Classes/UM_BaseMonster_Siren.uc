@@ -483,7 +483,7 @@ defaultproperties
 	 HeadHealth=200.0
 	 //PlayerCountHealthScale=0.100000
 	 //PlayerNumHeadHealthScale=0.050000
-	 PlayerCountHealthScale=0.05
+	 PlayerCountHealthScale=0.1
 	 PlayerNumHeadHealthScale=0.05
 	 Mass=100.000000 // lb (фунт)
 	 

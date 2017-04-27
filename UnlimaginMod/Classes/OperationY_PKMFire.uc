@@ -24,10 +24,10 @@ defaultproperties
 	 //[end]
 	 // Recoil
 	 RecoilRate=0.080000
-	 RecoilUpRot=(Min=400,Max=600)
-	 RecoilLeftChance=0.46
-     RecoilLeftRot=(Min=198,Max=250)
-	 RecoilRightRot=(Min=206,Max=260)
+	 RecoilUpRot=(Min=360,Max=480)
+	 RecoilLeftChance=0.48
+     RecoilLeftRot=(Min=198,Max=240)
+	 RecoilRightRot=(Min=206,Max=250)
 	 
      bPawnRapidFireAnim=True
      TransientSoundVolume=4.400000

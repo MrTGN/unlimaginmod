@@ -25,6 +25,8 @@ class UM_BaseMonster extends KFMonster
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
+var				UM_MonsterController	MyController;
+
 // Falling
 var		class<DamageType>				FallingDamageType;
 var		class<DamageType>				LavaDamageType;
@@ -416,22 +418,99 @@ function ServerRandNextAnims()
 	NextHitAnimNum = Rand(ArrayCount(HitAnims));
 }
 
+// Scales the damage this Zed deals by the difficulty level
+function float DifficultyDamageModifer()
+{
+	local	float	AdjustedDamageModifier;
+
+	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
+		AdjustedDamageModifier = 1.75;
+	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
+		AdjustedDamageModifier = 1.50;
+	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
+		AdjustedDamageModifier = 1.25;
+	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
+		AdjustedDamageModifier = 1.0;
+	else //if ( GameDifficulty == 1.0 ) // Beginner
+		AdjustedDamageModifier = 0.3;
+
+	// Do less damage if we're alone
+	if ( UM_BaseGameInfo(Level.Game) == None || UM_BaseGameInfo(Level.Game).NumActivePlayers < 2 )
+		Return AdjustedDamageModifier * 0.75;
+
+	Return AdjustedDamageModifier;
+}
+
+// Scales the health this Zed has by the difficulty level
+function float DifficultyHealthModifer()
+{
+	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
+		Return 1.75;
+	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
+		Return 1.55;
+	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
+		Return 1.35;
+	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
+		Return 1.0;
+
+	// Beginner
+	Return 0.5;
+}
+
+// Scales the health this Zed has by number of players
+function float NumPlayersHealthModifer()
+{
+	local	UM_BaseGameInfo		GameInfo;
+	
+	GameInfo = UM_BaseGameInfo(Level.Game);
+	if ( GameInfo == None || GameInfo.NumActivePlayers < 2 )
+		Return 1.0;
+	
+	Return 1.0 + FMin(float(GameInfo.NumActivePlayers - 1), 10.0) * PlayerCountHealthScale;
+}
+
+// Scales the head health this Zed has by the difficulty level
+function float DifficultyHeadHealthModifer()
+{
+	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
+		Return 1.75;
+	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
+		Return 1.55;
+	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
+		Return 1.35;
+	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
+		Return 1.0;
+	
+	// Beginner
+	Return 0.5;
+}
+
+// Scales the head health this Zed has by number of players
+function float NumPlayersHeadHealthModifer()
+{
+	local	UM_BaseGameInfo		GameInfo;
+	
+	GameInfo = UM_BaseGameInfo(Level.Game);
+	if ( GameInfo == None || GameInfo.NumActivePlayers < 2 )
+		Return 1.0;
+	
+	Return 1.0 + FMin(float(GameInfo.NumActivePlayers - 1), 10.0) * PlayerNumHeadHealthScale;
+}
+
 // Difficulty Scaling
 function AdjustGameDifficulty()
 {
-	local	float	RandMult;
-	local	float	MovementSpeedDifficultyScale;
+	local	float	RandMult, MovementSpeedDifficultyScale;
 	
 	if ( Role < ROLE_Authority || bDiffAdjusted || Level.Game == None )
 		Return;
 	
 	bDiffAdjusted = True;
-	
-	if ( Level.Game.NumPlayers <= 3 )
+	if ( UM_BaseGameInfo(Level.Game) == None || UM_BaseGameInfo(Level.Game).NumActivePlayers < 4 )
 		HiddenGroundSpeed = default.HiddenGroundSpeed;
-	else if ( Level.Game.NumPlayers <= 5 )
+	else if ( UM_BaseGameInfo(Level.Game).NumActivePlayers < 6 )
 		HiddenGroundSpeed = default.HiddenGroundSpeed * 1.3;
-	else if ( Level.Game.NumPlayers >= 6 )
+	else
 		HiddenGroundSpeed = default.HiddenGroundSpeed * 1.65;
 
 	if ( Level.Game.GameDifficulty < 2.0 )
@@ -507,8 +586,10 @@ simulated event PostBeginPlay()
 		if ( ControllerClass != None && Controller == None )
 			Controller = Spawn(ControllerClass);
 
-		if ( Controller != None )
+		if ( Controller != None )  {
 			Controller.Possess(Self);
+			MyController = UM_MonsterController(Controller);
+		}
 
 		SplashTime = 0;
 		SpawnTime = Level.TimeSeconds;
@@ -562,7 +643,7 @@ simulated event PostBeginPlay()
 	}
 }
 
-// called after PostBeginPlay on net client
+// called after PostBeginPlay() and after all init replication was received on net client
 simulated event PostNetBeginPlay()
 {
 	local	PlayerController	PC;
@@ -582,6 +663,7 @@ simulated event PostNetBeginPlay()
 		Intelligence = AlphaIntelligence;
 	
 	if ( Controller != None )  {
+		MyController = UM_MonsterController(Controller);
 		if ( Controller.Pawn == None )
 			Controller.Pawn = self;
 		if ( PlayerController(Controller) != None && PlayerController(Controller).ViewTarget == Controller )
@@ -631,107 +713,6 @@ simulated event Destroyed()
 		Suicide();
 	
 	Super.Destroyed();
-}
-
-// Scales the damage this Zed deals by the difficulty level
-function float DifficultyDamageModifer()
-{
-	local float AdjustedDamageModifier;
-
-	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
-		AdjustedDamageModifier = 1.75;
-	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
-		AdjustedDamageModifier = 1.50;
-	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
-		AdjustedDamageModifier = 1.25;
-	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
-		AdjustedDamageModifier = 1.0;
-	else //if ( GameDifficulty == 1.0 ) // Beginner
-		AdjustedDamageModifier = 0.3;
-
-	// Do less damage if we're alone
-	if ( Level.Game.NumPlayers == 1 )
-		AdjustedDamageModifier *= 0.75;
-
-	Return AdjustedDamageModifier;
-}
-
-// Scales the health this Zed has by the difficulty level
-function float DifficultyHealthModifer()
-{
-	local float AdjustedModifier;
-
-	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
-		AdjustedModifier = 1.75;
-	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
-		AdjustedModifier = 1.55;
-	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
-		AdjustedModifier = 1.35;
-	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
-		AdjustedModifier = 1.0;
-	else //if ( GameDifficulty == 1.0 ) // Beginner
-		AdjustedModifier = 0.5;
-
-	Return AdjustedModifier;
-}
-
-// Scales the health this Zed has by number of players
-function float NumPlayersHealthModifer()
-{
-	local float AdjustedModifier;
-	local int NumEnemies;
-	local Controller C;
-
-	AdjustedModifier = 1.0;
-
-	for ( C = Level.ControllerList; C != None; C = C.NextController )  {
-		if( C.bIsPlayer && C.Pawn != None && C.Pawn.Health > 0 )
-			NumEnemies++;
-	}
-
-	if ( NumEnemies > 1 )
-		AdjustedModifier += (Min(NumEnemies, 9) - 1) * PlayerCountHealthScale;
-
-	Return AdjustedModifier;
-}
-
-// Scales the head health this Zed has by the difficulty level
-function float DifficultyHeadHealthModifer()
-{
-	local float AdjustedModifier;
-
-	if ( Level.Game.GameDifficulty >= 7.0 ) // Hell on Earth
-		AdjustedModifier = 1.75;
-	else if ( Level.Game.GameDifficulty >= 5.0 ) // Suicidal
-		AdjustedModifier = 1.55;
-	else if ( Level.Game.GameDifficulty >= 4.0 ) // Hard
-		AdjustedModifier = 1.35;
-	else if ( Level.Game.GameDifficulty >= 2.0 ) // Normal
-		AdjustedModifier = 1.0;
-	else //if ( GameDifficulty == 1.0 ) // Beginner
-		AdjustedModifier = 0.5;
-
-	Return AdjustedModifier;
-}
-
-// Scales the head health this Zed has by number of players
-function float NumPlayersHeadHealthModifer()
-{
-	local float AdjustedModifier;
-	local int NumEnemies;
-	local Controller C;
-
-	AdjustedModifier = 1.0;
-
-	for( C = Level.ControllerList; C != None; C = C.NextController )  {
-		if( C.bIsPlayer && C.Pawn != None && C.Pawn.Health > 0 )
-			NumEnemies++;
-	}
-
-	if ( NumEnemies > 1 )
-		AdjustedModifier += (Min(NumEnemies, 9) - 1) * PlayerNumHeadHealthScale;
-
-	Return AdjustedModifier;
 }
 
 event FellOutOfWorld( eKillZType KillType )
@@ -836,7 +817,7 @@ function bool CanSpeedAdjust()
 	
 	NextSpeedAdjustCheckTime = Level.TimeSeconds + SpeedAdjustCheckDelay;
 	
-	Return !bDecapitated && !bZapped && !bKnockedDown;
+	Return !bMovementDisabled && !bDecapitated && !bZapped;
 }
 
 // Make Zeds move faster if they aren't net relevant, or noone has seen them
@@ -850,8 +831,7 @@ function AdjustGroundSpeed()
 		Return;
 	}
 	
-	if ( (Level.TimeSeconds - LastPlayersSeenTime) > 1.0 )
-		SetGroundSpeed(HiddenGroundSpeed);
+	SetGroundSpeed(HiddenGroundSpeed);
 }
 
 function ClientDying(class<DamageType> DamageType, vector HitLocation) { }
@@ -1904,8 +1884,8 @@ simulated event AnimEnd(int Channel)
 	AnimAction = '';
 	if ( bShotAnim && Channel == ExpectingChannel )  {
 		bShotAnim = False;
-		if ( Controller != None )
-			Controller.bPreparingMove = False;
+		//if ( Controller != None )
+			//Controller.bPreparingMove = False;
 	}
 	
 	if ( !bPhysicsAnimUpdate && Channel == 0 )
@@ -1946,7 +1926,7 @@ state MovingAttack
 
 Begin:
 	bMovingAttack = True;
-	while( bShotAnim )
+	if ( bShotAnim )
 		FinishAnim(ExpectingChannel);
 	
 	bMovingAttack = False;
@@ -1959,10 +1939,10 @@ function DisableMovement()
 		Return;
 	
 	bMovementDisabled = True;
+	Controller.bPreparingMove = True;
 	SetGroundSpeed(0.0);
 	AccelRate = 0.0;
 	Acceleration = vect(0,0,0);
-	GotoState('MovementDisabled')
 }
 
 function EnableMovement()
@@ -1970,11 +1950,13 @@ function EnableMovement()
 	if ( !bMovementDisabled )
 		Return;
 	
-	bMovementDisabled = False;
 	AccelRate = default.AccelRate;
 	SetGroundSpeed(OriginalGroundSpeed);
+	bMovementDisabled = False;
+	Controller.bPreparingMove = False;
 }
 
+// GotoState('MovementDisabled') called from the UM_MonsterController state WaitForAnim
 state MovementDisabled
 {
 	function EnableMovement()
@@ -1989,14 +1971,18 @@ state MovementDisabled
 	}
 }
 
+function bool CanCorpseAttack()
+{
+	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || bKnockedDown || float(Pawn.Health) >= (Pawn.Default.Health * 1.5) )
+		Return False;
+	
+	Return True;
+}
+
+// Called from UM_BaseMonster
 function CorpseAttack(Actor A)
 {
-	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || bKnockedDown )
-		Return;
-	
-	Velocity.X = 0;
-	Velocity.Y = 0;
-	Acceleration = vect(0,0,0);
+	DisableMovement();
 	bShotAnim = True;
 	SetAnimAction('ZombieFeed');
 	Health = Min( (Health + 1 + Rand(3)), int(float(Default.Health) * 1.5) );
@@ -2021,17 +2007,14 @@ function RangedAttack(Actor A)
 	if ( bShotAnim || Physics == PHYS_Swimming || !CanAttack(A) )
 		Return;
 	
+	DisableMovement();
 	bShotAnim = True;
 	SetAnimAction('Claw');
-	Controller.bPreparingMove = True;
-	Acceleration = vect(0,0,0);
 }
 
 function PlayDoorBashing()
 {
-	SetGroundSpeed(0.0);
-	AccelRate = 0.0;
-	Acceleration = vect(0,0,0);
+	DisableMovement();
 	bShotAnim = True;
 	SetAnimAction('DoorBash');
 }
@@ -2387,7 +2370,7 @@ simulated event Tick( float DeltaTime )
 	
 	// Server side code
 	if ( Role == ROLE_Authority )  {
-		if ( Level.TimeSeconds > NextPlayersSeenCheckTime )
+		if ( Level.TimeSeconds >= NextPlayersSeenCheckTime )
 			CheckPlayersCanSeeMe();
 		// Hidden monster SpeedAdjust
 		if ( CanSpeedAdjust() )
@@ -2423,7 +2406,7 @@ simulated event Tick( float DeltaTime )
 		MonsterController(Controller).ExecuteWhatToDoNext();
 	}
 	
-	if ( BileCount > 0 && NextBileTime < level.TimeSeconds )  {
+	if ( BileCount > 0 && Level.TimeSeconds >= NextBileTime )  {
 		--BileCount;
 		NextBileTime += BileFrequency;
 		TakeBileDamage();
@@ -2431,8 +2414,8 @@ simulated event Tick( float DeltaTime )
 	
 	if ( bZapped && Role == ROLE_Authority )  {
 		RemainingZap -= DeltaTime;
-		if ( RemainingZap <= 0 )  {
-			RemainingZap = 0;
+		if ( RemainingZap <= 0.0 )  {
+			RemainingZap = 0.0;
 			bZapped = False;
 			ZappedBy = None;
 			// The Zed can take more zap each time they get zapped
@@ -2440,7 +2423,7 @@ simulated event Tick( float DeltaTime )
 		}
 	}
 	
-	if ( !bZapped && TotalZap > 0 && (Level.TimeSeconds - LastZapTime) > 0.1 )
+	if ( !bZapped && TotalZap > 0.0 && (Level.TimeSeconds - LastZapTime) > 0.1 )
 		TotalZap -= DeltaTime;
 	
 	if ( bZapped != bOldZapped )  {
@@ -2972,12 +2955,11 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 	NextPainTime = Level.TimeSeconds + 0.1;
 }
 
+//[block] KnockDown
 function PlayKnockDown()
 {
 	bKnockedDown = True;
-	SetGroundSpeed(0.0);
-	AccelRate = 0.0;
-	Acceleration = vect(0,0,0);
+	DisableMovement();
 	bShotAnim = True;
 	SetAnimAction(KnockDownAnim);
 }
@@ -2997,8 +2979,7 @@ function SendToKnockDown(optional float KnockDownDuration)
 	if ( KnockDownDuration > 0.0 )
 		UM_MonsterController(Controller).SetKnockDownEndTime( KnockDownDuration );
 	
-	PlayKnockDown();
-	GotoState('KnockedDown');
+	UM_MonsterController(Controller).GoToState('KnockedDown');
 }
 
 // High damage was taken, make em fall over.
@@ -3011,23 +2992,25 @@ function CheckForKnockDown( int Damage, class<DamageType> DamageType )
 
 state KnockedDown
 {
-	function EndKnockDown()
-	{
-		Global.EndKnockDown();
-		GoToState(''); // exit from this state
-	}
-	
 	event BeginState()
 	{
-		if ( UM_MonsterController(Controller) != None )
-			UM_MonsterController(Controller).GotoState('KnockedDown');
-		else
-			EndKnockDown();
+		bKnockedDown = True;
+	}
+	
+	function bool HitCanInterruptAction()
+	{
+		Return False;
 	}
 	
 	function bool CanSpeedAdjust()
 	{
 		Return False;
+	}
+	
+	function SendToKnockDown(optional float KnockDownDuration)
+	{
+		if ( UM_MonsterController(Controller) != None && KnockDownDuration > 0.0 )
+			UM_MonsterController(Controller).SetKnockDownTime( KnockDownDuration );
 	}
 	
 	function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
@@ -3040,12 +3023,12 @@ state KnockedDown
 			PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400);
 	}
 	
-	function SendToKnockDown(optional float KnockDownDuration)
+	event EndState()
 	{
-		if ( UM_MonsterController(Controller) != None && KnockDownDuration > 0.0 )
-			UM_MonsterController(Controller).SetKnockDownTime( KnockDownDuration );
+		bKnockedDown = False;
 	}
 }
+//[end] KnockDown
 
 // New Hit FX for Zombies!
 function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> damageType, vector Momentum, optional int HitIdx )
@@ -3432,7 +3415,7 @@ function Dazzle(float TimeScale)
 defaultproperties
 {
 	 SpeedAdjustCheckDelay=0.5
-	 PlayersSeenCheckDelay=1.0
+	 PlayersSeenCheckDelay=0.5
 	 HeadHitPointName="HitPoint_Head"
 	 HeadHitSound=sound'KF_EnemyGlobalSndTwo.Impact_Skull'
 	 

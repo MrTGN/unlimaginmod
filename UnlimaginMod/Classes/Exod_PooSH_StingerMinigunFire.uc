@@ -27,10 +27,10 @@ defaultproperties
      ProjSpawnOffsets(0)=(X=0.000000,Y=10.000000,Z=0.000000)
 	 // Recoil
 	 RecoilRate=0.040000
-	 RecoilUpRot=(Min=182,Max=246)
+	 RecoilUpRot=(Min=180,Max=230)
 	 RecoilLeftChance=0.5
-     RecoilLeftRot=(Min=82,Max=112)
-	 RecoilRightRot=(Min=86,Max=120)
+     RecoilLeftRot=(Min=80,Max=110)
+	 RecoilRightRot=(Min=80,Max=110)
 	 
      TransientSoundVolume=9.000000
      PreFireAnims(0)=(Anim="WeaponFireStart",Rate=1.000000)

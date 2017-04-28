@@ -224,9 +224,9 @@ function RemoveHead()
 }
 
 // High damage was taken, make em fall over.
-function CheckForKnockDown( int Damage, class<DamageType> DamageType )
+function CheckForKnockDownDamage( int Damage, class<DamageType> DamageType )
 {
-	if ( bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 
+	if ( bCanBeKnockedDown && Health > 0 
 		 && ((Class<UM_BaseDamType_SniperRifle>(damageType) != None && Damage > 200) || Damage >= int(HealthMax * KnockedDownHealthPct) || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) )
 		SendToKnockDown();
 }

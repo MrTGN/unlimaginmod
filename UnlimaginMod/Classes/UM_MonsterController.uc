@@ -160,6 +160,7 @@ function Possess(Pawn aPawn)
 	if ( aPawn == None )
 		Return;
 	
+	// Do not allow to controll another pawns
 	if ( UM_BaseMonster(aPawn) == None )  {
 		aPawn.Destroy();
 		Destroy();
@@ -575,8 +576,13 @@ function bool CanKillMeYet()
 function bool DoWaitForLanding()
 {
 	GotoState('WaitingForLanding');
-	
 	Return True;
+}
+
+function bool CanAttack(Actor A)
+{
+	// return true if in range of current weapon
+	Return MyMonster.CanAttack(A);
 }
 
 function bool FireWeaponAt(Actor A)
@@ -584,13 +590,15 @@ function bool FireWeaponAt(Actor A)
 	if ( A == None )
 		A = Enemy;
 	
-	if ( A == None || Focus != A )
+	if ( A == None || MyMonster == None || Focus != A || !MyMonster.CanAttack(A) )
 		Return False;
 	
 	Target = A;
-	Monster(Pawn).RangedAttack(Target);
+	MyMonster.RangedAttack(Target);
 	
-	Return False;
+	//ToDo: по логике для задержки выстрела должно возвращаться True. #Проверить!!!
+	//Return False;
+	Return True;
 }
 
 function TimedFireWeaponAtEnemy()
@@ -697,7 +705,7 @@ function bool FindBestPathToward(Actor A, bool bCheckedReach, bool bAllowDetour)
 		// Check for blocking doors
 		if ( !IsInState('DoorBashing') && MyMonster.bCanDistanceAttackDoors )  {
 			A = Trace(HitLoc, HitNorm, MoveTarget.Location, Pawn.Location, False);
-			if ( KFDoorMover(A) != None && !A.bHidden && KFDoorMover(A).bSealed && !KFDoorMover(A).bZombiesIgnore )  {
+			if ( KFDoorMover(A) != None && MyMonster.CanAttackDoor(KFDoorMover(A)) )  {
 				//TargetDoor = KFDoorMover(A);
 				//bAboutToGetDoor = True;
 				BreakUpDoor(KFDoorMover(A), True);
@@ -799,10 +807,10 @@ Begin:
 		WhatToDoNext(31);
 	
 	Focus = TargetCorpse;
-	while ( TargetCorpse != None && (Level.Game.bGameEnded || MyMonster.CanCorpseAttack()) )  {
+	while ( MyMonster.CanCorpseAttack(TargetCorpse) )  {
 		// AttackCorpse
 		Target = TargetCorpse;
-		MyMonster.CorpseAttack(Target);		
+		MyMonster.CorpseAttack(Target);
 		if ( MyMonster.bShotAnim )
 			FinishAnim(MyMonster.ExpectingChannel);
 		
@@ -970,7 +978,10 @@ function bool FindNewEnemy()
 	Return False;
 }
 
-function DoTacticalMove() {}
+function DoTacticalMove()
+{
+	GotoState('TacticalMove');
+}
 
 function DoCharge()
 {
@@ -1287,14 +1298,12 @@ state WaitForAnim
 	}
 
 Begin:
-	MoveTarget = None;
-	MoveTimer = -1.0;
-	MyMonster.DisableMovement();
-	MyMonster.GotoState('MovementDisabled');
-	if ( MyMonster.bShotAnim )
+	if ( MyMonster.bShotAnim )  {
+		MoveTarget = None;
+		MoveTimer = -1.0;
+		MyMonster.DisableMovement();
 		FinishAnim(MyMonster.ExpectingChannel);
-
-End:
+	}
 	WhatToDoNext(99);
 }
 
@@ -1731,7 +1740,7 @@ ignores SeePlayer, HearNoise, Bump;
 
 	function bool Stopped()
 	{
-		return true;
+		Return True;
 	}
 
 	function CancelCampFor(Controller C)
@@ -1742,9 +1751,8 @@ ignores SeePlayer, HearNoise, Bump;
 	function StopFiring()
 	{
 		Global.StopFiring();
-		if ( bHasFired )
-		{
-			bHasFired = false;
+		if ( bHasFired )  {
+			bHasFired = False;
 			WhatToDoNext(32);
 		}
 	}
@@ -1757,8 +1765,7 @@ ignores SeePlayer, HearNoise, Bump;
 
 	function Timer()
 	{
-		if ( Monster(Pawn).PreferMelee() )
-		{
+		if ( Monster(Pawn).PreferMelee() )  {
 			SetCombatTimer();
 			StopFiring();
 			WhatToDoNext(34);
@@ -1888,7 +1895,8 @@ state DoorBashing
 
 	event EndState()
 	{
-		MyMonster.EndDoorBashing();
+		MyMonster.EnableMovement();
+		MyMonster.GotoState('');
 	}
 
 Begin:
@@ -1900,7 +1908,7 @@ KeepMoving:
 	if ( MyMonster.bShotAnim )
 		FinishAnim(MyMonster.ExpectingChannel);
 	
-	While ( TargetDoor != None && !TargetDoor.bHidden && TargetDoor.bSealed && !TargetDoor.bZombiesIgnore )  {
+	while ( MyMonster.CanAttackDoor(TargetDoor) )  {
 		AttackDoor();
 		if ( MyMonster.bShotAnim )
 			FinishAnim(MyMonster.ExpectingChannel);
@@ -3139,19 +3147,17 @@ Begin:
 	MoveTarget = None;
 	MoveTimer = -1.0;
 	MyMonster.DisableMovement();
+	MyMonster.GoToState('KnockedDown');
 	MyMonster.PlayKnockDown();
 
-WaitForAnimEnd:
+WaitForAnim:
 	if ( MyMonster.bShotAnim )
 		FinishAnim(MyMonster.ExpectingChannel);
-	
+	// Check KnockDownEndTime
 	if ( Level.TimeSeconds < KnockDownEndTime )  {
 		MyMonster.PlayKnockDown();
-		GoTo('WaitForAnimEnd');
+		GoTo('WaitForAnim');
 	}
-	
-	if ( UM_HumanPawn(Pawn) != None )
-		UM_HumanPawn(Pawn).EndKnockDown();
 	
 	WhatToDoNext(99);
 	if ( bSoaking )

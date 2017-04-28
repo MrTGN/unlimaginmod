@@ -25,8 +25,6 @@ class UM_BaseMonster extends KFMonster
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
-var				UM_MonsterController	MyController;
-
 // Falling
 var		class<DamageType>				FallingDamageType;
 var		class<DamageType>				LavaDamageType;
@@ -586,10 +584,8 @@ simulated event PostBeginPlay()
 		if ( ControllerClass != None && Controller == None )
 			Controller = Spawn(ControllerClass);
 
-		if ( Controller != None )  {
+		if ( Controller != None )
 			Controller.Possess(Self);
-			MyController = UM_MonsterController(Controller);
-		}
 
 		SplashTime = 0;
 		SpawnTime = Level.TimeSeconds;
@@ -652,6 +648,9 @@ simulated event PostNetBeginPlay()
 	EnableChannelNotify(1, 1);
 	AnimBlendParams(1, 1.0, 0.0, , SpineBone1);
 	AnimBlendParams(1, 1.0, 0.0, , HeadBone);
+	// Check KnockDownAnim
+	if ( bCanBeKnockedDown )
+		bCanBeKnockedDown = KnockDownAnim != '' && HasAnim(KnockDownAnim);
 	
 	if ( Level.bDropDetail || (Level.DetailMode == DM_Low) )
 		MaxLights = Min(4,MaxLights);
@@ -663,7 +662,6 @@ simulated event PostNetBeginPlay()
 		Intelligence = AlphaIntelligence;
 	
 	if ( Controller != None )  {
-		MyController = UM_MonsterController(Controller);
 		if ( Controller.Pawn == None )
 			Controller.Pawn = self;
 		if ( PlayerController(Controller) != None && PlayerController(Controller).ViewTarget == Controller )
@@ -738,32 +736,22 @@ event Bump(actor Other)
 {
 	local Vector X,Y,Z;
 
-	GetAxes(Rotation, X,Y,Z);
-
 	Super(Skaarj).Bump(Other);
 	
-	if ( Other == None )
+	if ( KActor(Other) == None || KFMonsterController(Controller) == None || Base == Other || !Base.bStatic || Physics == PHYS_Falling )
 		Return;
 
-	if ( Other.IsA('NetKActor') && Physics != PHYS_Falling 
-		 && Location.Z < (Other.Location.Z + CollisionHeight) 
+	GetAxes(Rotation, X, Y, Z);
+	if ( Location.Z < (Other.Location.Z + CollisionHeight) 
 		 && Location.Z > (Other.Location.Z - CollisionHeight * 0.5) 
-		 && Base != Other && Base.bStatic 
-		 && (Normal(X) dot Normal(Other.Location - Location)) >= 0.7 )  {
-		if ( KActor(Other).KGetMass() >= 0.5 
-			 && !MonsterController(Controller).CanAttack(Controller.Enemy) )  {
+		 && (Normal(X) dot Normal(Other.Location - Location)) >= 0.7
+		 && KActor(Other).KGetMass() >= 0.5 && !CanAttack(Controller.Enemy) )  {
 			// Store kick impact data
-			ImpactVector = Vector(controller.Rotation)*15000 + (velocity * (Mass / 2) )  ;   // 30
+			ImpactVector = Vector(Controller.Rotation) * 15000.0 + (Velocity * (Mass * 0.5)); // 30
 			KickLocation = Other.Location;
 			KickTarget = Other;
-			
-			if ( UM_MonsterController(Controller) != None )
-				UM_MonsterController(Controller).KickTarget = KActor(Other);
-			else if ( KFMonsterController(Controller) != None )
-				KFMonsterController(Controller).KickTarget = KActor(Other);
-			
+			KFMonsterController(Controller).KickTarget = KActor(Other);
 			SetAnimAction(PuntAnim);
-		}
 	}
 }
 
@@ -830,7 +818,7 @@ function AdjustGroundSpeed()
 		SetGroundSpeed(OriginalGroundSpeed);
 		Return;
 	}
-	
+	// Hidden from the players for now
 	SetGroundSpeed(HiddenGroundSpeed);
 }
 
@@ -1909,18 +1897,15 @@ simulated event AnimEnd(int Channel)
 }
 //[End]
 
-// Keep moving toward the target until the timer runs out (anim finishes)
+// Keep moving toward the target until anim finishes
 state MovingAttack
 {
 	simulated event Tick( float DeltaTime )
 	{
 		Global.Tick( DeltaTime );
 		
-		if ( Role <= ROLE_Authority )
-			Return;
-		
 		// Keep monster moving toward its target when attacking
-		if ( bMovingAttack && LookTarget != None )
+		if ( Role == ROLE_Authority && bMovingAttack && LookTarget != None )
 		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
 	}
 
@@ -1928,7 +1913,8 @@ Begin:
 	bMovingAttack = True;
 	if ( bShotAnim )
 		FinishAnim(ExpectingChannel);
-	
+
+End:
 	bMovingAttack = False;
 	GotoState('');
 }
@@ -1952,34 +1938,20 @@ function EnableMovement()
 	
 	AccelRate = default.AccelRate;
 	SetGroundSpeed(OriginalGroundSpeed);
-	bMovementDisabled = False;
 	Controller.bPreparingMove = False;
+	bMovementDisabled = False;
 }
 
-// GotoState('MovementDisabled') called from the UM_MonsterController state WaitForAnim
-state MovementDisabled
+// Called from UM_MonsterController
+function bool CanCorpseAttack(Actor A)
 {
-	function EnableMovement()
-	{
-		Global.EnableMovement();
-		GoToState(''); // exit from this state
-	}
-	
-	function bool CanSpeedAdjust()
-	{
-		Return False;
-	}
-}
-
-function bool CanCorpseAttack()
-{
-	if ( bShotAnim || Physics == PHYS_Swimming || bDecapitated || bKnockedDown || float(Pawn.Health) >= (Pawn.Default.Health * 1.5) )
+	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || bDecapitated || bKnockedDown || float(Pawn.Health) >= (Pawn.Default.Health * 1.5) )
 		Return False;
 	
 	Return True;
 }
 
-// Called from UM_BaseMonster
+// Called from UM_MonsterController
 function CorpseAttack(Actor A)
 {
 	DisableMovement();
@@ -1988,9 +1960,10 @@ function CorpseAttack(Actor A)
 	Health = Min( (Health + 1 + Rand(3)), int(float(Default.Health) * 1.5) );
 }
 
+// Called from UM_MonsterController FireWeaponAt()
 function bool CanAttack(Actor A)
 {
-	if ( A == None || bSTUNNED || DECAP || bKnockedDown )
+	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || DECAP || bKnockedDown )
 		Return False;
 
 	if ( KFDoorMover(A) != None )
@@ -1998,39 +1971,31 @@ function bool CanAttack(Actor A)
 	
 	if ( KFHumanPawn(A) != None && KFHumanPawn(A).Health < 1 )
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius);
-	else 
+	else
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius + A.CollisionRadius);
 }
 
+// Called from UM_MonsterController FireWeaponAt()
 function RangedAttack(Actor A)
 {
-	if ( bShotAnim || Physics == PHYS_Swimming || !CanAttack(A) )
-		Return;
-	
 	DisableMovement();
 	bShotAnim = True;
 	SetAnimAction('Claw');
 }
 
-function PlayDoorBashing()
+function bool CanAttackDoor(KFDoorMover Door)
 {
-	DisableMovement();
-	bShotAnim = True;
-	SetAnimAction('DoorBash');
-}
-
-function EndDoorBashing()
-{
-	AccelRate = Pawn.Default.AccelRate;
-	SetGroundSpeed(OriginalGroundSpeed);
+	if ( Door == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || bDecapitated || bKnockedDown )
+		Return False;
+	
+	Return !Door.bHidden && Door.bSealed && !Door.bZombiesIgnore;
 }
 
 function DoorAttack(Actor A)
 {
-	if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming || bKnockedDown )
-		Return;
-	
-	PlayDoorBashing();
+	DisableMovement();
+	bShotAnim = True;
+	SetAnimAction('DoorBash');
 	GotoState('DoorBashing');
 }
 
@@ -2053,16 +2018,9 @@ state DoorBashing
 	
 	function DoorAttack(Actor A)
 	{
-		if ( A == None || DECAP || bShotAnim || Physics == PHYS_Swimming )
-			Return;
-		
-		PlayDoorBashing();
-	}
-	
-	function EndDoorBashing()
-	{
-		Global.EndDoorBashing();
-		GoToState('');
+		DisableMovement();
+		bShotAnim = True;
+		SetAnimAction('DoorBash');
 	}
 }
 
@@ -2956,21 +2914,6 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 }
 
 //[block] KnockDown
-function PlayKnockDown()
-{
-	bKnockedDown = True;
-	DisableMovement();
-	bShotAnim = True;
-	SetAnimAction(KnockDownAnim);
-}
-
-function EndKnockDown()
-{
-	AccelRate = default.AccelRate;
-	SetGroundSpeed(OriginalGroundSpeed);
-	bKnockedDown = False;
-}
-
 function SendToKnockDown(optional float KnockDownDuration)
 {
 	if ( UM_MonsterController(Controller) == None )
@@ -2982,12 +2925,11 @@ function SendToKnockDown(optional float KnockDownDuration)
 	UM_MonsterController(Controller).GoToState('KnockedDown');
 }
 
-// High damage was taken, make em fall over.
-function CheckForKnockDown( int Damage, class<DamageType> DamageType )
+// Called from UM_MonsterController
+function PlayKnockDown()
 {
-	if ( bCanBeKnockedDown && KnockDownAnim != '' && HasAnim(KnockDownAnim) && Health > 0 
-		 && (Damage >= int(HealthMax * KnockedDownHealthPct) || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) )
-		SendToKnockDown();
+	bShotAnim = True;
+	SetAnimAction(KnockDownAnim);
 }
 
 state KnockedDown
@@ -3003,6 +2945,21 @@ state KnockedDown
 	}
 	
 	function bool CanSpeedAdjust()
+	{
+		Return False;
+	}
+	
+	function bool CanAttack(Actor A)
+	{
+		Return False;
+	}
+	
+	function bool CanCorpseAttack(Actor A)
+	{
+		Return False;
+	}
+	
+	function bool CanAttackDoor(KFDoorMover TargetDoor)
 	{
 		Return False;
 	}
@@ -3028,6 +2985,14 @@ state KnockedDown
 		bKnockedDown = False;
 	}
 }
+
+// High damage was taken, make em fall over.
+function CheckForKnockDownDamage( int Damage, class<DamageType> DamageType )
+{
+	if ( bCanBeKnockedDown && Health > 0 
+		 && (Damage >= int(HealthMax * KnockedDownHealthPct) || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) )
+		SendToKnockDown();
+}
 //[end] KnockDown
 
 // New Hit FX for Zombies!
@@ -3042,7 +3007,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 	if ( Damage < 1 )
 		Return;
 	
-	CheckForKnockDown(Damage, DamageType);
+	CheckForKnockDownDamage(Damage, DamageType);
 	// Call the modified version of the original Pawn playhit
 	OldPlayHit(Damage, InstigatedBy, HitLocation, DamageType,Momentum);
 

@@ -2,7 +2,7 @@
 //	Package:		 Engine
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_SmallExpBulletExplosionEffect
-//	Parent class:	 Emitter
+//	Parent class:	 UM_BaseEmitter
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_SmallExpBulletExplosionEffect extends Emitter;
+class UM_SmallExpBulletExplosionEffect extends UM_BaseEmitter;
 
 
 defaultproperties

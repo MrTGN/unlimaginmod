@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_ExpBulletExplosionEffect
-//	Parent class:	 Emitter
+//	Parent class:	 UM_BaseEmitter
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2012 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 20.09.2012 17:22
 //================================================================================
-class UM_ExpBulletExplosionEffect extends Emitter;
+class UM_ExpBulletExplosionEffect extends UM_BaseEmitter;
 
 defaultproperties
 {

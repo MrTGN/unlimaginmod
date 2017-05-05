@@ -170,7 +170,7 @@ defaultproperties
 	 JumpSpeed=160.0
 	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
-	 
+	 DecapitationAnim="HeadLoss"
 	 // MovementAnims
 	 MovementAnims(0)="ClotWalk"
      MovementAnims(1)="ClotWalk"

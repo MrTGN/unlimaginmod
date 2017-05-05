@@ -99,10 +99,12 @@ function bool InitDataFor( UM_InvasionGame IG )
 	}
 	
 	for ( i = 0; i < MonsterClasses.Length; ++i )  {
-		if ( MonsterClasses[i] != None )
-			MonsterClasses[i].static.PreCacheAssets( Level );
-		else
+		if ( MonsterClasses[i] == None )  {
 			MonsterClasses.Remove(i, 1);
+			--i;
+			continue;
+		}
+		MonsterClasses[i].static.PreCacheAssets( Level );
 	}
 	
 	if ( MonsterClasses.Length < 1 )  {
@@ -118,10 +120,12 @@ function bool InitDataFor( UM_InvasionGame IG )
 	}
 	
 	for ( i = 0; i < SpecialMonsterClasses.Length; ++i )  {
-		if ( SpecialMonsterClasses[i] != None )
-			SpecialMonsterClasses[i].static.PreCacheAssets( Level );
-		else
+		if ( SpecialMonsterClasses[i] == None )  {
 			SpecialMonsterClasses.Remove(i, 1);
+			--i;
+			continue;
+		}
+		SpecialMonsterClasses[i].static.PreCacheAssets( Level );
 	}
 	
 	bNoSpecialMonsters = SpecialMonsterClasses.Length < 1;

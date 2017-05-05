@@ -15,7 +15,7 @@
 class UM_MonsterController extends KFMonsterController;
 
 //var		float	MyDazzleTime;
-var		transient	float				KnockDownEndTime;
+var		transient	float				StunEndTime;
 
 var					float				FriendlyFireAggroChance;
 
@@ -190,6 +190,37 @@ function UnPossess()
 	MyMonster = None;
 }
 
+function AddKillAssistant(Controller PC, float Damage)
+{
+	local	bool	bIsalreadyAssistant;
+	local	int		i;
+	
+	if ( PC == None || Damage <= 0.0 )
+		Return;
+
+	for ( i = 0; i < KillAssistants.Length; ++i )  {
+		// Check for none
+		if ( KillAssistants[i].PC == None )  {
+			KillAssistants.Remove(i, 1);
+			--i;
+			continue;
+		}
+		// Try to find PC in KillAssistants
+		if ( KillAssistants[i].PC == PC )  {
+			bIsalreadyAssistant = True;
+			KillAssistants[i].Damage += Damage;
+			Break;
+		}
+	}
+
+	if ( !bIsalreadyAssistant )  {
+		// Add last PC to the top
+		KillAssistants.Insert(0, 1);
+		KillAssistants[0].PC = PC;
+		KillAssistants[0].Damage = Damage;
+	}
+}
+
 function bool TryToDuck(vector duckDir, bool bReversed)
 {
 	local	vector	HitLocation, HitNormal, Extent;
@@ -319,6 +350,60 @@ event AnimEnd(int Channel)
 	if ( Pawn != None )
 		Pawn.AnimEnd(Channel);
 }	*/
+
+function NotifyMonsterDecapitated()
+{
+	Accuracy = -5.0; // More chance of missing. (he's headless now, after all) :-D
+	// We can't see and can't hear now
+	Disable('SeeMonster');
+	Disable('SeePlayer');
+	Disable('HearNoise');
+}
+
+function float AdjustAimError(float AimError, float TargetDist, bool bDefendMelee, bool bInstantProj, bool bLeadTargetNow )
+{
+	if ( Pawn(Target) != None && Pawn(Target).Visibility < 2 )
+		AimError *= 2.5;
+
+	// figure out the relative motion of the target across the bots view, and adjust aim error
+	// based on magnitude of relative motion
+	AimError *= FMin(5.0, (12.0 - 11.0 *
+		(Normal(Target.Location - Pawn.Location) Dot Normal((Target.Location + 1.2 * Target.Velocity) - (Pawn.Location + Pawn.Velocity)))) );
+
+	// if enemy is charging straight at bot with a melee weapon, improve aim
+	if ( bDefendMelee )
+		AimError *= 0.5;
+
+	if ( Target.Velocity == vect(0,0,0) )
+		AimError *= 0.6;
+
+	// aiming improves over time if stopped
+	if ( Stopped() && Level.TimeSeconds > StopStartTime )  {
+		if ( (Skill + Accuracy) > 4.0 )
+			AimError *= 0.9;
+		AimError *= FClamp((2.0 - 0.08 * FMin(Skill, 7) - FRand()) / (Level.TimeSeconds - StopStartTime + 0.4), 0.7, 1.0);
+	}
+
+	// adjust aim error based on Skill
+	if ( !bDefendMelee )
+		AimError *= 3.3 - 0.37 * (FClamp((Skill + Accuracy), 0.0, 8.5) + 0.5 * FRand());
+
+	// Bots don't aim as well if recently hit, or if they or their target is flying through the air
+	if ( (Skill < 7.0 || FRand() < 0.5) && (Level.TimeSeconds - Pawn.LastPainTime) < 0.2 )
+		AimError *= 1.3;
+	
+	if ( Pawn.Physics == PHYS_Falling || Target.Physics == PHYS_Falling )
+		AimError *= 1.6;
+
+	// Bots don't aim as well at recently acquired targets (because they haven't had a chance to lock in to the target)
+	if ( AcquireTime > (Level.TimeSeconds - 0.5 - 0.6 * (7.0 - Skill)) )  {
+		AimError *= 1.5;
+		if ( bInstantProj )
+			AimError *= 1.5;
+	}
+
+	Return Lerp(FRand(), -AimError, AimError);
+}
 
 state Scripting
 {
@@ -567,10 +652,10 @@ KeepMoving:
 // Get rid of this Zed if he's stuck somewhere and noone has seen him
 function bool CanKillMeYet()
 {
-	if ( KFGameType(Level.Game) == None || KFMonster(Pawn) == None )
+	if ( UM_BaseGameInfo(Level.Game) == None || UM_BaseMonster(Pawn) == None || !UM_BaseMonster(Pawn).bAllowRespawnIfLost )
 		Return False;
 
-	Return KFGameType(Level.Game).WaveNum >= KFGameType(Level.Game).FinalWave || (Level.TimeSeconds - KFMonster(Pawn).LastSeenOrRelevantTime) > 8.0;
+	Return (Level.TimeSeconds - UM_BaseMonster(Pawn).LastPlayersSeenTime) > 40.0;
 }
 
 function bool DoWaitForLanding()
@@ -1168,6 +1253,7 @@ function ExecuteWhatToDoNext()
 		Return;
 	}
 	
+	//if ( MyMonster.bShotAnim && MyMonster.bWaitForAnim )  {
 	if ( MyMonster.bShotAnim )  {
 		GoToState('WaitForAnim');
 		Return;
@@ -1734,9 +1820,14 @@ SpecialNavig:
 		SoakStop("STUCK IN HUNTING!");
 }
 
+function bool Stopped()
+{
+	Return MyMonster.bMovementDisabled;
+}
+
 state RangedAttack
 {
-ignores SeePlayer, HearNoise, Bump;
+	ignores SeePlayer, HearNoise, Bump;
 
 	function bool Stopped()
 	{
@@ -1827,8 +1918,7 @@ function BreakUpDoor( KFDoorMover Other, bool bTryDistanceAttack )
 		Return;
 	
 	TargetDoor = Other;
-	if ( KFMonster(Pawn) != None )
-		KFMonster(Pawn).bDistanceAttackingDoor = KFMonster(Pawn).bCanDistanceAttackDoors && bTryDistanceAttack;
+	MyMonster.SetDistanceDoorAttack(bTryDistanceAttack);
 	
 	GoalString = "DOORBASHING";
 	GotoState('DoorBashing');
@@ -1860,7 +1950,7 @@ state DoorBashing
 		MoveTarget = None;
 		MoveTimer = -1.0;
 		Target = TargetDoor;
-		MyMonster.DoorAttack(Target);
+		MyMonster.AttackDoor();
 	}
 	
 	event SeePlayer( Pawn Seen )
@@ -1891,6 +1981,14 @@ state DoorBashing
 		
 		if ( NoiseMakerPawn != None && MyMonster.Intelligence >= BRAINS_Mammal && ActorReachable(NoiseMakerPawn) && SetEnemy(NoiseMakerPawn) )
 			WhatToDoNext(32);
+	}
+	
+	function NotifyMonsterDecapitated()
+	{
+		Global.NotifyMonsterDecapitated();
+		if ( MyMonster.bShotAnim )
+			AnimEnd(MyMonster.ExpectingChannel);
+		WhatToDoNext(152);
 	}
 
 	event EndState()
@@ -2331,7 +2429,7 @@ state ZombieHunt
 	
 	event Timer()
 	{
-		if ( Pawn.Velocity == vect(0.0,0.0,0.0) )
+		if ( Pawn.Velocity == vect(0, 0, 0) )
 			GotoState('ZombieRestFormation','Moving');
 		
 		SetCombatTimer();
@@ -2468,7 +2566,7 @@ state StakeOut
 		GotoState('StakeOut','Begin');
 	}
 
-	function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int aimerror)
+	function rotator AdjustAim(FireProperties FiredAmmunition, vector projStart, int AimError)
 	{
 		local vector FireSpot;
 		local actor HitActor;
@@ -3115,13 +3213,13 @@ End:
 	Pawn.ShouldCrouch(False);
 }
 
-function SetKnockDownTime(float KnockDownDuration)
+function SetStunTime(float StunDuration)
 {
-	if ( KnockDownDuration <= 0.0 )
+	if ( StunDuration <= 0.0 )
 		Return;
 	
-	if ( Level.TimeSeconds >= KnockDownEndTime || KnockDownDuration > (KnockDownEndTime - Level.TimeSeconds) )
-		KnockDownEndTime = Level.TimeSeconds + KnockDownDuration;
+	if ( Level.TimeSeconds >= StunEndTime || StunDuration > (StunEndTime - Level.TimeSeconds) )
+		StunEndTime = Level.TimeSeconds + StunDuration;
 }
 
 state KnockedDown
@@ -3139,29 +3237,28 @@ state KnockedDown
 	
 	event EndState()
 	{
-		MyMonster.EnableMovement();
+		if ( MyMonster.bShotAnim )
+			Return; // In case we need to replay KnockDown anim
+		
 		MyMonster.GoToState('');
 	}
 
 Begin:
 	MoveTarget = None;
 	MoveTimer = -1.0;
-	MyMonster.DisableMovement();
-	MyMonster.GoToState('KnockedDown');
-	MyMonster.PlayKnockDown();
 
 WaitForAnim:
 	if ( MyMonster.bShotAnim )
 		FinishAnim(MyMonster.ExpectingChannel);
-	// Check KnockDownEndTime
-	if ( Level.TimeSeconds < KnockDownEndTime )  {
-		MyMonster.PlayKnockDown();
-		GoTo('WaitForAnim');
-	}
 	
 	WhatToDoNext(99);
 	if ( bSoaking )
 		SoakStop("STUCK IN KnockDown!!!");
+}
+
+state DecapitatedMoving
+{
+
 }
 
 // State for being scared of something, the bot attempts to move away from it

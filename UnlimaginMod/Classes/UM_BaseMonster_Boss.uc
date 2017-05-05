@@ -1820,6 +1820,7 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
+	 bAllowRespawnIfLost=False
 	 LifeSpan=0.0
 	 
 	 ImpressiveKillChance=0.0

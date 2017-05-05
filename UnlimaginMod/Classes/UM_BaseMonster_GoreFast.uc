@@ -359,6 +359,7 @@ defaultproperties
 	 HeadHeight=2.500000
 	 HeadScale=1.500000
 	 MenuName="Gorefast"
+	 DecapitationAnim="HeadLoss"
 	 // MeleeAnims
 	 MeleeAnims(0)="GoreAttack1"
 	 MeleeAnims(1)="GoreAttack2"

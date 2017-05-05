@@ -1051,7 +1051,7 @@ function SpawnNextMonsterSquad()
 	}
 }
 
-function RespawnJammedMonsters()
+function RespawnLostMonsters()
 {
 	local	int		i;
 	
@@ -1060,7 +1060,7 @@ function RespawnJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 45.0 )
+		if ( !AliveMonsterList[i].bAllowRespawnIfLost || AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 45.0 )
 			Continue; // Skip
 		// Kill this lazy monster
 		NextSpawnSquad[NextSpawnSquad.Length] = AliveMonsterList[i].Class;
@@ -1073,7 +1073,7 @@ function RespawnJammedMonsters()
 	SpawnNextMonsterSquad();
 }
 
-function KillJammedMonsters()
+function KillLostMonsters()
 {
 	local	int		i;
 	
@@ -1082,7 +1082,7 @@ function KillJammedMonsters()
 	CheckAliveMonsterList();
 	// Search for Jammed Monsters
 	for ( i = 0; i < AliveMonsterList.Length; ++i )  {
-		if ( AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 10.0 )
+		if ( !AliveMonsterList[i].bAllowRespawnIfLost || AliveMonsterList[i].bPlayersCanSeeMe || (Level.TimeSeconds - AliveMonsterList[i].LastPlayersSeenTime) < 10.0 )
 			Continue; // Skip
 		// Kill this lazy monster
 		AliveMonsterList[i].Suicide();
@@ -1229,7 +1229,7 @@ state WaveInProgress
 		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
-			RespawnJammedMonsters();
+			RespawnLostMonsters();
 		// Spawn New Monster Squad
 		if ( CanSpawnNextMonsterSquad() )  {
 			// NextSpawnTime
@@ -1256,7 +1256,7 @@ state WaveInProgress
 		// End Wave
 		if ( WaveCountDown < 1 )  {
 			// Kill Jammed Monsters
-			KillJammedMonsters();
+			KillLostMonsters();
 			if ( NumMonsters > 0 )
 				Return;
 			
@@ -1395,7 +1395,7 @@ state BossWaveInProgress
 		
 		// Respawn Jammed Monsters First
 		if ( Level.TimeSeconds >= NextJammedMonstersCheckTime )
-			RespawnJammedMonsters();
+			RespawnLostMonsters();
 		// Spawn New Monster Squad
 		if ( CanSpawnNextMonsterSquad() )  {
 			// NextSpawnTime

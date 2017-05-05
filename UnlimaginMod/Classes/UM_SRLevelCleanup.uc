@@ -2,26 +2,32 @@ Class UM_SRLevelCleanup extends Interaction;
 
 function NotifyLevelChange()
 {
-	local int i;
+	local	int		i;
 
 	// Make sure GUI controller leaves no menus referenced.
 	GUIController(ViewportOwner.GUIController).ResetFocus();
 	GUIController(ViewportOwner.GUIController).FocusedControl = None;
-
-	for ( i = (ViewportOwner.LocalInteractions.Length - 1); i >= 0; --i )  {
-		if ( ViewportOwner.LocalInteractions[i] == Self )
+	
+	for ( i = 0; i < ViewportOwner.LocalInteractions.Length; ++i )  {
+		if ( ViewportOwner.LocalInteractions[i] == Self )  {
 			ViewportOwner.LocalInteractions.Remove(i, 1);
+			--i;
+		}
 	}
 	
-	ViewportOwner.Console.DelayedConsoleCommand("OBJ GARBAGE"); // Ensure to cleanup everything releated to this mod.
+	if ( ViewportOwner != None )
+		ViewportOwner.Console.DelayedConsoleCommand("OBJ GARBAGE"); // Ensure to cleanup everything releated to this mod.
 }
 
 static final function AddSafeCleanup( PlayerController PC )
 {
-	local int i;
-	local UM_SRLevelCleanup C;
+	local	int					i;
+	local	UM_SRLevelCleanup	C;
+	
+	if ( PC.Player == None )
+		Return;
 
-	for ( i = (PC.Player.LocalInteractions.Length - 1); i >= 0; --i )  {
+	for ( i = 0; i < PC.Player.LocalInteractions.Length; ++i )  {
 		if ( PC.Player.LocalInteractions[i].Class == Default.Class )
 			Return;
 	}
@@ -29,9 +35,7 @@ static final function AddSafeCleanup( PlayerController PC )
 	C = new(None) Class'UM_SRLevelCleanup';
 	C.ViewportOwner = PC.Player;
 	C.Master = PC.Player.InteractionMaster;
-	i = PC.Player.LocalInteractions.Length;
-	PC.Player.LocalInteractions.Length = i+1;
-	PC.Player.LocalInteractions[i] = C;
+	PC.Player.LocalInteractions[PC.Player.LocalInteractions.Length] = C;
 	C.Initialize();
 }
 

@@ -84,8 +84,11 @@ function AddModServerPackages()
 	// Forcing packages to be downloaded by clients
 	Log("Adding"@ModServerPackages.Length@"additional serverpackages",Class.Outer.Name);
 	for ( i = 0; i < ModServerPackages.Length; i++ ) {
-		if ( ModServerPackages[i] != "" )
-			AddToPackageMap(ModServerPackages[i]);
+		if ( ModServerPackages[i] == "" )  {
+			ModServerPackages.Remove(i, 1);
+			--i;
+		}
+		AddToPackageMap(ModServerPackages[i]);
 	}
 }
 
@@ -105,14 +108,15 @@ event PostBeginPlay()
 	bEnabledEmoIcons = bEnableChatIcons;
 	
 	// Load perks.
-	for( i=0; i<Perks.Length; i++ )
-	{
-		V = class<UM_VeterancyTypes>(DynamicLoadObject(Perks[i],Class'Class'));
-		if( V!=None )
-		{
-			LoadPerks[LoadPerks.Length] = V;
-			ImplementPackage(V.Outer.Name);
-		}
+	for ( i = 0; i < Perks.Length; ++i )  {
+		if ( Perks[i] != None )
+			V = class<UM_VeterancyTypes>(DynamicLoadObject(Perks[i], Class'Class'));
+		
+		if ( V == None )
+			continue;
+
+		LoadPerks[LoadPerks.Length] = V;
+		ImplementPackage(V.Outer.Name);
 	}
 	
 	if ( WeaponCategories.Length == 0 ) {
@@ -136,7 +140,7 @@ event PostBeginPlay()
 		if ( P != None ) {
 			LoadInventory[LoadInventory.Length] = P;
 			LoadInvCategory[LoadInvCategory.Length] = Cat;
-			if( P.Outer.Name!='KFMod' )
+			if ( P.Outer.Name != 'KFMod' )
 				ImplementPackage(P.Outer.Name);
 		
 			/*
@@ -222,8 +226,11 @@ final function ImplementPackage( name N )
 	S = string(N);
 	// Checking if this package has already been added
 	for ( i = 0; i < ModServerPackages.Length; ++i ) {
-		if ( ModServerPackages[i] == "" )
-			ModServerPackages.Remove(i,1);
+		if ( ModServerPackages[i] == "" )  {
+			ModServerPackages.Remove(i, 1);
+			--i;
+			continue;
+		}
 		else if ( ModServerPackages[i] == S )
 			Return;
 	}
@@ -470,10 +477,9 @@ final function ReceivedPlayerID( string S )
 
 	for( i=0; i<PendingData.Length; ++i )
 	{
-		if( PendingData[i]==None )
+		if ( PendingData[i] == None )
 			PendingData.Remove(i--,1);
-		else if( S~=string(PendingData[i].MyStatsObject.Name) )
-		{
+		else if ( S ~= string(PendingData[i].MyStatsObject.Name) )  {
 			PendingData[i].SetID(RID);
 			break;
 		}
@@ -488,12 +494,10 @@ final function ReceivedPlayerData( string S )
 	RID = int(Left(S,i));
 	S = Mid(S,i+1);
 
-	for( i=0; i<PendingData.Length; ++i )
-	{
-		if( PendingData[i]==None )
+	for( i = 0; i < PendingData.Length; ++i )  {
+		if ( PendingData[i]==None )
 			PendingData.Remove(i--,1);
-		else if( RID==PendingData[i].GetID() )
-		{
+		else if ( RID==PendingData[i].GetID() )  {
 			PendingData[i].GetData(S);
 			PendingData.Remove(i,1);
 			break;

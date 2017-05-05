@@ -2962,7 +2962,7 @@ simulated event Tick( float DeltaTime )
 		
 		// Sprinting
 		if ( bIsSprinting )  {
-			if ( Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0) )  {
+			if ( Stamina < 1 || Acceleration == vect(0, 0, 0) )  {
 				SetSprinting(False);
 				if ( Controller != None )
 					Controller.bSprint = 0;
@@ -3037,14 +3037,11 @@ simulated event Tick( float DeltaTime )
 			StopBurnFX();
 	}
 	
-	//wtf???
-	/*
-	// Reset AnimAction replication.
+	// Reset AnimAction on the server to replicate any repeated anim
 	if ( bResetingAnimAct && Level.TimeSeconds > AnimActResetTime )  {
 		bResetingAnimAct = False;
 		AnimAction = '';
 	}
-	*/
 	
 	if ( bDestroyAfterRagDollTick && Physics == PHYS_KarmaRagdoll
 		 && !bProcessedRagTickDestroy && GetRagDollFrames() > 0 )  {
@@ -3373,16 +3370,16 @@ defaultproperties
 	 WeightJumpStaminaDrainModifier=3.0
 	 OverweightJumpStaminaDrainModifier=6.0
 	 // SprintingStaminaDrain
-	 SprintingStaminaDrainDelay=0.2
+	 SprintingStaminaDrainDelay=0.25
 	 SprintingStaminaDrain=2.0
 	 WeightStaminaDrainModifier=1.0
 	 OverweightStaminaDrainModifier=3.0
 	 // StaminaRegen
-	 MotionlessStaminaRegenRate=1.25
-	 CrouchedStaminaRegenRate=0.75
-	 WalkingStaminaRegenRate=1.0
-	 RuningStaminaRegenRate=0.5
 	 StaminaRegenDelay=0.25
+	 MotionlessStaminaRegenRate=1.75
+	 CrouchedStaminaRegenRate=1.25
+	 WalkingStaminaRegenRate=1.5
+	 RuningStaminaRegenRate=1.0
 	 WeightStaminaRegenModifier=0.2
 	 OverweightStaminaRegenModifier=0.4
 	 NormalHealthStaminaRegenModifier=0.3

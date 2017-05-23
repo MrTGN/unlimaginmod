@@ -354,6 +354,7 @@ defaultproperties
 	 // JumpZ
 	 JumpZ=350.0
 	 JumpSpeed=220.0
+	 AirControl=0.25
 	 
 	 HeadHeight=2.500000
 	 MenuName="Stalker"

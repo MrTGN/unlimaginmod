@@ -24,6 +24,8 @@ class UM_BaseMonster extends KFMonster
 //[block] Variables
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
+const	MainAnimChannel = 0;
+const	MinorAnimChannel = 1;
 
 // Falling
 var		class<DamageType>				FallingDamageType;
@@ -702,9 +704,10 @@ simulated event PostNetBeginPlay()
 	
 	InitCheckAnimActions();
 	AnimateDefault();
-	EnableChannelNotify(1, 1);
-	AnimBlendParams(1, 1.0, 0.0, , SpineBone1);
-	AnimBlendParams(1, 1.0, 0.0, , HeadBone);
+	EnableChannelNotify(MainAnimChannel, 1);
+	EnableChannelNotify(MinorAnimChannel, 1);
+	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , SpineBone1);
+	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , HeadBone);
 	
 	if ( Level.bDropDetail || (Level.DetailMode == DM_Low) )
 		MaxLights = Min(4,MaxLights);
@@ -737,17 +740,7 @@ simulated event PostNetBeginPlay()
 }
 
 // Setters for extra collision cylinders
-simulated function ToggleAuxCollision( bool NewbCollision )
-{
-	/*
-	if ( !NewbCollision )  {
-		SavedExtCollision = ExtendedCollision.bCollideActors;
-		ExtendedCollision.SetCollision(False);
-	}
-	else
-		ExtendedCollision.SetCollision(SavedExtCollision);
-	*/
-}
+simulated function ToggleAuxCollision( bool NewbCollision ) { }
 
 function bool MakeGrandEntry()
 {
@@ -766,6 +759,16 @@ simulated event Destroyed()
 		Suicide();
 	
 	Super.Destroyed();
+}
+
+function SetMovementPhysics()
+{
+	if ( Physics == PHYS_None )
+		SetPhysics(PHYS_Falling);
+	else if ( PhysicsVolume.bWaterVolume )
+		SetPhysics(PHYS_Swimming);
+	else
+		SetPhysics(PHYS_Walking);
 }
 
 event FellOutOfWorld( eKillZType KillType )
@@ -875,7 +878,7 @@ function bool CanSpeedAdjust()
 // quicker - Ramm
 function AdjustGroundSpeed()
 {
-	bApplyHiddenGroundSpeed = bHiddenGroundSpeedApplied;
+	bHiddenGroundSpeedApplied = bApplyHiddenGroundSpeed;
 	if ( bApplyHiddenGroundSpeed )
 		SetGroundSpeed(HiddenGroundSpeed);
 	else
@@ -1473,12 +1476,12 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 			skelParams.KSkeleton = RagSkelName;
 
 			// Stop animation playing.
-			StopAnimating(true);
+			StopAnimating(True);
 
 			// StopAnimating() resets the neck bone rotation, we have to set it again
 			// if the zed was decapitated the cute way
 			if ( class'GameInfo'.static.UseLowGore() && NeckRot != rot(0,0,0) )
-				SetBoneRotation('neck', NeckRot);
+				SetBoneRotation(NeckBone, NeckRot);
 
 			if ( DamageType != None )  {
 				if ( DamageType.default.bLeaveBodyEffect )
@@ -1878,7 +1881,7 @@ simulated function ZombieCrispUp()
 	}
 }
 
-//Stops the green shit when a player dies.
+
 simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
 	local	float		frame, rate;
@@ -1919,15 +1922,16 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 							bFrozenBody = true;
 						}
 					}
-					GetAnimParams( 0, seq, frame, rate );
+					GetAnimParams( MainAnimChannel, seq, frame, rate );
 					LinkMesh(SkeletonMesh, true);
 					Skins.Length = 0;
-					PlayAnim(seq, 0, 0);
-					SetAnimFrame(frame);
+					PlayAnim(seq, 0.0, 0.0, MainAnimChannel);
+					SetAnimFrame(frame, MainAnimChannel);
 				}
 				
 				if ( Physics == PHYS_Walking )
-					Velocity = Vect(0,0,0);
+					Acceleration = vect(0, 0, 0);
+					//Velocity = Vect(0,0,0);
 				
 				SetTearOffMomemtum(GetTearOffMomemtum() * 0.25);
 				bSkeletized = True;
@@ -1947,7 +1951,7 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 	}
 
 	// stop shooting
-	AnimBlendParams(1, 0.0);
+	AnimBlendParams(MinorAnimChannel, 0.0);
 	FireState = FS_None;
 
 	// Try to adjust around performance
@@ -1965,18 +1969,25 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 simulated function int DoAnimAction( name AnimName )
 {
 	if ( AnimName == HitAnims[0] || AnimName == HitAnims[1] || AnimName == HitAnims[2] || AnimName == KFHitFront || AnimName == KFHitBack || AnimName == KFHitRight || AnimName == KFHitLeft )  {
-		AnimBlendParams(1, 1.0, 0.0,, SpineBone1);
-		PlayAnim(AnimName, , 0.1, 1);
-		Return 1;
+		if ( IsAnimating(MinorAnimChannel) )  {
+			AnimBlendParams(MinorAnimChannel, 0.0, 0.0,, SpineBone1);
+			AnimBlendToAlpha(MinorAnimChannel, 1.0, 0.15);
+		}
+		else
+			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, SpineBone1);
+		PlayAnim(AnimName, , 0.1, MinorAnimChannel);
+		Return MinorAnimChannel;
 	}
-
-	PlayAnim(AnimName, ,0.1, 0);
-	Return 0;
+	
+	if ( IsAnimating(MainAnimChannel) )
+		AnimBlendToAlpha(MainAnimChannel, 1.0, 0.15);
+	PlayAnim(AnimName, ,0.1, MainAnimChannel);
+	Return MainAnimChannel;
 }
 
 simulated function bool AnimNeedsWait(name TestAnim)
 {
-	Return ExpectingChannel == 0 || TestAnim == KnockDownAnim || TestAnim == DoorBashAnim;
+	Return ExpectingChannel == MainAnimChannel;
 }
 
 // Choose AnimAction on the server and replicate it to the clients
@@ -2029,28 +2040,30 @@ simulated event AnimEnd(int Channel)
 	AnimAction = '';
 	if ( bShotAnim && Channel == ExpectingChannel )  {
 		bShotAnim = False;
-		//if ( Controller != None )
-			//Controller.bPreparingMove = False;
+		if ( Controller != None && !bMovementDisabled )
+			Controller.bPreparingMove = Controller.default.bPreparingMove;
 	}
 	
-	if ( !bPhysicsAnimUpdate && Channel == 0 )
-		bPhysicsAnimUpdate = Default.bPhysicsAnimUpdate;
-	
-	if ( Channel == 1 )  {
+	if ( Channel == MainAnimChannel )  {
+		if ( !bPhysicsAnimUpdate )
+			bPhysicsAnimUpdate = Default.bPhysicsAnimUpdate;
+		if ( bKeepTaunting )
+			PlayVictoryAnimation();
+	}
+	else if ( Channel == MinorAnimChannel )  {
 		if ( FireState == FS_Ready )  {
-			AnimBlendToAlpha(1, 0.0, 0.12);
+			AnimBlendToAlpha(MinorAnimChannel, 0.0, 0.12);
 			FireState = FS_None;
 		}
 		else if ( FireState == FS_PlayOnce )  {
-			PlayAnim(IdleWeaponAnim,, 0.2, 1);
+			if ( HasAnim(IdleWeaponAnim) )
+				PlayAnim(IdleWeaponAnim,, 0.2, MinorAnimChannel);
 			FireState = FS_Ready;
 			IdleTime = Level.TimeSeconds;
 		}
 		else
-			AnimBlendToAlpha(1, 0.0, 0.12);
+			AnimBlendToAlpha(MinorAnimChannel, 0.0, 0.12);
 	}
-	else if ( bKeepTaunting && Channel == 0 )
-		PlayVictoryAnimation();
 }
 //[End]
 
@@ -2108,11 +2121,7 @@ function AdjustMovement()
 	}
 	else  {
 		AccelRate = default.AccelRate;
-		bApplyHiddenGroundSpeed = bHiddenGroundSpeedApplied;
-		if ( bApplyHiddenGroundSpeed )
-			SetGroundSpeed(HiddenGroundSpeed);
-		else
-			SetGroundSpeed(OriginalGroundSpeed);
+		AdjustGroundSpeed();
 		AirSpeed = default.AirSpeed;
 		WaterSpeed = default.WaterSpeed;
 	}
@@ -2930,58 +2939,35 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 // Overridden so that anims don't get interrupted on the server if one is already playing
 function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 {
-	local coords C;
-	local vector HeadLoc, B, M, diff;
-	local float t, DotMM, Distance;
-	local int look;
-	local bool bUseAltHeadShotLocation;
-	local bool bWasAnimating;
+	local	vector	HeadLoc, B, M, diff;
+	local	float	t, DotMM, Distance;
+	local	int		look;
+	local	bool	bUseAltHeadShotLocation;
 
 	if ( bDecapitated || HeadBone == '' )
 		Return False;
 
 	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer )  {
+	if ( Level.NetMode == NM_DedicatedServer && !IsAnimating(MainAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
 		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0);
+			PlayAnim(AirAnims[0], 1.0, 0.0, MainAnimChannel);
 		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
+			PlayAnim(SwimAnims[0], 1.0, 0.0, MainAnimChannel);
 		else if ( Physics == PHYS_Walking )  {
-			// Only play the idle anim if we're not already doing a different anim.
-			// This prevents anims getting interrupted on the server and borking things up - Ramm
-			if ( !IsAnimating(0) && !IsAnimating(1) )  {
-				if ( bIsCrouched )
-					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
-				else
-					bUseAltHeadShotLocation = True;
-			}
+			if ( bIsCrouched )
+				PlayAnim(IdleCrouchAnim, 1.0, 0.0, MainAnimChannel);
 			else
-				bWasAnimating = True;
-
-			if ( bDoTorsoTwist )  {
-				SmoothViewYaw = Rotation.Yaw;
-				SmoothViewPitch = ViewPitch;
-				look = (256 * ViewPitch) & 65535;
-				if ( look > 32768 )
-					look -= 65536;
-				SetTwistLook(0, look);
-			}
+				bUseAltHeadShotLocation = True;
 		}
-
-		if ( !bWasAnimating )
-			SetAnimFrame(0.5);
+		SetAnimFrame(0.5);
 	}
 
 	if ( bUseAltHeadShotLocation )  {
 		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
 		AdditionalScale *= OnlineHeadshotScale;
 	}
-	else  {
-		//C = GetBoneCoords(HeadBone);
-		//HeadLoc = C.Origin + (HeadHeight * HeadScale * AdditionalScale * C.XAxis);
-		C = GetBoneCoords(HeadHitPointName);
-		HeadLoc = C.Origin;
-	}
+	else
+		HeadLoc = GetBoneCoords(HeadHitPointName).Origin;
 	
 	// Headshot debugging
 	if ( Role == ROLE_Authority )
@@ -3142,6 +3128,15 @@ function SendToKnockDown()
 	GoToState('KnockedDown');
 }
 
+// High damage was taken, make em fall over.
+function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+{
+	Return ( bCanBeKnockedDown && Health > 0 
+		 && ((bDecapitated && bPlayDecapitationAnim)
+			 ||	Damage >= int(HealthMax * KnockedDownHealthPct) 
+			 || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) );
+}
+
 state KnockedDown
 {
 	function bool HitCanInterruptAction()
@@ -3184,15 +3179,6 @@ state KnockedDown
 		bKnockedDown = False;
 		EnableMovement();
 	}
-}
-
-// High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
-{
-	Return ( bCanBeKnockedDown && Health > 0 
-		 && ( (bDecapitated && bPlayDecapitationAnim)
-			 ||	Damage >= int(HealthMax * KnockedDownHealthPct) 
-			 || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) );
 }
 //[end] KnockDown
 
@@ -3719,12 +3705,22 @@ defaultproperties
 	 // Monster HeadHealth
 	 HeadHealthScaleRange=(Min=0.92,Max=1.08)
 	 
-	 GroundSpeed=140.000000
-	 HiddenGroundSpeed=300.000000
+	 // Movement
+	 GroundSpeed=140.0  // The maximum ground speed.
+	 HiddenGroundSpeed=300.0  // The maximum ground speed when monster is hidden from the players.
+	 WaterSpeed=120.0  // The maximum swimming speed.
+	 AirSpeed=300.0  // The maximum flying speed.
+	 LadderSpeed=80.0  // Ladder climbing speed
 	 // JumpZ
-	 JumpZ=320.0
-	 JumpSpeed=180.0
-	 JumpScaleRange=(Min=1.0,Max=1.2)
+	 JumpZ=320.0  // Vertical acceleration when jump
+	 JumpSpeed=180.0  // Horizontal acceleration when jump
+	 JumpScaleRange=(Min=1.0,Max=1.2)  // Random jump acceleration scale range
+	 AirControl=0.2  // Amount of AirControl available to the pawn
+	 WalkingPct=1.0  // pct. of running speed that walking speed is
+	 CrouchedPct=1.0  // pct. of running speed that crouched walking speed is
+	 SprintPct=1.5  // Relative speed for sprint movement
+	 MaxFallSpeed=2000.0  // max speed pawn can land without taking damage (also limits what paths AI can use)
+	 
 	 // MeleeRange
 	 MeleeRangeScale=(Min=0.95,Max=1.05)
 	 // DamageScale

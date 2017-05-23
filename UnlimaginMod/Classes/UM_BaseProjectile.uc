@@ -910,7 +910,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 	local	Vector			VectVelDotNorm, TmpVect;
 	local	Material		HitMat;
 	local	ESurfaceTypes	ST;
-	local	float			f, EnergyByNormal;
+	local	float			f;
 	
 	// Updating bullet performance before hit the wall
 	// Needed because bullet lose Speed and Damage while flying
@@ -930,9 +930,8 @@ simulated function ProcessHitWall( Vector HitNormal )
 			ST = EST_Default;
 		// Speed by HitNormal
 		f = Velocity Dot HitNormal;
-		EnergyByNormal = Square(f) * SpeedSquaredToEnergy;
 		// Stuck or Rebound
-		if ( EnergyByNormal < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
+		if ( (Square(f) * SpeedSquaredToEnergy) < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
 			VectVelDotNorm = HitNormal * f;
 			// Mirroring Velocity Vector by HitNormal with lossy
 			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * BounceBonus), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * BounceBonus), 0.96);

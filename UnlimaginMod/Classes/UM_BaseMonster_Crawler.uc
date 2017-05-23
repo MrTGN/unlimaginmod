@@ -239,7 +239,7 @@ defaultproperties
 	 // JumpZ
 	 JumpZ=350.0
 	 JumpSpeed=200.0
-	 
+	 AirControl=0.25
      HeadHeight=2.500000
      HeadScale=1.050000
      MenuName="Crawler"

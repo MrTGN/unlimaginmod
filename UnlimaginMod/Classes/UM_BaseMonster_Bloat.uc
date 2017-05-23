@@ -541,7 +541,7 @@ defaultproperties
 	 // JumpZ
 	 JumpZ=320.0
 	 JumpSpeed=110.0
-	 
+	 AirControl=0.15
 	 HeadHeight=2.500000
 	 HeadScale=1.500000
 	 AmbientSoundScaling=8.000000

@@ -650,9 +650,10 @@ function UpdateGroundSpeed()
 {
 	// GroundSpeed always replicated from the server to the client-owner
 	if ( Role == ROLE_Authority )  {
+		/* ToDo: #важно!! Issue #472 комментирую этот блок, что бы проверить работу SprintPct
 		if ( bIsSprinting )
 			GroundSpeed = default.SprintingGroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
-		else
+		else	*/
 			GroundSpeed = default.GroundSpeed * HealthMovementModifier * CarryWeightMovementModifier * InventoryMovementModifier * VeterancyMovementModifier;
 		NetUpdateTime = Level.TimeSeconds - 1.0;
 	}
@@ -686,7 +687,7 @@ simulated function bool AllowSprint()
 	if ( (KFWeapon(Weapon) != None && KFWeapon(Weapon).bIsReloading && !KFWeapon(Weapon).InterruptReload()) || (UM_BaseWeapon(Weapon) != None && !UM_BaseWeapon(Weapon).FireModesReadyToFire()) || (Weapon.GetFireMode(0) != None && (Weapon.GetFireMode(0).NextFireTime - Level.TimeSeconds) > 0.1) )
 		Return False;
 	
-	Return !bIsCrouched && !bWantsToCrouch && !bIsCrawling && Stamina > Round(SprintingStaminaDrain) && Acceleration != vect(0.0, 0.0, 0.0) && ((Weapon == None || Weapon.WeaponAllowSprint()));
+	Return !bIsCrouched && !bWantsToCrouch && !bIsCrawling && Stamina > Round(SprintingStaminaDrain) && Acceleration != vect(0, 0, 0) && ((Weapon == None || Weapon.WeaponAllowSprint()));
 }
 
 function StartSprint()
@@ -2962,7 +2963,7 @@ simulated event Tick( float DeltaTime )
 		
 		// Sprinting
 		if ( bIsSprinting )  {
-			if ( Stamina < 1 || Acceleration == vect(0, 0, 0) )  {
+			if ( Stamina < 2 || Acceleration == vect(0, 0, 0) )  {
 				SetSprinting(False);
 				if ( Controller != None )
 					Controller.bSprint = 0;
@@ -3018,7 +3019,7 @@ simulated event Tick( float DeltaTime )
 			}
 		}
 		// Client StopSprinting
-		if ( bIsSprinting && Controller != None && (Stamina < 1 || Acceleration == vect(0.0, 0.0, 0.0)) )
+		if ( bIsSprinting && Controller != None && (Stamina < 1 || Acceleration == vect(0, 0, 0)) )
 			Controller.bSprint = 0;
 		// Drugs effects on the client-side
 		if ( bOnDrugs != bClientOnDrugs )  {
@@ -3326,11 +3327,24 @@ defaultproperties
 	 VeterancyOverhealPotency=1.0
 	 VeterancySyringeChargeModifier=1.0
 	 
+	 // Movement
+	 bCanDoubleJump=False
+     bCanWallDodge=False
 	 SprintingGroundSpeed=250.0
-	 GroundSpeed=180.0
-	 WaterSpeed=160.0
-	 AirSpeed=280.0
+	 GroundSpeed=180.0  // The maximum ground speed.
+	 WaterSpeed=160.0  // The maximum swimming speed.
+	 AirSpeed=280.0  // The maximum flying speed.
+	 LadderSpeed=80.0  // Ladder climbing speed
+	 AccelRate=1000.0  // max acceleration rate
+	 JumpZ=330.0  // Vertical acceleration when jump
+	 AirControl=0.15  // Amount of AirControl available to the pawn
+	 WalkingPct=0.5  // pct. of running speed that walking speed is
+     CrouchedPct=0.4  // pct. of running speed that crouched walking speed is
+	 MaxFallSpeed=650.0  // max speed pawn can land without taking damage (also limits what paths AI can use)
+	 SprintPct=1.6  // Relative speed for sprint movement
+	 CrouchedSprintPct=1.2  // pct. of running speed that crouched sprint speed is
 	 DirectionalJumpSpeed=260.0
+	 
 	 // DyingMessage
 	 DyingMessageHealthScale=0.25
 	 // DyingCameraEffect
@@ -3431,7 +3445,6 @@ defaultproperties
 	 RequiredEquipment(4)="KFMod.Welder"
 	 bNetNotify=False
 	 UnderWaterBlurCameraEffectClass=Class'KFMod.UnderWaterBlur'
-	 JumpZ=330.000000
 	 //Mass=400.0
 	 Mass=220.0 // lb (фунт)
 }

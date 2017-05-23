@@ -1358,6 +1358,34 @@ function NotifyTakeHit(Pawn InstigatedBy, vector HitLocation, int Damage, class<
 	DamageAttitudeTo(InstigatedBy, Damage);
 }
 
+/* WaitForMover()
+Wait for Mover M to tell me it has completed its move */
+function WaitForMover(Mover M)
+{
+    if ( M == None )
+		Return;
+	
+	if ( Enemy != None && (Level.TimeSeconds - LastSeenTime) < M.MoveTime )
+        Focus = Enemy;
+    PendingMover = M;
+    bPreparingMove = True;
+    Pawn.Acceleration = vect(0,0,0);
+    StopStartTime = Level.TimeSeconds;
+}
+
+/* MoverFinished()
+Called by Mover when it finishes a move, and this pawn has the mover
+set as its PendingMover	*/
+function MoverFinished()
+{
+	if ( PendingMover.MyMarker.ProceedWithMove(Pawn) )  {
+		PendingMover = None;
+		bPreparingMove = False;
+	}
+}
+
+
+
 state WaitForAnim
 {
 	ignores SeePlayer, HearNoise, Timer, EnemyNotVisible, NotifyBump, Startle;

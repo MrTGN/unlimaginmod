@@ -1829,7 +1829,7 @@ defaultproperties
 	 Intelligence=BRAINS_Human
 	 
 	 KnockedDownHealthPct=0.8
-	 
+	 AirControl=0.25
 	 ChargingAnim="RunF"
 	 HealingLevels(0)=5600
 	 HealingLevels(1)=3500

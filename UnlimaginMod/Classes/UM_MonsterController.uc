@@ -1030,6 +1030,9 @@ function bool FindNewEnemy()
 		Return False;
 
 	for ( i = 0; i < GameInfo.PlayerList.Length; ++i )  {
+		if ( !PlayerList[i].bIsActivePlayer )
+			continue;
+		
 		Human = UM_HumanPawn(GameInfo.PlayerList[i].Pawn);
 		if ( Human == None || Human.Health < 1 || Human.bPendingDelete )
 			continue;	// skip
@@ -2672,6 +2675,9 @@ function bool EnemyThreatChanged()
 		Return False;
 	
 	for ( i = 0; i < GameInfo.PlayerList.Length; ++i )  {
+		if ( !PlayerList[i].bIsActivePlayer )
+			continue;
+		
 		Human = UM_HumanPawn(GameInfo.PlayerList[i].Pawn);
 		if ( Human == None || Human.Health < 1 || Human.bPendingDelete || Human == Enemy )
 			continue;	// skip

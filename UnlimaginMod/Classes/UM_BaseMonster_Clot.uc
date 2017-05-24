@@ -171,6 +171,7 @@ defaultproperties
 	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
 	 DecapitationAnim="HeadLoss"
+	 bPlayDecapitationKnockDown=True
 	 // MovementAnims
 	 MovementAnims(0)="ClotWalk"
      MovementAnims(1)="ClotWalk"

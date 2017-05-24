@@ -2611,25 +2611,27 @@ function TakeFallingDamage()
 	local	float	FallingSpeedRatio;
 	local	int		FallingDamage;
 	
+	// Server only
+	if ( Role < ROLE_Authority || Velocity.Z > -(MaxFallSpeed * 0.5) )
+		Return;
+	
 	// Calculating FallingSpeedRatio, taking into account PhysicsVolume gravity
 	if ( TouchingWaterVolume() )
-		FallingSpeedRatio = (Abs(Velocity.Z) - (GroundSpeed - WaterSpeed) * 2.0) / (MaxFallSpeed * Abs(Class'PhysicsVolume'.default.Gravity.Z) / Abs(PhysicsVolume.Gravity.Z));
+		FallingSpeedRatio = Abs( FMin((Velocity.Z + (GroundSpeed - WaterSpeed) * 2.0), 0.0) / (MaxFallSpeed * Class'PhysicsVolume'.default.Gravity.Z / PhysicsVolume.Gravity.Z) );
 	else
-		FallingSpeedRatio = Abs(Velocity.Z) / (MaxFallSpeed * Abs(Class'PhysicsVolume'.default.Gravity.Z) / Abs(PhysicsVolume.Gravity.Z));
+		FallingSpeedRatio = Abs( Velocity.Z / (MaxFallSpeed * Class'PhysicsVolume'.default.Gravity.Z / PhysicsVolume.Gravity.Z) );
+
+	if ( FallingSpeedRatio < 0.5 )
+		Return;
 	
-	//if ( FallingSpeedRatio > 0.5 )  {
-		// Server
-		if ( FallingSpeedRatio > 0.5 && Role == ROLE_Authority )  {
-			MakeNoise( FMin(FallingSpeedRatio, 1.0) );
-			// Hurt pawn if FallingSpeed is over the MaxFallSpeed
-			if ( FallingSpeedRatio > 1.0 )  {
-				FallingDamage = ProcessTakeDamage( Round(HealthMax * FallingSpeedRatio - HealthMax), None, Location, vect(0.0, 0.0, 0.0), FallingDamageType );
-				// Shake controller
-				if ( Controller != None )
-					Controller.DamageShake( FallingDamage );
-			}
-		}
-	//}
+	MakeNoise( FMin(FallingSpeedRatio, 1.0) );
+	// Hurt pawn if FallingSpeed is over the MaxFallSpeed
+	if ( FallingSpeedRatio > 1.0 )  {
+		FallingDamage = ProcessTakeDamage( Round(HealthMax * (FallingSpeedRatio - 1.0)), None, Location, vect(0, 0, 0), FallingDamageType );
+		// Shake controller
+		if ( Controller != None && FallingDamage > 0 )
+			Controller.DamageShake( FallingDamage );
+	}
 }
 
 // Take a Drowning Damage (called from the BreathTimer)

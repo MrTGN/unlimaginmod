@@ -360,6 +360,7 @@ defaultproperties
 	 HeadScale=1.500000
 	 MenuName="Gorefast"
 	 DecapitationAnim="HeadLoss"
+	 bPlayDecapitationKnockDown=True
 	 // MeleeAnims
 	 MeleeAnims(0)="GoreAttack1"
 	 MeleeAnims(1)="GoreAttack2"

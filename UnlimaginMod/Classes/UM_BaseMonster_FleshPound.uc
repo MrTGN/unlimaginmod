@@ -21,9 +21,9 @@ class UM_BaseMonster_FleshPound extends UM_BaseMonster
 //[block] Variables
 
 var()	float					BlockDamageReduction;
-var		bool					bChargingPlayer,bClientCharge;
+var		bool					bChargingPlayer, bClientCharge;
 var		int						TwoSecondDamageTotal;
-var		float					LastDamagedTime,RageEndTime;
+var		float					LastDamagedTime, RageEndTime;
 
 var()	vector					RotMag;						// how far to rot view
 var()	vector					RotRate;				// how fast to rot view
@@ -146,34 +146,12 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 	PlaySound(HitSound[0], SLOT_Pain,1.25,,400);
 }
 
-function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
 {
-	local	int		BlockSlip, OldHealth;
-	local	float	BlockChance;//, RageChance;
-	local	Vector	X,Y,Z, Dir;
-	local	bool	bIsHeadShot;
-	local	float	HeadShotCheckScale;
-	
-	// Only server
-	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
-		Return 0;
-
-	GetAxes(Rotation, X, Y, Z);
-
-	if ( LastDamagedTime < Level.TimeSeconds )
+	if ( Level.TimeSeconds > LastDamagedTime )
 		TwoSecondDamageTotal = 0;
 	
 	LastDamagedTime = Level.TimeSeconds + 2.0;
-	OldHealth = Health; // Corrected issue where only the Base Health is counted toward the FP's Rage in Balance Round 6(second attempt)
-
-    // Do larger headshot checks if it is a melee attach
-    if ( class<DamTypeMelee>(damageType) != None )
-        HeadShotCheckScale *= 1.25;
-	else
-		HeadShotCheckScale = 1.0;
-
-    bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
-
 	/* A little extra damage from the grenade launchers, they are HE not shrapnel,
 		and its shrapnel that REALLY hurts the FP ;) 
 		Frags and LAW rockets will bring him down way faster than bullets and shells. */
@@ -183,43 +161,29 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 	else if ( DamageType == class'DamTypeFrag' || DamageType == class'DamTypePipeBomb' || DamageType == class'DamTypeMedicNade' )
         Damage = Round( float(Damage) * 2.0 );
 	// He takes less damage to small arms fire (non explosives)
-	else if ( bIsHeadShot && class<KFWeaponDamageType>(damageType) != None && class<KFWeaponDamageType>(damageType).default.HeadShotDamageMult >= 1.5 )
-		Damage *= 0.75; // Don't reduce the damage so much if its a high headshot damage weapon
-	else if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(damageType) != None || class<DamTypeCrossbowHeadShot>(damageType) != None) )
-		Damage *= 0.4; // was 0.3 in Balance Round 1, then 0.4 in Round 2, then 0.3 in Round 3/4, and 0.35 in Round 5
+	else if ( bIsHeadShot && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult >= 1.5 )
+		Damage = Round( float(Damage) * 0.75 ); // Don't reduce the damage so much if its a high headshot damage weapon
+	else if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(DamageType) != None || class<DamTypeCrossbowHeadShot>(DamageType) != None) )
+		Damage = Round( float(Damage) * 0.4 );
+	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
+	else if( DamageType == class 'DamTypeBlowerThrower' )
+		Damage = Round( float(Damage) * 0.25 );
+	else if ( DamageType == class'DamTypeVomit' )
+		Return 0; // nulled
 	else
-		Damage *= 0.55;
+		Damage = Round( float(Damage) * 0.55 );
 	
-
+	if ( AnimAction == 'PoundBlock' )
+		Damage = Round( float(Damage) * BlockDamageReduction );
+	
+	if ( Damage < 1 )
+		Return 0;
+	
 	// Shut off his "Device" when dead
 	if ( Damage >= Health )
 		PostNetReceive();
-
-	// Damage Berserk responses...
-	// Start a charge.
-	// The Lower his health, the less damage needed to trigger this response.
-	//RageChance = (( HealthMax / Health * 300) - TwoSecondDamageTotal );
-
-	// Calculate whether the shot was coming from in front.
-	Dir = -Normal(Location - Hitlocation);
-	BlockSlip = Rand(5);
-
-	if ( AnimAction == 'PoundBlock' )
-		Damage *= BlockDamageReduction;
-
-	if ( (Dir Dot X) > 0.7 || Dir == vect(0.0, 0.0, 0.0) )
-		BlockChance = float(Health) / HealthMax * 100.0 - float(Damage) * 0.25;
-
-	if ( damageType == class'DamTypeVomit' )
-		Damage = 0; // nulled
-	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
-	else if( damageType == class 'DamTypeBlowerThrower' )
-       Damage *= 0.25;
-		
-	Damage = Super.ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-
-	TwoSecondDamageTotal += OldHealth - Health; // Corrected issue where only the Base Health is counted toward the FP's Rage in Balance Round 6(second attempt)
-
+	
+	TwoSecondDamageTotal += Damage;
 	if ( !bDecapitated && TwoSecondDamageTotal > RageDamageThreshold && !bChargingPlayer && !bZapped && (!(bCrispified && bBurnified) || bFrustrated) )
 		StartCharging();
 	

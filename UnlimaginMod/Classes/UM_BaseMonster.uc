@@ -24,12 +24,11 @@ class UM_BaseMonster extends KFMonster
 //[block] Variables
 
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
-const	MainAnimChannel = 0;
-const	MinorAnimChannel = 1;
 
-// Falling
-var		class<DamageType>				FallingDamageType;
-var		class<DamageType>				LavaDamageType;
+// Animation channels 2 through 11 are used for animation updating by physics
+const	MainAnimChannel = 0;
+const	MajorAnimChannel = 12;	// ToDo: issue #478
+const	MinorAnimChannel = 1;
 
 var					bool				bRandomSizeAdjusted;
 
@@ -122,6 +121,10 @@ var					float				SpeedAdjustCheckDelay;
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
 var					vector              LastServerHeadLocation;
 
+// Falling
+var					class<DamageType>	FallingDamageType;
+var					class<DamageType>	LavaDamageType;
+
 // BurnDamage
 var		transient	bool				bIsTakingBurnDamage;
 var		transient	float				NextBurnDamageTime;
@@ -168,7 +171,7 @@ var					name				DoorBashAnim;
 var					name				DistanceDoorAttackAnim;
 
 // Decapitation
-var					bool				bPlayDecapitationAnim;
+var					bool				bPlayDecapitationKnockDown;
 var					name				DecapitationAnim;
 var		transient	bool				bDecapitationPlayed;
 // HeadlessAnim
@@ -693,8 +696,8 @@ function InitCheckAnimActions()
 	if ( bCanDistanceAttackDoors )
 		bCanDistanceAttackDoors = DistanceDoorAttackAnim != '' && HasAnim(DistanceDoorAttackAnim);
 	// Check DecapitationAnim
-	if ( bPlayDecapitationAnim )
-		bPlayDecapitationAnim = DecapitationAnim != '' && HasAnim(DecapitationAnim);
+	if ( bPlayDecapitationKnockDown )
+		bPlayDecapitationKnockDown = DecapitationAnim != '' && HasAnim(DecapitationAnim);
 }
 
 // called after PostBeginPlay() and after all init replication was received on net client
@@ -1399,10 +1402,55 @@ simulated function PlayWaiting();
 
 simulated event PlayLandingAnimation(float ImpactVel);
 
-function PlayLanded(float impactVel)
+function PlayLanded(float ImpactVel)
 {
 	if ( !bPhysicsAnimUpdate )
-		PlayLandingAnimation(impactvel);
+		PlayLandingAnimation(ImpactVel);
+}
+
+// Take a Falling Damage
+function TakeFallingDamage()
+{
+	local	float	FallingSpeedRatio;
+	local	int		FallingDamage;
+	
+	// Server only
+	if ( Role < ROLE_Authority || Velocity.Z > -(MaxFallSpeed * 0.5) )
+		Return;
+	
+	// Calculating FallingSpeedRatio, taking into account PhysicsVolume gravity
+	if ( TouchingWaterVolume() )
+		FallingSpeedRatio = Abs( FMin((Velocity.Z + (GroundSpeed - WaterSpeed) * 2.0), 0.0) / (MaxFallSpeed * Class'PhysicsVolume'.default.Gravity.Z / PhysicsVolume.Gravity.Z) );
+	else
+		FallingSpeedRatio = Abs( Velocity.Z / (MaxFallSpeed * Class'PhysicsVolume'.default.Gravity.Z / PhysicsVolume.Gravity.Z) );
+
+	if ( FallingSpeedRatio < 0.5 )
+		Return;
+	
+	MakeNoise( FMin(FallingSpeedRatio, 1.0) );
+	// Hurt monster if FallingSpeed is over the MaxFallSpeed
+	if ( FallingSpeedRatio > 1.0 )  {
+		FallingDamage = ProcessTakeDamage( Round(HealthMax * (FallingSpeedRatio - 1.0)), None, Location, vect(0, 0, 0), FallingDamageType );
+		// Shake controller
+		if ( Controller != None && FallingDamage > 0 )
+			Controller.DamageShake( FallingDamage );
+	}
+}
+
+event Landed(vector HitNormal)
+{
+	ImpactVelocity = vect(0,0,0);
+	TakeFallingDamage();
+	
+	if ( Health > 0 )
+		PlayLanded(Velocity.Z);
+	
+	if ( Velocity.Z < -200.0 && PlayerController(Controller) != None )  {
+		bJustLanded = PlayerController(Controller).bLandingShake;
+		OldZ = Location.Z;
+	}
+	
+	LastHitBy = None;
 }
 
 function PlayVictoryAnimation()
@@ -1969,18 +2017,17 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 simulated function int DoAnimAction( name AnimName )
 {
 	if ( AnimName == HitAnims[0] || AnimName == HitAnims[1] || AnimName == HitAnims[2] || AnimName == KFHitFront || AnimName == KFHitBack || AnimName == KFHitRight || AnimName == KFHitLeft )  {
-		if ( IsAnimating(MinorAnimChannel) )  {
+		if ( !IsAnimating(MinorAnimChannel) && IsAnimating(MainAnimChannel) )  {
 			AnimBlendParams(MinorAnimChannel, 0.0, 0.0,, SpineBone1);
-			AnimBlendToAlpha(MinorAnimChannel, 1.0, 0.15);
+			AnimBlendToAlpha(MinorAnimChannel, 1.0, 0.1);
 		}
 		else
 			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, SpineBone1);
+		
 		PlayAnim(AnimName, , 0.1, MinorAnimChannel);
 		Return MinorAnimChannel;
 	}
 	
-	if ( IsAnimating(MainAnimChannel) )
-		AnimBlendToAlpha(MainAnimChannel, 1.0, 0.15);
 	PlayAnim(AnimName, ,0.1, MainAnimChannel);
 	Return MainAnimChannel;
 }
@@ -2392,9 +2439,9 @@ function SetDumbIntelligence()
 		Return;
 	
 	Intelligence = BRAINS_Retarded; // burning dumbasses!
-	// Make them less accurate while they are burning
+	// Make them less accurate
 	if ( Controller != None )
-		MonsterController(Controller).Accuracy = -5.0;  // More chance of missing. (he's burning now, after all) :-D
+		MonsterController(Controller).Accuracy = -5.0;  // More chance of missing.
 }
 
 function SetOriginalIntelligence()
@@ -3072,8 +3119,7 @@ function RemoveHead()
 function PlayDecapitationKnockDown()
 {
 	bDecapitationPlayed = True;
-	bPlayDecapitationAnim = False;
-	// DecapitationAnim
+	bPlayDecapitationKnockDown = False;
 	bShotAnim = True;
 	SetAnimAction(DecapitationAnim);
 	
@@ -3096,6 +3142,7 @@ function PlayKnockDown()
 	bShotAnim = True;
 	SetAnimAction(KnockDownAnim);
 	
+	// PlayHit times
 	NextPainTime = Level.TimeSeconds + 0.1;
 	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
 	
@@ -3120,7 +3167,7 @@ function SendToKnockDown()
 	bKnockedDown = True;
 	CumulativeDamage = 0; // Reset CumulativeDamage
 	DisableMovement();
-	if ( bDecapitated && bPlayDecapitationAnim )
+	if ( bDecapitated && bPlayDecapitationKnockDown )
 		PlayDecapitationKnockDown();
 	else
 		PlayKnockDown();
@@ -3131,10 +3178,8 @@ function SendToKnockDown()
 // High damage was taken, make em fall over.
 function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
 {
-	Return ( bCanBeKnockedDown && Health > 0 
-		 && ((bDecapitated && bPlayDecapitationAnim)
-			 ||	Damage >= int(HealthMax * KnockedDownHealthPct) 
-			 || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) );
+	Return Damage >= int(HealthMax * KnockedDownHealthPct) 
+			|| CumulativeDamage >= int(HealthMax * KnockedDownHealthPct);
 }
 
 state KnockedDown
@@ -3196,12 +3241,15 @@ function bool HitCanInterruptAction()
 	Return !bShotAnim;
 }
 
+//ToDo: issue #477
+function bool CanPlayDirectionalHit(int Damage, class<DamageType> DamageType)
+{
+	Return Damage > 4;
+}
+
 function PlayDirectionalHit(Vector HitLoc)
 {
 	local	Vector	X,Y,Z, Dir;
-
-	if ( !HitCanInterruptAction() )
-		Return;
 	
 	GetAxes(Rotation, X,Y,Z);
 	HitLoc.Z = Location.Z;
@@ -3228,10 +3276,10 @@ function PlayDirectionalHit(Vector HitLoc)
 		}
 	}
 	// HitBack
-	else if ( Dir Dot X < -0.7 )
+	else if ( Dir dot X < -0.7 )
 		SetAnimAction(KFHitBack);
 	// HitRight
-	else if ( Dir Dot Y > 0 )
+	else if ( Dir dot Y > 0 )
 		SetAnimAction(KFHitRight);
 	// HitLeft
 	else
@@ -3244,7 +3292,7 @@ function PlayDecapitation()
 		Return;
 	
 	bDecapitationPlayed = True;
-	bPlayDecapitationAnim = False;
+	bPlayDecapitationKnockDown = False;
 	// HitAnims
 	bShotAnim = True;
 	SetAnimAction(HitAnims[NextHitAnimNum]);
@@ -3270,7 +3318,7 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 	// No anim if we're burning, we're already playing an anim
 	if ( Level.TimeSeconds >= NextPainAnimTime && !bCrispified )  {
 		NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
-		if ( Damage > 4 )
+		if ( Damage > 4 && HitCanInterruptAction() )
 			PlayDirectionalHit(HitLocation);
 	}
 	
@@ -3307,7 +3355,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 		if ( Momentum != Vect(0, 0, 0) )
 			HitNormal = -Normal(Momentum);
 		else if ( InstigatedBy != None )
-			HitNormal = Normal((InstigatedBy.Location + vect(0.0,0.0,1.0) * InstigatedBy.EyeHeight) - HitLocation);
+			HitNormal = Normal((InstigatedBy.Location + vect(0,0,1) * InstigatedBy.EyeHeight) - HitLocation);
 		else
 			HitNormal = Normal(HitLocation - Location);
 		// Blood hit effects
@@ -3357,7 +3405,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 		}
 	}
 	else  {
-		if ( CheckForKnockDown(Damage, DamageType) )
+		if ( (bDecapitated && bPlayDecapitationKnockDown) || (bCanBeKnockedDown && CheckForKnockDown(Damage, DamageType)) )
 			SendToKnockDown();
 		else if ( bDecapitated && !bDecapitationPlayed )
 			PlayDecapitation();
@@ -3387,8 +3435,14 @@ function AddCumulativeDamage(int NewDamage)
 	CumulativeDamage += NewDamage;
 }
 
+// Use this function to modify taken damage in subclasses
+function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+{
+	Return Damage;
+}
+
 // Process the damaging and Return the amount of taken damage
-function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, class<DamageType> DamageType )
+function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType )
 {
 	local	bool						bIsHeadShot;
 	local	Controller					Killer;
@@ -3430,11 +3484,11 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocatio
 		
 	// Owner takes damage while holding this weapon - used by shield gun
 	if ( Weapon != None )
-		Weapon.AdjustPlayerDamage( Damage, InstigatedBy, HitLocation, Momentum, DamageType );
+		Weapon.AdjustPlayerDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType);
 	
 	// Modify Damage if Pawn is driving a vehicle
 	if ( DrivenVehicle != None )
-		DrivenVehicle.AdjustDriverDamage( Damage, InstigatedBy, HitLocation, Momentum, DamageType );
+		DrivenVehicle.AdjustDriverDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType);
 	
 	if ( InstigatedBy != None )  {
 		if ( InstigatedBy.HasUDamage() )
@@ -3465,13 +3519,15 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocatio
 	
 	// ReduceDamage
 	if ( Level.Game != None )
-		Damage = Level.Game.ReduceDamage( Damage, self, InstigatedBy, HitLocation, Momentum, DamageType );
+		Damage = Level.Game.ReduceDamage(Damage, self, InstigatedBy, HitLocation, Momentum, DamageType);
 	
 	//ToDo: issue #204
 	// if ( Armor != None )
 		//ArmorAbsorbDamage( Damage, InstigatedBy, Momentum, DamageType );
 	if ( DamageType.default.bArmorStops )
 		Damage = ShieldAbsorb( Damage );
+	
+	Damage = AdjustTakenDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, bIsHeadShot);
 	//[end]
 	
 	// Just Return if this wouldn't even damage us.
@@ -3675,10 +3731,10 @@ defaultproperties
 	 BurnDamageDelay=1.0
 	 //ZedGun Zapped
 	 ZapDuration=4.000000
-     ZappedSpeedMod=0.500000
-     ZapThreshold=0.250000
-     ZappedDamageMod=2.000000
-     ZapResistanceScale=2.000000
+	 ZappedSpeedMod=0.500000
+	 ZapThreshold=0.250000
+	 ZappedDamageMod=2.000000
+	 ZapResistanceScale=2.000000
 	 // Falling
 	 FallingDamageType=Class'Fell'
 	 LavaDamageType=Class'FellLava'
@@ -3758,7 +3814,8 @@ defaultproperties
 	 KnockDownAnim="KnockDown"
 	 KnockedDownHealthPct=0.65
 	 // DecapitationAnim
-	 bPlayDecapitationAnim=True
+	 //DecapitationAnim="HeadLoss"
+	 //bPlayDecapitationKnockDown=True
 	 // DoorBash
 	 DoorBashAnim="DoorBash"
 	 // MeleeAnims
@@ -3813,11 +3870,13 @@ defaultproperties
 	 AirAnims(1)="InAir"
 	 AirAnims(2)="InAir"
 	 AirAnims(3)="InAir"
+	 AirStillAnim="InAir"
 	 // TakeoffAnims
 	 TakeoffAnims(0)="Jump"
 	 TakeoffAnims(1)="Jump"
 	 TakeoffAnims(2)="Jump"
 	 TakeoffAnims(3)="Jump"
+	 TakeoffStillAnim="Jump"
 	 // LandAnims
 	 LandAnims(0)="Landed"
 	 LandAnims(1)="Landed"

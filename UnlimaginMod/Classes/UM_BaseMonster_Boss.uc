@@ -183,11 +183,8 @@ simulated event Tick( float DeltaTime )
 
 	// Process the pipe bomb time damage scale, reducing the scale over time so
 	// it goes back up to 100% damage over a few seconds
-	if ( Role == ROLE_Authority )  {
-		PipeBombDamageScale -= DeltaTime * 0.33;
-		if ( PipeBombDamageScale < 0 )
-			PipeBombDamageScale = 0;
-	}
+	if ( Role == ROLE_Authority && PipeBombDamageScale > 0.0 )
+		PipeBombDamageScale = FMin( (PipeBombDamageScale - DeltaTime * 0.33), 0.0 );
 
 	if ( Level.NetMode == NM_DedicatedServer )
 		Return; // Servers aren't intrested in this info.
@@ -197,7 +194,7 @@ simulated event Tick( float DeltaTime )
 	if ( bZapped )
 		LastCheckTimes = Level.TimeSeconds;
 	else if ( bCloaked && Level.TimeSeconds > LastCheckTimes )  {
-		LastCheckTimes = Level.TimeSeconds + 0.8;
+		LastCheckTimes = Level.TimeSeconds + 1.0;
 		ForEach VisibleCollidingActors(Class'KFHumanPawn',HP,1000,Location)  {
 			if ( HP.Health <= 0 || !HP.ShowStalkers() )
 				Continue;
@@ -1480,6 +1477,23 @@ function bool ShouldChargeFromDamage()
 // No ImpressiveKill on BossMonster. Boss Already have a DoBossDeath function.
 function CheckForImpressiveKill( UM_PlayerController PC );
 
+function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+{
+	local	float	UsedPipeBombDamScale;
+	
+	// Scale damage from the pipebomb down a bit if lots of pipe bomb damage happens
+	// at around the same times. Prevent players from putting all thier pipe bombs
+	// in one place and owning the patriarch in one blow.
+	if ( class<DamTypePipeBomb>(DamageType) != None )  {
+		UsedPipeBombDamScale = FMax((1.0 - PipeBombDamageScale), 0.0);
+		if ( PipeBombDamageScale < 1.0 )
+			PipeBombDamageScale = FMin( (PipeBombDamageScale + 0.075), 1.0 );
+		Return Round( float(Damage) * UsedPipeBombDamScale );
+	}
+	
+	Return Damage;
+}
+
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
 {
 	local float DamagerDistSq;
@@ -1524,17 +1538,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocatio
 
 	if ( class<DamTypeCrossbow>(damageType) == None && class<DamTypeCrossbowHeadShot>(damageType) == None )
 		bOnlyDamagedByCrossbow = False;
-
-	// Scale damage from the pipebomb down a bit if lots of pipe bomb damage happens
-	// at around the same times. Prevent players from putting all thier pipe bombs
-	// in one place and owning the patriarch in one blow.
-	if ( class<DamTypePipeBomb>(damageType) != None )  {
-		UsedPipeBombDamScale = FMax(0,(1.0 - PipeBombDamageScale));
-		PipeBombDamageScale += 0.075;
-		if ( PipeBombDamageScale > 1.0 )
-		   PipeBombDamageScale = 1.0;
-		Damage *= UsedPipeBombDamScale;
-	}
 
 	Damage = Super.ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
 

@@ -351,32 +351,15 @@ State SawingLoop
 	}
 }
 
-// Added in Balance Round 1 to reduce the headshot damage taken from Crossbows
-function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
 {
-	local bool bIsHeadShot;
-
-	bIsHeadShot = IsHeadShot(Hitlocation, normal(Momentum), 1.0);
 	if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(damageType) != None || class<DamTypeCrossbowHeadShot>(damageType) != None) )  {
-		Damage *= 0.5; // Was 0.5 in Balance Round 1, then 0.6 in Round 2, back to 0.5 in Round 3
+		Damage = Round( float(Damage) * 0.5 );
 	}
-
-	Damage = Super.ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
-
-	// Added in Balance Round 3 to make the Scrake "Rage" more reliably when his health gets low(limited to Suicidal and HoE in Round 7)
-	if ( InstigatedBy != None && Level.Game.GameDifficulty >= 5.0 && !IsInState('SawingLoop') && !IsInState('RunningState') && (float(Health) / HealthMax) < 0.75 )
+	
+	if ( InstigatedBy != None && Level.Game.GameDifficulty >= 4.0 && !IsInState('SawingLoop') && !IsInState('RunningState') && float(Damage) > (HealthMax * 0.25) )
 		RangedAttack(InstigatedBy);
-
-	//No needed this block in UnlimaginMod
-	/*
-	if ( damageType == class'DamTypeDBShotgun' )  {
-		PC = PlayerController( InstigatedBy.Controller );
-		if ( PC != None )  {
-		    Stats = KFSteamStatsAndAchievements( PC.SteamStatsAndAchievements );
-		    if( Stats != None )
-		        Stats.CheckAndSetAchievementComplete( Stats.KFACHIEVEMENT_PushScrakeSPJ );
-		}
-	} */
+	
 	Return Damage;
 }
 

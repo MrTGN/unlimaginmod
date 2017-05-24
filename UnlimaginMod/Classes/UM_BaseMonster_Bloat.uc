@@ -342,21 +342,17 @@ function RemoveHead()
 	Super.RemoveHead();
 }
 
-function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )
+function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
 {
-	// Only server
-	if ( Role < ROLE_Authority || Health < 1 || Damage < 1 )
-		Return 0;
-	
 	// Bloats are volatile. They burn faster than other zeds.
 	if ( damageType == class 'DamTypeBurned' )
-		Damage *= 1.5;
+		Return Round( float(Damage) * 1.5 );
+	else if ( damageType == class 'DamTypeBlowerThrower' )
+		Return Round( float(Damage) * 0.25 );	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
 	else if ( damageType == Class'DamTypeVomit' )
 		Return 0;
-	else if ( damageType == class 'DamTypeBlowerThrower' )
-		Damage = Round( float(Damage) * 0.25 );	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
 	
-	Return Super.ProcessTakeDamage( Damage, InstigatedBy, Hitlocation, Momentum, DamageType );
+	Return Damage;
 }
 
 simulated function ProcessHitFX()

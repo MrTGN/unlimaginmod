@@ -108,13 +108,14 @@ simulated function UnStick()
 		GotoState('');
 }
 
-simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
+simulated function Stick( Actor A )
 {
-/*	local	name		NearestBone;
-	local	float		dist;
-	local	vector		HitDirection;
-*/
+	local	vector	TouchLocation, TouchNormal;
+/*	local	name	NearestBone;
+	local	float	dist;
+	local	vector	HitDirection;	*/
 	
+	GetTouchLocation(A, TouchLocation, TouchNormal);
 	bStuck = True;
 	bCollideWorld = False;
 	DestroyTrail();
@@ -131,7 +132,7 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	
 	/*
 	if ( Pawn(A) != None )
-		NearestBone = A.GetClosestBone(HitLocation, HitDirection, dist);
+		NearestBone = A.GetClosestBone(TouchLocation, HitDirection, dist);
 	
 	if ( NearestBone == '' )  {
 		PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
@@ -139,13 +140,13 @@ simulated function Stick( Actor A, vector HitLocation, vector HitNormal )
 	}
 	else  {
 		A.AttachToBone(Self, NearestBone);
-		SetRelativeLocation( HitLocation - A.GetBoneCoords(NearestBone).Origin );
+		SetRelativeLocation( TouchLocation - A.GetBoneCoords(NearestBone).Origin );
 		SetRelativeRotation( Rotator(HitDirection >> A.GetBoneRotation(NearestBone, 0)) );
 	}
 	*/
 	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetBase(A);
-	SpawnHitEffects(HitLocation, HitNormal, ,A);
+	SpawnHitEffects(TouchLocation, TouchNormal, ,A);
 
 	//if ( NearestBone == '' && Base == None )
 	if ( Base == None )
@@ -162,11 +163,11 @@ simulated function bool CanStickTo( Actor A )
 	Return True;
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function ProcessTouchActor( Actor A )
 {
 	LastTouched = A;
 	if ( CanStickTo(A) )
-		Stick(A, TouchLocation, TouchNormal);
+		Stick(A);
 	
 	LastTouched = None;
 }
@@ -174,7 +175,7 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 simulated event HitWall( vector HitNormal, actor Wall )
 {
 	if ( CanStickTo(Wall) )
-		Stick(Wall, (Location + HitNormal), HitNormal);
+		Stick(Wall);
 }
 
 simulated event Landed(vector HitNormal)

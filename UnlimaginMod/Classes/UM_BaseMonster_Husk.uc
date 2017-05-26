@@ -224,13 +224,9 @@ function RemoveHead()
 }
 
 // High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+function bool CheckForKnockDown( int Damage, Pawn InstigatedBy, class<DamageType> DamageType )
 {
-	Return ( bCanBeKnockedDown && Health > 0 
-		 && ((bDecapitated && bPlayDecapitationAnim)
-			 || (Class<UM_BaseDamType_SniperRifle>(damageType) != None && Damage > 200) 
-			 || Damage >= int(HealthMax * KnockedDownHealthPct) 
-			 || CumulativeDamage >= int(HealthMax * KnockedDownHealthPct)) );
+	Return (Class<UM_BaseDamType_SniperRifle>(DamageType) != None && Damage > 200) || Super.CheckForKnockDown(Damage, InstigatedBy, DamageType);
 }
 
 //[end] Functions

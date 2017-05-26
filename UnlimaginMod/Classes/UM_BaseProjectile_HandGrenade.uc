@@ -57,27 +57,29 @@ simulated event PostNetBeginPlay()
 	RandSpin(25000);
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function ProcessTouchActor( Actor A )
 {
+	local	vector	TouchLocation, TouchNormal;
+	
 	LastTouched = A;
-	if ( CanHitActor(A) )
+	if ( CanHurtActor(A) )  {
+		GetTouchLocation(A, TouchLocation, TouchNormal);
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+	}
 		
 	LastTouched = None;
 }
 
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
-	local	Vector	HitLocation;
-	
 	if ( Role == ROLE_Authority && !bTimerSet )  {
 		bTimerSet = True;
 		SetTimer(ExplodeTimer, False);
 	}
 	
-	if ( CanTouchActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
-		ProcessTouchActor(Wall, HitLocation, HitNormal);
+		ProcessTouchActor(Wall);
 		Return;
 	}
 	

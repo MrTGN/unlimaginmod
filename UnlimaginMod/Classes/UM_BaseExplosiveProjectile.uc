@@ -95,7 +95,7 @@ simulated static function CalcDefaultProperties()
 	
 	// ArmingRange
 	if ( default.ArmingRange > 0.0 )  {
-		default.ArmingRange = default.ArmingRange * Maths.static.GetMeterInUU();
+		default.ArmingRange = default.ArmingRange * MeterInUU;
 		// Squared ArmingRange
 		default.SquaredArmingRange = Square(default.ArmingRange);
 		// ArmingDelay
@@ -266,185 +266,82 @@ simulated function ScaleProjectilePerformance(float NewScale)
 	ImpactMomentumTransfer *= NewScale;
 }
 
+function bool CanHurtVictim(Actor Victim)
+{
+	local	int		i;
+	
+	if ( Victim == None || Victim == Self || Victim.bDeleteMe || Victim.bHidden 
+		 || Victim == Hurtwall || FluidSurfaceInfo(Victim) != None )
+		Return False;
+	
+	// Check IgnoredVictims array
+	for ( i = 0; i < IgnoredVictims.Length; ++i )  {
+		if ( Victim.IsA(IgnoredVictims[i]) )
+			Return False;
+	}
+	
+	Return True;
+}
+
 // HurtRadius()
 // Hurt locally authoritative actors within the radius.
 function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
-	local Actor			Victim;
-	local float			DamageScale, Dist;
-	local vector		Dir;
-	local int			NumKilled, i;
-	local array<Pawn>	CheckedPawns;
-	local bool			bIgnoreThisVictim;
+	local	Actor			Victim;
+	local	float			DamageScale;
+	local	vector			Dir;
+	local	int				NumKilled, i;
+	local	array<Pawn>		CheckedPawns;
+	local	bool			bIgnoreThisVictim;
 
 	if ( bHurtEntry || DamageAmount <= 0.0 )
 		Return;
 
 	bHurtEntry = True;
 	
-	foreach CollidingActors( Class 'Actor', Victim, DamageRadius, HitLocation )  {
-		if ( Victim != None && Victim != Self && !Victim.bDeleteMe && !Victim.bHidden 
-			 && Victim != Hurtwall && FluidSurfaceInfo(Victim) == None )  {
-			// Check IgnoredVictims array
-			bIgnoreThisVictim = False;
-			for ( i = 0; i < IgnoredVictims.Length; ++i )  {
-				if ( Victim.IsA(IgnoredVictims[i]) )  {
-					bIgnoreThisVictim = True;
-					Break;
-				}
-			}
-			// Skip this Victim if IgnoredVictims array contain this Victim.class
-			if ( bIgnoreThisVictim )
-				Continue;
-			
-			/*
-			if ( Victim == LastTouched )
-				LastTouched = None;	*/
-			
-			// Projectile check
-			if ( Projectile(Victim) != None )  {
-				if ( !CanHurtProjectile( Projectile(Victim) ) )
-					Continue;
-			}
-			// BallisticCollision check
-			else if ( UM_BallisticCollision(Victim) != None )  {
-				if ( UM_BallisticCollision(Victim).CanBeDamaged() )  {
-					if ( Victim == LastTouched )  {
-						CheckedPawns[CheckedPawns.Length] = Victim.Instigator;
-						// Skip LastTouched
-						Continue;
-					}
-					else
-						Victim = Victim.Base;
-				}
-				else
-					Continue;	// Skip this BallisticCollision
-			}
-			
-			if ( Victim == LastTouched )
-				Continue;	// Skip LastTouched
-			
-			Dir = Victim.Location - HitLocation;
-			Dist = FMax( VSize(Dir), 1.0 );
-			Dir = Dir / Dist;
-			DamageScale = 1.0 - FMax( 0.0, ((Dist - Victim.CollisionRadius) / DamageRadius) );
-			// if Pawn
-			if ( Pawn(Victim) != None )  {
-				bIgnoreThisVictim = False;
-				// Check CheckedPawns array
-				for ( i = 0; i < CheckedPawns.Length; ++i )  {
-					// comparison by object
-					if ( CheckedPawns[i] == Victim )  {
-						bIgnoreThisVictim = True;
-						Break;
-					}
-				}
-				// Ignore already Checked Pawns
-				if ( bIgnoreThisVictim )
-					Continue;
-				
-				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
-				// Do not damage a friendly Pawn
-				if ( !CanHurtPawn(Pawn(Victim)) )
-					Continue;
-				
-				// Extended FastTraces from bones Locations
-				/*
-				if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
-					DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-				else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
-					DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-				*/
-				if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
-					DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
-				else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
-					DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
-			}
-			// Check for the blocking world geometry
-			else if ( !FastTrace( Victim.Location, HitLocation ) )
-				Continue;
-			
-			// outside the DamageRadius
-			if ( DamageScale <= 0.0 )
-				Continue;
-			
-			if ( Instigator == None || Instigator.Controller == None )
-				Victim.SetDelayedDamageInstigatorController( InstigatorController );
-			// Damage Victim
-			Victim.TakeDamage(
-				(DamageScale * DamageAmount), Instigator, 
-				(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
-				(DamageScale * Momentum * Dir), DamageType
-			);
-			// Damage Vehicle Driver
-			if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
-				Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
-				
-			// Calculating number of Victim
-			if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
-				++NumKilled;
-		}
-	}
-	
-	if ( LastTouched != None && LastTouched != Self && !LastTouched.bDeleteMe && !LastTouched.bHidden
-		 && LastTouched != Hurtwall && FluidSurfaceInfo(LastTouched) == None )  {
+	if ( LastTouched != None && CanHurtVictim(LastTouched) )  {
 		Victim = LastTouched;
 		LastTouched = None;
-		// Check IgnoredVictims array
-		bIgnoreThisVictim = False;
-		for ( i = 0; i < IgnoredVictims.Length; ++i )  {
-			if ( Victim.IsA(IgnoredVictims[i]) )  {
-				bIgnoreThisVictim = True;
-				Break;
-			}
-		}
-		// Projectile check
-		if ( Projectile(Victim) != None )  {
-			if ( !CanHurtProjectile( Projectile(Victim) ) )
-				bIgnoreThisVictim = True;
-		}
 		// BallisticCollision check
-		else if ( UM_BallisticCollision(Victim) != None )  {
-			if ( CanHurtThisBallisticCollision( UM_BallisticCollision(Victim) ) )
+		if ( UM_BallisticCollision(Victim) != None )  {
+			if ( CanHurtBallisticCollision( UM_BallisticCollision(Victim) ) )
 				Victim = Victim.Instigator;
 			else
 				bIgnoreThisVictim = True;	// Skip this BallisticCollision
 		}
+		else if ( Projectile(Victim) != None && !CanHurtProjectile( Projectile(Victim) ) )
+			bIgnoreThisVictim = True;
+		
 		// Skip this Victim if IgnoredVictims array contain this Victim.class
 		if ( !bIgnoreThisVictim )  {
 			Dir = Victim.Location - HitLocation;
-			Dist = FMax( VSize(Dir), 1.0 );
-			Dir = Dir / Dist;
-			DamageScale = FMax( (Victim.CollisionRadius / (Victim.CollisionRadius + Victim.CollisionHeight)), (1.0 - FMax(0.0, ((Dist - Victim.CollisionRadius) / DamageRadius))) );
+			DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
+			Dir = Normal(Dir);
 			if ( Pawn(Victim) != None )  {
 				if ( CanHurtPawn(Pawn(Victim)) )  {
 					// Extended FastTraces from bones Locations
-					/*
-					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
-						DamageScale *= KFMonster(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-					else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
-						DamageScale *= KFPawn(Victim).GetExposureTo(Location + 15 * -Normal(PhysicsVolume.Gravity));
-					*/
-					if ( KFMonster(Victim) != None && KFMonster(Victim).Health > 0 )
+					if ( KFMonster(Victim) != None )
 						DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
-					else if ( KFPawn(Victim) != None && KFPawn(Victim).Health > 0 )
+					else if ( KFPawn(Victim) != None )
 						DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
 				}
 				else
 					bIgnoreThisVictim = True;	// Do not damage a friendly Pawn
+				
+				CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
 			}
 			else
-				bIgnoreThisVictim = FastTrace( Victim.Location, HitLocation );
+				bIgnoreThisVictim = !FastTrace( Victim.Location, HitLocation );
+			
+			i = Round(DamageAmount * DamageScale);
 			// if not outside the DamageRadius
-			if ( !bIgnoreThisVictim && DamageScale > 0.0 )  {
+			if ( !bIgnoreThisVictim && i > 0 )  {
 				if ( Instigator == None || Instigator.Controller == None )
 					Victim.SetDelayedDamageInstigatorController( InstigatorController );
 				// Damage Victim
-				Victim.TakeDamage(
-					(DamageScale * DamageAmount), Instigator,
-					(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
-					(DamageScale * Momentum * Dir), DamageType
-				);
+				Victim.TakeDamage( i, Instigator,
+					(Victim.Location - (Victim.CollisionHeight + Victim.CollisionRadius) * 0.5 * Dir),
+					(Momentum * DamageScale * Dir), DamageType );
 				// Damage Vehicle Driver
 				if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
 					Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
@@ -454,6 +351,74 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 					++NumKilled;
 			}
 		}
+	}
+	
+	foreach CollidingActors( class'Actor', Victim, DamageRadius, HitLocation )  {
+		if ( !CanHurtVictim(Victim) )
+			Continue;
+		
+		// BallisticCollision check
+		if ( UM_BallisticCollision(Victim) != None )  {
+			if ( CanHurtBallisticCollision( UM_BallisticCollision(Victim) ) )
+				Victim = Victim.Instigator;
+			else
+				Continue;	// Skip this BallisticCollision
+		}
+		// Projectile check
+		else if ( Projectile(Victim) != None && !CanHurtProjectile( Projectile(Victim) ) )
+			Continue;
+		
+		Dir = Victim.Location - HitLocation;
+		DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );		
+		Dir = Normal(Dir);
+		// if Pawn
+		if ( Pawn(Victim) != None )  {
+			bIgnoreThisVictim = False;
+			// Check CheckedPawns array
+			for ( i = 0; i < CheckedPawns.Length; ++i )  {
+				// comparison by object
+				if ( CheckedPawns[i] == Victim )  {
+					bIgnoreThisVictim = True;
+					Break;
+				}
+			}
+			// Ignore already Checked Pawns
+			if ( bIgnoreThisVictim )
+				Continue;
+			
+			CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
+			// Do not damage a friendly Pawn
+			if ( !CanHurtPawn(Pawn(Victim)) )
+				Continue;
+			
+			// Extended FastTraces from bones Locations
+			if ( KFMonster(Victim) != None )
+				DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
+			else if ( KFPawn(Victim) != None )
+				DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
+		}
+		// Check for the blocking world geometry
+		else if ( !FastTrace( Victim.Location, HitLocation ) )
+			Continue;
+		
+		i = Round(DamageAmount * DamageScale);
+		// not in the DamageRadius
+		if ( i < 1 )
+			Continue;
+		
+		if ( Instigator == None || Instigator.Controller == None )
+			Victim.SetDelayedDamageInstigatorController( InstigatorController );
+		// Damage Victim
+		Victim.TakeDamage( i, Instigator, 
+			(Victim.Location - (Victim.CollisionHeight + Victim.CollisionRadius) * 0.5 * Dir),
+			(Momentum * DamageScale * Dir), DamageType );
+		// Damage Vehicle Driver
+		if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
+			Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
+			
+		// Calculating number of Victim
+		if ( Pawn(Victim) != None && Pawn(Victim).Health < 1 )
+			++NumKilled;
 	}
 	
 	if ( UM_BaseGameInfo(Level.Game) != None )
@@ -529,9 +494,8 @@ simulated function ShakePlayersView()
 	if ( PC != None && PC.ViewTarget != None )  {
 		ShakeRadius = DamageRadius * ShakeRadiusScale;
 		Dist = VSize(Location - PC.ViewTarget.Location);
-		
 		if ( Dist < ShakeRadius )  {
-			ShakeScale = FClamp(((ShakeRadius - Dist) / DamageRadius), 0.001, MaxEpicenterShakeScale);
+			ShakeScale = FClamp(((ShakeRadius - Dist) / DamageRadius), 0.005, MaxEpicenterShakeScale);
 			PC.ShakeView(
 				(ShakeRotMag * ShakeScale), ShakeRotRate, ShakeRotTime, 
 				(ShakeOffsetMag * ShakeScale), ShakeOffsetRate, ShakeOffsetTime
@@ -545,21 +509,27 @@ event Timer()
 	if ( IsArmed() )
 		Explode(Location, Vector(Rotation));
 	else
-		Destroy();	// ToDo: убрать это, я буду уничтожать снаряды через LifeSpan
+		Destroy();
 }
 
 simulated function Explode( vector HitLocation, vector HitNormal )
 {
+	if ( bHasExploded )
+		Return;
+	
 	bCanBeDamaged = False;
 	bHasExploded = True;
 	bShouldExplode = True;
+	StopProjectile();
+	SetPhysics(PHYS_None);
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
-		NetUpdateTime = Level.TimeSeconds - 1.0;
-		BlowUp(HitLocation);
-		//SetTimer(0.1, False);
-		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
+		if ( !bNetTemporary )
+			NetUpdateTime = Level.TimeSeconds - 1.0;
+		// BlowUp
+		MakeNoise(1.0);
+		HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
 	}
 	
 	SetCollision(False);
@@ -583,26 +553,34 @@ simulated function Explode( vector HitLocation, vector HitNormal )
 	// Shake nearby players screens
 	ShakePlayersView();
 	
-	// Destroying on client-side
-	if ( Role < ROLE_Authority )
-		Destroy();
+	if ( Role == ROLE_Authority && !bNetTemporary )
+		LifeSpan = 0.2; // Auto-Destroy on the server after 200 ms to replicate variables
+	else
+		Destroy(); // Destroy on the client-side immediately
 }
 
 // Make the projectile distintegrate, instead of explode
 simulated function Disintegrate( vector HitLocation, vector HitNormal )
 {
+	if ( bDisintegrated )
+		Return;
+	
 	bCanBeDamaged = False;
+	bHasExploded = True;
 	bDisintegrated = True;
 	bHidden = True;
+	StopProjectile();
+	SetPhysics(PHYS_None);
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
-		NetUpdateTime = Level.TimeSeconds - 1.0;
+		if ( !bNetTemporary )
+			NetUpdateTime = Level.TimeSeconds - 1.0;
 		Damage *= DisintegrateDamageScale;
 		MomentumTransfer *= DisintegrateDamageScale;
-		BlowUp(HitLocation);
-		//SetTimer(0.1, False);
-		LifeSpan = 0.15; // Auto-Destroy on the server after 150 ms
+		// BlowUp
+		MakeNoise(1.0);
+		HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
 	}
 	
 	SetCollision(False);
@@ -615,9 +593,10 @@ simulated function Disintegrate( vector HitLocation, vector HitNormal )
 			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));
 	}
 
-	// Destroying on client-side
-	if ( Role < ROLE_Authority )
-		Destroy();
+	if ( Role == ROLE_Authority && !bNetTemporary )
+		LifeSpan = 0.2; // Auto-Destroy on the server after 200 ms to replicate variables
+	else
+		Destroy(); // Destroy on the client-side immediately
 }
 
 event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional int HitIndex )
@@ -644,29 +623,28 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 	}
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function ProcessTouchActor( Actor A )
 {
+	local	vector	TouchLocation, TouchNormal;
+	
 	LastTouched = A;
-	if ( CanHitActor(A) )  {
+	if ( CanHurtActor(A) )  {
+		GetTouchLocation(A, TouchLocation, TouchNormal);
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		if ( IsArmed() )
 			Explode(TouchLocation, TouchNormal);
 	}
-	
 	LastTouched = None;
 }
 
 simulated singular event HitWall(vector HitNormal, actor Wall)
 {
-	local	Vector	HitLocation;
-	
-	if ( CanTouchActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
-		ProcessTouchActor(Wall, HitLocation, HitNormal);
+		ProcessTouchActor(Wall);
 		Return;
 	}
-	StopProjectile();
-	SetPhysics(PHYS_None);
+	
 	if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	
@@ -702,7 +680,7 @@ defaultproperties
 	 MinShrapnelAmount=5
 	 // Explosion camera shakes
 	 ShakeRadiusScale=2.250000
-	 MaxEpicenterShakeScale=1.500000
+	 MaxEpicenterShakeScale=1.400000
 	 ShakeRotMag=(X=650.000000,Y=650.000000,Z=650.000000)
      ShakeRotRate=(X=12500.000000,Y=12500.000000,Z=12500.000000)
      ShakeRotTime=6.000000

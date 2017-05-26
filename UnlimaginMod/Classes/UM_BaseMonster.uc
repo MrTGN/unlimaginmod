@@ -26,7 +26,7 @@ class UM_BaseMonster extends KFMonster
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 // Animation channels 2 through 11 are used for animation updating by physics
-const	MainAnimChannel = 0;
+const	BaseAnimChannel = 0;
 const	MajorAnimChannel = 12;	// ToDo: issue #478
 const	MinorAnimChannel = 1;
 
@@ -181,9 +181,6 @@ var					name				HeadlessIdleAnim;
 // Replicates next rand num for animation array index
 var					byte				NextWalkAnimNum;
 var					byte				NextBurningWalkAnimNum;
-var					byte				NextTauntAnimNum;
-var					byte				NextMeleeAnimNum;
-var					byte				NextHitAnimNum;
 
 //ZombieMoan
 var		transient	float				MoanPitch;
@@ -202,7 +199,7 @@ replication
 		bIsAlphaMonster;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		NextWalkAnimNum, NextBurningWalkAnimNum, NextMeleeAnimNum, NextTauntAnimNum, NextHitAnimNum;
+		NextWalkAnimNum, NextBurningWalkAnimNum;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		JumpSpeed;
@@ -453,12 +450,6 @@ function ServerRandNextAnims()
 		NextWalkAnimNum = Rand(AdditionalWalkAnims.Length);
 	// BurningWalkAnim
 	NextBurningWalkAnimNum = Rand(ArrayCount(BurningWalkFAnims));
-	// TauntAnim
-	NextTauntAnimNum = 3 + Rand(TauntAnims.Length - 3); // First 4 taunts are 'order' anims. Don't pick them.
-	// MeleeAnim
-	NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
-	// HitAnims
-	NextHitAnimNum = Rand(ArrayCount(HitAnims));
 }
 
 // Scales the damage this Zed deals by the difficulty level
@@ -568,7 +559,7 @@ function AdjustGameDifficulty()
 		MovementSpeedDifficultyScale = 1.3;
 
 	if ( CurrentDamType == None )
-		CurrentDamType = ZombieDamType[NextMeleeAnimNum];
+		CurrentDamType = ZombieDamType[Rand(ArrayCount(MeleeAnims))];
 	
 	//[block] Speed Randomization
 	AirSpeed *= MovementSpeedDifficultyScale;
@@ -707,7 +698,7 @@ simulated event PostNetBeginPlay()
 	
 	InitCheckAnimActions();
 	AnimateDefault();
-	EnableChannelNotify(MainAnimChannel, 1);
+	EnableChannelNotify(BaseAnimChannel, 1);
 	EnableChannelNotify(MinorAnimChannel, 1);
 	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , SpineBone1);
 	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , HeadBone);
@@ -1455,10 +1446,7 @@ event Landed(vector HitNormal)
 
 function PlayVictoryAnimation()
 {
-	SetAnimAction( TauntAnims[NextTauntAnimNum] );
-	// Rand NextTauntAnimNum on the server 
-	if ( Role == ROLE_Authority )
-		NextTauntAnimNum = 3 + Rand(TauntAnims.Length - 3); // First 4 taunts are 'order' anims. Don't pick them.
+	SetAnimAction('AA_Taunt');
 }
 
 simulated event ChangeAnimation()
@@ -1970,11 +1958,11 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 							bFrozenBody = true;
 						}
 					}
-					GetAnimParams( MainAnimChannel, seq, frame, rate );
+					GetAnimParams( BaseAnimChannel, seq, frame, rate );
 					LinkMesh(SkeletonMesh, true);
 					Skins.Length = 0;
-					PlayAnim(seq, 0.0, 0.0, MainAnimChannel);
-					SetAnimFrame(frame, MainAnimChannel);
+					PlayAnim(seq, 0.0, 0.0, BaseAnimChannel);
+					SetAnimFrame(frame, BaseAnimChannel);
 				}
 				
 				if ( Physics == PHYS_Walking )
@@ -2014,10 +2002,26 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 	PlayDyingAnimation(DamageType, HitLoc);
 }
 
+simulated function bool IsMinorAnim( name AnimName )
+{
+	switch( AnimName )  {
+		case HitAnims[0]:
+		case HitAnims[1]:
+		case HitAnims[2]:
+		case KFHitFront:
+		case KFHitBack:
+		case KFHitRight:
+		case KFHitLeft:
+			Return True;
+	}
+	
+	Return False;
+}
+
 simulated function int DoAnimAction( name AnimName )
 {
-	if ( AnimName == HitAnims[0] || AnimName == HitAnims[1] || AnimName == HitAnims[2] || AnimName == KFHitFront || AnimName == KFHitBack || AnimName == KFHitRight || AnimName == KFHitLeft )  {
-		if ( !IsAnimating(MinorAnimChannel) && IsAnimating(MainAnimChannel) )  {
+	if ( IsMinorAnim(AnimName) )  {
+		if ( IsAnimating(BaseAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
 			AnimBlendParams(MinorAnimChannel, 0.0, 0.0,, SpineBone1);
 			AnimBlendToAlpha(MinorAnimChannel, 1.0, 0.1);
 		}
@@ -2028,34 +2032,49 @@ simulated function int DoAnimAction( name AnimName )
 		Return MinorAnimChannel;
 	}
 	
-	PlayAnim(AnimName, ,0.1, MainAnimChannel);
-	Return MainAnimChannel;
+	PlayAnim(AnimName, ,0.1, BaseAnimChannel);
+	Return BaseAnimChannel;
 }
 
 simulated function bool AnimNeedsWait(name TestAnim)
 {
-	Return ExpectingChannel == MainAnimChannel;
+	Return ExpectingChannel == BaseAnimChannel;
 }
 
 // Choose AnimAction on the server and replicate it to the clients
 function ServerSetAnimAction(out name NewAction)
 {
+	local	byte	RandNum;
+	
 	if ( NewAction == '' )  {
 		bResetAnimAct = False;
 		AnimAction = '';
 		Return;
 	}
 	
-	if ( NewAction == 'Claw' )  {
-		NewAction = meleeAnims[NextMeleeAnimNum];
-		CurrentDamtype = ZombieDamType[NextMeleeAnimNum];
-		// Rand NextMeleeAnimNum on the server
-		NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
-	}
-	else if ( NewAction == 'DoorBash' )  {
-		CurrentDamtype = ZombieDamType[NextMeleeAnimNum];
-		// Rand NextMeleeAnimNum on the server
-		NextMeleeAnimNum = Rand(ArrayCount(meleeAnims));
+	switch( NewAction )  {
+		case 'AA_Taunt':
+			// First 4 taunts are 'order' anims. Don't pick them.
+			RandNum = 3 + Rand(TauntAnims.Length - 3);
+			NewAction = TauntAnims[RandNum];
+			Break;
+		
+		case 'AA_MeleeAttack';
+			RandNum = Rand(ArrayCount(MeleeAnims));
+			NewAction = MeleeAnims[RandNum];
+			CurrentDamtype = ZombieDamType[RandNum];
+			Break;
+		
+		case 'AA_DoorBash':
+			NewAction = DoorBashAnim;
+			RandNum = Rand(ArrayCount(MeleeAnims));
+			CurrentDamtype = ZombieDamType[RandNum];
+			Break;
+		
+		case 'AA_Hit':
+			RandNum = Rand(ArrayCount(HitAnims));
+			NewAction = HitAnims[RandNum];
+			Break;
 	}
 	
 	AnimAction = NewAction;
@@ -2084,14 +2103,14 @@ simulated event SetAnimAction(name NewAction)
 
 simulated event AnimEnd(int Channel)
 {
-	AnimAction = '';
 	if ( bShotAnim && Channel == ExpectingChannel )  {
+		AnimAction = '';
 		bShotAnim = False;
 		if ( Controller != None && !bMovementDisabled )
 			Controller.bPreparingMove = Controller.default.bPreparingMove;
 	}
 	
-	if ( Channel == MainAnimChannel )  {
+	if ( Channel == BaseAnimChannel )  {
 		if ( !bPhysicsAnimUpdate )
 			bPhysicsAnimUpdate = Default.bPhysicsAnimUpdate;
 		if ( bKeepTaunting )
@@ -2222,7 +2241,7 @@ function RangedAttack(Actor A)
 {
 	DisableMovement();
 	bShotAnim = True;
-	SetAnimAction('Claw');
+	SetAnimAction('AA_MeleeAttack');
 }
 
 function bool CanAttackDoor(KFDoorMover Door)
@@ -2247,7 +2266,7 @@ function AttackDoor()
 	if ( bDistanceAttackingDoor )
 		SetAnimAction(DistanceDoorAttackAnim);
 	else
-		SetAnimAction(DoorBashAnim);
+		SetAnimAction('AA_DoorBash');
 	GotoState('DoorBashing');
 }
 
@@ -2275,7 +2294,7 @@ state DoorBashing
 		if ( bDistanceAttackingDoor )
 			SetAnimAction(DistanceDoorAttackAnim);
 		else
-			SetAnimAction(DoorBashAnim);
+			SetAnimAction('AA_DoorBash');
 	}
 	
 	event EndState()
@@ -2995,14 +3014,14 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 		Return False;
 
 	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer && !IsAnimating(MainAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
+	if ( Level.NetMode == NM_DedicatedServer && !IsAnimating(BaseAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
 		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0, MainAnimChannel);
+			PlayAnim(AirAnims[0], 1.0, 0.0, BaseAnimChannel);
 		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0, MainAnimChannel);
+			PlayAnim(SwimAnims[0], 1.0, 0.0, BaseAnimChannel);
 		else if ( Physics == PHYS_Walking )  {
 			if ( bIsCrouched )
-				PlayAnim(IdleCrouchAnim, 1.0, 0.0, MainAnimChannel);
+				PlayAnim(IdleCrouchAnim, 1.0, 0.0, BaseAnimChannel);
 			else
 				bUseAltHeadShotLocation = True;
 		}
@@ -3176,10 +3195,9 @@ function SendToKnockDown()
 }
 
 // High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+function bool CheckForKnockDown( int Damage, Pawn InstigatedBy, class<DamageType> DamageType )
 {
-	Return Damage >= int(HealthMax * KnockedDownHealthPct) 
-			|| CumulativeDamage >= int(HealthMax * KnockedDownHealthPct);
+	Return (Class<UM_BaseDamType_Explosive>(DamageType) != None && Damage >= int(HealthMax * 0.5)) || Damage >= int(HealthMax * KnockedDownHealthPct);
 }
 
 state KnockedDown
@@ -3265,9 +3283,7 @@ function PlayDirectionalHit(Vector HitLoc)
 			bSTUNNED = StunsRemaining > 0 && (LastDamageAmount >= (0.5 * default.Health) ||
 				 (VSizeSquared(LastDamagedBy.Location - Location) <= Square(MeleeRange * 2.0) && class<DamTypeMelee>(LastDamagedbyType) != None && KFPawn(LastDamagedBy) != None && LastDamageAmount > (default.Health * 0.1)));
 			if ( bSTUNNED )  {
-				SetAnimAction(HitAnims[NextHitAnimNum]);
-				if ( Role == Role_Authority )
-					NextHitAnimNum = Rand(ArrayCount(HitAnims));
+				SetAnimAction('AA_Hit');
 				SetTimer(StunTime, false);
 				--StunsRemaining;
 			}
@@ -3295,8 +3311,7 @@ function PlayDecapitation()
 	bPlayDecapitationKnockDown = False;
 	// HitAnims
 	bShotAnim = True;
-	SetAnimAction(HitAnims[NextHitAnimNum]);
-	NextHitAnimNum = Rand(ArrayCount(HitAnims));
+	SetAnimAction('AA_Hit');
 	
 	// PlayHit times
 	NextPainTime = Level.TimeSeconds + 0.1;
@@ -3396,7 +3411,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 			Spawn(PhysicsVolume.ExitActor);
 		// KFSteamStatsAndAchievements
 		KFSteamStats = KFSteamStatsAndAchievements(InstigatedBy.PlayerReplicationInfo.SteamStatsAndAchievements);
-		if ( KFSteamStats != None && Damage >= DamageType.default.HumanObliterationThreshhold && Damage != 1000 
+		if ( KFSteamStats != None && Damage >= DamageType.default. HumanObliterationThreshhold && Damage != 1000 
 			 && (!bDecapitated || bPlayBrainSplash) )  {
 			KFSteamStats.AddGibKill(class<DamTypeM79Grenade>(DamageType) != None);
 			// AddFleshpoundGibKill
@@ -3404,14 +3419,13 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 				KFSteamStats.AddFleshpoundGibKill();
 		}
 	}
-	else  {
-		if ( (bDecapitated && bPlayDecapitationKnockDown) || (bCanBeKnockedDown && CheckForKnockDown(Damage, DamageType)) )
-			SendToKnockDown();
-		else if ( bDecapitated && !bDecapitationPlayed )
-			PlayDecapitation();
-		else if ( Level.TimeSeconds >= NextPainTime )
-			PlayTakeHit(HitLocation, Damage, DamageType);
-	}
+	else if ( (bDecapitated && bPlayDecapitationKnockDown) 
+			 || (bCanBeKnockedDown && CheckForKnockDown( Max(Damage, CumulativeDamage), InstigatedBy, DamageType)) )
+		SendToKnockDown();
+	else if ( bDecapitated && !bDecapitationPlayed )
+		PlayDecapitation();
+	else if ( Level.TimeSeconds >= NextPainTime )
+		PlayTakeHit(HitLocation, Damage, DamageType);
 	
 	if ( DamageType.default.bAlwaysSevers && DamageType.default.bSpecial )
 		HitBone = HeadBone;
@@ -3680,7 +3694,6 @@ function PushAwayZombie(Vector NewVelocity)
 
 function Dazzle(float TimeScale)
 {
-	AnimEnd(1);
 	bShotAnim = True;
 	SetAnimAction('KnockDown');
 	//bNoJumpAdjust = True;

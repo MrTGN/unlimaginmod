@@ -80,10 +80,13 @@ simulated event Tick( float DeltaTime )
 	}
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function ProcessTouchActor( Actor A )
 {
+	local	vector	TouchLocation, TouchNormal;
+	
 	LastTouched = A;
-	if ( CanHitActor(A) )  {
+	if ( CanHurtActor(A) )  {
+		GetTouchLocation(A, TouchLocation, TouchNormal);
 		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
 		if ( IsArmed() )
 			Explode(TouchLocation, TouchNormal);
@@ -93,11 +96,9 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 
 simulated singular event HitWall(vector HitNormal, actor Wall)
 {
-	local	Vector	HitLocation;
-	
-	if ( CanTouchActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
-		ProcessTouchActor(Wall, HitLocation, HitNormal);
+		ProcessTouchActor(Wall);
 		Return;
 	}
 	

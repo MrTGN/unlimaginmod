@@ -119,7 +119,7 @@ simulated event Tick(float DeltaTime)
 	}
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function ProcessTouchActor( Actor A )
 {
 	LastTouched = A;
 	if ( !bStopped 

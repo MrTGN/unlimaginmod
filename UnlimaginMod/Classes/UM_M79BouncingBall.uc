@@ -18,7 +18,7 @@ class UM_M79BouncingBall extends UM_BaseProjectile_BouncingBall;
 
 state NoEnergy
 {
-	function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+	function ProcessTouchActor( Actor A )
 	{
 		local	Inventory	Inv;
 		

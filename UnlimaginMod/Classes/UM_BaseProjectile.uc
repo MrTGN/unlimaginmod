@@ -18,13 +18,16 @@ class UM_BaseProjectile extends ROBallisticProjectile
 	DependsOn(UM_BaseActor)
 	Abstract;
 
-
 //========================================================================
 //[block] Variables
 
 // Constants
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
+
+// Rounded meters in Unreal Unit
+const	MeterInUU = 60.0;
+const	SquareMeterInUU = 3600.0;
 
 const	EnergyToPenetratePawnHead = 400.0;
 const	EnergyToPenetratePawnBody = 520.0;
@@ -125,7 +128,6 @@ var(Effects)	float						HitSoundRadius;	// This var allows you to set radius in 
 //[end]
 
 var				float						WeaponRecoilScale;
-//var				int							Counter;
 
 //[end] Varibles
 //====================================================================
@@ -158,7 +160,7 @@ simulated function Reset()
 	PostBeginPlay();
 }
 
-simulated static final function Vector GetDefaultCollisionExtent()
+simulated static final function vector GetDefaultCollisionExtent()
 {
 	Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
 }
@@ -184,14 +186,14 @@ simulated static function CalcDefaultProperties()
 	
 	// EffectiveRange
 	if ( default.EffectiveRange > 0.0 )
-		default.EffectiveRange = default.EffectiveRange * Maths.static.GetMeterInUU();
+		default.EffectiveRange = default.EffectiveRange * MeterInUU;
 	// MaxEffectiveRange
 	if ( default.MaxEffectiveRange > 0.0 )
-		default.MaxEffectiveRange = default.MaxEffectiveRange * Maths.static.GetMeterInUU();
+		default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
 	
 	// Speed
 	if ( default.MuzzleVelocity > 0.0 )  {
-		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * Maths.static.GetMeterInUU();
+		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
 		default.Speed = default.MaxSpeed;
 	}
 	
@@ -213,8 +215,8 @@ simulated static function CalcDefaultProperties()
 		// (2 * SquareMeterInUU) because we need to convert 
 		// speed square from uu/sec to meter/sec
 		if ( default.ProjectileMass > 0.0 )  {
-			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * Maths.static.GetSquareMeterInUU());
-			default.EnergyToSpeedSquared = (2.0 * Maths.static.GetSquareMeterInUU()) / default.ProjectileMass;
+			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * SquareMeterInUU);
+			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
 		}
 	}
 	
@@ -374,7 +376,7 @@ simulated static function PreloadAssets( Projectile Proj )
 	}
 	
 	if ( UM_BaseProjectile(Proj) != None )
-			UM_BaseProjectile(Proj).AmbientSound = default.AmbientSound;
+		UM_BaseProjectile(Proj).AmbientSound = default.AmbientSound;
 	
 	default.bAssetsLoaded = True;
 }
@@ -460,7 +462,6 @@ function ServerSetInitialVelocity()
 			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
 		// Initial velocity
 		Velocity = Vector(Rotation) * Speed;
-		//Log("Projectile#"$default.Counter++ @"ServerSetInitialVelocity()" @ "Speed="$Speed @ " ProjectileEnergy="$ProjectileEnergy @ "Velocity="$Velocity, Name );
 	}
 }
 
@@ -527,7 +528,6 @@ simulated function ClientPostInitialReplication()
 		}
 		else
 			ZeroProjectileEnergy();
-		//Log("Projectile#"$default.Counter++ @"ClientPostInitialReplication()" @"Speed="$Speed @"ProjectileEnergy="$ProjectileEnergy @"Velocity="$Velocity @"PenetrationBonus="$PenetrationBonus @"BounceBonus="$BounceBonus, Name );
 	}
 }
 
@@ -537,8 +537,6 @@ simulated event PostNetBeginPlay()
 {
 	if ( Role < ROLE_Authority )
 		ClientPostInitialReplication();
-	//else
-		//Log("Projectile#"$default.Counter++ @"Server PostNetBeginPlay()" @"Speed="$Speed @"ProjectileEnergy="$ProjectileEnergy @"Velocity="$Velocity @"PenetrationBonus="$PenetrationBonus @"BounceBonus="$BounceBonus, Name );
 	
 	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
 		GotoState('InTheWater');
@@ -627,8 +625,8 @@ simulated function StopProjectile()
 {
 	Speed = 0.0;
 	ProjectileEnergy = 0.0;
-	Velocity = Vect(0.0, 0.0, 0.0);
-	Acceleration = Vect(0.0, 0.0, 0.0);
+	Velocity = Vect(0, 0, 0);
+	Acceleration = Vect(0, 0, 0);
 }
 
 // Called when the projectile has lost all energy
@@ -723,7 +721,7 @@ simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
 simulated function ProcessTouch(Actor Other, Vector HitLocation) {}
 
 // Can this projectile hurt specified BallisticCollision
-simulated function bool	CanHurtThisBallisticCollision( UM_BallisticCollision BallisticCollision )
+simulated function bool	CanHurtBallisticCollision( UM_BallisticCollision BallisticCollision )
 {
 	// Return False if no BallisticCollision was specified
 	if ( BallisticCollision == None || !BallisticCollision.CanBeDamaged() )
@@ -744,7 +742,7 @@ simulated function bool	CanHurtThisBallisticCollision( UM_BallisticCollision Bal
 simulated function bool CanHurtPawn( Pawn P )
 {
 	// Return False if no Pawn was specified
-	if ( P == None || !P.bCanBeDamaged )
+	if ( P == None || !P.bCanBeDamaged || P.Health < 1 )
 		Return False;
 	
 	// HurtOwner
@@ -786,13 +784,13 @@ simulated function bool CanHurtProjectile( Projectile Proj )
 }
 
 // Can this projectile damage specified Actor
-simulated function bool CanHitActor( Actor A )
+simulated function bool CanHurtActor( Actor A )
 {
 	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
 		Return False;
 	
 	if ( UM_BallisticCollision(A) != None )
-		Return CanHurtThisBallisticCollision( UM_BallisticCollision(A) );
+		Return CanHurtBallisticCollision( UM_BallisticCollision(A) );
 	else if ( Pawn(A) != None )
 		Return CanHurtPawn( Pawn(A) );
 	else if ( Projectile(A) != None )
@@ -865,32 +863,35 @@ simulated function ProcessHitActor(
 		UpdateProjectilePerformance(True, EnergyLoss);
 }
 
-simulated function bool CanTouchActor( out Actor A, out vector TouchLocation, optional out vector TouchNormal )
+simulated function bool CanTouchActor( Actor A )
 {
 	/*	Todo: UM_BaseMonster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
 		и не реагировали на класс мностров. */
-	if ( A != None && !A.bDeleteMe && !A.bStatic && !A.bWorldGeometry && (A.bProjTarget || A.bBlockActors) 
-		 && (LastTouched == None || (A != LastTouched && A.Base != LastTouched)) && UM_BaseMonster(A) == None )  {
-		if ( Mover(A.Base) != None )
-			A = A.Base;
-		
-		if ( Velocity == Vect(0.0, 0.0, 0.0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - 1.5 * Velocity), CollisionExtent) )  {
-			//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
-			TouchLocation = Location;
-			TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
-		}
-		
-		Return True;
-	}
+	if ( A == None || A.bDeleteMe || A.bStatic || A.bWorldGeometry || !A.bBlockActors || !A.bProjTarget || UM_BaseMonster(A) != None )
+		Return False;
 	
-	Return False;
+	Return LastTouched == None || (A != LastTouched && A.Base != LastTouched);
 }
 
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
+simulated function GetTouchLocation( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
+	if ( Velocity == Vect(0,0,0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - Velocity * 1.5), CollisionExtent) )  {
+		//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
+		TouchLocation = Location;
+		//TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
+		TouchNormal = Normal(TouchLocation - A.Location);
+	}
+}
+
+simulated function ProcessTouchActor( Actor A )
+{
+	local	vector	TouchLocation, TouchNormal;
+	
 	LastTouched = A;
-	if ( CanHitActor(A) )
+	if ( CanHurtActor(A) )  {
+		GetTouchLocation(A, TouchLocation, TouchNormal);
 		ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
+	}
 	
 	LastTouched = None;
 }
@@ -898,10 +899,8 @@ simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector Touc
 // Called when the actor's collision hull is touching another actor's collision hull.
 simulated singular event Touch( Actor Other )
 {
-	local	Vector	TouchLocation, TouchNormal;
-
-	if ( CanTouchActor(Other, TouchLocation, TouchNormal) )
-		ProcessTouchActor(Other, TouchLocation, TouchNormal);
+	if ( CanTouchActor(Other) )
+		ProcessTouchActor(Other);
 }
 
 
@@ -952,13 +951,11 @@ simulated function ProcessHitWall( Vector HitNormal )
 }
 
 // Called when the actor can collide with world geometry and just hit a wall.
-simulated singular event HitWall( Vector HitNormal, Actor Wall )
+simulated singular event HitWall( vector HitNormal, Actor Wall )
 {
-	local	Vector	HitLocation;
-
-	if ( CanTouchActor(Wall, HitLocation) )  {
+	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
-		ProcessTouchActor(Wall, HitLocation, HitNormal);
+		ProcessTouchActor(Wall);
 		Return;
 	}
 	
@@ -969,7 +966,7 @@ simulated singular event HitWall( Vector HitNormal, Actor Wall )
 // Event Landed() called when the actor is no longer falling.
 // If you want to receive HitWall() instead of Landed() when the actor has 
 // finished falling set bBounce to True.
-simulated event Landed( Vector HitNormal )
+simulated event Landed( vector HitNormal )
 {
 	bOrientToVelocity = False;
 	DestroyTrail();

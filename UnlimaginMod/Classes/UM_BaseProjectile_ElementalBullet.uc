@@ -31,7 +31,7 @@ var		bool		bCanDisintegrate;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+	reliable if ( Role == ROLE_Authority && bNetInitial )
 		bCanDisintegrate;
 }
 
@@ -42,100 +42,19 @@ replication
 //========================================================================
 //[block] Functions
 
-simulated event PostBeginPlay()
+simulated event PreBeginPlay()
 {
+	Super.PreBeginPlay();
+	
 	if ( Role == ROLE_Authority )
 		bCanDisintegrate = FRand() <= DisintegrateChance;
-	
-	Super.PostBeginPlay();
-}
-
-simulated function Explode(vector HitLocation, vector HitNormal)
-{
-	bCanBeDamaged = False;
-	bHasExploded = True;
-	bShouldExplode = True;
-	
-	if ( Role == ROLE_Authority )
-		BlowUp(HitLocation);
-	
-	// Explode effects
-	if ( Level.NetMode != NM_DedicatedServer )  {
-		if ( ExplodeSound.Snd != None )
-			PlaySound(ExplodeSound.Snd, ExplodeSound.Slot, ExplodeSound.Vol, ExplodeSound.bNoOverride, ExplodeSound.Radius, BaseActor.static.GetRandPitch(ExplodeSound.PitchRange), ExplodeSound.bUse3D);
-		// VFX
-		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
-			if ( ExplosionVisualEffect != None )
-				Spawn(ExplosionVisualEffect,,, HitLocation, rotator(-HitNormal));
-			if ( ExplosionDecal != None )
-				Spawn(ExplosionDecal,self,,HitLocation, rotator(-HitNormal));
-		}
-	}
-	
-	// Shrapnel
-	if ( Role == ROLE_Authority )
-		SpawnShrapnel();
-	
-	// Shake nearby players screens
-	ShakePlayersView();
-	
-	Destroy();
-}
-
-// Make the projectile distintegrate, instead of explode
-simulated function Disintegrate(vector HitLocation, vector HitNormal)
-{
-	bCanBeDamaged = False;
-	bDisintegrated = True;
-	bHidden = True;
-	
-	if ( Role == ROLE_Authority )  {
-		Damage *= DisintegrateDamageScale;
-		MomentumTransfer *= DisintegrateDamageScale;
-		BlowUp(HitLocation);
-	}
-	
-	// Disintegrate effects
-	if ( Level.NetMode != NM_DedicatedServer )  {
-		if ( DisintegrateSound.Snd != None )
-			PlaySound(DisintegrateSound.Snd, DisintegrateSound.Slot, DisintegrateSound.Vol, DisintegrateSound.bNoOverride, DisintegrateSound.Radius, BaseActor.static.GetRandPitch(DisintegrateSound.PitchRange), DisintegrateSound.bUse3D);
-		// VFX
-		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
-			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));
-	}
-
-	Destroy();
-}
-
-simulated function ProcessTouchActor( Actor A, Vector TouchLocation, Vector TouchNormal )
-{
-	LastTouched = A;
-	if ( CanHitActor(A) )  {
-		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		Explode(TouchLocation, TouchNormal);
-	}
-	LastTouched = None;
 }
 
 simulated event Landed( vector HitNormal )
 {
 	Super(UM_BaseProjectile).Landed(HitNormal);
-	Explode((Location + ExploWallOut * HitNormal), HitNormal);
-}
-
-// Called when the actor can collide with world geometry and just hit a wall.
-simulated singular event HitWall( Vector HitNormal, Actor Wall )
-{
-	local	Vector	HitLocation;
-
-	if ( CanTouchActor(Wall, HitLocation) )  {
-		HurtWall = Wall;
-		ProcessTouchActor(Wall, HitLocation, HitNormal);
-		Return;
-	}
-	//ProcessHitWall(HitNormal);
-	Landed(HitNormal);
-	HurtWall = None;
+	if ( IsArmed() )
+		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 }
 
 // TakeDamage must be simulated because it is a bNetTemporary actor
@@ -173,8 +92,8 @@ defaultproperties
 	 ShrapnelClass=None
 	 bCanDisintegrate=True
 	 // Explosion camera shakes
-	 ShakeRadiusScale=2.200000
-	 MaxEpicenterShakeScale=1.500000
+	 ShakeRadiusScale=2.000000
+	 MaxEpicenterShakeScale=1.250000
 	 ShakeRotMag=(X=500.000000,Y=500.000000,Z=500.000000)
      ShakeRotRate=(X=12500.000000,Y=12500.000000,Z=12500.000000)
      ShakeRotTime=6.000000

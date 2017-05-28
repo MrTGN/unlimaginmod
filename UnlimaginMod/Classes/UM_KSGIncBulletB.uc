@@ -17,8 +17,8 @@ class UM_KSGIncBulletB extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-	 DisintegrateSound=(Vol=1.0,Radius=240.0,bUse3D=True)
-	 ExplodeSound=(Vol=1.0,Radius=240.0,bUse3D=True)
+	 DisintegrationSound=(Vol=1.0,Radius=240.0,bUse3D=True)
+	 ExplosionSound=(Vol=1.0,Radius=240.0,bUse3D=True)
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeKSGIncImpact'
      ImpactDamage=20.000000
 	 //MuzzleVelocity

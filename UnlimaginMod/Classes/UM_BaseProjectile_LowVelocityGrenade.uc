@@ -166,11 +166,11 @@ defaultproperties
 	 ProjectileDiameter=40.0
 	 //Shrapnel
 	 ShrapnelClass=None
-	 DisintegrateChance=0.950000
-	 //DisintegrateDamageTypes
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+	 DisintegrationChance=0.950000
+	 //DisintegrationDamageTypes
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'
@@ -204,8 +204,8 @@ defaultproperties
 	 //Trail=(EmitterClass=Class'UnlimaginMod.UM_LowVelocityGrenadeTrail',EmitterRotation=(Pitch=32768))
 	 //HitEffects
 	 HitSoundVolume=1.250000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 HitEffectsClass=Class'UnlimaginMod.UM_BulletHitEffects'
 	 //Booleans
      bBlockHitPointTraces=False

@@ -328,6 +328,11 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 KilledExplodeChance=0.2
+	 
+	 KnockDownHealthPct=0.65
+	 ExplosiveKnockDownHealthPct=0.5
+	 
 	 Intelligence=BRAINS_Human
 	 GrappleRangeCheckDelay=0.1
 	 GrabChance=(Min=0.0,Max=0.75)
@@ -395,6 +400,8 @@ defaultproperties
 	 SeveredArmAttachScale=0.800000
 	 SeveredLegAttachScale=0.700000
 	 MotionDetectorThreat=0.250000
+	 
+	 bKnockDownByDecapitation=True
 	 
 	 RotationRate=(Yaw=45000,Roll=0)
 	 

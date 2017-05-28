@@ -16,6 +16,7 @@
 //================================================================================
 class UM_BaseExplosiveProjectile extends UM_BaseProjectile
 	DependsOn(UM_BaseActor)
+	DependsOn(UM_BaseObject)
 	Abstract;
 
 //========================================================================
@@ -33,26 +34,25 @@ var(Shakes)		float				ShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRad
 var(Shakes)		float				MaxEpicenterShakeScale; // Maximum shake scale in explosion epicenter
 
 
-// With DisintegrateDamageTypes array you can set damage types 
+// With DisintegrationDamageTypes array you can set damage types 
 // that will Disintegrate Projectile instead of simple detonation
-var		array< class<DamageType> >	DisintegrateDamageTypes;
+var		array< class<DamageType> >	DisintegrationDamageTypes;
 
 // Use IgnoredVictims array to assign Victims that will be ignored in HurtRadius function
 var		array< name >				IgnoredVictims;
 
 //Shrapnel
 var		class<UM_BaseProjectile>	ShrapnelClass;
-var		int							MaxShrapnelAmount, MinShrapnelAmount;
+var		UM_BaseObject.IRange		ShrapnelAmount;
 
 //[block] Effects
-var		bool						bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
 var		bool						bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
-
-var		float						DisintegrateChance;	// Chance of this projectile to Disintegrate
-var		float						DisintegrateDamageScale; // Scale damage by this multiplier when projectile disintegrating
+var		bool						bShouldDisintegrate, bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
+var		float						DisintegrationChance;	// Chance of this projectile to Disintegrate
+var		float						DisintegrationDamageScale; // Scale damage by this multiplier when projectile has been disintegrated
 
 // Sounds
-var		UM_BaseActor.SoundData		DisintegrateSound, ExplodeSound;
+var		UM_BaseActor.SoundData		DisintegrationSound, ExplosionSound;
 
 // Visual Effect
 var		class<Emitter>				ExplosionVisualEffect, DisintegrationVisualEffect;
@@ -80,7 +80,7 @@ var		class<DamageType>			ImpactDamageType;	// Damagetype of this Projectile hitt
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bShouldExplode;
+		bShouldDisintegrate, bShouldExplode;
 }
 
 //[end] Replication
@@ -125,12 +125,12 @@ simulated function ResetToDefaultProperties()
 simulated static function PreloadAssets(Projectile Proj)
 {
 	// Loading Defaults
-	default.DisintegrateSound.Snd = BaseActor.static.LoadSound( default.DisintegrateSound.Ref );
-	default.ExplodeSound.Snd = BaseActor.static.LoadSound( default.ExplodeSound.Ref );
+	default.DisintegrationSound.Snd = BaseActor.static.LoadSound( default.DisintegrationSound.Ref );
+	default.ExplosionSound.Snd = BaseActor.static.LoadSound( default.ExplosionSound.Ref );
 	
 	if ( UM_BaseExplosiveProjectile(Proj) != None )  {
-		UM_BaseExplosiveProjectile(Proj).DisintegrateSound.Snd = default.DisintegrateSound.Snd;
-		UM_BaseExplosiveProjectile(Proj).ExplodeSound.Snd = default.ExplodeSound.Snd;
+		UM_BaseExplosiveProjectile(Proj).DisintegrationSound.Snd = default.DisintegrationSound.Snd;
+		UM_BaseExplosiveProjectile(Proj).ExplosionSound.Snd = default.ExplosionSound.Snd;
 	}
 	
 	Super.PreloadAssets(Proj);
@@ -138,8 +138,8 @@ simulated static function PreloadAssets(Projectile Proj)
 
 simulated static function bool UnloadAssets()
 {
-	default.DisintegrateSound.Snd = None;
-	default.ExplodeSound.Snd = None;
+	default.DisintegrationSound.Snd = None;
+	default.ExplosionSound.Snd = None;
 	
 	Return Super.UnloadAssets();
 }
@@ -162,10 +162,10 @@ simulated event PostNetBeginPlay()
 
 simulated event PostNetReceive()
 {
-	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, Vector(Rotation));
-	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, Vector(Rotation));
+	if ( bShouldDisintegrate && !bDisintegrated )
+		Disintegrate(Location, vector(Rotation));
+	else if ( bShouldExplode && !bHasExploded )
+		Explode(Location, vector(Rotation));
 }
 
 // Detonator is armed
@@ -270,8 +270,8 @@ function bool CanHurtVictim(Actor Victim)
 {
 	local	int		i;
 	
-	if ( Victim == None || Victim == Self || Victim.bDeleteMe || Victim.bHidden 
-		 || Victim == Hurtwall || FluidSurfaceInfo(Victim) != None )
+	if ( Victim == None || Victim.bDeleteMe || Victim.bHidden || !Victim.bCanBeDamaged
+		 || Victim == Self || Victim == Hurtwall || FluidSurfaceInfo(Victim) != None )
 		Return False;
 	
 	// Check IgnoredVictims array
@@ -304,7 +304,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		LastTouched = None;
 		// BallisticCollision check
 		if ( UM_BallisticCollision(Victim) != None )  {
-			if ( CanHurtBallisticCollision( UM_BallisticCollision(Victim) ) )
+			if ( UM_BallisticCollision(Victim).CanBeDamaged() )
 				Victim = Victim.Instigator;
 			else
 				bIgnoreThisVictim = True;	// Skip this BallisticCollision
@@ -359,7 +359,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		
 		// BallisticCollision check
 		if ( UM_BallisticCollision(Victim) != None )  {
-			if ( CanHurtBallisticCollision( UM_BallisticCollision(Victim) ) )
+			if ( UM_BallisticCollision(Victim).CanBeDamaged() )
 				Victim = Victim.Instigator;
 			else
 				Continue;	// Skip this BallisticCollision
@@ -373,6 +373,10 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		Dir = Normal(Dir);
 		// if Pawn
 		if ( Pawn(Victim) != None )  {
+			// Do not damage a friendly Pawn
+			if ( !CanHurtPawn(Pawn(Victim)) )
+				Continue;
+			
 			bIgnoreThisVictim = False;
 			// Check CheckedPawns array
 			for ( i = 0; i < CheckedPawns.Length; ++i )  {
@@ -387,10 +391,6 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				Continue;
 			
 			CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
-			// Do not damage a friendly Pawn
-			if ( !CanHurtPawn(Pawn(Victim)) )
-				Continue;
-			
 			// Extended FastTraces from bones Locations
 			if ( KFMonster(Victim) != None )
 				DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
@@ -448,40 +448,38 @@ function BlowUp(vector HitLocation)
 function SpawnShrapnel()
 {
 	local	int			i;
-	local	Rotator		SpawnRotation;
+	local	rotator		SpawnRotation;
 	local	Projectile	ShrapnelProj;
 	local	Actor		SpawnBlocker;
-	local	Vector		THitLoc, THitNorm, ShrapnelCollisionExtent;
+	local	float		CollisionVSize;
+	local	vector		THitLoc, THitNorm, CollisionExtent;
 	
-	if ( ShrapnelClass == None || MaxShrapnelAmount < 1 )
+	if ( ShrapnelClass == None || ShrapnelAmount.Max < 1 )
 		Return;
 	
-	if ( MaxShrapnelAmount == 1 )  {
-		SpawnRotation = RotRand(True);
-		ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
-		// Can't spawn Shrapnel
-		if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
-			ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
-				SpawnBlocker = Trace( THitLoc, THitNorm, (Location + ShrapnelCollisionExtent), Location, False );
-			// If something blocking shrapnel spawn location
-			if ( SpawnBlocker != None )
-				Spawn(ShrapnelClass, Instigator,, (THitLoc - ShrapnelCollisionExtent), SpawnRotation);
-		}
-		Return;
-	}
-	
+	CollisionExtent = ShrapnelClass.static.GetDefaultCollisionExtent();
+	if ( CollisionExtent != vect(0, 0, 0) )
+		CollisionVSize = FMax(VSize(ShrapnelClass.static.GetDefaultCollisionExtent()), 1.0);
+	else
+		CollisionVSize = 1.0;
 	// Random ShrapnelAmount spawn
-	for ( i = Rand( Max((MaxShrapnelAmount - MinShrapnelAmount), 0) + 1 ); i < MaxShrapnelAmount; ++i )  {
+	if ( ShrapnelAmount.Max > 1 && ShrapnelAmount.Min < ShrapnelAmount.Max )
+		i = Rand(ShrapnelAmount.Max - ShrapnelAmount.Min + 1);
+	else
+		i = 0;
+	
+	while ( i < ShrapnelAmount.Max )  {
+		++i;
 		SpawnRotation = RotRand(True);
 		ShrapnelProj = Spawn(ShrapnelClass, Instigator,, Location, SpawnRotation);
+		if ( ShrapnelProj != None && !ShrapnelProj.bDeleteMe )
+			Continue;
 		// Can't spawn Shrapnel
-		if ( ShrapnelProj == None || ShrapnelProj.bDeleteMe )  {
-			ShrapnelCollisionExtent = Vector(SpawnRotation) * VSize(ShrapnelClass.static.GetDefaultCollisionExtent());
-			SpawnBlocker = Trace( THitLoc, THitNorm, (Location + ShrapnelCollisionExtent), Location, False );
-			// If something blocking shrapnel spawn location
-			if ( SpawnBlocker != None )
-				Spawn(ShrapnelClass, Instigator,, (THitLoc - ShrapnelCollisionExtent), SpawnRotation);
-		}
+		CollisionExtent = vector(SpawnRotation) * CollisionVSize;
+		SpawnBlocker = Trace( THitLoc, THitNorm, (Location + CollisionExtent), (Location - CollisionExtent), False );
+		// If something blocking shrapnel spawn location
+		if ( SpawnBlocker != None )
+			Spawn(ShrapnelClass, Instigator,, (THitLoc - THitNorm * CollisionVSize), SpawnRotation);
 	}
 }
 
@@ -498,8 +496,7 @@ simulated function ShakePlayersView()
 			ShakeScale = FClamp(((ShakeRadius - Dist) / DamageRadius), 0.005, MaxEpicenterShakeScale);
 			PC.ShakeView(
 				(ShakeRotMag * ShakeScale), ShakeRotRate, ShakeRotTime, 
-				(ShakeOffsetMag * ShakeScale), ShakeOffsetRate, ShakeOffsetTime
-			);
+				(ShakeOffsetMag * ShakeScale), ShakeOffsetRate, ShakeOffsetTime );
 		}
 	}
 }
@@ -514,17 +511,18 @@ event Timer()
 
 simulated function Explode( vector HitLocation, vector HitNormal )
 {
-	if ( bHasExploded )
+	if ( bHasExploded || bDisintegrated )
 		Return;
 	
 	bCanBeDamaged = False;
+	bHidden = True;
 	bHasExploded = True;
-	bShouldExplode = True;
 	StopProjectile();
 	SetPhysics(PHYS_None);
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		bShouldExplode = True;
 		if ( !bNetTemporary )
 			NetUpdateTime = Level.TimeSeconds - 1.0;
 		// BlowUp
@@ -535,8 +533,8 @@ simulated function Explode( vector HitLocation, vector HitNormal )
 	SetCollision(False);
 	// Explode effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
-		if ( ExplodeSound.Snd != None )
-			PlaySound(ExplodeSound.Snd, ExplodeSound.Slot, ExplodeSound.Vol, ExplodeSound.bNoOverride, ExplodeSound.Radius, BaseActor.static.GetRandPitch(ExplodeSound.PitchRange), ExplodeSound.bUse3D);
+		if ( ExplosionSound.Snd != None )
+			PlaySound(ExplosionSound.Snd, ExplosionSound.Slot, ExplosionSound.Vol, ExplosionSound.bNoOverride, ExplosionSound.Radius, BaseActor.static.GetRandPitch(ExplosionSound.PitchRange), ExplosionSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) )  {
 			if ( ExplosionVisualEffect != None )
@@ -562,22 +560,22 @@ simulated function Explode( vector HitLocation, vector HitNormal )
 // Make the projectile distintegrate, instead of explode
 simulated function Disintegrate( vector HitLocation, vector HitNormal )
 {
-	if ( bDisintegrated )
+	if ( bHasExploded || bDisintegrated )
 		Return;
 	
 	bCanBeDamaged = False;
-	bHasExploded = True;
-	bDisintegrated = True;
 	bHidden = True;
+	bDisintegrated = True;
 	StopProjectile();
 	SetPhysics(PHYS_None);
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		bShouldDisintegrate = True;
 		if ( !bNetTemporary )
 			NetUpdateTime = Level.TimeSeconds - 1.0;
-		Damage *= DisintegrateDamageScale;
-		MomentumTransfer *= DisintegrateDamageScale;
+		Damage *= DisintegrationDamageScale;
+		MomentumTransfer *= DisintegrationDamageScale;
 		// BlowUp
 		MakeNoise(1.0);
 		HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, HitLocation);
@@ -586,8 +584,8 @@ simulated function Disintegrate( vector HitLocation, vector HitNormal )
 	SetCollision(False);
 	// Disintegrate effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
-		if ( DisintegrateSound.Snd != None )
-			PlaySound(DisintegrateSound.Snd, DisintegrateSound.Slot, DisintegrateSound.Vol, DisintegrateSound.bNoOverride, DisintegrateSound.Radius, BaseActor.static.GetRandPitch(DisintegrateSound.PitchRange), DisintegrateSound.bUse3D);
+		if ( DisintegrationSound.Snd != None )
+			PlaySound(DisintegrationSound.Snd, DisintegrationSound.Slot, DisintegrationSound.Vol, DisintegrationSound.bNoOverride, DisintegrationSound.Radius, BaseActor.static.GetRandPitch(DisintegrationSound.PitchRange), DisintegrationSound.bUse3D);
 		// VFX
 		if ( !Level.bDropDetail && DisintegrationVisualEffect != None && EffectIsRelevant(Location, False) )
 			Spawn(DisintegrationVisualEffect,,, HitLocation, rotator(-HitNormal));
@@ -609,9 +607,9 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 	if ( Instigator == None || EventInstigator == Instigator || EventInstigator.GetTeamNum() != Instigator.GetTeamNum()
 		 || (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
-		for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
-			if ( DamageType == DisintegrateDamageTypes[i] )  {
-				if ( FRand() <= DisintegrateChance )
+		for ( i = 0; i < DisintegrationDamageTypes.Length; ++i )  {
+			if ( DamageType == DisintegrationDamageTypes[i] )  {
+				if ( FRand() <= DisintegrationChance )
 					Disintegrate(HitLocation, Vector(Rotation));
 				
 				Return;
@@ -653,10 +651,10 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 
 simulated event Destroyed()
 {
-	if ( bHidden && !bDisintegrated )
-		Disintegrate(Location, Vector(Rotation));
-	else if ( bShouldExplode && !bHidden && !bHasExploded )
-		Explode(Location, Vector(Rotation));
+	if ( bShouldDisintegrate && !bDisintegrated )
+		Disintegrate(Location, vector(Rotation));
+	else if ( bShouldExplode && !bHasExploded )
+		Explode(Location, vector(Rotation));
 	
 	Super.Destroyed();
 }
@@ -670,14 +668,13 @@ defaultproperties
 	 bArmed=True
 	 bCanHurtSameTypeProjectile=False
 	 bCanHurtOwner=True
-	 DisintegrateDamageScale=0.100000
+	 DisintegrationDamageScale=0.100000
 	 TransientSoundVolume=2.000000
 	 //Sounds
-	 DisintegrateSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
-	 ExplodeSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
+	 DisintegrationSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
+	 ExplosionSound=(PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 //Shrapnel
-	 MaxShrapnelAmount=10
-	 MinShrapnelAmount=5
+	 ShrapnelAmount=(Min=5,Max=10)
 	 // Explosion camera shakes
 	 ShakeRadiusScale=2.250000
 	 MaxEpicenterShakeScale=1.400000
@@ -688,10 +685,10 @@ defaultproperties
      ShakeOffsetRate=(X=325.000000,Y=325.000000,Z=325.000000)
      ShakeOffsetTime=3.500000
 	 //Disintegration
-	 DisintegrateChance=0.950000
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+	 DisintegrationChance=0.950000
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFMod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'

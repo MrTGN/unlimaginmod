@@ -34,14 +34,14 @@ defaultproperties
 	 StaticMeshRef="EffectsSM.Ger_Tracer"
 	 //StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 //Disintegration
-	 DisintegrateChance=0.600000
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+	 DisintegrationChance=0.600000
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Sound Effects
 	 TransientSoundVolume=2.000000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=260.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=2.0,Radius=260.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=260.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=2.0,Radius=260.0,bUse3D=True)
      //MuzzleVelocity
 	 MuzzleVelocity=300.000000	// m/sec
 	 //EffectiveRange

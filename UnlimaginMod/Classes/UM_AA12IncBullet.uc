@@ -17,8 +17,8 @@ class UM_AA12IncBullet extends UM_BaseProjectile_ShotgunIncBullet;
 
 defaultproperties
 {
-	 DisintegrateSound=(Vol=1.5,Radius=250.0,bUse3D=True)
-	 ExplodeSound=(Vol=1.5,Radius=250.0,bUse3D=True)
+	 DisintegrationSound=(Vol=1.5,Radius=250.0,bUse3D=True)
+	 ExplosionSound=(Vol=1.5,Radius=250.0,bUse3D=True)
      ImpactDamageType=Class'UnlimaginMod.UM_DamTypeAA12IncImpact'
      ImpactDamage=80.000000
 	 //MuzzleVelocity

@@ -47,7 +47,7 @@ simulated event PreBeginPlay()
 	Super.PreBeginPlay();
 	
 	if ( Role == ROLE_Authority )
-		bCanDisintegrate = FRand() <= DisintegrateChance;
+		bCanDisintegrate = FRand() <= DisintegrationChance;
 }
 
 simulated event Landed( vector HitNormal )
@@ -68,8 +68,8 @@ simulated event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation
 	if ( Instigator == None || EventInstigator == Instigator || EventInstigator.GetTeamNum() != Instigator.GetTeamNum()
 		 || (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0) )  {
 		// Disintegrate this Projectile instead of simple detonation
-		for ( i = 0; i < DisintegrateDamageTypes.Length; ++i )  {
-			if ( DamageType == DisintegrateDamageTypes[i] )  {
+		for ( i = 0; i < DisintegrationDamageTypes.Length; ++i )  {
+			if ( DamageType == DisintegrationDamageTypes[i] )  {
 				if ( bCanDisintegrate )
 					Disintegrate(HitLocation, Vector(Rotation));
 				
@@ -101,10 +101,10 @@ defaultproperties
      ShakeOffsetRate=(X=300.000000,Y=300.000000,Z=300.000000)
      ShakeOffsetTime=3.500000
 	 //Disintegration
-	 DisintegrateChance=0.600000
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+	 DisintegrationChance=0.600000
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 // Ballistic calculator: http://www.ada.ru/guns/ballistic/bc/BC_pejsa.htm
 	 //[block] From ROBallisticProjectile class
 	 BallisticCoefficient=0.300000

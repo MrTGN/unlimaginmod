@@ -13,6 +13,7 @@
 //	Creation date:	 06.10.2012 18:35
 //================================================================================
 class UM_BaseMonster extends KFMonster
+	DependsOn(UM_BaseObject)
 	hidecategories(AnimTweaks,DeRes,Force,Gib,Karma,Udamage,UnrealPawn)
 	Abstract;
 
@@ -156,7 +157,10 @@ var					name				RunAnims[8];
 // KnockDown
 var					name				KnockDownAnim;
 var					bool				bCanBeKnockedDown;
-var					float				KnockedDownHealthPct;
+var					float				KnockDownHealthPct;
+var		transient	int					KnockDownDamage;
+var					float				ExplosiveKnockDownHealthPct;
+var		transient	int					ExplosiveKnockDownDamage;
 var		transient	bool				bKnockedDown;
 
 // CumulativeDamage - damage taked in the course of time
@@ -171,7 +175,8 @@ var					name				DoorBashAnim;
 var					name				DistanceDoorAttackAnim;
 
 // Decapitation
-var					bool				bPlayDecapitationKnockDown;
+var					bool				bKnockDownByDecapitation;
+var					bool				bPlayDecapitationAnim;
 var					name				DecapitationAnim;
 var		transient	bool				bDecapitationPlayed;
 // HeadlessAnim
@@ -187,6 +192,34 @@ var		transient	float				MoanPitch;
 var					range				MoanPitchRange;
 var					float				MoanRadius;
 
+// KilledShouldExplode
+var					float				KilledExplodeChance;
+var		transient	UM_HumanPawn		ExplosionInstigator;
+var					bool				bShouldExplode, bHasExploded; 	// This monster has Exploded.
+
+var					int					ExplosionDamage;
+var					class<DamageType>	ExplosionDamageType;
+var					float				ExplosionRadius;
+var					float				ExplosionMomentum;
+//Shrapnel
+var		class<UM_BaseProjectile>		ExplosionShrapnelClass;
+var		UM_BaseObject.IRange			ExplosionShrapnelAmount;
+
+var					class<Emitter>		ExplosionVisualEffect
+var		UM_BaseActor.SoundData			ExplosionSound;
+
+// camera shakes
+var(Shakes)			vector				ExplosionShakeRotMag;		// how far to rot view
+var(Shakes)			vector				ExplosionShakeRotRate;		// how fast to rot view
+var(Shakes)			float				ExplosionShakeRotTime;		// how much time to rot the instigator's view
+var(Shakes)			vector				ExplosionShakeOffsetMag;		// max view offset vertically
+var(Shakes)			vector				ExplosionShakeOffsetRate;	// how fast to offset view vertically
+var(Shakes)			float				ExplosionShakeOffsetTime;	// how much time to offset view
+
+var(Shakes)			float				ExplosionShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRadiusScale;
+var(Shakes)			float				MaxExplosionEpicenterShakeScale; // Maximum shake scale in explosion epicenter
+var		transient	float				LastClientTriggerTime;
+
 //[end] Varibles
 //====================================================================
 
@@ -199,7 +232,7 @@ replication
 		bIsAlphaMonster;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		NextWalkAnimNum, NextBurningWalkAnimNum;
+		bShouldExplode, NextWalkAnimNum, NextBurningWalkAnimNum;
 	
 	reliable if ( Role == ROLE_Authority && bNetDirty && bNetOwner )
 		JumpSpeed;
@@ -586,6 +619,8 @@ function AdjustGameDifficulty()
 	}
 	Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
 	HealthMax = float(Health);
+	KnockDownDamage = Round(HealthMax * KnockDownHealthPct);
+	ExplosiveKnockDownDamage = Round(HealthMax * ExplosiveKnockDownHealthPct);
 	// HeadHealth
 	if ( bIsAlphaMonster )
 		RandMult *= Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
@@ -687,8 +722,8 @@ function InitCheckAnimActions()
 	if ( bCanDistanceAttackDoors )
 		bCanDistanceAttackDoors = DistanceDoorAttackAnim != '' && HasAnim(DistanceDoorAttackAnim);
 	// Check DecapitationAnim
-	if ( bPlayDecapitationKnockDown )
-		bPlayDecapitationKnockDown = DecapitationAnim != '' && HasAnim(DecapitationAnim);
+	if ( bPlayDecapitationAnim )
+		bPlayDecapitationAnim = DecapitationAnim != '' && HasAnim(DecapitationAnim);
 }
 
 // called after PostBeginPlay() and after all init replication was received on net client
@@ -700,8 +735,8 @@ simulated event PostNetBeginPlay()
 	AnimateDefault();
 	EnableChannelNotify(BaseAnimChannel, 1);
 	EnableChannelNotify(MinorAnimChannel, 1);
-	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , SpineBone1);
-	AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , HeadBone);
+	//AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , SpineBone1);
+	//AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , HeadBone);
 	
 	if ( Level.bDropDetail || (Level.DetailMode == DM_Low) )
 		MaxLights = Min(4,MaxLights);
@@ -749,7 +784,9 @@ function bool SetBossLaught()
 simulated event Destroyed()
 {
 	DestroyBallisticCollision();
-	if ( Health > 0 )
+	if ( bShouldExplode && !bHasExploded )
+		Explode();
+	else if ( Health > 0 )
 		Suicide();
 	
 	Super.Destroyed();
@@ -879,14 +916,209 @@ function AdjustGroundSpeed()
 		SetGroundSpeed(OriginalGroundSpeed);
 }
 
+function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
+{
+	local	Actor			Victim;
+	local	float			DamageScale, ;
+	local	vector			Dir;
+	local	int				FriendlyTeamNum, i;
+	local	array<Pawn>		CheckedPawns;
+	local	bool			bIgnoreThisVictim, bFriendlyFireIsAllowed;
+
+	if ( Role < ROLE_Authority || bHurtEntry || DamageAmount <= 0.0 )
+		Return;
+	
+	bHurtEntry = True;
+	
+	// If monster was killed and explode (KilledShouldExplode)
+	if ( DamageType == ExplosionDamageType && ExplosionInstigator != None )
+		FriendlyTeamNum = ExplosionInstigator.GetTeamNum();
+	else
+		FriendlyTeamNum = GetTeamNum();
+	
+	bFriendlyFireIsAllowed = UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0;
+	
+	foreach CollidingActors( class'Actor', Victim, DamageRadius, HitLocation )  {
+		if ( Victim == None || Victim.bDeleteMe || Victim.bHidden || !Victim.bCanBeDamaged 
+			 || Victim == self || Victim == ExplosionInstigator || FluidSurfaceInfo(Victim) != None )
+			Continue;
+		
+		// BallisticCollision check
+		if ( UM_BallisticCollision(Victim) != None )  {
+			if ( UM_BallisticCollision(Victim).CanBeDamaged() )
+				Victim = Victim.Instigator;
+			else
+				Continue; // Skip this BallisticCollision
+		}
+		else if ( Projectile(Victim) != None && !bFriendlyFireIsAllowed
+				 && ((Projectile(Victim).Instigator != None && Projectile(Victim).Instigator.GetTeamNum() == FriendlyTeamNum) 
+					 || (Projectile(Victim).InstigatorController != None && Projectile(Victim).InstigatorController.GetTeamNum() == FriendlyTeamNum)) )
+			Continue;
+		
+		Dir = Victim.Location - HitLocation;
+		DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );		
+		Dir = Normal(Dir);
+		// if Pawn
+		if ( Pawn(Victim) != None )  {
+			// Do not damage a friendly Pawn
+			if ( Pawn(Victim).Health < 1 || (!bFriendlyFireIsAllowed && Pawn(Victim).GetTeamNum() == FriendlyTeamNum) )
+				Continue;
+			
+			bIgnoreThisVictim = False;
+			// Check CheckedPawns array
+			for ( i = 0; i < CheckedPawns.Length; ++i )  {
+				// comparison by object
+				if ( CheckedPawns[i] == Victim )  {
+					bIgnoreThisVictim = True;
+					Break;
+				}
+			}
+			// Ignore already Checked Pawns
+			if ( bIgnoreThisVictim )
+				Continue;
+			
+			CheckedPawns[CheckedPawns.Length] = Pawn(Victim);
+			// Extended FastTraces from bones Locations
+			if ( KFMonster(Victim) != None )
+				DamageScale *= KFMonster(Victim).GetExposureTo(HitLocation);
+			else if ( KFPawn(Victim) != None )
+				DamageScale *= KFPawn(Victim).GetExposureTo(HitLocation);	
+		}
+		// Check for the blocking world geometry
+		else if ( !FastTrace( Victim.Location, HitLocation ) )
+			Continue;
+		
+		i = Round(DamageAmount * DamageScale);
+		// not in the DamageRadius
+		if ( i < 1 )
+			Continue;
+		
+		// Damage Victim
+		Victim.TakeDamage( i, Instigator, 
+			(Victim.Location - (Victim.CollisionHeight + Victim.CollisionRadius) * 0.5 * Dir),
+			(Momentum * DamageScale * Dir), DamageType );
+		// Damage Vehicle Driver
+		if ( Vehicle(Victim) != None && Vehicle(Victim).Health > 0 )
+			Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
+	}
+	
+	bHurtEntry = False;
+}
+
+// Server-side only
+function SpawnShrapnel()
+{
+	local	int			i;
+	local	Rotator		SpawnRotation;
+	local	Projectile	ShrapnelProj;
+	local	Actor		SpawnBlocker;
+	local	float		CollisionVSize;
+	local	Vector		THitLoc, THitNorm, CollisionExtent;
+	
+	if ( ExplosionShrapnelClass == None || ExplosionShrapnelAmount.Max < 1 )
+		Return;
+	
+	CollisionExtent = ShrapnelClass.static.GetDefaultCollisionExtent();
+	if ( CollisionExtent != vect(0, 0, 0) )
+		CollisionVSize = FMax(VSize(ShrapnelClass.static.GetDefaultCollisionExtent()), 1.0);
+	else
+		CollisionVSize = 1.0;
+	// Random ExplosionShrapnelAmount spawn
+	if ( ExplosionShrapnelAmount.Max > 1 && ExplosionShrapnelAmount.Min < ExplosionShrapnelAmount.Max )
+		i = Rand(ExplosionShrapnelAmount.Max - ExplosionShrapnelAmount.Min + 1);
+	else
+		i = 0;
+	
+	while ( i < ExplosionShrapnelAmount.Max )  {
+		++i;
+		SpawnRotation = RotRand(True);
+		ShrapnelProj = Spawn(ExplosionShrapnelClass, Instigator,, Location, SpawnRotation);
+		if ( ShrapnelProj != None && !ShrapnelProj.bDeleteMe )
+			Continue;
+		// if we can't spawn Shrapnel
+		CollisionExtent = vector(SpawnRotation) * CollisionVSize;
+		SpawnBlocker = Trace( THitLoc, THitNorm, (Location + CollisionExtent), (Location - CollisionExtent), False );
+		// If something blocking shrapnel spawn location
+		if ( SpawnBlocker != None )
+			Spawn(ExplosionShrapnelClass, Instigator,, (THitLoc - THitNorm * CollisionVSize), SpawnRotation);
+	}
+}
+
+simulated function ShakePlayersView()
+{
+	local	PlayerController	PC;
+	local	float				Dist, ShakeScale, ShakeRadius;
+	
+	PC = Level.GetLocalPlayerController();
+	if ( PC != None && PC.ViewTarget != None )  {
+		ShakeRadius = ExplosionRadius * ExplosionShakeRadiusScale;
+		Dist = VSize(Location - PC.ViewTarget.Location);
+		if ( Dist < ShakeRadius )  {
+			ShakeScale = FClamp(((ShakeRadius - Dist) / ExplosionRadius), 0.005, MaxExplosionEpicenterShakeScale);
+			PC.ShakeView(
+				(ExplosionShakeRotMag * ShakeScale), ExplosionShakeRotRate, ExplosionShakeRotTime, 
+				(ExplosionShakeOffsetMag * ShakeScale), ExplosionShakeOffsetRate, ExplosionShakeOffsetTime );
+		}
+	}
+}
+
+// issue: #486
+simulated function Explode()
+{
+	if ( bHasExploded )
+		Return;
+	
+	bCanBeDamaged = False;
+	bHidden = True;
+	bHasExploded = True;
+	
+	if ( Level.NetMode != NM_Client && Controller != None )  {
+		if ( Controller.bIsPlayer )
+			Controller.PawnDied(self);
+		else
+			Controller.Destroy();
+	}
+	
+	// Send update to the clients and destroy
+	if ( Role == ROLE_Authority )  {
+		bShouldExplode = True;
+		UpdateClientTrigger();
+		// BlowUp
+		MakeNoise(1.0);
+		HurtRadius(ExplosionDamage, ExplosionRadius, ExplosionDamageType, ExplosionMomentum, Location);
+	}
+	
+	// Explode effects
+	if ( Level.NetMode != NM_DedicatedServer )  {
+		if ( ExplosionSound.Snd != None )
+			PlaySound(ExplosionSound.Snd, SLOT_Ambient, ExplosionSound.Vol, True, ExplosionSound.Radius, BaseActor.static.GetRandPitch(ExplosionSound.PitchRange));
+		// VFX
+		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) && ExplosionVisualEffect != None )
+				Spawn(ExplosionVisualEffect,,, HitLocation, Rotator(-HitNormal));
+	}
+	
+	// Shrapnel
+	if ( Role == ROLE_Authority )
+		SpawnShrapnel();
+	
+	// Shake nearby players screens
+	ShakePlayersView();
+	
+	if ( Role == ROLE_Authority )
+		LifeSpan = 0.2; // Auto-Destroy on the server after 200 ms to replicate variables
+	else
+		Destroy(); // Destroy on the client-side immediately
+}
+
 function ClientDying(class<DamageType> DamageType, vector HitLocation) { }
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
 {
-	local	int				i;
-	local	Vector			TossVel;
-	local	Trigger			T;
-	local	NavigationPoint	N;
+	local	int							i;
+	local	Vector						TossVel;
+	local	Trigger						T;
+	local	NavigationPoint				N;
+	local	KFPlayerReplicationInfo		KFPRI;
 	
 	if ( bDeleteMe || Level.bLevelChange || Level.Game == None )
 		Return; // already destroyed, or level is being cleaned up
@@ -956,6 +1188,20 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	Velocity.Z *= 1.3;
 	if ( IsHumanControlled() )
 		PlayerController(Controller).ForceDeathUpdate();
+	
+	ExplosionInstigator = UM_HumanPawn(Killer.Pawn);
+	if ( ExplosionInstigator != None )  {
+		KFPRI = KFPlayerReplicationInfo(ExplosionInstigator.PlayerReplicationInfo);
+		// KilledShouldExplode
+		if ( KFPRI != None && KilledExplodeChance > 0.0 && KFPRI.ClientVeteranSkill != None
+			 && KFPRI.ClientVeteranSkill.static.KilledShouldExplode(KFPRI, ExplosionInstigator) && KilledExplodeChance >= FRand() )  {
+			Explode();
+			Return;
+		}
+		else
+			ExplosionInstigator = None;
+	}
+	
 	if ( DamageType != None && DamageType.default.bAlwaysGibs )
 		ChunkUp( Rotation, DamageType.default.GibPerterbation );
 	else  {
@@ -1170,7 +1416,7 @@ function EnemyChanged()
 function bool DoJump( bool bUpdating )
 {
 	if ( !bIsCrouched && !bWantsToCrouch && (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider) )  {
-		PlayOwnedSound(JumpSound, SLOT_Pain, GruntVolume,,80);
+		PlayOwnedSound(JumpSound, SLOT_Pain, GruntVolume,, 80.0);
 		if ( Role == ROLE_Authority )  {
 			if ( Level.Game != None && Level.Game.GameDifficulty > 2 )
 				MakeNoise(0.1 * Level.Game.GameDifficulty);
@@ -1204,7 +1450,6 @@ function bool MeleeDamageTarget(int HitDamage, vector PushDir)
 	local	vector		HitLocation, HitNormal;
 	local	Actor		HitActor;
 	local	Name		TearBone;
-	local	float		F;
 	
 	if ( Role < ROLE_Authority || Controller == None || Controller.Target == None || bSTUNNED || DECAP )
 		Return False;
@@ -1213,11 +1458,11 @@ function bool MeleeDamageTarget(int HitDamage, vector PushDir)
 		Controller.Target.TakeDamage(HitDamage, self , Location, PushDir, CurrentDamType);
 		Return True;
 	}
-	
-	F = FMax(CollisionHeight, Controller.Target.CollisionHeight) + 0.5 * FMin(CollisionHeight, Controller.Target.CollisionHeight);
+
 	// check if still in melee range
-	if ( (Physics == PHYS_Flying || Physics == PHYS_Swimming || Abs(Location.Z - Controller.Target.Location.Z) <= F) && 
-		 VSize(Controller.Target.Location - Location) <= (float(MeleeRange) * 1.4 + Controller.Target.CollisionRadius + CollisionRadius) )  {
+	if ( (Physics == PHYS_Flying || Physics == PHYS_Swimming 
+		   || Abs(Location.Z - Controller.Target.Location.Z) <= (FMax(CollisionHeight, Controller.Target.CollisionHeight) + 0.5 * FMin(CollisionHeight, Controller.Target.CollisionHeight))) 
+		 && VSize(Controller.Target.Location - Location) <= (float(MeleeRange) * 1.4 + Controller.Target.CollisionRadius + CollisionRadius) )  {
 		// Trace to find a victim
 		HitActor = Trace(HitLocation, HitNormal, Controller.Target.Location, (Location + EyePosition()), True);
 		if ( HitActor == None )
@@ -1488,7 +1733,7 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 		if ( Level.PhysicsDetailLevel != PDL_High && !PlayersRagdoll && (bIsRelevant || bGibbed) )  {
 			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
 			if ( Level.NetMode == NM_ListenServer )  {
-				TimeSetDestroyNextTickTime = Level.TimeSeconds + 0.005;
+				TimeSetDestroyNextTickTime = Level.TimeSeconds + 1.0 / NetUpdateFrequency;
 				bDestroyNextTick = True;
 			}
 			else
@@ -1638,18 +1883,19 @@ simulated function PlayDyingAnimation(class<DamageType> DamageType, vector HitLo
 
 simulated function CuteDecapFX()
 {
-	local int LeftRight;
+	NeckRot.Yaw = -Clamp(Rand(24000), 14000, 24000);
+	// Left
+	if ( Rand(10) > 4 )  {
+		NeckRot.Roll = -Clamp(Rand(8000), 2000, 8000);
+		NeckRot.Pitch = -Clamp(Rand(12000), 2000, 12000);
+	}
+	// Right
+	else  {
+		NeckRot.Roll = Clamp(Rand(8000), 2000, 8000);
+		NeckRot.Pitch = Clamp(Rand(12000), 2000, 12000);
+	}
 
-	LeftRight = 1;
-
-	if ( rand(10) > 5 )
-		LeftRight = -1;
-
-	NeckRot.Yaw = -clamp(rand(24000), 14000, 24000);
-	NeckRot.Roll = LeftRight * clamp(rand(8000), 2000, 8000);
-	NeckRot.Pitch =  LeftRight * clamp(rand(12000), 2000, 12000);
-
-	SetBoneRotation('neck', NeckRot);
+	SetBoneRotation(NeckBone, NeckRot);
 }
 
 // Handle hiding the head when its been melee chopped off
@@ -1797,11 +2043,11 @@ simulated function ProcessHitFX()
 		//log("Processing effects for damtype "$HitFX[SimHitFxTicker].damtype);
 		// Just destroy if exploaded
 		if ( HitFX[SimHitFxTicker].bone == 'obliterate' && !class'GameInfo'.static.UseLowGore() )  {
-			SpawnGibs( HitFX[SimHitFxTicker].rotDir, 1);
+			SpawnGibs( HitFX[SimHitFxTicker].rotDir, 1.0);
 			bGibbed = True;
 			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
 			if ( Level.NetMode == NM_ListenServer )  {
-				TimeSetDestroyNextTickTime = Level.TimeSeconds + 0.005;
+				TimeSetDestroyNextTickTime = Level.TimeSeconds + 1.0 / NetUpdateFrequency;
 				bDestroyNextTick = True;
 			}
 			else
@@ -1911,12 +2157,12 @@ simulated function ZombieCrispUp()
 	bAshen = True;
 	// Apply AshenSkin
 	bAshenApplied = True;
-	if ( Level.NetMode != NM_DedicatedServer || !class'GameInfo'.static.UseLowGore() )  {
+	if ( Level.NetMode != NM_DedicatedServer && !class'GameInfo'.static.UseLowGore() )  {
 		for ( i = 0; i < Skins.Length; ++i )
 			Skins[i] = AshenSkin;
 	}
+	UpdateClientTrigger();
 }
-
 
 simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
@@ -2021,12 +2267,14 @@ simulated function bool IsMinorAnim( name AnimName )
 simulated function int DoAnimAction( name AnimName )
 {
 	if ( IsMinorAnim(AnimName) )  {
-		if ( IsAnimating(BaseAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
+		if ( bZapped || bCrispified || IsAnimating(BaseAnimChannel) )  {
 			AnimBlendParams(MinorAnimChannel, 0.0, 0.0,, SpineBone1);
-			AnimBlendToAlpha(MinorAnimChannel, 1.0, 0.1);
+			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, NeckBone);
 		}
-		else
+		else  {
 			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, SpineBone1);
+			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, NeckBone);
+		}
 		
 		PlayAnim(AnimName, , 0.1, MinorAnimChannel);
 		Return MinorAnimChannel;
@@ -2272,11 +2520,6 @@ function AttackDoor()
 
 state DoorBashing
 {	
-	function bool HitCanInterruptAction()
-	{
-		Return False;
-	}
-	
 	function bool CanSpeedAdjust()
 	{
 		Return False;
@@ -2301,6 +2544,11 @@ state DoorBashing
 	{
 		bDistanceAttackingDoor = False;
 	}
+}
+
+simulated function CalcHitLoc( Vector HitLoc, Vector HitRay, out Name BoneName, out float Dist )
+{
+	BoneName = GetClosestBone( HitLoc, HitRay, Dist );
 }
 
 // extends Dying
@@ -2487,6 +2735,8 @@ simulated function SetZappedBehavior()
 		AdjustMovement();
 		SetDumbIntelligence();
 	}
+	
+	UpdateClientTrigger();
 }
 
 simulated function UnSetZappedBehavior()
@@ -2502,6 +2752,8 @@ simulated function UnSetZappedBehavior()
 		AdjustMovement();
 		SetOriginalIntelligence();
 	}
+	
+	UpdateClientTrigger();
 }
 
 // Set the zed to the on fire behavior
@@ -2517,6 +2769,8 @@ simulated function SetBurningBehavior()
 	// Server code next
 	if ( Role == Role_Authority )
 		SetDumbIntelligence();
+	
+	UpdateClientTrigger();
 }
 
 // Turn off the on-fire behavior
@@ -2561,6 +2815,8 @@ simulated function StartBurnFX()
 	FlamingFXs.Emitters[0].SkeletalMeshActor = Self;
 	FlamingFXs.Emitters[0].UseSkeletalLocationAs = PTSU_SpawnOffset;
 	AttachEmitterEffect(Effect, HeadBone, vect(0,0,0), rot(0,0,0));
+	
+	UpdateClientTrigger();
 }
 
 simulated function RemoveFlamingEffects()
@@ -2595,6 +2851,7 @@ simulated function StopBurnFX()
 		AmbientSound = default.AmbientSound;
 	RemoveFlamingEffects();
 	UnSetBurningBehavior();
+	UpdateClientTrigger();
 }
 
 function SetBurning(bool bBurning)
@@ -2658,6 +2915,11 @@ function TakeBileDamage()
 		BileCountDown = 0;
 		bIsTakingBileDamage = False;
 	}
+}
+
+function TakeBleedOutDamage()
+{
+	
 }
 
 simulated function MakeInvisible()
@@ -2726,6 +2988,7 @@ function SetZapped(float ZapAmount, Pawn Instigator)
 	RemainingZap = ZapDuration;
 	SetOverlayMaterial(Material'KFZED_FX_T.Energy.ZED_overlay_Hit_Shdr', RemainingZap, True);
 	ZappedBy = Instigator;
+	SetZappedBehavior();
 }
 
 function TickZapped(float DeltaTime)
@@ -2738,11 +3001,64 @@ function TickZapped(float DeltaTime)
 	RemainingZap = FMax((RemainingZap - DeltaTime), 0.0);
 	if ( RemainingZap > 0.0 )
 		Return;
-		
+	
 	bZapped = False;
 	ZappedBy = None;
 	// The Zed can take more zap each time they get zapped
 	ZapThreshold *= ZapResistanceScale;
+	UnSetZappedBehavior();
+}
+
+function UpdateClientTrigger()
+{
+	if ( Role < ROLE_Authority || Level.TimeSeconds <= LastClientTriggerTime )
+		Return; // Do not allow to change bClientTrigger more than one time at the tick
+	
+	LastClientTriggerTime = Level.TimeSeconds + 0.001;
+	bClientTrigger = !bClientTrigger; // replicated property used to trigger client side ClientTrigger() event
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
+// This event is using here to notify clients about an important changes
+simulated event ClientTrigger()
+{
+	if ( Role == ROLE_Authority )
+		Return; // Clients only
+	
+	if ( bShouldExplode && !bHasExploded )
+		Explode();
+	
+	if ( bDecapitated && !bHeadlessAnimated )
+		AnimateHeadless();
+	
+	if ( bZapped != bOldZapped )  {
+		if ( bZapped )
+			SetZappedBehavior();
+		else
+			UnSetZappedBehavior();
+	}
+	
+	/*
+	if ( bHarpoonStunned != bOldHarpoonStunned )  {
+		bOldHarpoonStunned = bHarpoonStunned;
+		if ( bHarpoonStunned )
+			SetBurningBehavior();
+		else
+			UnSetBurningBehavior();
+	}	*/
+	
+	if ( bBurnified != bBurnApplied )  {
+		if ( bBurnified )
+			StartBurnFX();
+		else
+			StopBurnFX();
+	}
+	
+	if ( bCrispified && !bCrispApplied )
+		SetBurningBehavior();
+	
+	if ( bAshen && !bAshenApplied )
+		ZombieCrispUp();
 }
 
 simulated event Tick( float DeltaTime )
@@ -2750,9 +3066,6 @@ simulated event Tick( float DeltaTime )
 	// If we've flagged this character to be destroyed next tick, handle that
 	if ( bDestroyNextTick && Level.TimeSeconds > TimeSetDestroyNextTickTime )
 		Destroy();
-	
-	if ( bDecapitated && !bHeadlessAnimated )
-		AnimateHeadless();
 	
 	// Server side code
 	if ( Role == ROLE_Authority )  {
@@ -2789,35 +3102,8 @@ simulated event Tick( float DeltaTime )
 			TickZapped(DeltaTime);
 	}
 	
-	if ( bZapped != bOldZapped )  {
-		if ( bZapped )
-			SetZappedBehavior();
-		else
-			UnSetZappedBehavior();
-	}
-	
-	/*
-	if ( bHarpoonStunned != bOldHarpoonStunned )  {
-		bOldHarpoonStunned = bHarpoonStunned;
-		if ( bHarpoonStunned )
-			SetBurningBehavior();
-		else
-			UnSetBurningBehavior();
-	}	*/
-	
-	if ( Level.NetMode != NM_DedicatedServer )  {
+	if ( Level.NetMode != NM_DedicatedServer )
 		TickFX(DeltaTime);
-		if ( bBurnified != bBurnApplied )  {
-			if ( bBurnified )
-				StartBurnFX();
-			else
-				StopBurnFX();
-		}
-		if ( bCrispified && !bCrispApplied )
-			SetBurningBehavior();
-		if ( bAshen && !bAshenApplied )
-			ZombieCrispUp();
-	}
 	
 	if ( DECAP && Level.TimeSeconds > (DecapTime + 2.0) && Controller != None )  {
 		DECAP = False;
@@ -2960,7 +3246,7 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 	        }
 		}
 
-		if ( Health < 0 && Damage > DamageType.default.HumanObliterationThreshhold && 
+		if ( Health < 1 && Damage > DamageType.default.HumanObliterationThreshhold && 
 			 Damage != 1000 && !class'GameInfo'.static.UseLowGore() )
 			BoneName = 'obliterate';
 
@@ -3132,21 +3418,34 @@ function RemoveHead()
 		HeadBallisticCollision.Destroy();
 		HeadBallisticCollision = None;
 	}
+	UpdateClientTrigger();
 }
 
 //[block] KnockDown
+// High damage was taken, make em fall over.
+function bool CheckForKnockDown( int Damage, class<DamageType> DamageType )
+{
+	if ( class<UM_BaseDamType_Explosive>(DamageType) != None )
+		Return ExplosiveKnockDownDamage > 0 && Damage >= ExplosiveKnockDownDamage;
+	else
+		Return KnockDownDamage > 0 && Damage >= KnockDownDamage;
+}
+
 function PlayDecapitationKnockDown()
 {
 	bDecapitationPlayed = True;
-	bPlayDecapitationKnockDown = False;
-	bShotAnim = True;
-	SetAnimAction(DecapitationAnim);
-	
+	bKnockDownByDecapitation = False;
 	// PlayHit times
 	NextPainTime = Level.TimeSeconds + 0.1;
 	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
-	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
+	// DecapitationAnim
+	bShotAnim = True;
+	if ( bPlayDecapitationAnim )
+		SetAnimAction(DecapitationAnim);
+	else
+		SetAnimAction(KnockDownAnim);
 	
+	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = True;
@@ -3157,13 +3456,13 @@ function PlayDecapitationKnockDown()
 }
 
 function PlayKnockDown()
-{
-	bShotAnim = True;
-	SetAnimAction(KnockDownAnim);
-	
+{	
 	// PlayHit times
 	NextPainTime = Level.TimeSeconds + 0.1;
 	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
+	// KnockDownAnim
+	bShotAnim = True;
+	SetAnimAction(KnockDownAnim);
 	
 	if ( bDecapitated )
 		Return; // Don't play HitSound if Decapitated
@@ -3186,7 +3485,7 @@ function SendToKnockDown()
 	bKnockedDown = True;
 	CumulativeDamage = 0; // Reset CumulativeDamage
 	DisableMovement();
-	if ( bDecapitated && bPlayDecapitationKnockDown )
+	if ( bDecapitated && bKnockDownByDecapitation )
 		PlayDecapitationKnockDown();
 	else
 		PlayKnockDown();
@@ -3194,10 +3493,11 @@ function SendToKnockDown()
 	GoToState('KnockedDown');
 }
 
-// High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, Pawn InstigatedBy, class<DamageType> DamageType )
+function EndKnockDown()
 {
-	Return (Class<UM_BaseDamType_Explosive>(DamageType) != None && Damage >= int(HealthMax * 0.5)) || Damage >= int(HealthMax * KnockedDownHealthPct);
+	bKnockedDown = False;
+	EnableMovement();
+	GoToState('');
 }
 
 state KnockedDown
@@ -3233,21 +3533,35 @@ state KnockedDown
 			Return;
 		
 		CumulativeDamage = 0; // Reset CumulativeDamage
-		PlayKnockDown();
+		if ( bDecapitated && bKnockDownByDecapitation )
+			PlayDecapitationKnockDown();
+		else
+			PlayKnockDown();
 		UM_MonsterController(Controller).GoToState('KnockedDown', 'WaitForAnim');
-	}
-	
-	event EndState()
-	{
-		bKnockedDown = False;
-		EnableMovement();
 	}
 }
 //[end] KnockDown
 
-simulated function CalcHitLoc( Vector HitLoc, Vector HitRay, out Name BoneName, out float Dist )
+function PlayDecapitationHit()
 {
-	BoneName = GetClosestBone( HitLoc, HitRay, Dist );
+	bDecapitationPlayed = True;
+	bKnockDownByDecapitation = False;
+	// PlayHit times
+	NextPainTime = Level.TimeSeconds + 0.1;
+	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
+	// HitAnims
+	bShotAnim = True;
+	SetAnimAction('AA_Hit');
+	
+	// DecapitationSound
+	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
+	// makes playercontroller hear much better
+	if ( LastDamagedByPlayer != None )
+		LastDamagedByPlayer.bAcuteHearing = True;
+	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0,, True);
+	// makes playercontroller hear much better
+	if ( LastDamagedByPlayer != None )
+		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
 }
 
 // clear old function
@@ -3259,30 +3573,35 @@ function bool HitCanInterruptAction()
 	Return !bShotAnim;
 }
 
-//ToDo: issue #477
 function bool CanPlayDirectionalHit(int Damage, class<DamageType> DamageType)
 {
-	Return Damage > 4;
+	Return Level.TimeSeconds >= NextPainAnimTime && (DamageType == None || DamageType.default.bDirectDamage) && Damage >= 5;
 }
 
-function PlayDirectionalHit(Vector HitLoc)
+function PlayDirectionalHit(vector HitLoc)
 {
-	local	Vector	X,Y,Z, Dir;
+	local	vector	X,Y,Z, Dir;
+	local	float	DirDotX;
+	
+	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
 	
 	GetAxes(Rotation, X,Y,Z);
 	HitLoc.Z = Location.Z;
 	
-	if ( VSizeSquared(Location - HitLoc) < 1.0 )
-		Dir = vect(0, 0, 0);
-	else
+	if ( VSizeSquared(Location - HitLoc) > 1.0 )  {
 		Dir = -Normal(Location - HitLoc);
+		DirDotX = Dir dot X;
+	}
+	else
+		Dir = vect(0, 0, 0);
 
 	// HitFront
-	if ( Dir == vect(0, 0, 0) || Dir dot X > 0.7 )  {
+	if ( Dir == vect(0, 0, 0) || DirDotX > 0.7 )  {
 		if ( LastDamagedBy != None && LastDamageAmount > 0 )  {
 			bSTUNNED = StunsRemaining > 0 && (LastDamageAmount >= (0.5 * default.Health) ||
-				 (VSizeSquared(LastDamagedBy.Location - Location) <= Square(MeleeRange * 2.0) && class<DamTypeMelee>(LastDamagedbyType) != None && KFPawn(LastDamagedBy) != None && LastDamageAmount > (default.Health * 0.1)));
+				 (VSizeSquared(LastDamagedBy.Location - Location) <= Square(MeleeRange * 2.0) && class<DamTypeMelee>(LastDamagedByType) != None && KFPawn(LastDamagedBy) != None && LastDamageAmount > (default.Health * 0.1)));
 			if ( bSTUNNED )  {
+				bShotAnim = True;
 				SetAnimAction('AA_Hit');
 				SetTimer(StunTime, false);
 				--StunsRemaining;
@@ -3292,65 +3611,55 @@ function PlayDirectionalHit(Vector HitLoc)
 		}
 	}
 	// HitBack
-	else if ( Dir dot X < -0.7 )
+	else if ( DirDotX < -0.7 )
 		SetAnimAction(KFHitBack);
 	// HitRight
-	else if ( Dir dot Y > 0 )
+	else if ( Dir dot Y > 0.0 )
 		SetAnimAction(KFHitRight);
 	// HitLeft
 	else
 		SetAnimAction(KFHitLeft);
 }
 
-function PlayDecapitation()
+function bool CanPlayHitSound(int Damage, class<DamageType> DamageType)
 {
-	if ( bDecapitationPlayed )
-		Return;
-	
-	bDecapitationPlayed = True;
-	bPlayDecapitationKnockDown = False;
-	// HitAnims
-	bShotAnim = True;
-	SetAnimAction('AA_Hit');
-	
-	// PlayHit times
-	NextPainTime = Level.TimeSeconds + 0.1;
-	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
+	Return !bDecapitated && Level.TimeSeconds >= NextPainSoundTime && (LastDamagedByType == None || LastDamagedByType.default.bDirectDamage) && Damage >= 5;
+}
+
+function PlayHitSound()
+{
 	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
-	
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0,, True);
+	PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400.0);
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
 }
 
+
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
 	NextPainTime = Level.TimeSeconds + 0.1;
-	// No anim if we're burning, we're already playing an anim
-	if ( Level.TimeSeconds >= NextPainAnimTime && !bCrispified )  {
-		NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
-		if ( Damage > 4 && HitCanInterruptAction() )
-			PlayDirectionalHit(HitLocation);
-	}
 	
-	if ( !bDecapitated && DamageType.default.bDirectDamage && Level.TimeSeconds >= NextPainSoundTime )  {
-		NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
-		// makes playercontroller hear much better
-		if ( DamageType.default.bDirectDamage && LastDamagedByPlayer != None )
-			LastDamagedByPlayer.bAcuteHearing = True;
-		PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400.0);
-		// makes playercontroller hear much better
-		if ( LastDamagedByPlayer != None )
-			LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
-	}
+	
+	
+	if ( bDecapitated || Level.TimeSeconds < NextPainSoundTime || DamageType == None || !DamageType.default.bDirectDamage || Damage < 5 )
+		Return;
+	
+	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
+	// makes playercontroller hear much better
+	if ( LastDamagedByPlayer != None )
+		LastDamagedByPlayer.bAcuteHearing = True;
+	PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400.0);
+	// makes playercontroller hear much better
+	if ( LastDamagedByPlayer != None )
+		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
 }
 
 // New Hit FX for Zombies!
-function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIdx )
+function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIdx )
 {
 	local	Name						HitBone;
 	local	float						HitBoneDist;
@@ -3411,7 +3720,7 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 			Spawn(PhysicsVolume.ExitActor);
 		// KFSteamStatsAndAchievements
 		KFSteamStats = KFSteamStatsAndAchievements(InstigatedBy.PlayerReplicationInfo.SteamStatsAndAchievements);
-		if ( KFSteamStats != None && Damage >= DamageType.default. HumanObliterationThreshhold && Damage != 1000 
+		if ( KFSteamStats != None && Damage >= DamageType.default.HumanObliterationThreshhold && Damage != 1000 
 			 && (!bDecapitated || bPlayBrainSplash) )  {
 			KFSteamStats.AddGibKill(class<DamTypeM79Grenade>(DamageType) != None);
 			// AddFleshpoundGibKill
@@ -3419,13 +3728,18 @@ function PlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<Dama
 				KFSteamStats.AddFleshpoundGibKill();
 		}
 	}
-	else if ( (bDecapitated && bPlayDecapitationKnockDown) 
-			 || (bCanBeKnockedDown && CheckForKnockDown( Max(Damage, CumulativeDamage), InstigatedBy, DamageType)) )
+	else if ( bCanBeKnockedDown && ((bDecapitated && bKnockDownByDecapitation) 
+			 || CheckForKnockDown(Max(Damage, CumulativeDamage), DamageType)) )
 		SendToKnockDown();
 	else if ( bDecapitated && !bDecapitationPlayed )
-		PlayDecapitation();
-	else if ( Level.TimeSeconds >= NextPainTime )
-		PlayTakeHit(HitLocation, Damage, DamageType);
+		PlayDecapitationHit();
+	else if ( !bKnockedDown && Level.TimeSeconds >= NextPainTime )  {
+		NextPainTime = Level.TimeSeconds + 0.1;
+		if ( CanPlayDirectionalHit(Damage, DamageType) )
+			PlayDirectionalHit(HitLocation);
+		if ( CanPlayHitSound(Damage, DamageType) )
+			PlayHitSound();
+	}
 	
 	if ( DamageType.default.bAlwaysSevers && DamageType.default.bSpecial )
 		HitBone = HeadBone;
@@ -3549,7 +3863,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 		Return 0;
 	
 	if ( !bDecapitated && bIsHeadShot )  {
-		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500, , True); // HeadShot Sound
+		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500.0, , True); // HeadShot Sound
 		// Calc Head damage
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decapitate
@@ -3603,10 +3917,6 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 		
 		if ( bPhysicsAnimUpdate )
 			SetTearOffMomemtum( Momentum );
-		
-		// KilledShouldExplode
-		if ( KFPRI != None && KFPRI.ClientVeteranSkill != None && KFPRI.ClientVeteranSkill.static.KilledShouldExplode(KFPRI, KFPawn(InstigatedBy)) )
-			HurtRadius( 500.0, 1000.0, class'DamTypeFrag', 100000.0, Location );
 		
 		Died( Killer, DamageType, HitLocation );
 	}
@@ -3711,6 +4021,24 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
+	 //KilledShouldExplode
+	 // Explosion camera shakes
+	 ExplosionShakeRadiusScale=2.0
+	 MaxExplosionEpicenterShakeScale=1.25
+	 ExplosionShakeRotMag=(X=500.0,Y=500.0,Z=500.0)
+     ExplosionShakeRotRate=(X=12000.0,Y=12000.0,Z=12000.0)
+     ExplosionShakeRotTime=6.0
+     ExplosionShakeOffsetMag=(X=5.0,Y=10.0,Z=5.0)
+     ExplosionShakeOffsetRate=(X=300.0,Y=300.0,Z=300.0)
+     ExplosionShakeOffsetTime=3.0
+	 ExplosionDamage=250.0
+	 ExplosionDamageType=Class'DamTypeFrag'
+	 ExplosionRadius=300.0
+	 //ExplosionShrapnelClass=
+	 //ExplosionShrapnelAmount=(Min=4,Max=6)
+	 ExplosionVisualEffect=
+	 ExplosionSound=()
+	 
 	 bAllowRespawnIfLost=True
 	 RelevanceCheckDelay=0.5
 	 SpeedAdjustCheckDelay=0.5
@@ -3825,10 +4153,11 @@ defaultproperties
 	 // KnockDownAnim
 	 bCanBeKnockedDown=True
 	 KnockDownAnim="KnockDown"
-	 KnockedDownHealthPct=0.65
+	 KnockDownHealthPct=0.65
+	 ExplosiveKnockDownHealthPct=0.55
 	 // DecapitationAnim
 	 //DecapitationAnim="HeadLoss"
-	 //bPlayDecapitationKnockDown=True
+	 //bKnockDownByDecapitation=True
 	 // DoorBash
 	 DoorBashAnim="DoorBash"
 	 // MeleeAnims

@@ -26,8 +26,8 @@ defaultproperties
 	 DisintegrationVisualEffect=Class'KFMod.SirenNadeDeflect'
 	 //Sounds
 	 TransientSoundVolume=2.200000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_GrenadeSnd.FlameNade_Explode",Vol=3.0,Radius=400.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=400.0,bUse3D=True)
+	 ExplosionSound=(Ref="KF_GrenadeSnd.FlameNade_Explode",Vol=3.0,Radius=400.0,bUse3D=True)
 	 //Damage
      Damage=80.000000
      DamageRadius=420.000000

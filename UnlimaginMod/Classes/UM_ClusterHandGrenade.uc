@@ -20,8 +20,8 @@ defaultproperties
 {
      bCanHurtSameTypeProjectile=False
 	 //Sounds
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.6,Radius=300.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_GrenadeSnd.NadeBase.Nade_Explode4",Vol=1.6,Radius=300.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.6,Radius=300.0,bUse3D=True)
+	 ExplosionSound=(Ref="KF_GrenadeSnd.NadeBase.Nade_Explode4",Vol=1.6,Radius=300.0,bUse3D=True)
 	 //Damage
      Damage=50.000000
      DamageRadius=100.000000
@@ -29,6 +29,5 @@ defaultproperties
 	 IgnoredVictims(0)="UM_ClusterGrenadeProj"
 	 //Shrapnel
 	 ShrapnelClass=Class'UnlimaginMod.UM_ClusterGrenadeProj'
-	 MinShrapnelAmount=6
-	 MaxShrapnelAmount=8
+	 ShrapnelAmount=(Min=6,Max=8)
 }

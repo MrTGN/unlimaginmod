@@ -576,7 +576,10 @@ simulated function SpawnGibs(Rotator HitRotation, float ChunkPerterbation)
 
 defaultproperties
 {
-	 KnockedDownHealthPct=0.7
+	 KilledExplodeChance=0.2
+	 
+	 KnockDownHealthPct=0.7
+	 ExplosiveKnockDownHealthPct=0.75
 	 KilledWaveCountDownExtensionTime=10.0
 	 ImpressiveKillChance=0.5
 	 

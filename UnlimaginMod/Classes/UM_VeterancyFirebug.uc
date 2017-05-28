@@ -210,6 +210,11 @@ static function class<DamageType> GetMAC10DamageType(KFPlayerReplicationInfo KFP
 	Return class'DamTypeMAC10MPInc';
 }
 
+static function bool KilledShouldExplode(KFPlayerReplicationInfo KFPRI, KFPawn P)
+{
+	Return FRand() <= (float(Min(PRI.ClientVeteranSkillLevel, 10)) * 0.025); // 25% chance to explode monster if he was Killed
+}
+
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;

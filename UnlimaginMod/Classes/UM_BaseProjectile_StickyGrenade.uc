@@ -213,21 +213,21 @@ defaultproperties
 	 BallisticCoefficient=0.140000
 	 //Shrapnel
 	 ShrapnelClass=None
-	 DisintegrateChance=0.950000
+	 DisintegrationChance=0.950000
 	 //Sounds
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000
      MaxSpeed=0.000000
 	 TransientSoundVolume=2.000000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=360.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=360.0,bUse3D=True)
 	 LifeSpan=0.000000
 	 ProjectileMass=0.230000
-     //DisintegrateDamageTypes
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+     //DisintegrationDamageTypes
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'

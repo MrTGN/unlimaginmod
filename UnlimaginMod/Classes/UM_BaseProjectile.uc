@@ -282,10 +282,9 @@ simulated function UpdateInstigatorTeamNum()
 		InstigatorTeamNum = InstigatorController.GetTeamNum();
 }
 
-// Updates and returns InstigatorTeamNum
+// returns InstigatorTeamNum
 simulated function int GetInstigatorTeamNum()
 {
-	UpdateInstigatorTeamNum();
 	Return InstigatorTeamNum;
 }
 
@@ -732,7 +731,7 @@ simulated function bool	CanHurtBallisticCollision( UM_BallisticCollision Ballist
 		 || (InstigatorController != None && BallisticCollision.InstigatorController == InstigatorController) )
 		Return bCanHurtOwner;
 	// FriendlyFire
-	else if ( UM_GameReplicationInfo(Level.GRI) != None && BallisticCollision.GetInstigatorTeamNum() == GetInstigatorTeamNum() )
+	else if ( UM_GameReplicationInfo(Level.GRI) != None && BallisticCollision.InstigatorTeamNum == InstigatorTeamNum )
 		Return UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0;
 	
 	Return True;
@@ -742,14 +741,16 @@ simulated function bool	CanHurtBallisticCollision( UM_BallisticCollision Ballist
 simulated function bool CanHurtPawn( Pawn P )
 {
 	// Return False if no Pawn was specified
-	if ( P == None || !P.bCanBeDamaged || P.Health < 1 )
+	if ( P == None || P.Health < 1 )
 		Return False;
 	
 	// HurtOwner
-	if ( (Instigator != None && P == Instigator) || (InstigatorController != None && P.Controller == InstigatorController) )
+	if ( (Instigator != None && P == Instigator) 
+		 || (InstigatorController != None && P.Controller == InstigatorController) )
 		Return bCanHurtOwner;
 	// FriendlyFire
-	else if ( UM_GameReplicationInfo(Level.GRI) != None && P.GetTeamNum() == GetInstigatorTeamNum() )
+	else if ( UM_GameReplicationInfo(Level.GRI) != None 
+			 && P.GetTeamNum() == InstigatorTeamNum )
 		Return UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0;
 	
 	Return True;
@@ -759,7 +760,7 @@ simulated function bool CanHurtPawn( Pawn P )
 simulated function bool CanHurtProjectile( Projectile Proj )
 {
 	// Return False if no projectile was specified
-	if ( Proj == None || !Proj.bCanBeDamaged )
+	if ( Proj == None )
 		Return False;
 	
 	// Same Projectile Type
@@ -771,9 +772,8 @@ simulated function bool CanHurtProjectile( Projectile Proj )
 		Return True;
 	// FriendlyFire
 	else if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 )  {
-		UpdateInstigatorTeamNum();
 		if ( UM_BaseProjectile(Proj) != None )
-			Return UM_BaseProjectile(Proj).GetInstigatorTeamNum() != InstigatorTeamNum;
+			Return UM_BaseProjectile(Proj).InstigatorTeamNum != InstigatorTeamNum;
 		else if ( Proj.Instigator != None )
 			Return Proj.Instigator.GetTeamNum() != InstigatorTeamNum;
 		else if ( Proj.InstigatorController != None )
@@ -786,8 +786,11 @@ simulated function bool CanHurtProjectile( Projectile Proj )
 // Can this projectile damage specified Actor
 simulated function bool CanHurtActor( Actor A )
 {
-	if ( ROBulletWhipAttachment(A) != None || (Instigator != None && (A == Instigator || A.Base == Instigator)) )
+	if ( A == None || !A.bCanBeDamaged || ROBulletWhipAttachment(A) != None )
 		Return False;
+	
+	if ( Instigator != None && A.Base == Instigator )
+		Return bCanHurtOwner;
 	
 	if ( UM_BallisticCollision(A) != None )
 		Return CanHurtBallisticCollision( UM_BallisticCollision(A) );

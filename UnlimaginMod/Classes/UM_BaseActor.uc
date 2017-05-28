@@ -64,7 +64,7 @@ struct	SoundData
 // RandPitch
 simulated static final function float GetRandPitch( range PitchRange )
 {
-	if ( PitchRange.Min > 0.0 || PitchRange.Max > 0.0 )
+	if ( PitchRange.Min > 0.0 && PitchRange.Max > 0.0 )
 		Return Lerp( FRand(), PitchRange.Min, PitchRange.Max );
 	else
 		Return 1.0; // Return default pitch

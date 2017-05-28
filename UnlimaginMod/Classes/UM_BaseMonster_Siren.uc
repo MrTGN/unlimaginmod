@@ -384,7 +384,10 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
-	 KnockedDownHealthPct=0.8
+	 KilledExplodeChance=0.05
+	 
+	 KnockDownHealthPct=0.75
+	 ExplosiveKnockDownHealthPct=0.65
 	 KilledWaveCountDownExtensionTime=6.0
 	 ImpressiveKillChance=0.05
 	 

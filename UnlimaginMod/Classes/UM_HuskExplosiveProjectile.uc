@@ -44,6 +44,6 @@ defaultproperties
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 TransientSoundVolume=1.600000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=200.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_LAWSnd.Rocket_Explode",Vol=2.0,Radius=200.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.8,Radius=200.0,bUse3D=True)
+	 ExplosionSound=(Ref="KF_LAWSnd.Rocket_Explode",Vol=2.0,Radius=200.0,bUse3D=True)
 }

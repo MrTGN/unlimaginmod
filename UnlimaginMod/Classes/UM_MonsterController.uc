@@ -1256,7 +1256,6 @@ function ExecuteWhatToDoNext()
 		Return;
 	}
 	
-	//if ( MyMonster.bShotAnim && MyMonster.bWaitForAnim )  {
 	if ( MyMonster.bShotAnim )  {
 		GoToState('WaitForAnim');
 		Return;
@@ -3274,7 +3273,7 @@ state KnockedDown
 		if ( MyMonster.bShotAnim )
 			Return; // In case we need to replay KnockDown anim
 		
-		MyMonster.GoToState('');
+		MyMonster.EndKnockDown();
 	}
 
 Begin:

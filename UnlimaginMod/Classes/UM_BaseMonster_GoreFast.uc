@@ -331,7 +331,10 @@ simulated function HideBone(name boneName)
 
 defaultproperties
 {
-	 KnockedDownHealthPct=0.7
+	 KilledExplodeChance=0.1
+	 
+	 KnockDownHealthPct=0.7
+	 ExplosiveKnockDownHealthPct=0.6
 	 KilledWaveCountDownExtensionTime=5.0
 	 ImpressiveKillChance=0.05
 	 
@@ -360,7 +363,7 @@ defaultproperties
 	 HeadScale=1.500000
 	 MenuName="Gorefast"
 	 DecapitationAnim="HeadLoss"
-	 bPlayDecapitationKnockDown=True
+	 bKnockDownByDecapitation=True
 	 // MeleeAnims
 	 MeleeAnims(0)="GoreAttack1"
 	 MeleeAnims(1)="GoreAttack2"

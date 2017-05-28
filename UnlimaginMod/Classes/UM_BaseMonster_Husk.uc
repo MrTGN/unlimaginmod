@@ -222,18 +222,15 @@ function RemoveHead()
 	bCanDistanceAttackDoors = False;
 	Super.RemoveHead();
 }
-
-// High damage was taken, make em fall over.
-function bool CheckForKnockDown( int Damage, Pawn InstigatedBy, class<DamageType> DamageType )
-{
-	Return (Class<UM_BaseDamType_SniperRifle>(DamageType) != None && Damage > 200) || Super.CheckForKnockDown(Damage, InstigatedBy, DamageType);
-}
-
 //[end] Functions
 //====================================================================
 
 defaultproperties
 {
+	 KnockDownHealthPct=0.65
+	 ExplosiveKnockDownHealthPct=0.6
+	 
+	 KilledExplodeChance=1.0
 	 ImpressiveKillChance=0.2
 	 KilledWaveCountDownExtensionTime=8.0
 	 

@@ -24,6 +24,7 @@ var		float						VeterancySyringeChargeModifier;	// ToDo: переместить это в класс
 // Replication triggers
 var		byte						PRIChangedTrigger, ClientPRIChangedTrigger;
 var		byte						VeterancyChangedTrigger, ClientVeterancyChangedTrigger;
+var		transient		float		LastClientTriggerTime;
 
 // DyingMessage
 var		transient		int			DyingMessageHealth;
@@ -825,6 +826,16 @@ function CheckVeterancyAmmoLimit()
 	}
 }
 
+function UpdateClientTrigger()
+{
+	if ( Role < ROLE_Authority || Level.TimeSeconds <= LastClientTriggerTime )
+		Return; // Do not allow to change bClientTrigger more than one time at the tick
+	
+	LastClientTriggerTime = Level.TimeSeconds + 0.001;
+	bClientTrigger = !bClientTrigger; // replicated property used to trigger client side ClientTrigger() event
+	NetUpdateTime = Level.TimeSeconds - 1.0;
+}
+
 // Notify that veterancy has been changed.
 // Called on the server and replicated by the trigger to the client-owner.
 simulated function NotifyVeterancyChanged()
@@ -892,7 +903,7 @@ simulated function NotifyVeterancyChanged()
 				++VeterancyChangedTrigger;
 			else
 				VeterancyChangedTrigger = 0;
-			bClientTrigger = !bClientTrigger;
+			UpdateClientTrigger();
 		}
 	}
 	
@@ -963,7 +974,7 @@ function PossessedBy( Controller C )
 		// To be sure that client-owner will receive all ReplicationInfo before the notification.
 		UM_PlayerRepInfo.NotifyVeterancyChanged();
 		// To send the PRIChangedTrigger update.
-		bClientTrigger = !bClientTrigger;
+		UpdateClientTrigger();
 	}
 	else
 		NotifyVeterancyChanged();
@@ -1340,7 +1351,7 @@ function bool DoJump( bool bUpdating )
 		
 		SetPhysics(PHYS_Falling);
 		if ( !bUpdating )
-			PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,,80);
+			PlayOwnedSound(GetSound(EST_Jump), SLOT_Pain, GruntVolume,, 80.0);
 		
 		SubtractStamina(JumpStaminaDrain);
 		
@@ -1555,11 +1566,11 @@ function ServerChangedWeapon( Weapon OldWeapon, Weapon NewWeapon )
 		OldWeapon.SetDefaultDisplayProperties();
 		OldWeapon.DetachFromPawn(self);
 		OldWeapon.GotoState('Hidden');
-		OldWeapon.NetUpdateFrequency = 2;
+		OldWeapon.NetUpdateFrequency = 2.0;
 	}
 	
 	if ( Weapon != None )  {
-		Weapon.NetUpdateFrequency = 100;
+		Weapon.NetUpdateFrequency = 100.0;
 		Weapon.AttachToPawn(self);
 		Weapon.BringUp(OldWeapon);
 		PlayWeaponSwitch(NewWeapon);

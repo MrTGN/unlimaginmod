@@ -29,8 +29,8 @@ defaultproperties
 	 ProjectileMass=0.200
 	 bCanHurtSameTypeProjectile=False
 	 //Sounds
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=350.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=350.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=350.0,bUse3D=True)
 	 //ExplodeTimer
 	 ExplodeTimer=2.000000
 	 BallisticRandRange=(Min=0.8,Max=1.2)

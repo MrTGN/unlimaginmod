@@ -19,11 +19,10 @@ defaultproperties
 {
 	 //Shrapnel
 	 ShrapnelClass=Class'UnlimaginMod.UM_TungstenShrapnel'
-	 MaxShrapnelAmount=30
-	 MinShrapnelAmount=24
+	 ShrapnelAmount=(Min=20,Max=25)
 	 //Sounds
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=390.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=390.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=390.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.HandGrenade.HG_Explode",Vol=2.0,Radius=390.0,bUse3D=True)
 	 //Damage
 	 Damage=300.000000
      DamageRadius=300.000000

@@ -1823,6 +1823,7 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
+	 KilledExplodeChance=0.15
 	 bAllowRespawnIfLost=False
 	 LifeSpan=0.0
 	 
@@ -1831,7 +1832,7 @@ defaultproperties
 	 HeadShotSlowMoChargeBonus=1.0
 	 Intelligence=BRAINS_Human
 	 
-	 KnockedDownHealthPct=0.8
+	 KnockDownHealthPct=0.8
 	 AirControl=0.25
 	 ChargingAnim="RunF"
 	 HealingLevels(0)=5600

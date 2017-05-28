@@ -145,6 +145,11 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 KnockDownHealthPct=0.65
+	 ExplosiveKnockDownHealthPct=0.55
+	 
+	 KilledExplodeChance=0.2
+	 
 	 GrappleRangeCheckDelay=0.1
 	 GrappleDuration=1.500000
 	 MeleeAnims(0)="ClotGrapple"
@@ -171,7 +176,7 @@ defaultproperties
 	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
 	 DecapitationAnim="HeadLoss"
-	 bPlayDecapitationKnockDown=True
+	 bKnockDownByDecapitation=True
 	 // MovementAnims
 	 MovementAnims(0)="ClotWalk"
      MovementAnims(1)="ClotWalk"

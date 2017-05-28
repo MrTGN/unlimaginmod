@@ -154,16 +154,15 @@ defaultproperties
 	 ProjectileDiameter=56.0
 	 bRotateToDesired=True
 	 FearMarkerClass=Class'AvoidMarker'
-	 DisintegrateChance=0.950000
+	 DisintegrationChance=0.950000
 	 //Sounds
 	 TransientSoundVolume=2.000000
-	 DisintegrateSound=(Vol=2.0,Radius=400.0,bUse3D=True)
-	 ExplodeSound=(Vol=2.0,Radius=400.0,bUse3D=True)
+	 DisintegrationSound=(Vol=2.0,Radius=400.0,bUse3D=True)
+	 ExplosionSound=(Vol=2.0,Radius=400.0,bUse3D=True)
 	 //ExplodeTimer	 
 	 ExplodeTimer=2.000000
 	 //Shrapnel
-	 MaxShrapnelAmount=10
-	 MinShrapnelAmount=5
+	 ShrapnelAmount=(Min=5,Max=10)
 	 //Speed
 	 SpeedDropInWaterCoefficient=0.600000
 	 FullStopSpeedCoefficient=0.120000
@@ -186,10 +185,10 @@ defaultproperties
 	 ImpactDamage=50.000000
 	 ImpactMomentumTransfer=10000.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenadeImpact'
-	 //DisintegrateDamageTypes
-	 DisintegrateDamageTypes(0)=Class'SirenScreamDamage'
-	 DisintegrateDamageTypes(1)=Class'DamTypeVomit'
-	 DisintegrateDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
+	 //DisintegrationDamageTypes
+	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
+	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'
+	 DisintegrationDamageTypes(2)=Class'UM_ZombieDamType_SirenScream'
 	 //Visual Effects
 	 ExplosionVisualEffect=Class'KFmod.KFNadeExplosion'
 	 ExplosionDecal=Class'KFMod.KFScorchMark'

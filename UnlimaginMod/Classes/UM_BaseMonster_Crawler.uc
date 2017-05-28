@@ -196,7 +196,10 @@ simulated function bool AnimNeedsWait(name TestAnim)
 
 defaultproperties
 {
-	 bCanBeKnockedDown=False
+	 KnockDownHealthPct=0.0
+	 ExplosiveKnockDownHealthPct=0.6
+	 
+	 KilledExplodeChance=0.25
 	 
 	 ImpressiveKillChance=0.05
 	 

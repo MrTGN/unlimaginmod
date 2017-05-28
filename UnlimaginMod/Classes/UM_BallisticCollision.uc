@@ -65,7 +65,6 @@ simulated function UpdateInstigatorTeamNum()
 // Updates and returns InstigatorTeamNum
 simulated function int GetInstigatorTeamNum()
 {
-	UpdateInstigatorTeamNum();
 	Return InstigatorTeamNum;
 }
 

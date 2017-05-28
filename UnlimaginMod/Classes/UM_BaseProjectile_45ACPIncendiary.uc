@@ -29,7 +29,7 @@ defaultproperties
 	 //EffectiveRange
 	 EffectiveRange=700.000000	// Meters
 	 //Disintegration
-	 DisintegrateChance=0.600000
+	 DisintegrationChance=0.600000
 	 ///ImpactDamage
 	 ImpactDamage=24.000000
 	 HeadShotDamageMult=1.100000
@@ -40,6 +40,6 @@ defaultproperties
 	 MomentumTransfer=1000.000000
 	 //Sound Effects
 	 TransientSoundVolume=1.000000
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=220.0,bUse3D=True)
-	 ExplodeSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=220.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.0,Radius=220.0,bUse3D=True)
+	 ExplosionSound=(Ref="KF_EnemiesFinalSnd.Husk.Husk_FireImpact",Vol=1.0,Radius=220.0,bUse3D=True)
 }

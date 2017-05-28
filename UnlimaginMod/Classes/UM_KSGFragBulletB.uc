@@ -17,8 +17,8 @@ class UM_KSGFragBulletB extends UM_BaseProjectile_ShotgunExpBullet;
 
 defaultproperties
 {
-	 DisintegrateSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.7,Radius=250.0,bUse3D=True)
-	 ExplodeSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=1.7,Radius=250.0,bUse3D=True)
+	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=1.7,Radius=250.0,bUse3D=True)
+	 ExplosionSound=(Ref="UnlimaginMod_Snd.ExpBullet.EB_Explode",Vol=1.7,Radius=250.0,bUse3D=True)
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeKSGFragImpact'
      ImpactDamage=40.000000
 	 //MuzzleVelocity

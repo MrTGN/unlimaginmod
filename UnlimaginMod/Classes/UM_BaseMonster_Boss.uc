@@ -1823,7 +1823,13 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
+	 // Explosion parametrs
 	 KilledExplodeChance=0.15
+	 ExplosionDamage=300
+	 ExplosionRadius=320.0
+	 ExplosionMomentum=10000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Strong'
+	 
 	 bAllowRespawnIfLost=False
 	 LifeSpan=0.0
 	 

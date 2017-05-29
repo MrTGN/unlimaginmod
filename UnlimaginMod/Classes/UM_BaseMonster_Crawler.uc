@@ -200,6 +200,11 @@ defaultproperties
 	 ExplosiveKnockDownHealthPct=0.6
 	 
 	 KilledExplodeChance=0.25
+	 ExplosionDamage=180
+	 ExplosionDamageType=Class'DamTypeFrag'
+	 ExplosionRadius=280.0
+	 ExplosionMomentum=8000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Weak'
 	 
 	 ImpressiveKillChance=0.05
 	 

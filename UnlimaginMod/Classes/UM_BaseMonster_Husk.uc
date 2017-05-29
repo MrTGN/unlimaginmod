@@ -227,10 +227,20 @@ function RemoveHead()
 
 defaultproperties
 {
+	 // Explosion parametrs
+	 KilledExplodeChance=1.0
+	 ExplosionDamage=80
+	 ExplosionDamageType=Class'DamTypeHuskGun'
+	 ExplosionRadius=320.0
+	 ExplosionMomentum=8000.0
+	 ExplosionShrapnelClass=Class'KFMod.FlameTendril'
+	 ExplosionShrapnelAmount=(Min=4,Max=6)
+	 ExplosionVisualEffect=Class'KFMod.KFIncendiaryExplosion'
+	 ExplosionSound=(Snd='Artillery.explosions.explo021',Vol=1.8,Radius=600.0)
+	 
 	 KnockDownHealthPct=0.65
 	 ExplosiveKnockDownHealthPct=0.6
 	 
-	 KilledExplodeChance=1.0
 	 ImpressiveKillChance=0.2
 	 KilledWaveCountDownExtensionTime=8.0
 	 

@@ -577,6 +577,10 @@ simulated function SpawnGibs(Rotator HitRotation, float ChunkPerterbation)
 defaultproperties
 {
 	 KilledExplodeChance=0.2
+	 ExplosionDamage=200
+	 ExplosionRadius=300.0
+	 ExplosionMomentum=8000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Medium'
 	 
 	 KnockDownHealthPct=0.7
 	 ExplosiveKnockDownHealthPct=0.75

@@ -329,6 +329,10 @@ simulated event Destroyed()
 defaultproperties
 {
 	 KilledExplodeChance=0.2
+	 ExplosionDamage=160
+	 ExplosionRadius=280.0
+	 ExplosionMomentum=8000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Medium'
 	 
 	 KnockDownHealthPct=0.65
 	 ExplosiveKnockDownHealthPct=0.5

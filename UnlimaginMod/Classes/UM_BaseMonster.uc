@@ -641,6 +641,12 @@ function AdjustGameDifficulty()
 	ScreamDamage = Max( Round(DifficultyDamageModifer() * float(default.ScreamDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 	MeleeDamage = Max( Round(DifficultyDamageModifer() * float(default.MeleeDamage) * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max)), 1 );
 	
+	// Explosion Rand Parametrs
+	RandMult = Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max);
+	ExplosionDamage = Max( Round(float(default.ExplosionDamage) * RandMult), 1 );
+	ExplosionMomentum = default.ExplosionMomentum * RandMult;
+	ExplosionRadius = default.ExplosionRadius * Lerp(FRand(), DamageScaleRange.Min, DamageScaleRange.Max);
+	
 	if ( bIsAlphaMonster && AlphaIntelligence > Intelligence )
 		Intelligence = AlphaIntelligence;
 	OriginalIntelligence = Intelligence;
@@ -940,7 +946,7 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 	
 	foreach CollidingActors( class'Actor', Victim, DamageRadius, HitLocation )  {
 		if ( Victim == None || Victim.bDeleteMe || Victim.bHidden || !Victim.bCanBeDamaged 
-			 || Victim == self || Victim == ExplosionInstigator || FluidSurfaceInfo(Victim) != None )
+			 || Victim == self || FluidSurfaceInfo(Victim) != None )
 			Continue;
 		
 		// BallisticCollision check
@@ -1062,7 +1068,6 @@ simulated function ShakePlayersView()
 	}
 }
 
-// issue: #486
 simulated function Explode()
 {
 	if ( bHasExploded )
@@ -1081,6 +1086,11 @@ simulated function Explode()
 	
 	// Send update to the clients and destroy
 	if ( Role == ROLE_Authority )  {
+		// If monster was killed and explode (KilledShouldExplode)
+		if ( ExplosionInstigator != None )
+			Instigator = ExplosionInstigator;
+		else
+			Instigator = self;
 		bShouldExplode = True;
 		UpdateClientTrigger();
 		// BlowUp
@@ -1095,6 +1105,11 @@ simulated function Explode()
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) && ExplosionVisualEffect != None )
 				Spawn(ExplosionVisualEffect,,, HitLocation, Rotator(-HitNormal));
+		
+		if ( !bGibbed )  {
+			bGibbed = True;
+			SpawnGibs( Rotation, 1.0);
+		}
 	}
 	
 	// Shrapnel
@@ -1179,7 +1194,7 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 		//	if ( N.bStatic && N.bReceivePlayerToucherDiedNotify )
 		ForEach TouchingActors(class'NavigationPoint', N)
 			if ( N.bReceivePlayerToucherDiedNotify )
-				N.PlayerToucherDied( Self );
+				N.PlayerToucherDied( self );
 	}
 	
 	// remove powerup effects, etc.
@@ -3162,11 +3177,10 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 			Return;
 	}
 
-	if ( FRand() > 0.3f || Damage > 30 || Health < 1 )  {
+	if ( FRand() > 0.3 || Damage > 30 || Health < 1 )  {
 		HitFX[HitFxTicker].damtype = DamageType;
 		if ( Health < 1 )  {
-			switch( BoneName )
-			{
+			switch( BoneName )  {
 				case NeckBone:
 					BoneName = HeadBone;
 					Break;
@@ -3206,7 +3220,7 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 					BoneName = FireRootBone;
 			}
 			else if ( DamageType.Default.GibModifier > 0.0 )  {
-	            DismemberProbability = Abs( (Health - Damage * DamageType.Default.GibModifier) / 130.0f );
+	            DismemberProbability = Abs( (float(Health) - float(Damage) * DamageType.Default.GibModifier) / 130.0 );
 				if ( FRand() < DismemberProbability )  {
 					HitFX[HitFxTicker].bSever = True;
 					bDidSever = True;
@@ -3223,25 +3237,26 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 		if ( HitFX[HitFxTicker].bSever )  {
 	        if ( !DamageType.default.bLocationalHit && 
 				 (BoneName == '' || BoneName == FireRootBone || BoneName == 'Spine' ))  {
-				switch( Rand(5) )
-	            {
-	                case 0:
-						BoneName = LeftThighBone;
-						Break;
-	                case 1:
+				switch( Rand(5) )  {
+					case 1:
 						BoneName = RightThighBone;
 						Break;
-	                case 2:
+					
+					case 2:
 						BoneName = LeftFArmBone;
-	                    Break;
-	                case 3:
+						Break;
+					
+					case 3:
 						BoneName = RightFArmBone;
-	                    Break;
-	                case 4:
+						Break;
+					
+					case 4:
 						BoneName = HeadBone;
-	                    Break;
-	                default:
-	                	BoneName = LeftThighBone;
+						Break;
+					
+					default:
+						BoneName = LeftThighBone;
+						Break;
 	            }
 	        }
 		}
@@ -3638,7 +3653,7 @@ function PlayHitSound()
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
 }
 
-
+#Дописать!!! issue #477
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
 {
 	NextPainTime = Level.TimeSeconds + 0.1;
@@ -4026,18 +4041,22 @@ defaultproperties
 	 ExplosionShakeRadiusScale=2.0
 	 MaxExplosionEpicenterShakeScale=1.25
 	 ExplosionShakeRotMag=(X=500.0,Y=500.0,Z=500.0)
-     ExplosionShakeRotRate=(X=12000.0,Y=12000.0,Z=12000.0)
-     ExplosionShakeRotTime=6.0
-     ExplosionShakeOffsetMag=(X=5.0,Y=10.0,Z=5.0)
-     ExplosionShakeOffsetRate=(X=300.0,Y=300.0,Z=300.0)
-     ExplosionShakeOffsetTime=3.0
-	 ExplosionDamage=250.0
+	 ExplosionShakeRotRate=(X=12000.0,Y=12000.0,Z=12000.0)
+	 ExplosionShakeRotTime=6.0
+	 ExplosionShakeOffsetMag=(X=5.0,Y=10.0,Z=5.0)
+	 ExplosionShakeOffsetRate=(X=300.0,Y=300.0,Z=300.0)
+	 ExplosionShakeOffsetTime=3.0
+	 // Explosion parametrs
+	 ExplosionDamage=180
 	 ExplosionDamageType=Class'DamTypeFrag'
-	 ExplosionRadius=300.0
+	 ExplosionRadius=280.0
+	 ExplosionMomentum=8000.0
 	 //ExplosionShrapnelClass=
 	 //ExplosionShrapnelAmount=(Min=4,Max=6)
-	 ExplosionVisualEffect=
-	 ExplosionSound=()
+	 //ExplosionVisualEffect=class'KFMod.FlameImpact_Strong'
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Medium'
+	 //ExplosionVisualEffect=class'KFMod.FlameImpact_Weak'
+	 ExplosionSound=(Snd='ProjectileSounds.cannon_rounds.HE_deflect',Vol=2.2,Radius=600.0,PitchRange=(Min=0.95,Max=1.05))
 	 
 	 bAllowRespawnIfLost=True
 	 RelevanceCheckDelay=0.5

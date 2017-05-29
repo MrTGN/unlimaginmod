@@ -499,10 +499,18 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
+	 // Explosion parametrs
+	 KilledExplodeChance=1.0
+	 ExplosionDamage=240
+	 ExplosionRadius=320.0
+	 ExplosionMomentum=9000.0
+	 ExplosionShrapnelClass=Class'UnlimaginMod.UM_BloatVomit'
+	 ExplosionShrapnelAmount=(Min=2,Max=4)
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Strong'
+	 
 	 KnockDownHealthPct=0.65
 	 ExplosiveKnockDownHealthPct=0.7
 	 
-	 KilledExplodeChance=1.0
 	 ImpressiveKillChance=0.15
 	 HeadShotSlowMoChargeBonus=0.25
 	 KilledWaveCountDownExtensionTime=5.0

@@ -148,7 +148,14 @@ defaultproperties
 	 KnockDownHealthPct=0.65
 	 ExplosiveKnockDownHealthPct=0.55
 	 
+	 // Explosion parametrs
 	 KilledExplodeChance=0.2
+	 ExplosionDamage=160
+	 ExplosionRadius=260.0
+	 ExplosionMomentum=7000.0
+	 //ExplosionShrapnelClass=
+	 //ExplosionShrapnelAmount=(Min=4,Max=6)
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Weak'
 	 
 	 GrappleRangeCheckDelay=0.1
 	 GrappleDuration=1.500000

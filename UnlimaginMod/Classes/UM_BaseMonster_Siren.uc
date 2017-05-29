@@ -177,50 +177,6 @@ simulated function DoShakeEffect()
 	}
 }
 
-simulated function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
-{
-	local	actor	Victims;
-	local	float	damageScale, dist;
-	local	vector	dir;
-	local	float	UsedDamageAmount;
-
-	if ( bHurtEntry )
-		Return;
-
-	bHurtEntry = True;
-
-	foreach VisibleCollidingActors( class 'Actor', Victims, DamageRadius, HitLocation )  {
-		// don't let blast damage affect fluid - VisibleCollisingActors doesn't really work for them - jag
-		// Or Karma actors in this case. Self inflicted Death due to flying chairs is uncool for a zombie of your stature.
-		if ( Victims != self && !Victims.IsA('FluidSurfaceInfo') && !Victims.IsA('KFMonster') && !Victims.IsA('ExtendedZCollision') )  {
-			// Calculating damageScale
-			dir = Victims.Location - HitLocation;
-			dist = FMax(1, VSize(dir));
-			dir = dir / dist;
-			damageScale = 1 - FMax(0, ((dist - Victims.CollisionRadius) / DamageRadius));
-
-			if ( !Victims.IsA('KFHumanPawn') ) // If it aint human, don't pull the vortex crap on it.
-				Momentum = 0;
-
-			if ( Victims.IsA('KFGlassMover') )   // Hack for shattering in interesting ways.
-				UsedDamageAmount = 100000; // Siren always shatters glass
-			else
-				UsedDamageAmount = DamageAmount;
-
-			if ( Instigator != self )
-				Instigator = self;
-			
-			Victims.TakeDamage((damageScale * UsedDamageAmount), Instigator, (Victims.Location - 0.5 * (Victims.CollisionHeight + Victims.CollisionRadius) * dir), (damageScale * Momentum * dir), DamageType);
-
-			if ( Instigator != None && Instigator.Controller != None 
-				 && Vehicle(Victims) != None && Vehicle(Victims).Health > 0 )
-				Vehicle(Victims).DriverRadiusDamage(UsedDamageAmount, DamageRadius, Instigator.Controller, DamageType, Momentum, HitLocation);
-		}
-	}
-
-	bHurtEntry = False;
-}
-
 // When siren loses her head she's got nothin' Kill her.
 
 function RemoveHead()
@@ -384,7 +340,12 @@ simulated function ProcessHitFX()
 
 defaultproperties
 {
-	 KilledExplodeChance=0.05
+	 KilledExplodeChance=0.1
+	 ExplosionDamage=140
+	 ExplosionDamageType=Class'DamTypeFrag'
+	 ExplosionRadius=300.0
+	 ExplosionMomentum=8000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Weak'
 	 
 	 KnockDownHealthPct=0.75
 	 ExplosiveKnockDownHealthPct=0.65

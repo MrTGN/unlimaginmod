@@ -331,7 +331,11 @@ simulated function HideBone(name boneName)
 
 defaultproperties
 {
-	 KilledExplodeChance=0.1
+	 KilledExplodeChance=0.15
+	 ExplosionDamage=180
+	 ExplosionRadius=280.0
+	 ExplosionMomentum=8000.0
+	 ExplosionVisualEffect=class'KFMod.FlameImpact_Medium'
 	 
 	 KnockDownHealthPct=0.7
 	 ExplosiveKnockDownHealthPct=0.6

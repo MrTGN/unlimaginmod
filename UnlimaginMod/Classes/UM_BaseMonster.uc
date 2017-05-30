@@ -122,8 +122,10 @@ var					float				SpeedAdjustCheckDelay;
 var					vector              ServerHeadLocation;     // The location of the Zed's head on the server, used for debugging
 var					vector              LastServerHeadLocation;
 
-// Falling
+// DamageTypes
 var					class<DamageType>	FallingDamageType;
+var					class<DamageType>	DrowningDamageType;
+var					class<DamageType>	SuicideDamageType;
 var					class<DamageType>	LavaDamageType;
 
 // BurnDamage
@@ -132,7 +134,7 @@ var		transient	float				NextBurnDamageTime;
 var					float				BurnDamageDelay;
 var		transient	int					BurnCountDown;
 var		transient	class<DamageType>	LastBurnDamageType;
-var					Sound				BurningAmbientSound;
+var					sound				BurningAmbientSound;
 
 // AshenSkin
 var		transient	bool				bCrispApplied;
@@ -146,8 +148,20 @@ var					float				BileDamageDelay;
 var		transient	int					BileCountDown, LastBileDamage;
 var		transient	class<DamageType>	LastBileDamageType;
 
+// RagDoll impacts (used in event KImpact())
+var		transient	float				NextStreakTime;
+var		transient	float				RagNextSoundTime;
+
 // PlayHit Delays
 var		transient	float				NextPainTime, NextPainAnimTime, NextPainSoundTime;
+var					bool				bDontPlayPain, bDontPlayPainAnim;
+
+// Sounds (use SoundGroup to pick a rand sound)
+var					sound				PainSound;
+var					sound				DyingSound;
+var					sound				GibbedDeathSound; // monster was gibbed
+var					sound				ChallengingSound;
+var					sound				RagImpactSound; // Ragdoll impact sound
 
 var		transient	bool				bMovingAttack;
 var		transient	bool				bMovementDisabled;
@@ -163,7 +177,7 @@ var					float				ExplosiveKnockDownHealthPct;
 var		transient	int					ExplosiveKnockDownDamage;
 var		transient	bool				bKnockedDown;
 
-// CumulativeDamage - damage taked in the course of time
+// CumulativeDamage - damage taken in course of CumulativeDamageDuration
 var					float				CumulativeDamageDuration;
 var		transient	bool				bResetCumulativeDamage;
 var		transient	int					CumulativeDamage;
@@ -187,9 +201,10 @@ var					name				HeadlessIdleAnim;
 var					byte				NextWalkAnimNum;
 var					byte				NextBurningWalkAnimNum;
 
-//ZombieMoan
-var		transient	float				MoanPitch;
-var					range				MoanPitchRange;
+// Voice sound parametrs
+var					bool				bDontPlayVoice;
+var		transient	float				VoicePitch;
+var					range				VoicePitchRange;
 var					float				MoanRadius;
 
 // KilledShouldExplode
@@ -336,8 +351,8 @@ function RandomizeMonsterSizes()
 	SeveredArmAttachScale = default.SeveredArmAttachScale * RandomSizeMult;
 	SeveredLegAttachScale = default.SeveredLegAttachScale * RandomSizeMult;
 	SeveredHeadAttachScale = default.SeveredHeadAttachScale * RandomSizeMult;
-	// MoanPitch
-	MoanPitch = Lerp(FRand(), MoanPitchRange.Min, MoanPitchRange.Max) / RandomSizeMult;
+	// VoicePitch
+	VoicePitch = BaseActor.static.GetRandPitch(default.VoicePitchRange) / RandomSizeMult;
 	// Mass
 	Mass = default.Mass * RandomSizeMult * Lerp( FRand(), MassScaleRange.Min, MassScaleRange.Max );
 	
@@ -650,8 +665,9 @@ function AdjustGameDifficulty()
 	if ( bIsAlphaMonster && AlphaIntelligence > Intelligence )
 		Intelligence = AlphaIntelligence;
 	OriginalIntelligence = Intelligence;
-	// MoanPitch
-	MoanPitch = Lerp(FRand(), MoanPitchRange.Min, MoanPitchRange.Max);
+	// VoicePitch
+	VoicePitch = BaseActor.static.GetRandPitch(VoicePitchRange);
+	SoundPitch = Round(default.SoundPitch * VoicePitch);
 }
 
 simulated event PostBeginPlay()
@@ -787,6 +803,20 @@ function bool SetBossLaught()
 	Return False;
 }
 
+function KilledBy( Pawn EventInstigator )
+{
+	Health = 0;
+	if ( EventInstigator != None )
+		Died( EventInstigator.Controller, SuicideDamageType, Location );
+	else
+		Died( None, SuicideDamageType, Location );
+}
+
+function Suicide()
+{
+	KilledBy(self);
+}
+
 simulated event Destroyed()
 {
 	DestroyBallisticCollision();
@@ -853,7 +883,7 @@ event Bump(actor Other)
 // Moved from Controller to here (so we don't need an own controller for each moan type).
 function ZombieMoan()
 {
-	PlaySound( MoanVoice, SLOT_Misc, MoanVolume,, MoanRadius, MoanPitch );
+	PlaySound( MoanVoice, SLOT_Misc, MoanVolume,, MoanRadius, VoicePitch );
 }
 
 simulated function bool IsRelevant()
@@ -1101,7 +1131,7 @@ simulated function Explode()
 	// Explode effects
 	if ( Level.NetMode != NM_DedicatedServer )  {
 		if ( ExplosionSound.Snd != None )
-			PlaySound(ExplosionSound.Snd, SLOT_Ambient, ExplosionSound.Vol, True, ExplosionSound.Radius, BaseActor.static.GetRandPitch(ExplosionSound.PitchRange));
+			PlaySound(ExplosionSound.Snd, SLOT_None, ExplosionSound.Vol,, ExplosionSound.Radius, BaseActor.static.GetRandPitch(ExplosionSound.PitchRange));
 		// VFX
 		if ( !Level.bDropDetail && EffectIsRelevant(Location, False) && ExplosionVisualEffect != None )
 				Spawn(ExplosionVisualEffect,,, HitLocation, Rotator(-HitNormal));
@@ -1704,6 +1734,54 @@ event Landed(vector HitNormal)
 	LastHitBy = None;
 }
 
+function TakeDrowningDamage()
+{
+	ProcessTakeDamage((Rand(3) + 4), None, (Location + CollisionHeight * vect(0,0,0.5) + CollisionRadius * 0.7 * vector(Rotation)), vect(0,0,0), DrowningDamageType);
+}
+
+event BreathTimer()
+{
+	if ( Health < 1 || Level.NetMode == NM_Client || DrivenVehicle != None )
+		Return;
+	
+	TakeDrowningDamage();
+	if ( Health > 0 )
+		BreathTime = 2.0;
+}
+
+function Gasp()
+{
+    if ( Role < ROLE_Authority || bDontPlayVoice )
+        Return;
+    
+	if ( BreathTime < 2.0 )
+        PlaySound(GetSound(EST_Gasp), SLOT_Interact,,,, VoicePitch);
+    else
+        PlaySound(GetSound(EST_BreatheAgain), SLOT_Interact,,,, VoicePitch);
+}
+
+event HeadVolumeChange(PhysicsVolume NewHeadVolume)
+{
+	if ( Level.NetMode == NM_Client || Controller == None )
+		Return;
+	
+	if ( NewHeadVolume.bWaterVolume )
+		BreathTime = UnderWaterTime;
+	else if ( HeadVolume.bWaterVolume )  {
+		if ( Controller.bIsPlayer && BreathTime > 0.0 && BreathTime < 8.0 )
+			Gasp();
+		BreathTime = -1.0;
+	}
+}
+
+function PlayChallengeSound()
+{
+	if ( bDontPlayVoice )
+		Return;
+	
+	PlaySound(ChallengingSound, SLOT_Talk,,,, VoicePitch);
+}
+
 function PlayVictoryAnimation()
 {
 	SetAnimAction('AA_Taunt');
@@ -1961,22 +2039,19 @@ function PlayDyingSound()
 	if ( Level.NetMode == NM_Client )
 		Return;
 	
-	if ( bGibbed )  {
-		// Do nothing for now
-		PlaySound(GibGroupClass.static.GibSound(), SLOT_Pain, 2.0, True, 525.0);
-		Return;
-	}
-
-	if ( bDecapitated )
-		PlaySound(HeadlessDeathSound, SLOT_Pain, 1.50, True, 525.0);
+	if ( bGibbed )
+		PlaySound(GibbedDeathSound, SLOT_Pain, 2.0, True, 525.0, VoicePitch);
+	else if ( bDecapitated )
+		PlaySound(HeadlessDeathSound, SLOT_Pain, 1.5, True, 525.0, VoicePitch);
 	else
-		PlaySound(DeathSound[0], SLOT_Pain, 1.50, True, 525.0);
+		PlaySound(DyingSound, SLOT_Pain, 1.5, True, 525.0, VoicePitch);
 }
 
 // Maybe spawn some chunks when the player gets obliterated
 simulated function SpawnGibs(Rotator HitRotation, float ChunkPerterbation)
 {
 	local	float	RandFloat;
+	
 	bGibbed = True;
 	PlayDyingSound();
 
@@ -2566,6 +2641,27 @@ simulated function CalcHitLoc( Vector HitLoc, Vector HitRay, out Name BoneName, 
 	BoneName = GetClosestBone( HitLoc, HitRay, Dist );
 }
 
+// We can add blood streak decals here, as the Actor's body moves in Ragdoll
+event KImpact(Actor Other, vector Pos, vector ImpactVel, vector ImpactNorm)
+{
+	local	vector				WallHit, WallNormal;
+	local	Actor				WallActor;
+
+	//No blood for low gore
+	if ( !class'GameInfo'.static.UseLowGore() && Level.TimeSeconds >= NextStreakTime && VSizeSquared(LastStreakLocation - Pos) >= 1600.0 )  {
+		NextStreakTime = Level.TimeSeconds + BloodStreakInterval;
+		LastStreakLocation = Pos;
+		WallActor = Trace(WallHit, WallNormal, (Pos - ImpactNorm * 16.0), (Pos + ImpactNorm * 16.0), false);
+		if ( WallActor != None )
+			spawn(class'KFMod.KFBloodStreakDecal',,, WallHit, rotator(-WallNormal))
+	}
+	
+	if ( Level.TimeSeconds >= RagNextSoundTime )  {
+		RagNextSoundTime = Level.TimeSeconds + RagImpactSoundInterval;
+		PlaySound(RagImpactSound, SLOT_None, FMin((VSizeSquared(ImpactVel) / 40000.0), 2.0));
+	}
+}
+
 // extends Dying
 state ZombieDying
 {
@@ -2607,8 +2703,6 @@ state ZombieDying
 
 	simulated event Timer()
 	{
-		local	KarmaParamsSkel		skelParams;
-
 		if ( bDestroyNextTick )  {
 			// If we've flagged this character to be destroyed next tick, handle that
 			if ( Level.TimeSeconds > TimeSetDestroyNextTickTime )
@@ -2626,8 +2720,8 @@ state ZombieDying
 		// If we are running out of life, but we still haven't come to rest, force the de-res.
 		// unless pawn is the viewtarget of a player who used to own it
 		else if ( LifeSpan <= DeResTime && !bDeRes )  {
-			skelParams = KarmaParamsSkel(KParams);
-			skelParams.bKImportantRagdoll = False;
+			if ( KarmaParamsSkel(KParams) != None )
+				KarmaParamsSkel(KParams).bKImportantRagdoll = False;
 			// spawn derez
 			bDeRes = True;
 		}
@@ -3366,58 +3460,11 @@ function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
 	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
 }
 
-/* ToDo: требует доработки! Пока закоментил.
-function bool IsHeadShot( vector Loc, vector Ray, float AdditionalScale )
-{
-	local	vector	TraceHitLoc, TraceHitNorm, TraceExtetnt;
-	local	int		look;
-	local	bool	bWasAnimating;
-		
-	if ( HeadBallisticCollision == None )
-		Return False;
-	
-	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer )  {
-		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0);
-		else if ( Physics == PHYS_Walking )  {
-			// Only play the idle anim if we're not already doing a different anim.
-			// This prevents anims getting interrupted on the server and borking things up - Ramm
-			if ( !IsAnimating(0) && !IsAnimating(1) )  {
-				if ( bIsCrouched )
-					PlayAnim(IdleCrouchAnim, 1.0, 0.0);
-			}
-			else
-				bWasAnimating = True;
-
-			if ( bDoTorsoTwist )  {
-				SmoothViewYaw = Rotation.Yaw;
-				SmoothViewPitch = ViewPitch;
-				look = (256 * ViewPitch) & 65535;
-				if ( look > 32768 )
-					look -= 65536;
-				SetTwistLook(0, look);
-			}
-		}
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0);
-
-		if ( !bWasAnimating )
-			SetAnimFrame(0.5);
-	}
-	
-	Ray *= HeadBallisticCollision.GetCollisionVSize();
-	if ( AdditionalScale > 1.0 )
-		TraceExtetnt = vect(1.0, 1.0, 1.0) * AdditionalScale;
-	
-	// TraceThisActor returns True if did not hit this actor.
-	Return !HeadBallisticCollision.TraceThisActor( TraceHitLoc, TraceHitNorm, (Loc + Ray), (Loc - Ray), TraceExtetnt );
-}	*/
-
 function RemoveHead()
 {
 	bDecapitated = True;
 	DECAP = True;
+	bDontPlayVoice = True;
 	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
@@ -3464,7 +3511,7 @@ function PlayDecapitationKnockDown()
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0,, True);
+	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0);
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
@@ -3479,14 +3526,14 @@ function PlayKnockDown()
 	bShotAnim = True;
 	SetAnimAction(KnockDownAnim);
 	
-	if ( bDecapitated )
-		Return; // Don't play HitSound if Decapitated
+	if ( bDontPlayVoice )
+		Return; // Don't play PainSound if Decapitated
 	
 	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(HitSound[0], SLOT_Pain, 2.0, True, 600.0,, True); // Louder hit sound
+	PlaySound(PainSound, SLOT_Pain, (TransientSoundVolume * 2.0),, (TransientSoundRadius * 1.25), VoicePitch); // Louder hit sound
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
@@ -3498,6 +3545,8 @@ function SendToKnockDown()
 		Return;
 	
 	bKnockedDown = True;
+	bDontPlayPain = True;
+	bDontPlayVoice = True;
 	CumulativeDamage = 0; // Reset CumulativeDamage
 	DisableMovement();
 	if ( bDecapitated && bKnockDownByDecapitation )
@@ -3505,55 +3554,14 @@ function SendToKnockDown()
 	else
 		PlayKnockDown();
 	UM_MonsterController(Controller).GoToState('KnockedDown');
-	GoToState('KnockedDown');
 }
 
 function EndKnockDown()
 {
 	bKnockedDown = False;
+	bDontPlayPain = default.bDontPlayPain;
+	bDontPlayVoice = bDecapitated || default.bDontPlayVoice;
 	EnableMovement();
-	GoToState('');
-}
-
-state KnockedDown
-{
-	function bool HitCanInterruptAction()
-	{
-		Return False;
-	}
-	
-	function bool CanSpeedAdjust()
-	{
-		Return False;
-	}
-	
-	function bool CanAttack(Actor A)
-	{
-		Return False;
-	}
-	
-	function bool CanCorpseAttack(Actor A)
-	{
-		Return False;
-	}
-	
-	function bool CanAttackDoor(KFDoorMover TargetDoor)
-	{
-		Return False;
-	}
-	
-	function SendToKnockDown()
-	{
-		if ( UM_MonsterController(Controller) == None )
-			Return;
-		
-		CumulativeDamage = 0; // Reset CumulativeDamage
-		if ( bDecapitated && bKnockDownByDecapitation )
-			PlayDecapitationKnockDown();
-		else
-			PlayKnockDown();
-		UM_MonsterController(Controller).GoToState('KnockedDown', 'WaitForAnim');
-	}
 }
 //[end] KnockDown
 
@@ -3573,7 +3581,7 @@ function PlayDecapitationHit()
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0,, True);
+	PlaySound(DecapitationSound, SLOT_Misc, 2.5, True, 600.0);
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
@@ -3585,14 +3593,10 @@ function OldPlayHit(float Damage, Pawn InstigatedBy, vector HitLocation, class<D
 // Implemented in subclasses - return false if there is some action that we don't want the direction hit to interrupt
 function bool HitCanInterruptAction()
 {
-	Return !bShotAnim;
+	Return !bDontPlayPain;
 }
 
-function bool CanPlayDirectionalHit(int Damage, class<DamageType> DamageType)
-{
-	Return Level.TimeSeconds >= NextPainAnimTime && (DamageType == None || DamageType.default.bDirectDamage) && Damage >= 5;
-}
-
+// ToDo: delete this
 function PlayDirectionalHit(vector HitLoc)
 {
 	local	vector	X,Y,Z, Dir;
@@ -3636,44 +3640,62 @@ function PlayDirectionalHit(vector HitLoc)
 		SetAnimAction(KFHitLeft);
 }
 
-function bool CanPlayHitSound(int Damage, class<DamageType> DamageType)
+function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType) {}
+
+function bool CanPlayPain(int Damage, class<DamageType> DamageType)
 {
-	Return !bDecapitated && Level.TimeSeconds >= NextPainSoundTime && (LastDamagedByType == None || LastDamagedByType.default.bDirectDamage) && Damage >= 5;
+	Return Level.TimeSeconds >= NextPainTime && DamageType.default.bDirectDamage && Damage >= 5;
 }
 
-function PlayHitSound()
+function PlayPain(vector HitLocation, int Damage)
 {
-	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
-	// makes playercontroller hear much better
-	if ( LastDamagedByPlayer != None )
-		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400.0);
-	// makes playercontroller hear much better
-	if ( LastDamagedByPlayer != None )
-		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
-}
-
-#Дописать!!! issue #477
-function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)
-{
+	local	vector	X, Y, Z, HitDir;
+	local	float	DotX;
+	
 	NextPainTime = Level.TimeSeconds + 0.1;
+	// PainAnim
+	if ( !bDontPlayPainAnim && Level.TimeSeconds >= NextPainAnimTime )  {
+		NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
+		if ( HitLocation != Location )  {
+			HitLocation.Z = Location.Z;
+			if ( VSizeSquared(Location - HitLocation) > 1.0 )
+				HitDir = -Normal(Location - HitLocation);
+			else
+				HitDir = VRand(); // Do random hit direction
+		}
+		else
+			HitDir = VRand(); // Do random hit direction
+		
+		GetAxes(Rotation, X, Y, Z);
+		DotX = HitDir dot X;
+		// HitFront
+		if ( Dir == vect(0, 0, 0) || DotX > 0.7 )
+			SetAnimAction(KFHitFront);
+		// HitBack
+		else if ( DotX < -0.7 )
+			SetAnimAction(KFHitBack);
+		// HitRight
+		else if ( Dir dot Y > 0.0 )
+			SetAnimAction(KFHitRight);
+		// HitLeft
+		else
+			SetAnimAction(KFHitLeft);
+	}
 	
-	
-	
-	if ( bDecapitated || Level.TimeSeconds < NextPainSoundTime || DamageType == None || !DamageType.default.bDirectDamage || Damage < 5 )
-		Return;
-	
-	NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
-	// makes playercontroller hear much better
-	if ( LastDamagedByPlayer != None )
-		LastDamagedByPlayer.bAcuteHearing = True;
-	PlaySound(HitSound[0], SLOT_Pain, 1.25,, 400.0);
-	// makes playercontroller hear much better
-	if ( LastDamagedByPlayer != None )
-		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
+	// PainSound
+	if ( !bDontPlayVoice && Level.TimeSeconds >= NextPainSoundTime )  {
+		NextPainSoundTime = Level.TimeSeconds + MinTimeBetweenPainSounds;
+		// makes playercontroller hear much better
+		if ( LastDamagedByPlayer != None )
+			LastDamagedByPlayer.bAcuteHearing = True;
+		PlaySound(PainSound, SLOT_Pain, (TransientSoundVolume * 1.25 + float(Damage) / HealthMax),,, VoicePitch);
+		// makes playercontroller hear much better
+		if ( LastDamagedByPlayer != None )
+			LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
+	}
 }
 
-// New Hit FX for Zombies!
+// Play hit effects and pain reaction
 function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<DamageType> DamageType, vector Momentum, optional int HitIdx )
 {
 	local	Name						HitBone;
@@ -3748,13 +3770,8 @@ function PlayHit( float Damage, Pawn InstigatedBy, vector HitLocation, class<Dam
 		SendToKnockDown();
 	else if ( bDecapitated && !bDecapitationPlayed )
 		PlayDecapitationHit();
-	else if ( !bKnockedDown && Level.TimeSeconds >= NextPainTime )  {
-		NextPainTime = Level.TimeSeconds + 0.1;
-		if ( CanPlayDirectionalHit(Damage, DamageType) )
-			PlayDirectionalHit(HitLocation);
-		if ( CanPlayHitSound(Damage, DamageType) )
-			PlayHitSound();
-	}
+	else if ( !bDontPlayPain && CanPlayPain(Damage, DamageType) )
+		PlayPain(HitLocation);
 	
 	if ( DamageType.default.bAlwaysSevers && DamageType.default.bSpecial )
 		HitBone = HeadBone;
@@ -3878,7 +3895,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 		Return 0;
 	
 	if ( !bDecapitated && bIsHeadShot )  {
-		PlaySound(HeadHitSound, SLOT_None, 1.3, True, 500.0, , True); // HeadShot Sound
+		PlaySound(HeadHitSound, SLOT_Ambient, 1.3, True); // HeadShot Sound
 		// Calc Head damage
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decapitate
@@ -4000,7 +4017,7 @@ event TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation, Vector Mome
 	ProcessTakeDamage( Damage, InstigatedBy, HitLocation, Momentum, DamageType );
 }
 
-function TakeFireDamage( int Damage, Pawn FireDamageInstigator ) { }
+function TakeFireDamage( int Damage, Pawn FireDamageInstigator ) {}
 
 simulated event Timer()
 {
@@ -4067,7 +4084,12 @@ defaultproperties
 	 //MoanSound
 	 MoanVolume=1.5
 	 MoanRadius=300.0
-	 MoanPitchRange=(Min=0.95,Max=1.05)
+	 // Voice sound
+	 VoicePitchRange=(Min=0.95,Max=1.05)
+	 
+	 // default regular sounds volume and radius (can be overridden in playsound)
+	 TransientSoundVolume=1.0
+	 TransientSoundRadius=400.0
 	 
 	 CumulativeDamageDuration=0.05
 	 
@@ -4097,6 +4119,8 @@ defaultproperties
 	 ZapResistanceScale=2.000000
 	 // Falling
 	 FallingDamageType=Class'Fell'
+	 DrowningDamageType=Class'Drowned'
+	 SuicideDamageType=Class'Suicided'
 	 LavaDamageType=Class'FellLava'
 	 // SoundsPitchRange
 	 SoundsPitchRange=(Min=0.9,Max=1.1)
@@ -4281,6 +4305,14 @@ defaultproperties
 	 bProjTarget=False
 	 bBlockZeroExtentTraces=True
 	 bBlockNonZeroExtentTraces=True
+	 
+	 BloodStreakInterval=0.5
+	 // RagDoll body impacts
+	 RagImpactSoundInterval=0.5
+	 RagImpactSound=SoundGroup'KF_EnemyGlobalSnd.Zomb_BodyImpact'
+	 //GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Large'
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Mixed'
+	 //GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Small'
 	 
 	 DrawScale=1.000000
 	 //MeshTestCollisionHeight=50.0

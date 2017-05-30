@@ -154,12 +154,9 @@ defaultproperties
      DetachedArmClass=Class'KFChar.SeveredArmStalker_HALLOWEEN'
      DetachedLegClass=Class'KFChar.SeveredLegStalker_HALLOWEEN'
      DetachedHeadClass=Class'KFChar.SeveredHeadStalker_HALLOWEEN'
-     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Death'
-     ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Challenge'
-     ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Challenge'
-     ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Challenge'
-     ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Challenge'
+     PainSound=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Pain'
+     DyingSound=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Death'
+     ChallengingSound=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Stalker.Stalker_Challenge'
      GruntVolume=0.250000
      MenuName="HALLOWEEN Stalker"
      Mesh=SkeletalMesh'KF_Freaks_Trip_HALLOWEEN.Stalker_Halloween'

@@ -322,10 +322,10 @@ event bool NotifyLanded(vector HitNormal)
 // Randomly plays a different moan sound for the Zombie each time it is called. Gruesome!
 function ZombieMoan()
 {
-	MoanTime = Level.TimeSeconds + Lerp(FRand(), 12.0, 20.0);
+	MoanTime = Level.TimeSeconds + Lerp(FRand(), 10.0, 20.0);
 	
 	// Headless zombies can't moan.
-	if ( MyMonster == None || MyMonster.Health < 1 || MyMonster.bDecapitated )
+	if ( MyMonster == None || MyMonster.Health < 1 || MyMonster.bDontPlayVoice )
 		Return;
 	
 	MyMonster.ZombieMoan();

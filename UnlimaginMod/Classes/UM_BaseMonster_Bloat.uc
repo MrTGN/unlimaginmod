@@ -21,15 +21,15 @@ class UM_BaseMonster_Bloat extends UM_BaseMonster
 //========================================================================
 //[block] Variables
 
-var		BileJet		BloatJet;
-var		bool		bPlayBileSplash;
-var		bool		bMovingPukeAttack;
-var		float		RunAttackTimeout;
-var		sound		DyingSound;
+var		BileJet					BloatJet;
+var		bool					bPlayBileSplash;
+var		bool					bMovingPukeAttack;
+var		float					RunAttackTimeout;
+var		transient	bool		bPopDeath;
 
-var	class<FleshHitEmitter>	BileExplosion;
-var	class<FleshHitEmitter>	BileExplosionHeadless;
-var	Class<Projectile>		BileProjectileClass;
+var		class<FleshHitEmitter>	BileExplosion;
+var		class<FleshHitEmitter>	BileExplosionHeadless;
+var		Class<Projectile>		BileProjectileClass;
 
 //[end] Varibles
 //====================================================================
@@ -111,21 +111,6 @@ simulated function int DoAnimAction( name AnimName )
 	Return Super.DoAnimAction(AnimName);
 }
 
-function PlayDyingSound()
-{
-	if ( Level.NetMode != NM_Client )  {
-		if ( bGibbed )  {
-			PlaySound(DyingSound, SLOT_Pain,2.0,True,525);
-			Return;
-		}
-
-		if( bDecapitated )
-			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,True,525);
-		else
-			PlaySound(DyingSound, SLOT_Pain,2.0,True,525);
-	}
-}
-
 // Barf Time.
 function SpawnTwoShots()
 {
@@ -187,7 +172,7 @@ simulated event Tick( float DeltaTime )
 			bForceSkelUpdate = False;
 	}
 
-	if ( Level.NetMode!=NM_DedicatedServer && /*Gored>0*/Health <= 0 && !bPlayBileSplash &&
+	if ( Level.NetMode != NM_DedicatedServer && Health < 1 && !bPlayBileSplash &&
 		HitDamageType != class'DamTypeBleedOut' )  {
 		if ( !class'GameInfo'.static.UseLowGore() )  {
 			BileExplosionLoc = Location;
@@ -207,129 +192,61 @@ simulated event Tick( float DeltaTime )
 	}
 }
 
+simulated function HideBone(name BoneName)
+{
+	if ( BoneName == SpineBone2 )
+		SetBoneScale(6, 0.0, BoneName);
+	else
+		Super.HideBone(BoneName);
+}
+
 function BileBomb()
 {
 	BloatJet = Spawn(class'BileJet', self,,Location,Rotator(-PhysicsVolume.Gravity));
 }
 
+function PlayDyingSound()
+{
+	if ( Level.NetMode != NM_Client )  {
+		if ( bGibbed || bPopDeath )  {
+			PlaySound(GibbedDeathSound, SLOT_Pain,2.0,True,525);
+			Return;
+		}
+
+		if( bDecapitated )
+			PlaySound(HeadlessDeathSound, SLOT_Pain,1.30,True,525);
+		else
+			PlaySound(DyingSound, SLOT_Pain,2.0,True,525);
+	}
+}
+
 function PlayDyingAnimation(class<DamageType> DamageType, vector HitLoc)
 {
-//    local bool AttachSucess;
-
 	Super.PlayDyingAnimation(DamageType, HitLoc);
 
 	// Don't blow up with bleed out
-	if ( bDecapitated && DamageType == class'DamTypeBleedOut' )
+	if ( !bPopDeath )
 		Return;
 
 	if ( !class'GameInfo'.static.UseLowGore() )
 		HideBone(SpineBone2);
 
-	if ( Role == ROLE_Authority )  {
+	if ( Role == ROLE_Authority )
 		BileBomb();
-
-//    if(BloatJet!=None)
-//    {
-//    if(Gored < 5)
-//    AttachSucess=AttachToBone(BloatJet,FireRootBone);
-//    // else
-//    // AttachSucess=AttachToBone(BloatJet,SpineBone1);
-//
-//    if(!AttachSucess)
-//    {
-//    log("DEAD Bloaty Bile didn't like the Boning :o");
-//    BloatJet.SetBase(self);
-//    }
-//    BloatJet.SetRelativeRotation(rot(0,-4096,0));
-//    }
-	}
 }
 
-simulated function HideBone(name boneName)
+simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
-	local int BoneScaleSlot;
-	local coords boneCoords;
-	local bool bValidBoneToHide;
-
-	if ( boneName == LeftThighBone )  {
-		boneScaleSlot = 0;
-		bValidBoneToHide = True;
-		if ( SeveredLeftLeg == None )  {
-			SeveredLeftLeg = Spawn(SeveredLegAttachClass,self);
-			SeveredLeftLeg.SetDrawScale(SeveredLegAttachScale);
-			boneCoords = GetBoneCoords( 'lleg' );
-			AttachEmitterEffect( LimbSpurtEmitterClass, 'lleg', boneCoords.Origin, rot(0,0,0) );
-			AttachToBone(SeveredLeftLeg, 'lleg');
-		}
-	}
-	else if ( boneName == RightThighBone )  {
-		boneScaleSlot = 1;
-		bValidBoneToHide = True;
-		if ( SeveredRightLeg == None )  {
-			SeveredRightLeg = Spawn(SeveredLegAttachClass,self);
-			SeveredRightLeg.SetDrawScale(SeveredLegAttachScale);
-			boneCoords = GetBoneCoords( 'rleg' );
-			AttachEmitterEffect( LimbSpurtEmitterClass, 'rleg', boneCoords.Origin, rot(0,0,0) );
-			AttachToBone(SeveredRightLeg, 'rleg');
-		}
-	}
-	else if ( boneName == RightFArmBone )  {
-		boneScaleSlot = 2;
-		bValidBoneToHide = True;
-		if ( SeveredRightArm == None )  {
-			SeveredRightArm = Spawn(SeveredArmAttachClass,self);
-			SeveredRightArm.SetDrawScale(SeveredArmAttachScale);
-			boneCoords = GetBoneCoords( 'rarm' );
-			AttachEmitterEffect( LimbSpurtEmitterClass, 'rarm', boneCoords.Origin, rot(0,0,0) );
-			AttachToBone(SeveredRightArm, 'rarm');
-		}
-	}
-	else if ( boneName == LeftFArmBone )  {
-		boneScaleSlot = 3;
-		bValidBoneToHide = True;
-		if ( SeveredLeftArm == None )  {
-			SeveredLeftArm = Spawn(SeveredArmAttachClass,self);
-			SeveredLeftArm.SetDrawScale(SeveredArmAttachScale);
-			boneCoords = GetBoneCoords( 'larm' );
-			AttachEmitterEffect( LimbSpurtEmitterClass, 'larm', boneCoords.Origin, rot(0,0,0) );
-			AttachToBone(SeveredLeftArm, 'larm');
-		}
-	}
-	else if ( boneName == HeadBone )  {
-		// Only scale the bone down once
-		if ( SeveredHead == None ) {
-			bValidBoneToHide = True;
-			boneScaleSlot = 4;
-			SeveredHead = Spawn(SeveredHeadAttachClass,self);
-			SeveredHead.SetDrawScale(SeveredHeadAttachScale);
-			boneCoords = GetBoneCoords( 'neck' );
-			AttachEmitterEffect( NeckSpurtEmitterClass, 'neck', boneCoords.Origin, rot(0,0,0) );
-			AttachToBone(SeveredHead, 'neck');
-		}
-		else
-			Return;
-	}
-	else if ( boneName == 'spine' )  {
-	    bValidBoneToHide = True;
-		boneScaleSlot = 5;
-	}
-	else if ( boneName == SpineBone2 )  {
-	    bValidBoneToHide = True;
-		boneScaleSlot = 6;
-	}
-
-	// Only hide the bone if it is one of the arms, legs, or head, don't hide other misc bones
-	if( bValidBoneToHide )
-		SetBoneScale(BoneScaleSlot, 0.0, BoneName);
+	bPopDeath = DamageType != class'DamTypeBleedOut';
+	Super.PlayDying(DamageType, HitLoc);
 }
-
 
 State Dying
 {
 	event Tick( float DeltaTime )
 	{
 		if ( BloatJet != None )  {
-			BloatJet.SetLocation(location);
+			BloatJet.SetLocation(Location);
 			BloatJet.SetRotation(GetBoneRotation(FireRootBone));
 		}
 		Super.Tick( DeltaTime );
@@ -580,6 +497,8 @@ defaultproperties
 	 HeadlessIdleAnim="BloatIdle_Headless"
 	 SoundVolume=200
 	 RotationRate=(Yaw=45000,Roll=0)
+	 
+	 GibbedDeathSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
 	 
 	 HealthMax=525.0
 	 Health=525

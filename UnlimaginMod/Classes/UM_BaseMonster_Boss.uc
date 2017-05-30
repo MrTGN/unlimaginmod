@@ -1923,6 +1923,7 @@ defaultproperties
 	 SoundVolume=75
 	 bNetNotify=False
 	 RotationRate=(Yaw=36000,Roll=0)
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Large'
 	 
 	 HealthMax=4000.0
 	 Health=4000

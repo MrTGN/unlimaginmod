@@ -77,8 +77,9 @@ defaultproperties
 	 // Sounds
 	 AmbientSound=Sound'KF_BasePatriarch.Idle.Kev_IdleLoop'
 	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Talk'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Death'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Pain'
+	 DyingSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Death'
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Large'
 	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_Jump'
 	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_HitPlayer_Fist'
 	 RocketFireSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_FireRocket'
@@ -93,7 +94,7 @@ defaultproperties
 	 TauntNinjaSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_TauntNinja'
 	 TauntLumberJackSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_TauntLumberJack'
 	 TauntRadialSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_TauntRadial'
-	 SaveMeSound=sound'KF_EnemiesFinalSnd.Patriarch.Kev_SaveMe'
+	 SaveMeSound=SoundGroup'KF_EnemiesFinalSnd.Patriarch.Kev_SaveMe'
 	 // BallisticCollision
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=8.5,AreaHeight=9.0,AreaSizeScale=1.05,AreaBone="HitPoint_Head",AreaImpactStrength=16.5)
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=61.0,AreaOffset=(X=0.0,Y=0.0,Z=-9.0),AreaImpactStrength=22.5)

@@ -55,15 +55,6 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 }
 
-// don't interrupt the bloat while he is puking
-simulated function bool HitCanInterruptAction()
-{
-    if ( bShotAnim )
-		Return False;
-	else
-		Return True;
-}
-
 function DoorAttack(Actor A)
 {
 	if ( bShotAnim || Physics == PHYS_Swimming )

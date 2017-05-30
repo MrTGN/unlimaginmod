@@ -70,10 +70,7 @@ defaultproperties
 	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Chainsaw_HitPlayer'
 	 SawAttackLoopSound=Sound'KF_BaseScrake.Chainsaw.Scrake_Chainsaw_Impale'
 	 ChainSawOffSound=SoundGroup'KF_ChainsawSnd.Chainsaw_Deselect'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Death'
-	 ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Challenge'
-	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Challenge'
-	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Challenge'
-	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Challenge'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Pain'
+	 DyingSound=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Death'
+	 ChallengingSound=SoundGroup'KF_EnemiesFinalSnd.Scrake.Scrake_Challenge'
 }

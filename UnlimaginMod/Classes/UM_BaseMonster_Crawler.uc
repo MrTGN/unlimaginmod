@@ -308,6 +308,8 @@ defaultproperties
      IdleRestAnim="ZombieLeapIdle"
      bOrientOnSlope=True
 	 
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Small'
+	 
 	 HealthMax=70.0
 	 Health=70
 	 HeadHealth=25.0

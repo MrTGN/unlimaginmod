@@ -28,8 +28,8 @@ defaultproperties
      MoanVoice=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Talk'
      JumpSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.siren.Siren_Jump'
      DetachedHeadClass=Class'KFChar.SeveredHeadSiren_XMas'
-     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd_Xmas.siren.Siren_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd_Xmas.siren.Siren_Death'
+     PainSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.siren.Siren_Pain'
+     DyingSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.siren.Siren_Death'
      MenuName="Christmas Siren"
      AmbientSound=Sound'KF_BaseSiren.Siren_IdleLoop'
      Mesh=SkeletalMesh'KF_Freaks_Trip_Xmas.Caroler'

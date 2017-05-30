@@ -153,8 +153,8 @@ defaultproperties
      DetachedArmClass=Class'KFChar.SeveredArmPatriarch_HALLOWEEN'
      DetachedLegClass=Class'KFChar.SeveredLegPatriarch_HALLOWEEN'
      DetachedHeadClass=Class'KFChar.SeveredHeadPatriarch_HALLOWEEN'
-     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Death'
+     PainSound=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Pain'
+     DyingSound=SoundGroup'KF_EnemiesFinalSnd_HALLOWEEN.Patriarch.Kev_Death'
      MenuName="HALLOWEEN Patriarch"
      AmbientSound=Sound'KF_BasePatriarch_HALLOWEEN.Kev_IdleLoop'
      Mesh=SkeletalMesh'KF_Freaks_Trip_HALLOWEEN.Patriarch_Halloween'

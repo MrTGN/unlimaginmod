@@ -62,10 +62,7 @@ defaultproperties
 	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Talk'
 	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Jump'
 	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_HitPlayer'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Death'
-	 ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
-	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
-	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
-	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Pain'
+	 DyingSound=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Death'
+	 ChallengingSound=SoundGroup'KF_EnemiesFinalSnd.GoreFast.Gorefast_Challenge'
 }

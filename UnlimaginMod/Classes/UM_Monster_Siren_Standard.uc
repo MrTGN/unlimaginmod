@@ -59,10 +59,7 @@ defaultproperties
 	 AmbientSound=Sound'KF_BaseSiren.Siren_IdleLoop'
 	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Talk'
 	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Jump'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Death'
-	 ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Challenge'
-	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Challenge'
-	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Challenge'
-	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Challenge'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Pain'
+	 DyingSound=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Death'
+	 ChallengingSound=SoundGroup'KF_EnemiesFinalSnd.siren.Siren_Challenge'
 }

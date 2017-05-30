@@ -65,12 +65,10 @@ defaultproperties
 	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Talk'
 	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Jump'
 	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_HitPlayer'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Death'
-     ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
-     ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Pain'
+     DyingSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Death'
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Small'
+     ChallengingSound=SoundGroup'KF_EnemiesFinalSnd.Crawler.Crawler_Acquire'
 	 // BallisticCollision
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=8.0,AreaBone="CHR_Head",AreaOffset=(X=1.0,Y=-1.8,Z=0.0),AreaImpactStrength=5.1)
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=36.0,AreaHeight=19.0,AreaImpactStrength=6.6)

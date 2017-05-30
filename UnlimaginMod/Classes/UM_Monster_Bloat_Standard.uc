@@ -73,13 +73,10 @@ defaultproperties
 	 MoanVoice=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Talk'
 	 JumpSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Jump'
 	 MeleeAttackHitSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_HitPlayer'
-	 HitSound(0)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Pain'
-	 DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Death'
-	 ChallengeSound(0)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
-	 ChallengeSound(1)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
-	 ChallengeSound(2)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
-	 ChallengeSound(3)=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
-	 DyingSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
+	 PainSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Pain'
+	 DyingSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Death'
+	 ChallengingSound=SoundGroup'KF_EnemiesFinalSnd.Bloat.Bloat_Challenge'
+	 GibbedDeathSound=Sound'KF_EnemiesFinalSnd.Bloat_DeathPop'
 	 // BallisticCollision
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=7.5,AreaHeight=9.5,AreaSizeScale=1.05,AreaBone="HitPoint_Head",AreaImpactStrength=7.6)
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=24.0,AreaHeight=53.5,AreaOffset=(Z=-9.5),AreaImpactStrength=14.6)

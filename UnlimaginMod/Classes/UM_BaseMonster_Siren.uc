@@ -451,6 +451,7 @@ defaultproperties
 	 PlayerNumHeadHealthScale=0.05
 	 Mass=100.000000 // lb (фунт)
 	 
+	 GibbedDeathSound=SoundGroup'KF_EnemyGlobalSnd.Gibs_Small'
 	 BallisticCollision(0)=(AreaClass=Class'UnlimaginMod.UM_PawnHeadCollision',AreaRadius=6.5,AreaHeight=7.6,AreaSizeScale=1.05,AreaBone="CHR_Head",AreaOffset=(X=0.6,Y=-2.0,Z=0.0),AreaImpactStrength=5.6)
 	 //ToDo: UM_PawnBodyCollision - это временная колизия туловища. В дальнейшем заменить на более детальную.
 	 BallisticCollision(1)=(AreaClass=Class'UnlimaginMod.UM_PawnBodyCollision',AreaRadius=14.0,AreaHeight=34.8,AreaImpactStrength=6.9)

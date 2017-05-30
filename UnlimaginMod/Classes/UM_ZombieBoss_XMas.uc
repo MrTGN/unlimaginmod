@@ -181,8 +181,8 @@ defaultproperties
      DetachedArmClass=Class'KFChar.SeveredArmPatriarch_XMas'
      DetachedLegClass=Class'KFChar.SeveredLegPatriarch_XMas'
      DetachedHeadClass=Class'KFChar.SeveredHeadPatriarch_XMas'
-     HitSound(0)=SoundGroup'KF_EnemiesFinalSnd_Xmas.Patriarch.Kev_Pain'
-     DeathSound(0)=SoundGroup'KF_EnemiesFinalSnd_Xmas.Patriarch.Kev_Death'
+     PainSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.Patriarch.Kev_Pain'
+     DyingSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.Patriarch.Kev_Death'
      MenuName="Christmas Patriarch"
      AmbientSound=SoundGroup'KF_EnemiesFinalSnd_Xmas.Patriarch.Kev_IdleLoop'
      Mesh=SkeletalMesh'KF_Freaks_Trip_Xmas.SantaClause_Patriarch'

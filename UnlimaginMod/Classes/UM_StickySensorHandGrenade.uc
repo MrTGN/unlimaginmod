@@ -23,15 +23,15 @@ class UM_StickySensorHandGrenade extends UM_BaseProjectile_HandGrenade
 //========================================================================
 //[block] Variables
 
-var		bool			bEnemyDetected; // We've found an enemy
-var		bool			bStuck;		// Grenade has stuck on something.
+var		transient		bool		bEnemyDetected; // We've found an enemy
+var		transient		bool		bStuck;		// Grenade has stuck on something.
 
-var		float			DetectionRadius;	// How far away to detect enemies
+var						float		DetectionRadius;	// How far away to detect enemies
 
 var		UM_BaseActor.SoundData		BeepSound, PickupSound;
 
-var		Class<Emitter>	GrenadeLightClass;
-var		Emitter			GrenadeLight;
+var		Class<Emitter>				GrenadeLightClass;
+var		Emitter						GrenadeLight;
 
 //[end] Varibles
 //====================================================================
@@ -39,11 +39,12 @@ var		Emitter			GrenadeLight;
 //========================================================================
 //[block] Replication
 
+/*
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		bStuck;
-}
+}	*/
 
 //[end] Replication
 //====================================================================
@@ -116,19 +117,19 @@ event Timer()
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
-			bEnemyDetected = MonsterIsInRadius(DetectionRadius);
+			bEnemyDetected = EnemyIsInRadius(DetectionRadius);
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
-				SetTimer(0.2,True);
+				SetTimer(0.25,True);
 			}
 		}
 		// Armed
 		else  {
-			bEnemyDetected = MonsterIsInRadius(DamageRadius);
+			bEnemyDetected = EnemyIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !FriendlyPawnIsInRadius(DamageRadius) )
+				if ( !AllyIsInRadius(DamageRadius) )
 					Explode(Location, Vector(Rotation));
 				else if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
@@ -150,8 +151,7 @@ simulated function UnStick()
 	PrePivot = default.PrePivot;
 	bOrientToVelocity = True;
 	SetPhysics(PHYS_Falling);
-	if ( IsInState('Stuck') )
-		GotoState('');
+	GotoState('');
 }
 
 simulated function Stick( Actor A )

@@ -193,44 +193,20 @@ simulated event Tick( float DeltaTime )
 	}
 }
 
-// Check for friendly Pawns within radius
-simulated function bool FriendlyPawnIsInRadius( float FriendlyPawnSearchRadius )
-{
-	local	KFHumanPawn	HP;
-	
-	foreach VisibleCollidingActors( Class 'KFHumanPawn', HP, FriendlyPawnSearchRadius, Location )  {
-		if ( HP != None && HP.Health > 0 && (HP == Instigator || (UM_GameReplicationInfo(Level.GRI) != None
-				 && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0 && HP.GetTeamNum() == Instigator.GetTeamNum())) )
-			Return True;
-	}
-	
-	Return False;
-}
-
-// Check for KFMonster within radius
-simulated function bool MonsterIsInRadius( float MonsterSearchRadius )
-{
-	local	KFMonster	M;
-	
-	foreach VisibleCollidingActors( Class 'KFMonster', M, MonsterSearchRadius, Location )  {
-		if ( M != None && M.Health > 0 )
-			Return True;
-	}
-	
-	Return False;
-}
-
 // Check for friendly Pawns in radius
 simulated function bool AllyIsInRadius( float AllySearchRadius )
 {
 	local	Pawn	P;
 	
-	UpdateInstigatorTeamNum();
+	// Check Instigator is in Radius
+	if ( Instigator != None && VSizeSquared(Instigator.Location - Location) <= Square(AllySearchRadius) && FastTrace( Instigator.Location, Location ) )
+		Return True;
+	
+	if ( UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale <= 0.0 )
+		Return False; // No need to check for Ally if no FriendlyFire
 	
 	foreach CollidingActors( Class'Pawn', P, AllySearchRadius, Location )  {
-		if ( P != None && P.Health > 0 && ((Instigator != None && P == Instigator) || (InstigatorController != None && P.Controller == InstigatorController)
-				|| (UM_GameReplicationInfo(Level.GRI) != None && UM_GameReplicationInfo(Level.GRI).FriendlyFireScale > 0.0 && P.GetTeamNum() == InstigatorTeamNum))
-					 && FastTrace( P.Location, Location ) )
+		if ( P != None && P.Health > 0 && P.GetTeamNum() == InstigatorTeamNum && FastTrace( P.Location, Location ) )
 			Return True;
 	}
 	
@@ -241,8 +217,6 @@ simulated function bool AllyIsInRadius( float AllySearchRadius )
 simulated function bool EnemyIsInRadius( float EnemySearchRadius )
 {
 	local	Pawn	P;
-	
-	UpdateInstigatorTeamNum();
 	
 	foreach CollidingActors( Class'Pawn', P, EnemySearchRadius, Location )  {
 		if ( P != None && P.Health > 0 && P.GetTeamNum() != InstigatorTeamNum && FastTrace( P.Location, Location ) )

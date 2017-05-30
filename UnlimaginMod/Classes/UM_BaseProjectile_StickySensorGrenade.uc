@@ -21,8 +21,8 @@ class UM_BaseProjectile_StickySensorGrenade extends UM_BaseProjectile_StickyGren
 //========================================================================
 //[block] Variables
 
-var		bool		bEnemyDetected;		// We've found an enemy
-var		float		DetectionRadius;	// How far away to detect enemies
+var		transient	bool		bEnemyDetected;		// We've found an enemy
+var					float		DetectionRadius;	// How far away to detect enemies
 
 //[end] Varibles
 //====================================================================
@@ -45,25 +45,22 @@ event Timer()
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
-			//bEnemyDetected = MonsterIsInRadius(DetectionRadius);
 			bEnemyDetected = EnemyIsInRadius(DetectionRadius);
 			if ( bEnemyDetected )  {
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
-				SetTimer(0.2,True);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius);
+				SetTimer(0.25,True);
 			}
 		}
 		// Armed
 		else  {
-			//bEnemyDetected = MonsterIsInRadius(DamageRadius);
 			bEnemyDetected = EnemyIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				//if ( !FriendlyPawnIsInRadius(DamageRadius) )
 				if ( !AllyIsInRadius(DamageRadius) )
 					Explode(Location, Vector(Rotation));
 				else if ( BeepSound.Snd != None )
-					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
+					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius);
 			}
 			else  {
 				bAlwaysRelevant = False;
@@ -91,7 +88,7 @@ defaultproperties
 {
      //Actually ExplodeTimer is a scanning delay time here
 	 ExplodeTimer=0.500000
-	 DetectionRadius=150.000000
+	 DetectionRadius=140.000000
 	 Damage=290.000000
 	 DamageRadius=320.000000
 	 MomentumTransfer=50000.000000

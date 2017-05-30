@@ -115,7 +115,7 @@ var		bool					bTheLastShot;
 var		byte					MuzzleNum;	// Muzzle Number
 
 // ProjSpawnOffsets - array of vectors for weapons with more than 1 muzzles.
-// Used in GetProjectileSpawnOffset function. 0 index is a first muzzle, 1 index is second muzzle etc.
+// Used in GetProjectileSpawnOffset function. 0 index is the first muzzle, 1 index is second muzzle etc.
 // Switches between elements by MuzzleNum.
 var		array< ProjSpawnData >	ProjSpawnOffsets;
 
@@ -392,6 +392,7 @@ function float MaxRange()
 		Return EffectiveRange;
 }
 
+/*
 // Initializate weapon muzzle actors
 //ToDo: issue #183
 function InitWeaponMuzzles()
@@ -434,7 +435,7 @@ function DestroyWeaponMuzzles()
 			Muzzles[i].Destroy();
 		Muzzles.Remove(i, 1);
 	}
-}
+} */
 
 // Called from Weapon simulated event Timer()
 // ToDo: move this to the WeaponMuzzle
@@ -489,8 +490,8 @@ simulated function DestroyEffects()
 {
 	local	byte	i;
 	
-	if ( Weapon.Role == ROLE_Authority )
-			DestroyWeaponMuzzles();
+	//if ( Weapon.Role == ROLE_Authority )
+		//DestroyWeaponMuzzles();
 	
 	while ( SmokeEmitters.Length > 0 )  {
 		i = SmokeEmitters.Length - 1;
@@ -1300,7 +1301,7 @@ defaultproperties
 	 FlashEmitterClasses(0)=Class'ROEffects.MuzzleFlash1stSTG'
 	 ShellEjectBones(0)="Shell_eject"
 	 ShellEjectEmitterClasses(0)=Class'ROEffects.KFShellEjectSCAR'
-	 MuzzleClasses(0)=Class'UnlimaginMod.UM_TestWeaponMuzzle'
+	 //MuzzleClasses(0)=Class'UnlimaginMod.UM_TestWeaponMuzzle'
 	 //[end]
 	 // Animation
 	 //ReloadAnim

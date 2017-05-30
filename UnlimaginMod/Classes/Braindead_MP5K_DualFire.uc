@@ -33,8 +33,6 @@ defaultproperties
 	 //[block] Fire Effects
 	 bAttachFlashEmitter=True
 	 bAttachSmokeEmitter=True
-	 MuzzleClasses(0)=Class'UnlimaginMod.UM_TestWeaponMuzzle'
-	 MuzzleClasses(1)=Class'UnlimaginMod.UM_TestWeaponMuzzle'
 	 MuzzleBones(0)="Tip_Right"
 	 MuzzleBones(1)="Tip_Left"
 	 SmokeEmitterClasses(0)=Class'UnlimaginMod.UM_BaseMuzzleSmoke1st'

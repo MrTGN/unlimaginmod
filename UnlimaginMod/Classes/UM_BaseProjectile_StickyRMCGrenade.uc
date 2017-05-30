@@ -20,8 +20,8 @@ class UM_BaseProjectile_StickyRMCGrenade extends UM_BaseProjectile_StickyGrenade
 //========================================================================
 //[block] Variables
 
-var		bool	bDelayedExplode;
-var		float	DelayedExplodeTimer;
+var	 transient		bool		bDelayedExplode;
+var					float		DelayedExplodeTimer;
 
 //[end] Varibles
 //====================================================================
@@ -32,16 +32,16 @@ var		float	DelayedExplodeTimer;
 event Timer()
 {
 	if ( IsArmed() )  {
-		if ( !FriendlyPawnIsInRadius(DamageRadius) )
-			Explode(Location, Vector(Rotation));
-		else  { 
+		if ( AllyIsInRadius(DamageRadius) )  { 
 			if ( !bDelayedExplode )  {
 				bDelayedExplode = True;
 				SetTimer(DelayedExplodeTimer, True);
 			}
 			if ( BeepSound.Snd != None )
-				PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
+				PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius);
 		}
+		else
+			Explode(Location, Vector(Rotation));
 	}
 	else
 		Destroy();
@@ -50,7 +50,7 @@ event Timer()
 function Activate()
 {
 	if ( BeepSound.Snd != None )
-		PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
+		PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius);
 	
 	SetTimer(ExplodeTimer, True);
 }
@@ -60,8 +60,8 @@ function Activate()
 
 defaultproperties
 {
-	 ExplodeTimer=0.150000
-	 DelayedExplodeTimer=0.200000
+	 ExplodeTimer=0.15
+	 DelayedExplodeTimer=0.25
 	 Damage=280.000000
 	 DamageRadius=330.000000
 	 MomentumTransfer=50000.000000

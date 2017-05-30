@@ -39,11 +39,12 @@ var		Emitter			GrenadeLight;
 //========================================================================
 //[block] Replication
 
+/*
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
 		bStuck;
-}
+}	*/
 
 //[end] Replication
 //====================================================================
@@ -104,8 +105,7 @@ simulated function UnStick()
 	PrePivot = default.PrePivot;
 	bOrientToVelocity = True;
 	SetPhysics(PHYS_Falling);
-	if ( IsInState('Stuck') )
-		GotoState('');
+	GotoState('');
 }
 
 simulated function Stick( Actor A )

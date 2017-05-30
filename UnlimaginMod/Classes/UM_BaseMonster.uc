@@ -28,7 +28,7 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 
 // Animation channels 2 through 11 are used for animation updating by physics
 const	BaseAnimChannel = 0;
-const	MajorAnimChannel = 12;	// ToDo: issue #478
+const	MajorAnimChannel = 12;
 const	MinorAnimChannel = 1;
 
 var					bool				bRandomSizeAdjusted;

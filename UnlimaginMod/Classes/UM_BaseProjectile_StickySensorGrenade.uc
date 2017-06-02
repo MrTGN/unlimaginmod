@@ -30,18 +30,11 @@ var					float		DetectionRadius;	// How far away to detect enemies
 //========================================================================
 //[block] Functions
 
-simulated event PostNetBeginPlay()
-{
-	Super.PostNetBeginPlay();
-	
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(ExplodeTimer, True);
-		bTimerSet = True;
-	}
-}
-
 event Timer()
 {
+	if ( bDelayArming && !bArmed )
+		bArmed = True;
+	
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
@@ -50,35 +43,28 @@ event Timer()
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius);
-				SetTimer(0.25,True);
+				SetTimer(0.25, bLoopTimer);
 			}
 		}
 		// Armed
 		else  {
 			bEnemyDetected = EnemyIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !AllyIsInRadius(DamageRadius) )
+				if ( !AllyIsInRadius(DamageRadius) )  {
 					Explode(Location, Vector(Rotation));
+					SetTimer(0.0, False);
+				}
 				else if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius);
 			}
 			else  {
 				bAlwaysRelevant = False;
-				SetTimer(ExplodeTimer, True);
+				SetTimer(ArmingDelay, bLoopTimer);
 			}
 		}
 	}
 	else
 		Destroy();
-}
-
-simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
-{
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(ExplodeTimer, True);
-		bTimerSet = True;
-	}
-	Super.Stick(HitActor, HitLocation, HitNormal);
 }
 
 //[end] Functions
@@ -87,7 +73,9 @@ simulated function Stick(actor HitActor, vector HitLocation, vector HitNormal)
 defaultproperties
 {
      //Actually ExplodeTimer is a scanning delay time here
-	 ExplodeTimer=0.500000
+	 bLoopTimer=True
+	 bDelayArming=True
+	 ArmingDelay=0.500000
 	 DetectionRadius=140.000000
 	 Damage=290.000000
 	 DamageRadius=320.000000

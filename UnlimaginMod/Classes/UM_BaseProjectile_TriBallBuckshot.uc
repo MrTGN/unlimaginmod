@@ -21,13 +21,13 @@ class UM_BaseProjectile_TriBallBuckshot extends UM_BaseProjectile_Buckshot
 
 defaultproperties
 {
-     bCanRebound=True
+     bCanRicochet=True
 	 ProjectileDiameter=15.24
 	 BallisticCoefficient=0.081000
 	 BallisticRandRange=(Min=0.97,Max=1.03)
 	 EffectiveRange=1400.000000
 	 MaxEffectiveRange=1500.000000
-	 ProjectileMass=0.020412
+	 ProjectileMass=20.412 // grams
 	 MuzzleVelocity=380.000000
      HeadShotDamageMult=1.500000
 	 // Damage for 3 pellets

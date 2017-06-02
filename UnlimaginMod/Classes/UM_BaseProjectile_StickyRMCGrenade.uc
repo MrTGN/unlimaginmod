@@ -35,13 +35,15 @@ event Timer()
 		if ( AllyIsInRadius(DamageRadius) )  { 
 			if ( !bDelayedExplode )  {
 				bDelayedExplode = True;
-				SetTimer(DelayedExplodeTimer, True);
+				SetTimer(DelayedExplodeTimer, bDelayedExplode);
 			}
 			if ( BeepSound.Snd != None )
 				PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius);
 		}
-		else
+		else  {
 			Explode(Location, Vector(Rotation));
+			SetTimer(0.0, False);
+		}
 	}
 	else
 		Destroy();
@@ -49,10 +51,14 @@ event Timer()
 
 function Activate()
 {
+	if ( bArmed )
+		Return;
+	
 	if ( BeepSound.Snd != None )
 		PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius);
 	
-	SetTimer(ExplodeTimer, True);
+	bArmed = True;
+	SetTimer(ArmingDelay, bLoopTimer);
 }
 
 //[end] Functions
@@ -60,7 +66,9 @@ function Activate()
 
 defaultproperties
 {
-	 ExplodeTimer=0.15
+	 bLoopTimer=False
+	 ArmingDelay=0.15
+	 bDelayArming=True
 	 DelayedExplodeTimer=0.25
 	 Damage=280.000000
 	 DamageRadius=330.000000

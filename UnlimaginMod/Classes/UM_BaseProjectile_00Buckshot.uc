@@ -26,7 +26,7 @@ defaultproperties
 	 BallisticRandRange=(Min=0.97,Max=1.03)
 	 EffectiveRange=740.000000
 	 MaxEffectiveRange=840.000000
-	 ProjectileMass=0.003486
+	 ProjectileMass=3.4862 // grams
 	 MuzzleVelocity=380.000000
 	 // Damage for 8 pellets
      Damage=36.000000

@@ -34,7 +34,7 @@ defaultproperties
      // ControllerClass
 	 ControllerClass=Class'UnlimaginMod.UM_ZombieFleshPoundController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_FleshPound_A.FleshPound_Mesh'
+	 Mesh=SkeletalMesh'UM_FleshPound_A.FleshPoundMesh'
 	 // Collision
 	 MeshTestCollisionHeight=70.0
 	 MeshTestCollisionRadius=26.0

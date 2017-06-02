@@ -80,29 +80,13 @@ simulated event Tick( float DeltaTime )
 	}
 }
 
-simulated function ProcessTouchActor( Actor A )
-{
-	local	vector	TouchLocation, TouchNormal;
-	
-	LastTouched = A;
-	if ( CanHurtActor(A) )  {
-		GetTouchLocation(A, TouchLocation, TouchNormal);
-		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		if ( IsArmed() )
-			Explode(TouchLocation, TouchNormal);
-	}
-	LastTouched = None;
-}
-
 simulated singular event HitWall(vector HitNormal, actor Wall)
 {
 	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall);
-		Return;
 	}
-	
-	if ( IsArmed() )
+	else if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);
 	else
 		ProcessHitWall(HitNormal);
@@ -180,7 +164,7 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bCanRebound=True
+	 bCanRicochet=True
 	 bOrientToVelocity=True
 	 //bOrientOnSlope=True	// when landing, orient base on slope of floor
 	 Physics=PHYS_Projectile
@@ -188,7 +172,7 @@ defaultproperties
 	 MuzzleVelocity=70.000000	//m/s
 	 Speed=0.000000
      MaxSpeed=0.000000
-	 ProjectileMass=0.230000	// kilograms
+	 ProjectileMass=230.0	// grams
 	 //EffectiveRange in Meters
 	 EffectiveRange=140.000000
 	 MaxEffectiveRange=300.000000

@@ -87,6 +87,14 @@ struct BallisticCollisionData
 var		array<BallisticCollisionData>	BallisticCollision;
 var		UM_PawnHeadCollision			HeadBallisticCollision;	// Reference to the Head Ballistic Collision
 
+var					float				DedicatedServerAnimCheckDelay;
+var		transient	float				NextDedicatedServerAnimCheckTime;
+var		transient	bool				bUseOnlineHeadShotCheck; // Use OnlineHeadshotOffset and OnlineHeadshotScale parametrs when a zed isn't animating online.
+
+var		transient	vector				HeadLocation;
+var					float				HeadLocationUpdateDelay;
+var		transient	float				NextHeadLocationUpdateTime;
+
 // Mesh Sockets attached to bones
 var					name				LeftArmBone, RightArmBone;
 var					name				LeftLegBone, RightLegBone;
@@ -391,47 +399,54 @@ function BuildBallisticCollision()
 		Return;
 		
 	for ( i = 0; i < BallisticCollision.Length; ++i )  {
-		if ( BallisticCollision[i].AreaClass != None )  {
-			// Spawning
-			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self );
-			if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
-				Continue; // Skip if not exist
-			
-			// AreaSizeScale
-			if ( BallisticCollision[i].AreaSizeScale > 0.0 )
-				CurrentSizeScale = BallisticCollision[i].AreaSizeScale * DrawScale;
-			else
-				CurrentSizeScale = DrawScale;
-			
-			// HeadBallisticCollision
-			if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
-				HeadBallisticCollision = UM_PawnHeadCollision( BallisticCollision[i].Area );
-			
-			// CollisionSize
-			BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * CurrentSizeScale), (BallisticCollision[i].AreaHeight * CurrentSizeScale) );
-			
-			// Attaching
-			if ( BallisticCollision[i].AreaBone != '' )
-				AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
-			else
-				BallisticCollision[i].Area.SetBase( Self );
-			
-			// AreaOffset
-			if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
-				BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
-			// AreaRotation
-			if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
-				BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
-			
-			//BallisticCollision[i].Area.bHardAttach = True;
-			
-			// AreaImpactStrength
-			if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
-				BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
-			// AreaHealth
-			if ( BallisticCollision[i].AreaHealth > 0.0 )
-				BallisticCollision[i].Area.SetInitialHealth( BallisticCollision[i].AreaHealth * DrawScale );
-		}
+		if ( BallisticCollision[i].AreaClass == None )
+			Continue;
+		
+		// Spawning
+		if ( BallisticCollision[i].AreaBone != '' )
+			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self,, Location, Rotation );
+		else
+			BallisticCollision[i].Area = Spawn( BallisticCollision[i].AreaClass, Self,, GetBoneCoords(BallisticCollision[i].AreaBone).Origin, GetBoneRotation(BallisticCollision[i].AreaBone) );
+		if ( BallisticCollision[i].Area == None || BallisticCollision[i].Area.bDeleteMe )
+			Continue; // Skip if not exist
+		
+		BallisticCollision[i].Area.SetPhysics(PHYS_None);
+		
+		// AreaSizeScale
+		if ( BallisticCollision[i].AreaSizeScale > 0.0 )
+			CurrentSizeScale = BallisticCollision[i].AreaSizeScale * DrawScale;
+		else
+			CurrentSizeScale = DrawScale;
+		
+		// HeadBallisticCollision
+		if ( UM_PawnHeadCollision(BallisticCollision[i].Area) != None )
+			HeadBallisticCollision = UM_PawnHeadCollision( BallisticCollision[i].Area );
+		
+		// CollisionSize
+		BallisticCollision[i].Area.SetCollisionSize( (BallisticCollision[i].AreaRadius * CurrentSizeScale), (BallisticCollision[i].AreaHeight * CurrentSizeScale) );
+		
+		// Attaching
+		if ( BallisticCollision[i].AreaBone != '' )
+			AttachToBone( BallisticCollision[i].Area, BallisticCollision[i].AreaBone );
+		else
+			BallisticCollision[i].Area.SetBase( Self );
+		
+		// AreaOffset
+		if ( BallisticCollision[i].AreaOffset != vect(0.0, 0.0, 0.0) )
+			BallisticCollision[i].Area.SetRelativeLocation( BallisticCollision[i].AreaOffset * CurrentSizeScale );
+		// AreaRotation
+		if ( BallisticCollision[i].AreaRotation != rot(0, 0, 0) )
+			BallisticCollision[i].Area.SetRelativeRotation( BallisticCollision[i].AreaRotation );
+		
+		BallisticCollision[i].Area.bHardAttach = True;
+		BallisticCollision[i].Area.bClientTrigger = !BallisticCollision[i].Area.bClientTrigger;
+		
+		// AreaImpactStrength
+		if ( BallisticCollision[i].AreaImpactStrength > 0.0 )
+			BallisticCollision[i].Area.SetImpactStrength( BallisticCollision[i].AreaImpactStrength * DrawScale );
+		// AreaHealth
+		if ( BallisticCollision[i].AreaHealth > 0.0 )
+			BallisticCollision[i].Area.SetInitialHealth( BallisticCollision[i].AreaHealth * DrawScale );
 	}
 }
 
@@ -3397,67 +3412,80 @@ simulated function DoDamageFX( Name BoneName, int Damage, class<DamageType> Dama
 	}
 }
 
-// Overridden so that anims don't get interrupted on the server if one is already playing
-function bool IsHeadShot(vector loc, vector ray, float AdditionalScale)
+/* If we are a dedicated server and we are not playing any animation
+	than estimate what animation is most likely playing on the cliens 
+*/
+function CheckDedicatedServerAnim()
 {
-	local	vector	HeadLoc, B, M, diff;
-	local	float	t, DotMM, Distance;
-	local	int		look;
-	local	bool	bUseAltHeadShotLocation;
+	if ( Level.TimeSeconds < NextDedicatedServerAnimCheckTime || IsAnimating(BaseAnimChannel) || IsAnimating(MinorAnimChannel) )
+		Return;
+	
+	NextDedicatedServerAnimCheckTime = Level.TimeSeconds + DedicatedServerAnimCheckDelay;
+	bUseOnlineHeadShotCheck = False;
+	if ( Physics == PHYS_Falling )
+		PlayAnim(AirAnims[0], 1.0, 0.0, BaseAnimChannel);
+	else if ( Physics == PHYS_Swimming )
+		PlayAnim(SwimAnims[0], 1.0, 0.0, BaseAnimChannel);
+	else if ( Physics == PHYS_Walking )  {
+		if ( bIsCrouched )
+			PlayAnim(IdleCrouchAnim, 1.0, 0.0, BaseAnimChannel);
+		else
+			bUseOnlineHeadShotCheck = True;
+	}
+	SetAnimFrame(0.5);
+}
+
+/*	Updates HeadLocation variable.
+	Added delay between HeadLocation updates because 
+	the head position does not change so much over the HeadLocationUpdateDelay.
+*/
+function UpdateHeadLocation()
+{
+	if ( Level.TimeSeconds < NextHeadLocationUpdateTime )
+		Return;
+	
+	NextHeadLocationUpdateTime = Level.TimeSeconds + HeadLocationUpdateDelay;
+	if ( bUseOnlineHeadShotCheck )
+		HeadLocation = Location + (OnlineHeadshotOffset >> Rotation);
+	else
+		HeadLocation = GetBoneCoords(HeadHitPointName).Origin;
+	
+	// Headshot debugging
+	if ( Role == ROLE_Authority )
+		ServerHeadLocation = HeadLocation;
+}
+
+// Overridden so that anims don't get interrupted on the server if one is already playing
+function bool IsHeadShot(vector Loc, vector Ray, float AdditionalScale)
+{
+	local	float	RayDotLoc, RayDotRay;
 
 	if ( bDecapitated || HeadBone == '' )
 		Return False;
 
-	// If we are a dedicated server estimate what animation is most likely playing on the client
-	if ( Level.NetMode == NM_DedicatedServer && !IsAnimating(BaseAnimChannel) && !IsAnimating(MinorAnimChannel) )  {
-		if ( Physics == PHYS_Falling )
-			PlayAnim(AirAnims[0], 1.0, 0.0, BaseAnimChannel);
-		else if ( Physics == PHYS_Swimming )
-			PlayAnim(SwimAnims[0], 1.0, 0.0, BaseAnimChannel);
-		else if ( Physics == PHYS_Walking )  {
-			if ( bIsCrouched )
-				PlayAnim(IdleCrouchAnim, 1.0, 0.0, BaseAnimChannel);
-			else
-				bUseAltHeadShotLocation = True;
-		}
-		SetAnimFrame(0.5);
-	}
+	if ( Level.NetMode == NM_DedicatedServer )
+		CheckDedicatedServerAnim();
 
-	if ( bUseAltHeadShotLocation )  {
-		HeadLoc = Location + (OnlineHeadshotOffset >> Rotation);
-		AdditionalScale *= OnlineHeadshotScale;
-	}
+	UpdateHeadLocation();
+	if ( bUseOnlineHeadShotCheck )
+		AdditionalScale = Square(HeadRadius * HeadScale * AdditionalScale * OnlineHeadshotScale);
 	else
-		HeadLoc = GetBoneCoords(HeadHitPointName).Origin;
-	
-	// Headshot debugging
-	if ( Role == ROLE_Authority )
-		ServerHeadLocation = HeadLoc;
+		AdditionalScale = Square(HeadRadius * HeadScale * AdditionalScale);
 
-	// Express snipe trace line in terms of B + tM
-	B = loc;
-	M = ray * (2.0 * CollisionHeight + 2.0 * CollisionRadius);
-
+	// Express snipe trace line
+	Ray *= 2.0 * CollisionHeight + 2.0 * CollisionRadius;
 	// Find Point-Line Squared Distance
-	diff = HeadLoc - B;
-	t = M Dot diff;
-	if ( t > 0 )  {
-		DotMM = M dot M;
-		if ( t < DotMM )  {
-			t = t / DotMM;
-			diff = diff - (t * M);
-		}
-		else  {
-			t = 1;
-			diff -= M;
-		}
+	Loc = HeadLocation - Loc;
+	RayDotLoc = Ray dot Loc;
+	if ( RayDotLoc > 0.0 )  {
+		RayDotRay = Ray dot Ray;
+		if ( RayDotLoc < RayDotRay )
+			Loc = Loc - Ray * RayDotLoc / RayDotRay;
+		else
+			Loc -= Ray;
 	}
-	else
-		t = 0;
 
-	Distance = Sqrt(diff Dot diff);
-
-	Return Distance < (HeadRadius * HeadScale * AdditionalScale);
+	Return (Loc dot Loc) < AdditionalScale;
 }
 
 function RemoveHead()
@@ -4100,6 +4128,9 @@ defaultproperties
 	 
 	 KilledWaveCountDownExtensionTime=4.0
 	 
+	 DedicatedServerAnimCheckDelay=0.5
+	 HeadLocationUpdateDelay=0.05
+	 
 	 HealthMax=150.0
 	 Health=150
 	 HeadHealth=25.0
@@ -4301,8 +4332,8 @@ defaultproperties
 	 bBlockActors=True
 	 bUseCylinderCollision=True
 	 // This collision flags was moved to the BallisticCollision
-	 bBlockProjectiles=False
-	 bProjTarget=False
+	 bBlockProjectiles=True
+	 bProjTarget=True
 	 bBlockZeroExtentTraces=True
 	 bBlockNonZeroExtentTraces=True
 	 

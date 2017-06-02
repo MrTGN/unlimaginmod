@@ -21,14 +21,14 @@ class UM_BaseProjectile_30WCF_H160FTX extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     bCanRebound=True
+     bCanRicochet=True
 	 ProjectileDiameter=7.8
 	 BallisticCoefficient=0.330000
 	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=900.000000
 	 MaxEffectiveRange=1000.000000
 	 ExpansionCoefficient=1.650000
-	 ProjectileMass=0.010368		//kilograms
+	 ProjectileMass=10.368		//grams
 	 MuzzleVelocity=730.000000		//Meter/sec
      HeadShotDamageMult=1.250000
    	 Damage=95.000000

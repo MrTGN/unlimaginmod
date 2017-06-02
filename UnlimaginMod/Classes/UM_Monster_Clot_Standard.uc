@@ -34,7 +34,7 @@ defaultproperties
      DetachedLegClass=Class'KFChar.SeveredLegClot'
      DetachedHeadClass=Class'KFChar.SeveredHeadClot'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Clot_A.Clot_Mesh'
+	 Mesh=SkeletalMesh'UM_Clot_A.ClotMesh'
 	 // DrawScale
 	 DrawScale=1.100000
 	 // Collision

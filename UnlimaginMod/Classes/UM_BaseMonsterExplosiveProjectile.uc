@@ -51,20 +51,6 @@ simulated event PostBeginPlay()
 	}
 }
 
-simulated function ProcessTouchActor( Actor A )
-{
-	local	vector	TouchLocation, TouchNormal;
-	
-	LastTouched = A;
-	if ( CanHurtActor(A) )  {
-		GetTouchLocation(A, TouchLocation, TouchNormal);
-		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		if ( IsArmed() )
-			Explode(TouchLocation, TouchNormal);
-	}
-	LastTouched = None;
-}
-
 simulated event Landed( vector HitNormal )
 {
 	Super(UM_BaseProjectile).Landed(HitNormal);
@@ -77,10 +63,9 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall);
-		Return;
 	}
-	
-	Landed(HitNormal);
+	else
+		Landed(HitNormal);
 	HurtWall = None;
 }
 
@@ -90,6 +75,7 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 defaultproperties
 {
      bAutoLifeSpan=True
+	 bDelayArming=True
 	 ArmingDelay=0.2
 	 UpdateTimeDelay=0.100000
 	 ShrapnelClass=None
@@ -99,14 +85,14 @@ defaultproperties
 	 bCanHurtSameTypeProjectile=False
 	 bCanHurtOwner=False
 	 ProjectileDiameter=40.0
-	 ProjectileMass=0.250000	// kilograms
+	 ProjectileMass=250.0	// grams
      //MuzzleVelocity
 	 MuzzleVelocity=80.000000	// m/sec
 	 //EffectiveRange
 	 EffectiveRange=500.000000	// Meters
 	 BallisticRandRange=(Min=0.85,Max=1.15)
 	 bBounce=True
-	 bCanRebound=False
+	 bCanRicochet=False
 	 bOrientToVelocity=True
 	 //Physics
 	 Physics=PHYS_Projectile

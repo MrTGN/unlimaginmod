@@ -37,7 +37,7 @@ defaultproperties
 	 // ControllerClass
 	 ControllerClass=Class'UnlimaginMod.UM_ZombieCrawlerController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Crawler_A.Crawler_Mesh'
+	 Mesh=SkeletalMesh'UM_Crawler_A.CrawlerMesh'
 	 // Collision
 	 MeshTestCollisionHeight=19.0
 	 MeshTestCollisionRadius=36.0

@@ -24,7 +24,7 @@ defaultproperties
 	 EffectiveRange=900.000000
 	 MaxEffectiveRange=1000.000000
 	 ProjectileDiameter=9.0
-	 ProjectileMass=0.004330	// kilograms
+	 ProjectileMass=5.0	// grams
 	 ExpansionCoefficient=1.050000
 	 MuzzleVelocity=100.000000	// m/sec
 	 Damage=40.000000

@@ -40,7 +40,7 @@ defaultproperties
      // ControllerClass
 	 ControllerClass=Class'UnlimaginMod.UM_ZombieBloatController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Bloat_A.UM_Bloat_Mesh'
+	 Mesh=SkeletalMesh'UM_Bloat_A.BloatMesh'
 	 // MeshTestCollision
 	 MeshTestCollisionHeight=63.0
 	 MeshTestCollisionRadius=25.0

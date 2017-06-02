@@ -24,14 +24,12 @@ class UM_BaseProjectile_StickyGrenade extends UM_BaseProjectile_LowVelocityGrena
 //========================================================================
 //[block] Variables
 
-var		bool			bStuck;	// Grenade has stuck on something
-var		bool			bTimerSet;
-var		float			ExplodeTimer;
+var		bool						bStuck;	// Grenade has stuck on something
 
 var		UM_BaseActor.SoundData		BeepSound;
 
-var		Class<Emitter>	GrenadeLightClass;
-var		Emitter			GrenadeLight;
+var		Class<Emitter>				GrenadeLightClass;
+var		Emitter						GrenadeLight;
 
 //[end] Varibles
 //====================================================================
@@ -92,7 +90,7 @@ simulated event PostBeginPlay()
 
 simulated event PostNetReceive()
 {
-	if ( bStuck && bTrailSpawned && !bTrailDestroyed )
+	if ( bStuck && bTrailSpawned )
 		DestroyTrail();
 	
 	Super.PostNetReceive();
@@ -146,7 +144,7 @@ simulated function Stick( Actor A )
 	*/
 	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetBase(A);
-	SpawnHitEffects(TouchLocation, TouchNormal, ,A);
+	SpawnHitEffects(TouchLocation, TouchNormal, A);
 
 	//if ( NearestBone == '' && Base == None )
 	if ( Base == None )
@@ -209,7 +207,8 @@ defaultproperties
 {
 	 ProjectileDiameter=40.0
 	 bCanHurtSameTypeProjectile=False
-	 ExplodeTimer=0.500000
+	 bDelayArming=True
+	 ArmingDelay=0.500000
 	 BallisticCoefficient=0.140000
 	 //Shrapnel
 	 ShrapnelClass=None
@@ -223,7 +222,7 @@ defaultproperties
 	 ExplosionSound=(Ref="UnlimaginMod_Snd.Grenade.G_Explode",Vol=2.0,Radius=360.0,bUse3D=True)
 	 BeepSound=(Ref="KF_FoundrySnd.1Shot.Keypad_beep01",Vol=2.0,Radius=360.0,bUse3D=True)
 	 LifeSpan=0.000000
-	 ProjectileMass=0.230000
+	 ProjectileMass=230.0
      //DisintegrationDamageTypes
 	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'
 	 DisintegrationDamageTypes(1)=Class'DamTypeVomit'

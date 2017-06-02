@@ -53,6 +53,11 @@ replication
 //========================================================================
 //[block] Functions
 
+simulated event ClientTrigger()
+{
+	bHardAttach = True;
+}
+
 // Updates InstigatorTeamNum
 simulated function UpdateInstigatorTeamNum()
 {
@@ -124,13 +129,14 @@ simulated function float GetCollisionVSize()
 // Useful before calling latent Destroy() function.
 simulated function DisableCollision()
 {
-	if ( bCanBeDamaged )  {
-		bCanBeDamaged = False;
-		bProjTarget = False;
-		bBlockZeroExtentTraces = False;
-		bBlockNonZeroExtentTraces = False;
-		SetCollision(False);
-	}
+	if ( !bCanBeDamaged )
+		Return;
+	
+	bCanBeDamaged = False;
+	bProjTarget = False;
+	bBlockZeroExtentTraces = False;
+	bBlockNonZeroExtentTraces = False;
+	SetCollision(False);
 }
 
 simulated event BaseChange()
@@ -165,7 +171,7 @@ defaultproperties
 	 // if ImpactStrength < 6.0 standard 19x9mm bullet can penetrate this area
 	 // ImpactStrength * ProjectileCrossSectionalArea = Energy to penetrate this area
 	 ImpactStrength=8.0
-	 ImpactStrengthScaleRange=(Min=0.9,Max=1.1)
+	 ImpactStrengthScaleRange=(Min=0.95,Max=1.05)
 	 HealthScaleRange=(Min=0.9,Max=1.1)
 	 FrictionCoefficient=0.54
 	 PlasticityCoefficient=0.39
@@ -173,7 +179,8 @@ defaultproperties
 	 bLightingVisibility=False
 	 bAcceptsProjectors=False
 	 // Collision flags
-	 bCollideActors=True
+	 //bCollideActors=True
+	 bCollideActors=False
 	 bCollideWorld=False
 	 bBlockActors=False
 	 bBlockPlayers=False
@@ -196,8 +203,7 @@ defaultproperties
 	 bCanBeDamaged=True
      // Networking flags
 	 bNetTemporary=False
-	 //bReplicateMovement=True
-	 bReplicateMovement=False
+	 bReplicateMovement=True
 	 bReplicateInstigator=True
 	 //bNetInitialRotation=True
 	 bNetInitialRotation=False

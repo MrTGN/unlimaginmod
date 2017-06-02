@@ -26,7 +26,7 @@ simulated event PostBeginPlay()
 defaultproperties
 {
      ProjectileDiameter=30.0
-	 ProjectileMass=0.200
+	 ProjectileMass=200.0 // grams
 	 bCanHurtSameTypeProjectile=False
 	 //Sounds
 	 DisintegrationSound=(Ref="UnlimaginMod_Snd.Grenade.G_Disintegrate",Vol=2.0,Radius=350.0,bUse3D=True)

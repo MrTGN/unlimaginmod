@@ -31,7 +31,7 @@ defaultproperties
      DetachedHeadClass=Class'KFChar.SeveredHeadSiren'
      ControllerClass=Class'UnlimaginMod.UM_ZombieSirenController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Siren_A.Siren_Mesh'
+	 Mesh=SkeletalMesh'UM_Siren_A.SirenMesh'
 	 // Collision
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=14.0

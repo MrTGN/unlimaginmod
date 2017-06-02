@@ -26,7 +26,7 @@ defaultproperties
 	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=1500.000000
 	 MaxEffectiveRange=1600.000000
-	 ProjectileMass=0.009600		//kilograms
+	 ProjectileMass=9.6		//grams
 	 MuzzleVelocity=820.000000		//Meter/sec
      HeadShotDamageMult=1.100000
    	 Damage=110.000000

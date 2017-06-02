@@ -20,9 +20,6 @@ class UM_BaseProjectile_HandGrenade extends UM_BaseExplosiveProjectile
 //========================================================================
 //[block] Variables
 
-var		float				ExplodeTimer;
-var		bool				bTimerSet;
-
 var		AvoidMarker			FearMarker;
 var		Class<AvoidMarker>	FearMarkerClass;
 
@@ -44,47 +41,35 @@ simulated event PostBeginPlay()
 			FearMarker.StartleBots();
 		}
 	}
+	RandSpin(25000);
 }
 
-simulated event PostNetBeginPlay()
+event Timer()
 {
-	Super(UM_BaseExplosiveProjectile).PostNetBeginPlay();
+	if ( bDelayArming && !bArmed )
+		bArmed = True;
 	
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(ExplodeTimer, False);
-		bTimerSet = True;
-	}
-	RandSpin(25000);
+	if ( IsArmed() )
+		Explode(Location, vector(Rotation));
+	else
+		Destroy();
 }
 
 simulated function ProcessTouchActor( Actor A )
 {
-	local	vector	TouchLocation, TouchNormal;
-	
-	LastTouched = A;
-	if ( CanHurtActor(A) )  {
-		GetTouchLocation(A, TouchLocation, TouchNormal);
-		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-	}
-		
-	LastTouched = None;
+	Super(UM_BaseProjectile).ProcessTouchActor(A);
 }
 
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		bTimerSet = True;
-		SetTimer(ExplodeTimer, False);
-	}
-	
 	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall);
-		Return;
 	}
-	
-	ProcessHitWall(HitNormal);
-	RandSpin(100000);
+	else  {
+		ProcessHitWall(HitNormal);
+		RandSpin(100000);
+	}
 	HurtWall = None;
 }
 
@@ -159,8 +144,9 @@ defaultproperties
 	 TransientSoundVolume=2.000000
 	 DisintegrationSound=(Vol=2.0,Radius=400.0,bUse3D=True)
 	 ExplosionSound=(Vol=2.0,Radius=400.0,bUse3D=True)
-	 //ExplodeTimer	 
-	 ExplodeTimer=2.000000
+	 //ArmingDelay	 
+	 bDelayArming=True
+	 ArmingDelay=2.000000
 	 //Shrapnel
 	 ShrapnelAmount=(Min=5,Max=10)
 	 //Speed
@@ -169,7 +155,7 @@ defaultproperties
 	 //Ballistic performance randomization percent
 	 BallisticRandRange=(Min=0.9,Max=1.1)
 	 //ProjectileMass
-	 ProjectileMass=0.400000	// kilograms
+	 ProjectileMass=400.0	// grams
 	 //MuzzleVelocity
      MuzzleVelocity=10.000000	// m/sec
      TossZ=100.000000
@@ -220,6 +206,6 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bCanRebound=True
+	 bCanRicochet=True
 	 Physics=PHYS_Falling
 }

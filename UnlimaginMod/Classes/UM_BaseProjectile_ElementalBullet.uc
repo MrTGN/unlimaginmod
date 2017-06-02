@@ -151,7 +151,7 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bCanRebound=False
+	 bCanRicochet=False
 	 bOrientToVelocity=True
 	 //Physics
 	 Physics=PHYS_Projectile

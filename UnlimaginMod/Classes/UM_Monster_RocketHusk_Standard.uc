@@ -36,7 +36,7 @@ defaultproperties
 	 // ControllerClass
      ControllerClass=Class'UnlimaginMod.UM_ZombieHuskController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Husk_A.Husk_Mesh'
+	 Mesh=SkeletalMesh'UM_Husk_A.HuskMesh'
 	 // Collision
 	 MeshTestCollisionHeight=45.0
 	 MeshTestCollisionRadius=16.0

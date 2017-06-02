@@ -47,11 +47,9 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	
-	if ( FearMarkerClass != None )
-	{
+	if ( FearMarkerClass != None )  {
 		FearMarker = Spawn(FearMarkerClass, self);
-		if ( FearMarker != None )
-		{
+		if ( FearMarker != None )  {
 			FearMarker.SetBase(self);
 			FearMarker.SetCollisionSize((DamageRadius * 1.05), (DamageRadius * 1.05));
     		FearMarker.StartleBots();
@@ -73,80 +71,77 @@ simulated event PostNetBeginPlay()
 	Super.PostNetBeginPlay();
 	
 	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(HealInterval, True);
 		bTimerSet = True;
+		SetTimer(HealInterval, True);
 	}
 }
 
 // Heal Or Hurt Pawns in Radius
-function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
+function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Pawn					Victim;
-	local	float					DamageScale, Dist;
+	local	float					DamageScale;
 	local	vector					Dir;
 	local	int						i;
 	local	array<Pawn>				CheckedPawns;
 	local	bool					bAlreadyChecked;
 
-	if ( bHurtEntry )
+	if ( bHurtEntry || DamageAmount <= 0.0 )
 		Return;
 
 	bHurtEntry = True;
 
 	// Check Only Pawns
-	//foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
-	foreach VisibleCollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation, True )  {
-		if ( Victim != None && !Victim.bDeleteMe && Victim != Hurtwall && Victim.Health > 0 )  {
-			// Resets to the default values
-			bAlreadyChecked = False;
-			// Check CheckedPawns array
-			for ( i = 0; i < CheckedPawns.Length; ++i )  {
-				// comparison by object
-				if ( CheckedPawns[i] == Victim )  {
-					bAlreadyChecked = True;
-					Break;
-				}
+	foreach CollidingActors( Class'Pawn', Victim, DamageRadius, HitLocation )  {
+		if ( Vehicle(Victim) != None )
+			Victim = Vehicle(Victim).Driver;
+		
+		if ( Victim == None || Victim.bDeleteMe || Victim.bHidden || !Victim.bCanBeDamaged || Victim.Health < 1 )
+			Continue;
+		
+		// Resets to the default values
+		bAlreadyChecked = False;
+		// Check CheckedPawns array
+		for ( i = 0; i < CheckedPawns.Length; ++i )  {
+			// comparison by object
+			if ( CheckedPawns[i] == Victim )  {
+				bAlreadyChecked = True;
+				Break;
 			}
-			// Ignore already Checked Pawns
-			if ( bAlreadyChecked )
+		}
+		// Ignore already Checked Pawns
+		if ( bAlreadyChecked )
+			Continue;
+		
+		CheckedPawns[CheckedPawns.Length] = Victim;
+		// Heal
+		if ( Victim.GetTeamNum() == InstigatorTeamNum )  {
+			if ( HealBoostAmount < 1 || !FastTrace( Victim.Location, HitLocation ) )
+				Continue;
+			// Heal Victim
+			if ( UM_HumanPawn(Victim) != None )
+				UM_HumanPawn(Victim).Heal( HealBoostAmount, bCanOverheal, UM_HumanPawn(Instigator), MoneyPerHealedHealth );
+			else
+				Victim.Health = Min((Victim.Health + HealBoostAmount), int(Victim.MaxHealth));
+		}
+		// Damage
+		else  {
+			// Skip this iteration
+			if ( DamageAmount <= 0.0 || !FastTrace( Victim.Location, HitLocation ) )
 				Continue;
 			
-			CheckedPawns[CheckedPawns.Length] = Victim;
-			
-			if ( UM_HumanPawn(Victim) != None )  {
-				// Skip this iteration
-				if ( HealBoostAmount < 1 || (Instigator != None && Instigator.GetTeamNum() != UM_HumanPawn(Victim).GetTeamNum()) )
-					Continue;
-				
-				UM_HumanPawn(Victim).Heal( HealBoostAmount, bCanOverheal, UM_HumanPawn(Instigator), MoneyPerHealedHealth );
-			}
-			else if ( KFMonster(Victim) != None )  {
-				// Skip this iteration
-				if ( DamageAmount <= 0.0 )
-					Continue;
-				
-				Dir = Victim.Location - HitLocation;
-				Dist = FMax( VSize(Dir), 1.0 );
-				Dir /= Dist;
-				// DamageScale
-				DamageScale = (1.0 - FMax(((Dist - Victim.CollisionRadius) / DamageRadius), 0.0)) * KFMonster(Victim).GetExposureTo(Location + 15.0 * -Normal(PhysicsVolume.Gravity));
-				if ( DamageScale > 0.0 )  {
-					Victim.TakeDamage
-					(
-						(DamageScale * DamageAmount),
-						Instigator, 
-						(Victim.Location - 0.5 * (Victim.CollisionHeight + Victim.CollisionRadius) * Dir),
-						(DamageScale * Momentum * Dir),
-						DamageType
-					);
-				}
-			}
-			else if ( Vehicle(Victim) != None && DamageAmount > 0.0 )  {
-				if ( Instigator == None || Instigator.Controller == None )
-					Victim.SetDelayedDamageInstigatorController( InstigatorController );
-				Vehicle(Victim).DriverRadiusDamage(DamageAmount, DamageRadius, InstigatorController, DamageType, Momentum, HitLocation);
-			}
-        }
+			Dir = Victim.Location - HitLocation;
+			DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
+			Dir = Normal(Dir);
+			i = Round(DamageScale * DamageAmount);
+			if ( i < 1 )
+				Continue;
+
+			// Damage Victim
+			Victim.TakeDamage( i, Instigator,
+				(Victim.Location - (Victim.CollisionHeight + Victim.CollisionRadius) * 0.5 * Dir),
+				(Momentum * DamageScale * Dir), DamageType );
+		}
 	}
 
 	bHurtEntry = False;
@@ -154,16 +149,17 @@ function HealOrHurtRadius( float DamageAmount, float DamageRadius, class<DamageT
 
 event Timer()
 {
-	if ( MaxHeals > 0 )  {
-		--MaxHeals;
-		HealOrHurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
-		DamageRadius = FMin( (default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05) );
-		Damage = FMax( (default.Damage * MinEfficiencyCoefficient), (Damage * 0.9) );
-		HealBoostAmount = Max( Round(float(default.HealBoostAmount) * MinEfficiencyCoefficient), Round(float(HealBoostAmount) * 0.9) );
-		//if ( FearMarker != None )
-			//FearMarker.SetCollisionSize(DamageRadius, DamageRadius);
+	if ( MaxHeals < 1 )  {
+		Destroy();
+		Return;
 	}
-	else
+	
+	HurtRadius(Damage, DamageRadius, MyDamageType, MomentumTransfer, Location);
+	DamageRadius = FMin( (default.DamageRadius * MaxDamageRadiusScale), (DamageRadius * 1.05) );
+	Damage = FMax( (default.Damage * MinEfficiencyCoefficient), (Damage * 0.9) );
+	HealBoostAmount = Max( Round(float(default.HealBoostAmount) * MinEfficiencyCoefficient), Round(float(HealBoostAmount) * 0.9) );
+	--MaxHeals;
+	if ( MaxHeals < 1 )
 		Destroy();
 }
 
@@ -197,8 +193,8 @@ defaultproperties
      MaxHeals=8
      HealInterval=0.500000
      SuccessfulHealMessage="You healed "
-	 Damage=16.000000
-	 DamageRadius=120.000000
+	 Damage=16.0
+	 DamageRadius=120.0
      GasCloudEmitterClass=Class'UnlimaginMod.UM_MedGasCloud'
 	 Trail=(EmitterClass=Class'UnlimaginMod.UM_MedGasTrail',EmitterRotation=(Pitch=32768))
 	 //DrawType=DT_StaticMesh

@@ -94,19 +94,9 @@ simulated event PostBeginPlay()
     }
 }
 
-simulated event PostNetBeginPlay()
-{
-	Super(UM_BaseExplosiveProjectile).PostNetBeginPlay();
-	
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(ExplodeTimer, True);
-		bTimerSet = True;
-	}
-}
-
 simulated event PostNetReceive()
 {
-	if ( bStuck && bTrailSpawned && !bTrailDestroyed )
+	if ( bStuck && bTrailSpawned )
 		DestroyTrail();
 	
 	Super.PostNetReceive();
@@ -114,6 +104,9 @@ simulated event PostNetReceive()
 
 event Timer()
 {
+	if ( bDelayArming && !bArmed )
+		bArmed = True;
+	
 	if ( IsArmed() )  {
 		// Idle
 		if ( !bEnemyDetected )  {
@@ -122,21 +115,23 @@ event Timer()
 				bAlwaysRelevant = True;
 				if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, (BeepSound.Vol * 1.5), BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
-				SetTimer(0.25,True);
+				SetTimer(0.25, bLoopTimer);
 			}
 		}
 		// Armed
 		else  {
 			bEnemyDetected = EnemyIsInRadius(DamageRadius);
 			if ( bEnemyDetected )  {
-				if ( !AllyIsInRadius(DamageRadius) )
+				if ( !AllyIsInRadius(DamageRadius) )  {
 					Explode(Location, Vector(Rotation));
+					SetTimer(0.0, False);
+				}
 				else if ( BeepSound.Snd != None )
 					PlaySound(BeepSound.Snd, BeepSound.Slot, BeepSound.Vol, BeepSound.bNoOverride, BeepSound.Radius, BaseActor.static.GetRandPitch(BeepSound.PitchRange), BeepSound.bUse3D);
 			}
 			else  {
 				bAlwaysRelevant = False;
-				SetTimer(ExplodeTimer, True);
+				SetTimer(ArmingDelay, bLoopTimer);
 			}
 		}
 	}
@@ -162,11 +157,6 @@ simulated function Stick( Actor A )
 	local	vector	HitDirection;	*/
 	
 	GetTouchLocation(A, TouchLocation, TouchNormal);
-	if ( Role == ROLE_Authority && !bTimerSet )  {
-		SetTimer(ExplodeTimer, True);
-		bTimerSet = True;
-	}
-	
 	bStuck = True;
 	bCollideWorld = False;
 	DestroyTrail();
@@ -197,7 +187,7 @@ simulated function Stick( Actor A )
 	*/
 	PrePivot = CollisionExtent * LandedPrePivotCollisionScale;
 	SetBase(A);
-	SpawnHitEffects(TouchLocation, TouchNormal, ,A);
+	SpawnHitEffects(TouchLocation, TouchNormal, A);
 
 	//if ( NearestBone == '' && Base == None )
 	if ( Base == None )
@@ -280,8 +270,10 @@ defaultproperties
 {
 	 FearMarkerClass=None
 	 bCanHurtSameTypeProjectile=False
-	 //Actually ExplodeTimer is a scanning delay time here
-	 ExplodeTimer=0.500000
+	 //Actually ArmingDelay is a scanning delay time here
+	 bLoopTimer=True
+	 bDelayArming=True
+	 ArmingDelay=0.500000
 	 GrenadeLightClass=Class'UnlimaginMod.UM_StickySensorHandGrenadeLight'
 	 HitEffectsClass=Class'UnlimaginMod.UM_GrenadeStickEffect'
 	 //Shrapnel

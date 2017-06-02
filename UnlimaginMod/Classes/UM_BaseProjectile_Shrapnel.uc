@@ -22,14 +22,14 @@ defaultproperties
 {
      //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
-	 bCanRebound=True
+	 bCanRicochet=True
 	 bAutoLifeSpan=True
 	 bTrueBallistics=True
 	 bInitialAcceleration=True
 	 BallisticCoefficient=0.055000
 	 BallisticRandRange=(Min=0.9,Max=1.1)
 	 ProjectileDiameter=10.0
-	 ProjectileMass=0.006000	// kilograms
+	 ProjectileMass=6.0	// grams
 	 BounceBonus=1.100000
 	 ExpansionCoefficient=1.000000
 	 MuzzleVelocity=120.000000	// m/sec

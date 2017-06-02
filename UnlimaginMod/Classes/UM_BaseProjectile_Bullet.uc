@@ -27,8 +27,10 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 //[block] Functions
 
 // Called when projectile has lost all energy
-simulated function ZeroProjectileEnergy()
+simulated function SetNullKineticEnergy()
 {
+	Damage = 0;
+	MomentumTransfer = 0.0;
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_None);
@@ -37,7 +39,7 @@ simulated function ZeroProjectileEnergy()
 
 simulated event Landed( Vector HitNormal )
 {
-	ZeroProjectileEnergy();
+	SetNullKineticEnergy();
 }
 
 // Called when the projectile loses some of it's energy
@@ -75,7 +77,7 @@ defaultproperties
 	 MaxEffectiveRange=600.000000
 	 //Expansion
 	 ExpansionCoefficient=1.00000	// For FMJ
-	 ProjectileMass=0.020000	// kilograms
+	 ProjectileMass=20.0	// grams
      MuzzleVelocity=100.000000	// m/sec
 	 InitialUpdateTimeDelay=0.200000
 	 UpdateTimeDelay=0.100000
@@ -103,7 +105,7 @@ defaultproperties
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True
-	 bCanRebound=False
+	 bCanRicochet=False
 	 bOrientToVelocity=True
 	 Physics=PHYS_Projectile
 	 //RemoteRole

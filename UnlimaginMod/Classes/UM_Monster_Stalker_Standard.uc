@@ -39,7 +39,7 @@ defaultproperties
      DetachedLegClass=Class'KFChar.SeveredLegStalker'
      DetachedHeadClass=Class'KFChar.SeveredHeadStalker'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Stalker_A.Stalker_Mesh'
+	 Mesh=SkeletalMesh'UM_Stalker_A.StalkerMesh'
      // Collision
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=14.0

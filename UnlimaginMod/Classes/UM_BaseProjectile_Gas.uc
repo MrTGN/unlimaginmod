@@ -91,7 +91,7 @@ simulated event PostNetBeginPlay()
 simulated event PostNetReceive()
 {
 	if ( bStopped )  {
-		if ( bTrailSpawned && !bTrailDestroyed )
+		if ( bTrailSpawned )
 			DestroyTrail();
 		
 		if ( !bGasCloudSpawned )
@@ -103,7 +103,7 @@ simulated event Tick(float DeltaTime)
 {
 	if ( Level.TimeSeconds > NextProjectileUpdateTime && !bStopped 
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-		UpdateProjectilePerformance();
+		UpdateBallisticPerformance();
 		if ( Speed < MinSpeed )  {
 			bStopped = True;
 			Acceleration = Vect(0.0,0.0,0.0);
@@ -124,7 +124,7 @@ simulated function ProcessTouchActor( Actor A )
 	LastTouched = A;
 	if ( !bStopped 
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-		UpdateProjectilePerformance();
+		UpdateBallisticPerformance();
 		if ( Speed > 0.0 )  {
 			bStopped = True;
 			Acceleration = Vect(0.0,0.0,0.0);
@@ -145,7 +145,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 {
 	if ( !bStopped
 		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-		UpdateProjectilePerformance();
+		UpdateBallisticPerformance();
 		if ( Speed > 0.0 )  {
 			bStopped = True;
 			Acceleration = Vect(0.0,0.0,0.0);
@@ -169,12 +169,11 @@ defaultproperties
 {
      MomentumTransfer=0.0
 	 SpawnCheckRadiusScale=0.200000
-	 bCanRebound=False
+	 bCanRicochet=False
 	 bOrientToVelocity=True
 	 //Ballistic performance randomization
 	 BallisticRandRange=(Min=0.95,Max=1.05)
-	 bReplicateSpawnTime=True
-	 ProjectileMass=0.000000
+	 ProjectileMass=0.0
 	 UpdateTimeDelay=0.100000
 	 SpeedDropScale=0.750000
 	 FullStopSpeedCoefficient=0.075000

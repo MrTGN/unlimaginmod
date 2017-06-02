@@ -21,14 +21,14 @@ class UM_BaseProjectile_45Govt_300StdJHP extends UM_BaseProjectile_Bullet
 
 defaultproperties
 {
-     bCanRebound=True
+     bCanRicochet=True
 	 ProjectileDiameter=11.6
 	 BallisticCoefficient=0.300000
 	 BallisticRandRange=(Min=0.96,Max=1.04)
 	 EffectiveRange=950.000000
 	 MaxEffectiveRange=1000.000000
 	 ExpansionCoefficient=1.700000
-	 ProjectileMass=0.019440		//kilograms
+	 ProjectileMass=19.44		//grams
 	 MuzzleVelocity=630.000000		//Meter/sec
      HeadShotDamageMult=1.250000
    	 Damage=180.000000

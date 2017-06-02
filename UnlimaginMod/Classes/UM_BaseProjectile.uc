@@ -25,17 +25,34 @@ class UM_BaseProjectile extends ROBallisticProjectile
 const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 const	Maths = Class'UnlimaginMod.UnlimaginMaths';
 
-// Rounded meters in Unreal Unit
-const	MeterInUU = 60.0;
-const	SquareMeterInUU = 3600.0;
+// Metric System to Unreal Units (bUseMetricSystem)
+// ProjectileMass in grams
+// MuzzleVelocity in meter per second
+// KineticEnergy in Joules
+const	MeterInUU = 60.352;
+const	SquareMeterInUU = 3642.363904;
+const	EnergyConst = 2000.0; // (2.0 * 1000)
 
-const	EnergyToPenetratePawnHead = 400.0;
-const	EnergyToPenetratePawnBody = 520.0;
+// United States customary system to Unreal Units (bUseUSCustomarySystem)
+// ProjectileMass in grains
+// MuzzleVelocity in feet per second
+const	FootToMeter = 0.3048;
+const	SquareFootToSquareMeter = 0.09290304;
+const	GrainToGram = 0.06479891;
+const	InchToMM = 25.4;
+const	FootInUU = 18.4;
+const	SquareFootInUU = 338.56;
+const	USCEnergyConst = 450434.6; // (2 x 32.1739 x 7000)
+
+// ImpactStrength * ProjectileCrossSectionalArea = KineticEnergy to penetrate this area
+// if ImpactStrength < 6.2 standard 19x9mm bullet can penetrate this area
+const	DefaultPawnHeadImpactStrength = 5.5;
+const	DefaultPawnBodyImpactStrength = 7.5;
 
 struct SurfaceImpactData
 {
 	var	float	ImpactStrength;			// J / mm2
-	var	float	ProjectileEnergyToStuck;
+	var	float	KineticEnergyToStuck;
 	var	float	FrictionCoefficient;	// Surface material friction coefficient. 1.0 - no friction. 0.0 - 100% friction.
 	var	float	PlasticityCoefficient;	// Plasticity coefficient of the surface material. 1.0 - not plastic material. 0.0 - 100% plastic material.
 };
@@ -56,25 +73,20 @@ struct	TrailData
 // Dynamic Loading vars
 var				string		MeshRef, StaticMeshRef, AmbientSoundRef;
 
+var				bool		bUseMetricSystem; // If set to true will be used Metric System
+var				bool		bUseUSCustomarySystem;
 // Logging
 var(Logging)	bool		bEnableLogging;
 var				bool		bDefaultPropertiesCalculated;
 var				bool		bAssetsLoaded;	// Prevents from calling PreloadAssets() on each spawn.
 var				bool		bAutoLifeSpan;	// calculates Projectile LifeSpan automatically
 var				bool		bCanHurtOwner;	// This projectile can hurt Owner
-var				bool		bCanRebound;	// This projectile can bounce (ricochet) from the wall/floor
+var				bool		bCanRicochet;	// This projectile can ricochet from the wall/floor
 var				bool		bCanHurtSameTypeProjectile; // This projectile can hurt the same type projectile (projectile with the same class)
 
 var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 
 var				int			InstigatorTeamNum;
-
-// Replication variables
-var				Vector		SpawnLocation;	// The location where this projectile was spawned
-var				bool		bReplicateSpawnLocation; // Storing and replicate projectile spawn location from server in SpawnLocation variable
-
-var				float		SpawnTime;	// The time when this projectile was spawned
-var				bool		bReplicateSpawnTime;	// Storing and replicate projectile spawn time from server in SpawnTime variable
 
 //[block] Ballistic performance
 var(Headshots)	class<DamageType>	HeadShotDamageType;	// Headshot damage type
@@ -95,8 +107,8 @@ var				float		ProjectileCrossSectionalArea;	// Projectile cross-sectional area i
 
 var(Ballistic)	float		EffectiveRange, MaxEffectiveRange;	// EffectiveRange and MaxEffectiveRange of this projectile in meters. 
 var(Ballistic)	range		BallisticRandRange;	// Projectile ballistic performance randomization range
-var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s.
-var(Ballistic)	float		ProjectileMass;	// Projectile mass in kilograms.
+var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s (bUseMetricSystem) or in feet per second (bUseUSCustomarySystem).
+var(Ballistic)	float		ProjectileMass;	// Projectile mass in grams (bUseMetricSystem) or in grains (bUseUSCustomarySystem).
 
 var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
 var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
@@ -106,11 +118,11 @@ var				float		MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
 var	transient	float		NextProjectileUpdateTime;
 var				float		UpdateTimeDelay, InitialUpdateTimeDelay;
 
-// Projectile energy in Joules. Used for penetrations and bounces calculation.
-// ProjectileEnergy Calculates automatically before initial replication.
-var	transient	float		ProjectileEnergy;
-var				float		SpeedSquaredToEnergy;		// ProjectileMass / (2.0 * SquareMeterInUU)
-var				float		EnergyToSpeedSquared;		// (2.0 * SquareMeterInUU) / default.ProjectileMass
+// Projectile kinetic energy in Joules. Used for penetrations and bounces calculation.
+// KineticEnergy Calculates automatically before initial replication.
+var	transient	float		KineticEnergy;
+var				float		SpeedSquaredToKineticEnergy;		// default.ProjectileMass / (EnergyConst * SquareMeterInUU)
+var				float		KineticEnergyToSpeedSquared;		// (EnergyConst * SquareMeterInUU) / default.ProjectileMass
 
 var				float		PenetrationBonus;
 var				float		BounceBonus;
@@ -119,7 +131,6 @@ var				float		BounceBonus;
 //[block] Effects
 var(Effects)	TrailData					Trail;
 var	transient	bool						bTrailSpawned;
-var	transient	bool						bTrailDestroyed;	// Trail have been destroyed.
 
 // HitEffects
 var(Effects)	class<UM_BaseHitEffects>	HitEffectsClass;
@@ -136,14 +147,6 @@ var				float						WeaponRecoilScale;
 //========================================================================
 //[block] Replication
 
-replication
-{
-	reliable if ( bReplicateSpawnTime && Role == ROLE_Authority && bNetDirty && bNetInitial )
-		SpawnTime;
-	
-	reliable if ( bReplicateSpawnLocation && Role == ROLE_Authority && bNetDirty && bNetInitial )
-		SpawnLocation;
-}
 
 //[end] Replication
 //====================================================================
@@ -165,45 +168,57 @@ simulated static final function vector GetDefaultCollisionExtent()
 	Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
 }
 
-simulated final function float GetBallisticRandMult()
-{
-	Return BallisticRandRange.Min + (BallisticRandRange.Max - BallisticRandRange.Min) * FRand();
-}
-
 simulated static function CalcDefaultProperties()
 {
 	local	int		i;
 	
 	if ( default.ProjectileDiameter > 0.0 )  {
+		if ( bUseUSCustomarySystem )
+			default.ProjectileDiameter *= InchToMM;
+		
 		default.ProjectileCrossSectionalArea = Pi * Sqrt(default.ProjectileDiameter) / 4.0;
 		// ImpactSurfaces
 		for ( i = 0; i < ArrayCount(default.ImpactSurfaces); ++i )  {
 			// Surfaces ImpactStrength for this projectile
 			default.ImpactSurfaces[i].ImpactStrength *= default.ProjectileCrossSectionalArea;
-			default.ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ImpactStrength * FMax((default.ProjectileDiameter / 2.0), 1.0);
+			default.ImpactSurfaces[i].KineticEnergyToStuck = default.ImpactSurfaces[i].ImpactStrength * FMax((default.ProjectileDiameter / 2.0), 1.0);
 		}
 	}
 	
-	// EffectiveRange
-	if ( default.EffectiveRange > 0.0 )
-		default.EffectiveRange = default.EffectiveRange * MeterInUU;
-	// MaxEffectiveRange
-	if ( default.MaxEffectiveRange > 0.0 )
-		default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
-	
-	// Speed
-	if ( default.MuzzleVelocity > 0.0 )  {
-		default.MaxSpeed = FMax(default.MuzzleVelocity, 5.00) * MeterInUU;
-		default.Speed = default.MaxSpeed;
+	if ( default.bUseMetricSystem )  {
+		// EffectiveRange
+		if ( default.EffectiveRange > 0.0 )
+			default.EffectiveRange = default.EffectiveRange * MeterInUU;
+		// MaxEffectiveRange
+		if ( default.MaxEffectiveRange > 0.0 )
+			default.MaxEffectiveRange = default.MaxEffectiveRange * MeterInUU;
+		// Speed
+		if ( default.MuzzleVelocity > 0.0 )  {
+			default.MaxSpeed = FMax(default.MuzzleVelocity, 1.0) * MeterInUU * default.BallisticRandRange.Max;
+			default.Speed = FMax(default.MuzzleVelocity, 1.0) * MeterInUU;
+		}
+	}
+	else if ( bUseUSCustomarySystem )  {
+		// EffectiveRange
+		if ( default.EffectiveRange > 0.0 )
+			default.EffectiveRange = default.EffectiveRange / FootToMeter * MeterInUU;
+		// MaxEffectiveRange
+		if ( default.MaxEffectiveRange > 0.0 )
+			default.MaxEffectiveRange = default.MaxEffectiveRange / FootToMeter * MeterInUU;
+		// Speed
+		if ( default.MuzzleVelocity > 0.0 )  {
+			default.MaxSpeed = FMax(default.MuzzleVelocity, 1.0) / FootToMeter * MeterInUU  * default.BallisticRandRange.Max;
+			default.Speed = FMax(default.MuzzleVelocity, 1.0) / FootToMeter * MeterInUU;
+		}
 	}
 	
-	if ( default.MaxSpeed > 0.0 )  {
-		if ( default.MinSpeed <= 0.0 )
-			default.MinSpeed = default.MaxSpeed * default.FullStopSpeedCoefficient;
+	if ( default.Speed > 0.0 )  {
+		if ( default.MinSpeed <= 0.0 && default.FullStopSpeedCoefficient > 0.0 )
+			default.MinSpeed = default.Speed * default.FullStopSpeedCoefficient;
 		
 		// Calculating LifeSpan
 		if ( default.bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )  {
-			default.LifeSpan = default.MaxEffectiveRange / default.MaxSpeed;
+			default.LifeSpan = default.MaxEffectiveRange / default.Speed;
 			if ( default.bTrueBallistics )  {
 				default.LifeSpan += 1.0 - FMin(default.BallisticCoefficient, 1.0);
 				if ( default.bInitialAcceleration )
@@ -211,12 +226,16 @@ simulated static function CalcDefaultProperties()
 			}
 		}
 		
-		// Calculating SpeedSquaredToEnergy and EnergyToSpeedSquared
-		// (2 * SquareMeterInUU) because we need to convert 
-		// speed square from uu/sec to meter/sec
+		// Calculating SpeedSquaredToKineticEnergy and KineticEnergyToSpeedSquared
 		if ( default.ProjectileMass > 0.0 )  {
-			default.SpeedSquaredToEnergy = default.ProjectileMass / (2.0 * SquareMeterInUU);
-			default.EnergyToSpeedSquared = (2.0 * SquareMeterInUU) / default.ProjectileMass;
+			if ( default.bUseMetricSystem )  {
+				default.SpeedSquaredToKineticEnergy = default.ProjectileMass / (EnergyConst * SquareMeterInUU);
+				default.KineticEnergyToSpeedSquared = (EnergyConst * SquareMeterInUU) / default.ProjectileMass;
+			}
+			else if ( bUseUSCustomarySystem )  {
+				default.SpeedSquaredToKineticEnergy = (default.ProjectileMass * GrainToGram) / (EnergyConst * SquareMeterInUU);
+				default.KineticEnergyToSpeedSquared = (EnergyConst * SquareMeterInUU) / (default.ProjectileMass * GrainToGram);
+			}
 		}
 	}
 	
@@ -224,13 +243,6 @@ simulated static function CalcDefaultProperties()
 	default.CollisionExtent = GetDefaultCollisionExtent();
 	default.CollisionExtentVSize = VSize(default.CollisionExtent);
 	default.SurfaceTraceRange = default.CollisionExtentVSize + 16.0;
-	
-	// Logging
-	/* if ( bEnableLogging )
-	{
-		log(self$": PreBeginPlay default.MaxEffectiveRange="$default.MaxEffectiveRange);
-		log(self$": PreBeginPlay MaxEffectiveRange="$MaxEffectiveRange);
-	} */
 	
 	// Assign BCInverse of this Projectile
 	if ( default.BCInverse <= 0.0 )
@@ -249,7 +261,7 @@ simulated function ResetToDefaultProperties()
 	for ( i = 0; i < ArrayCount(default.ImpactSurfaces); ++i )  {
 		// Surfaces ImpactStrength for this projectile
 		ImpactSurfaces[i].ImpactStrength = default.ImpactSurfaces[i].ImpactStrength;
-		ImpactSurfaces[i].ProjectileEnergyToStuck = default.ImpactSurfaces[i].ProjectileEnergyToStuck;
+		ImpactSurfaces[i].KineticEnergyToStuck = default.ImpactSurfaces[i].KineticEnergyToStuck;
 	}
 	// EffectiveRange
 	EffectiveRange = default.EffectiveRange;
@@ -257,14 +269,14 @@ simulated function ResetToDefaultProperties()
 	MaxEffectiveRange = default.MaxEffectiveRange;
 	// Speed
 	MaxSpeed = default.MaxSpeed;
-	Speed = default.MaxSpeed;
+	Speed = default.Speed;
 	MinSpeed = default.MinSpeed;
 	// LifeSpan
 	if ( default.bAutoLifeSpan && default.MaxEffectiveRange > 0.0 )
 		LifeSpan = default.LifeSpan;
-	// SpeedSquaredToEnergy and EnergyToSpeedSquared
-	SpeedSquaredToEnergy = default.SpeedSquaredToEnergy;
-	EnergyToSpeedSquared = default.EnergyToSpeedSquared;
+	// SpeedSquaredToKineticEnergy and KineticEnergyToSpeedSquared
+	SpeedSquaredToKineticEnergy = default.SpeedSquaredToKineticEnergy;
+	KineticEnergyToSpeedSquared = default.KineticEnergyToSpeedSquared;
 	// CollisionExtent
 	CollisionExtent = default.CollisionExtent;
 	CollisionExtentVSize = default.CollisionExtentVSize;
@@ -292,6 +304,7 @@ simulated function int GetInstigatorTeamNum()
 simulated function UpdateBonuses()
 {
 	local	UM_PlayerReplicationInfo	PRI;
+	local	int		i;
 	
 	if ( Instigator != None )
 		PRI = UM_PlayerReplicationInfo(Instigator.PlayerReplicationInfo);
@@ -307,6 +320,14 @@ simulated function UpdateBonuses()
 		PenetrationBonus = default.PenetrationBonus / ExpansionCoefficient;
 		BounceBonus = default.BounceBonus / ExpansionCoefficient;
 	}
+	
+	if ( !bCanRicochet )
+		Return;
+	
+	for ( i = 0; i < ArrayCount(default.ImpactSurfaces); ++i )  {
+		ImpactSurfaces[i].FrictionCoefficient = FMin( (default.ImpactSurfaces[i].FrictionCoefficient * BounceBonus), 0.98 );
+		ImpactSurfaces[i].PlasticityCoefficient = FMin( (default.ImpactSurfaces[i].PlasticityCoefficient * BounceBonus), 0.96 );
+	}
 }
 
 // Set new Instigator
@@ -321,39 +342,6 @@ simulated function SetInstigator( Pawn NewInstigator )
 	
 	UpdateInstigatorTeamNum();
 	UpdateBonuses();
-}
-
-simulated event PreBeginPlay()
-{
-	Super(Actor).PreBeginPlay();
-	
-	if ( !default.bDefaultPropertiesCalculated )  {
-		CalcDefaultProperties();
-		ResetToDefaultProperties();
-	}
-
-	/* Set Instigator on the Server.
-		Instigator will be replicated from the server to the clients. */
-	if ( Role == ROLE_Authority )  {
-		//WeaponMuzzle = UM_BaseWeaponMuzzle(Owner);
-		//if ( WeaponMuzzle != None && WeaponMuzzle.Instigator != None )
-			//Instigator = WeaponMuzzle.Instigator;
-		//else
-		if ( Pawn(Owner) != None )
-			SetInstigator( Pawn(Owner) );
-		else
-			SetInstigator( Instigator );
-	}
-		
-	//ToDo: проверить на глюки подгрузку в этом месте!
-	if ( !default.bAssetsLoaded )
-		PreloadAssets(self);
-	
-	// Forcing to not call UpdateProjectilePerformance() at the InitialAccelerationTime
-	if ( bInitialAcceleration )
-		NextProjectileUpdateTime = Level.TimeSeconds + InitialAccelerationTime + InitialUpdateTimeDelay;
-	else
-		NextProjectileUpdateTime = Level.TimeSeconds + InitialUpdateTimeDelay;
 }
 
 //[block] Dynamic Loading
@@ -395,70 +383,110 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
+simulated event PreBeginPlay()
+{
+	Super(Actor).PreBeginPlay();
+	
+	if ( !default.bDefaultPropertiesCalculated )  {
+		CalcDefaultProperties();
+		ResetToDefaultProperties();
+	}
+
+	/* Set Instigator on the Server.
+		Instigator will be replicated from the server to the clients. */
+	if ( Role == ROLE_Authority )  {
+		//WeaponMuzzle = UM_BaseWeaponMuzzle(Owner);
+		//if ( WeaponMuzzle != None && WeaponMuzzle.Instigator != None )
+			//Instigator = WeaponMuzzle.Instigator;
+		//else
+		if ( Pawn(Owner) != None )
+			SetInstigator( Pawn(Owner) );
+		else
+			SetInstigator( Instigator );
+	}
+		
+	if ( !default.bAssetsLoaded )
+		PreloadAssets(self);
+	
+	// Forcing to not call UpdateBallisticPerformance() at the InitialAccelerationTime
+	if ( bInitialAcceleration )
+		NextProjectileUpdateTime = Level.TimeSeconds + InitialAccelerationTime + InitialUpdateTimeDelay;
+	else
+		NextProjectileUpdateTime = Level.TimeSeconds + InitialUpdateTimeDelay;
+}
+
 //simulated function used to Spawn trails on client side
 simulated function SpawnTrail()
 {
 	// Level.bDropDetail is True when frame rate is below DesiredFrameRate
 	// DM_Low - is a low-detail Mode
-	if ( Level.NetMode != NM_DedicatedServer && !bTrailSpawned && !Level.bDropDetail
-		/* && Level.DetailMode != DM_Low */ && !PhysicsVolume.bWaterVolume )  {
-		if ( bTrailDestroyed )
-			bTrailDestroyed = False;
-		bTrailSpawned = True;
-		// xEmitter
-		if ( Trail.xEmitterClass != None )  {
-			Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
-			if ( Trail.xEmitterEffect != None )  {
-				Trail.xEmitterEffect.Lifespan = Lifespan;
-				// Rotation
-				if ( Trail.xEmitterRotation != Rot(0, 0, 0) )
-					Trail.xEmitterEffect.SetRelativeRotation( Trail.xEmitterRotation );
-			}
+	if ( Level.NetMode == NM_DedicatedServer || bTrailSpawned || Level.bDropDetail || PhysicsVolume.bWaterVolume )
+		Return;
+	
+	bTrailSpawned = True;
+	// xEmitter
+	if ( Trail.xEmitterClass != None )  {
+		Trail.xEmitterEffect = Spawn( Trail.xEmitterClass, Self );
+		if ( Trail.xEmitterEffect != None )  {
+			Trail.xEmitterEffect.Lifespan = Lifespan;
+			// Rotation
+			if ( Trail.xEmitterRotation != Rot(0, 0, 0) )
+				Trail.xEmitterEffect.SetRelativeRotation( Trail.xEmitterRotation );
 		}
-		// Emitter
-		if ( Trail.EmitterClass != None )  {
-			Trail.EmitterEffect = Spawn( Trail.EmitterClass, Self );
-			if ( Trail.EmitterEffect != None )  {
-				Trail.EmitterEffect.SetBase(Self);
-				// Rotation
-				if ( Trail.EmitterRotation != Rot(0, 0, 0) )
-					Trail.EmitterEffect.SetRelativeRotation( Trail.EmitterRotation );
-			}
+	}
+	// Emitter
+	if ( Trail.EmitterClass != None )  {
+		Trail.EmitterEffect = Spawn( Trail.EmitterClass, Self );
+		if ( Trail.EmitterEffect != None )  {
+			Trail.EmitterEffect.SetBase(Self);
+			// Rotation
+			if ( Trail.EmitterRotation != Rot(0, 0, 0) )
+				Trail.EmitterEffect.SetRelativeRotation( Trail.EmitterRotation );
 		}
 	}
 }
 
 simulated function DestroyTrail()
 {
-	if ( Level.NetMode != NM_DedicatedServer && bTrailSpawned && !bTrailDestroyed )  {
-		bTrailDestroyed = True;
-		// xEmitter
-		if ( Trail.xEmitterEffect != None )  {
-			Trail.xEmitterEffect.mRegen = False;
-			Trail.xEmitterEffect.SetPhysics(PHYS_None);
-		}
-		// Emitter
-		if ( Trail.EmitterEffect != None )
-			Trail.EmitterEffect.Kill();
-		bTrailSpawned = False;
+	if ( Level.NetMode == NM_DedicatedServer || !bTrailSpawned )
+		Return;
+	
+	bTrailSpawned = False;
+	// xEmitter
+	if ( Trail.xEmitterEffect != None )  {
+		Trail.xEmitterEffect.mRegen = False;
+		Trail.xEmitterEffect.SetPhysics(PHYS_None);
+	}
+	// Emitter
+	if ( Trail.EmitterEffect != None )
+		Trail.EmitterEffect.Kill();
+}
+
+simulated function CheckDynamicLight()
+{
+	local	PlayerController	PC;
+	// DynamicLight
+	PC = Level.GetLocalPlayerController();
+	if ( PC == None || PC.ViewTarget == None || Level.DetailMode == DM_Low
+		 || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0 )  {
+		LightType = LT_None;
+		bDynamicLight = False;
 	}
 }
 
-function ServerInitialUpdate()
-{
-	// Use this function to init something on the server-side before InitialVelocity has set.
-	// It is a good place to assign replicated variables.
-}
+// Use this function to init something on the server-side before InitialVelocity has set.
+// It is a good place to assign replicated variables.
+function ServerInitialUpdate();
 
 // Called before initial replication
 function ServerSetInitialVelocity()
 {
-	if ( Speed > 0.0 )  {
+	if ( default.Speed > 0.0 )  {
 		// Velocity randomization
-		Speed *= GetBallisticRandMult();
-		// Calculating ProjectileEnergy before initial replication
+		Speed = default.Speed * Lerp( FRand(), BallisticRandRange.Min, BallisticRandRange.Max );
+		// Calculating KineticEnergy before initial replication
 		if ( default.ProjectileMass > 0.0 )
-			ProjectileEnergy = Square(Speed) * SpeedSquaredToEnergy;
+			KineticEnergy = Square(Speed) * SpeedSquaredToKineticEnergy;
 		// Initial velocity
 		Velocity = Vector(Rotation) * Speed;
 	}
@@ -467,66 +495,42 @@ function ServerSetInitialVelocity()
 // Called after the actor is created but BEFORE any values have been replicated to it.
 simulated event PostBeginPlay()
 {
-	local	PlayerController	PC;
+    if ( bDynamicLight && Level.NetMode != NM_DedicatedServer )
+		CheckDynamicLight();
 	
 	if ( Role == ROLE_Authority )  {
-		// SpawnTime
-		if ( bReplicateSpawnTime )
-			SpawnTime = Level.TimeSeconds;
-		// SpawnLocation
-		if ( bReplicateSpawnLocation )
-			SpawnLocation = Location;
-		// InstigatorController
+		// ReceiveProjectileWarning
 		if ( InstigatorController != None && InstigatorController.ShotTarget != None && InstigatorController.ShotTarget.Controller != None )
 			InstigatorController.ShotTarget.Controller.ReceiveProjectileWarning( Self );
-    }
-	
-	/*ToDo: попробую переместить это в PreBeginPlay(). #Проверить!
-	if ( !default.bAssetsLoaded )
-		PreloadAssets(self);	*/
-	
-	//[block] Copied from Projectile.uc
-    // DynamicLight
-    if ( bDynamicLight && Level.NetMode != NM_DedicatedServer )  {
-		PC = Level.GetLocalPlayerController();
-		if ( PC == None || PC.ViewTarget == None || VSizeSquared(PC.ViewTarget.Location - Location) > 16000000.0
-			 || Level.DetailMode == DM_Low )  {
-			LightType = LT_None;
-			bDynamicLight = False;
-		}
-	}
-	bReadyToSplash = True;
-	//[end]
-	
-	if ( Role == ROLE_Authority )  {
 		// InitialUpdate on the server-side
 		ServerInitialUpdate();
 		// Setting Initial Velocity on the server before the initial replication
 		ServerSetInitialVelocity();
 	}
-	// Spawning the Trail
-	SpawnTrail();
+	bReadyToSplash = True;
 }
 
-// Called on clients when the initial replication is completed.
+// Called on the client-side when the initial replication is completed.
 simulated function ClientPostInitialReplication()
 {
-	local	float	SquareSpeed;
+	local	float	SpeedSquared;
 	
 	// Updating Bonuses on clients
 	SetInstigator( Instigator );
 	
 	if ( default.Speed > 0.0 )  {
-		// Velocity replicated from the server
-		if ( Velocity != vect(0.0, 0.0, 0.0) )  {
-			SquareSpeed = VSizeSquared(Velocity);
-			if ( default.ProjectileMass > 0.0 )
-				ProjectileEnergy = SquareSpeed * SpeedSquaredToEnergy;
-			// Received Speed
-			Speed = Sqrt(SquareSpeed);
+		// Initial Velocity replicated from the server
+		if ( Velocity != vect(0, 0, 0) )  {
+			if ( default.ProjectileMass > 0.0 )  {
+				SpeedSquared = VSizeSquared(Velocity);
+				KineticEnergy = SpeedSquared * SpeedSquaredToKineticEnergy;
+				Speed = Sqrt(SpeedSquared);
+			}
+			else
+				Speed = VSize(Velocity);
 		}
 		else
-			ZeroProjectileEnergy();
+			SetNullKineticEnergy();
 	}
 }
 
@@ -537,20 +541,20 @@ simulated event PostNetBeginPlay()
 	if ( Role < ROLE_Authority )
 		ClientPostInitialReplication();
 	
-	if ( PhysicsVolume.bWaterVolume && !IsInState('InTheWater') )
+	if ( PhysicsVolume.bWaterVolume )
 		GotoState('InTheWater');
-	//else	
-		//SpawnTrail(); // Spawning the Trail
+	else
+		SpawnTrail(); // Spawning the Trail
 }
 
 simulated static function float GetRange()
 {
 	if ( default.MaxEffectiveRange > 0.0 )
 		Return default.MaxEffectiveRange;
-	else if ( default.LifeSpan <= 0.0 || default.MaxSpeed <= 0.0 )
+	else if ( default.LifeSpan <= 0.0 || default.Speed <= 0.0 )
 		Return 15000.0;
 	else
-		Return default.MaxSpeed * default.LifeSpan;
+		Return default.Speed * default.LifeSpan;
 }
 
 state InTheWater
@@ -560,7 +564,7 @@ state InTheWater
 		DestroyTrail();
 		if ( Speed > 0.0 && SpeedDropInWaterCoefficient > 0.0 )  {
 			Speed *= SpeedDropInWaterCoefficient;
-			if ( Velocity != Vect(0.0,0.0,0.0) )
+			if ( Velocity != Vect(0,0,0) )
 				Acceleration = -Normal(Velocity) * Speed;
 		}
 	}
@@ -568,17 +572,17 @@ state InTheWater
 	simulated event Tick( float DeltaTime )
 	{
 		Global.Tick( DeltaTime );
-		if ( Level.TimeSeconds > NextProjectileUpdateTime
-			 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-			UpdateProjectilePerformance();			
-			if ( Speed > 0.0 && Speed < MinSpeed )  {
-				Acceleration = Vect(0.0,0.0,0.0);
-				if ( ProjectileEnergy > 0.0 )
-					ZeroProjectileEnergy();
-				else  {
-					Velocity = Vect(0.0,0.0,0.0);
-					Speed = 0.0;
-				}
+		if ( Level.TimeSeconds > NextProjectileUpdateTime && Speed > 0.0 )  {
+			UpdateBallisticPerformance();
+			if ( Speed > MinSpeed )
+				Return;
+			
+			Acceleration = Vect(0,0,0);
+			if ( KineticEnergy > 0.0 )
+				SetNullKineticEnergy();
+			else  {
+				Velocity = Vect(0,0,0);
+				Speed = 0.0;
 			}
 		}
 	}
@@ -586,8 +590,8 @@ state InTheWater
 	simulated event PhysicsVolumeChange( PhysicsVolume Volume )
 	{
 		if ( !Volume.bWaterVolume && PhysicsVolume.bWaterVolume )  {
-			if ( Acceleration != Vect(0.0,0.0,0.0) )
-				Acceleration = Vect(0.0,0.0,0.0);
+			if ( Acceleration != Vect(0,0,0) )
+				Acceleration = Vect(0,0,0);
 			SpawnTrail();
 			GotoState('');
 		}
@@ -623,66 +627,71 @@ simulated function Explode(vector HitLocation, vector HitNormal) {}
 simulated function StopProjectile()
 {
 	Speed = 0.0;
-	ProjectileEnergy = 0.0;
+	KineticEnergy = 0.0;
 	Velocity = Vect(0, 0, 0);
 	Acceleration = Vect(0, 0, 0);
 }
 
-// Called when the projectile has lost all energy
-simulated function ZeroProjectileEnergy()
+// Called when the projectile has lost all kinetic energy
+simulated function SetNullKineticEnergy()
 {
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_Falling);
 }
 
-// Called when the projectile loses some of it's energy
+// Called when the projectile loses some kinetic energy
 simulated function ScaleProjectilePerformance(float NewScale)
 {
-	/* 
-	Damage *= NewScale;
-	*/
+	//Damage *= NewScale;
 }
 
-simulated function UpdateProjectilePerformance(
- optional	bool		bForceUpdate,
- optional	float		EnergyLoss )
+simulated function UpdateBallisticPerformance( optional bool bForceUpdate )
 {
-	local	float	LastProjectileEnergy;
+	local	float	LastSpeed, SpeedSquared;
 	
 	if ( !bForceUpdate && Level.TimeSeconds < NextProjectileUpdateTime )
 		Return;
-		
+	
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
-	// Performance update
-	if ( ProjectileEnergy > 0.0 )  {
-		LastProjectileEnergy = ProjectileEnergy;
-		// Lose some energy
-		if ( EnergyLoss > 0.0 )  {
-			if ( EnergyLoss < ProjectileEnergy )  {
-				ProjectileEnergy -= EnergyLoss;
-				Speed = Sqrt(ProjectileEnergy * EnergyToSpeedSquared);
-				Velocity = Speed * Normal(Velocity);
-			}
-			else
-				ZeroProjectileEnergy();	// Lose all Energy
-		}
-		// Just update current projectile performance
-		else  {
-			EnergyLoss = VSizeSquared(Velocity); // Using EnergyLoss for the Squared Speed
-			ProjectileEnergy = EnergyLoss * SpeedSquaredToEnergy;
-			Speed = Sqrt(EnergyLoss);
-		}
-		ScaleProjectilePerformance(ProjectileEnergy / LastProjectileEnergy);
-	}
-	else
+	if ( KineticEnergy <= 0.0 )  {
 		Speed = VSize(Velocity);
+		Return;
+	}
+	
+	// Performance update
+	LastSpeed = Speed;
+	SpeedSquared = VSizeSquared(Velocity);
+	KineticEnergy = SpeedSquared * SpeedSquaredToKineticEnergy;
+	Speed = Sqrt(SpeedSquared);
+	ScaleProjectilePerformance(Speed / LastSpeed);
+}
+
+simulated function SubtractKineticEnergy( float SubtractedEnergy )
+{
+	local	float	ScalePerformance;
+	
+	if ( SubtractedEnergy <= 0.0 )
+		Return;
+	
+	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
+	if ( SubtractedEnergy >= KineticEnergy )  {
+		SetNullKineticEnergy();
+		Return;
+	}
+	
+	// Performance update
+	ScalePerformance = Speed;
+	KineticEnergy -= SubtractedEnergy;
+	Speed = Sqrt(KineticEnergy * KineticEnergyToSpeedSquared);
+	ScalePerformance = Speed / ScalePerformance;
+	Velocity *= ScalePerformance;
+	ScaleProjectilePerformance(ScalePerformance);
 }
 
 simulated function SpawnHitEffects(
 			vector			HitLocation, 
 			vector			HitNormal, 
- optional	ESurfaceTypes	HitSurfaceType,
  optional	Actor			A )
 {
 	local	UM_BaseHitEffects	HitEffects;
@@ -692,26 +701,28 @@ simulated function SpawnHitEffects(
 		 && Level.DetailMode != DM_Low && HitEffectsClass != None )  {
 		// Spawn
 		if ( Class'UM_GlobalData'.default.ActorPool != None )
-			HitEffects = UM_BaseHitEffects(Class'UM_GlobalData'.default.ActorPool.AllocateActor(HitEffectsClass,HitLocation,rotator(-HitNormal)));
+			HitEffects = UM_BaseHitEffects(Class'UM_GlobalData'.default.ActorPool.AllocateActor(HitEffectsClass, HitLocation, rotator(-HitNormal)));
 		else
 			HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
+		
+		if ( HitEffects == None )
+			Return;
+		
 		// Play Hit Effects
-		if ( HitEffects != None )  {
-			if ( HitSurfaceType == EST_Default && A != None )  {
-				if ( UM_BallisticCollision(A) != None )
-					P = Pawn(A.Base);
+		if ( A != None )  {
+			if ( UM_BallisticCollision(A) != None )
+				P = Pawn(A.Base);
+			else
+				P = Pawn(A);
+			// New HitSurfaceType for Pawn
+			if ( P != None )  {
+				if ( P.ShieldStrength > 0 )
+					HitSurfaceType = EST_MetalArmor;
 				else
-					P = Pawn(A);
-				// New HitSurfaceType for Pawn
-				if ( P != None )  {
-					if ( P.ShieldStrength > 0 )
-						HitSurfaceType = EST_MetalArmor;
-					else
-						HitSurfaceType = EST_Flesh;
-				}
+					HitSurfaceType = EST_Flesh;
 			}
-			HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
 		}
+		HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
 	}
 }
 
@@ -808,18 +819,15 @@ simulated function ProcessHitActor(
 	Vector				HitNormal,
 	float				DamageAmount, 
 	float				MomentumAmount, 
-	class<DamageType>	DmgType )
+	class<DamageType>	DamageType )
 {
 	local	Vector	VelNormal;
-	local	float	EnergyLoss;
+	local	float	SubtractedEnergy;
 	local	Pawn	P;
 	
-	if ( DmgType == None || DamageAmount <= 0.0 )
+	if ( DamageType == None || DamageAmount < 0.5 )
 		Return;
 	
-	// Updating Projectile Performance before hit the victim
-	// Needed because Projectile can lose Speed and Damage while flying
-	UpdateProjectilePerformance();
 	VelNormal = Normal(Velocity);
 	
 	if ( UM_BallisticCollision(A) != None )  {
@@ -829,48 +837,44 @@ simulated function ProcessHitActor(
 		P = Pawn(A.Base);
 		if ( UM_PawnHeadCollision(A) != None )
 			DamageAmount *= HeadShotDamageMult;	// HeadShot
-		EnergyLoss = UM_BallisticCollision(A).ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
+		SubtractedEnergy = UM_BallisticCollision(A).ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
 	}
 	// If projectile hit a Pawn
 	else if ( Pawn(A) != None )  {
 		P = Pawn(A);
+		// HeadShot
 		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
 			DamageAmount *= HeadShotDamageMult;
+			SubtractedEnergy = DefaultPawnHeadImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
 			if ( HeadShotDamageType != None )
-				DmgType = HeadShotDamageType;
-			// HeadShot EnergyLoss
-			EnergyLoss = EnergyToPenetratePawnHead / PenetrationBonus;
+				DamageType = HeadShotDamageType;
 		}
 		else
-			EnergyLoss = EnergyToPenetratePawnBody / PenetrationBonus;
+			SubtractedEnergy = DefaultPawnBodyImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
 	}
-	
-	// Hit effects
-	// Mover Hit effect will be spawned in the ProcessHitWall function
-	if ( Mover(A) == None )
-		SpawnHitEffects(HitLocation, HitNormal, ,A);
 	
 	// Damage
 	if ( Role == ROLE_Authority )  {
 		if ( Instigator == None || Instigator.Controller == None )
 			A.SetDelayedDamageInstigatorController( InstigatorController );
 		// Hurt this actor
-		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DmgType);
+		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DamageType);
 		MakeNoise(1.0);
 	}
 	
-	if ( Mover(A) != None )
+	if ( Mover(A) != None )  {
 		ProcessHitWall(HitNormal);
-	// Updating Projectile
-	else if ( EnergyLoss > 0.0 )
-		UpdateProjectilePerformance(True, EnergyLoss);
+		Return;
+	}
+	
+	SpawnHitEffects(HitLocation, HitNormal, A);
+	if ( SubtractedEnergy > 0.0 )
+		SubtractKineticEnergy(SubtractedEnergy);
 }
 
 simulated function bool CanTouchActor( Actor A )
 {
-	/*	Todo: UM_BaseMonster пока что вписана как затычка, дабы снаряды реагировали на UM_BallisticCollision
-		и не реагировали на класс мностров. */
-	if ( A == None || A.bDeleteMe || A.bStatic || A.bWorldGeometry || !A.bBlockActors || !A.bProjTarget || UM_BaseMonster(A) != None )
+	if ( A == None || A.bDeleteMe || A.bStatic || A.bWorldGeometry || !A.bBlockActors || !A.bProjTarget )
 		Return False;
 	
 	Return LastTouched == None || (A != LastTouched && A.Base != LastTouched);
@@ -892,10 +896,16 @@ simulated function ProcessTouchActor( Actor A )
 	
 	LastTouched = A;
 	if ( CanHurtActor(A) )  {
-		GetTouchLocation(A, TouchLocation, TouchNormal);
-		ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
+		// Updating Projectile Performance before hit the victim
+		// Needed because Projectile can lose some Speed and Damage while flying
+		UpdateBallisticPerformance();
+		if ( Speed > MinSpeed )  {
+			GetTouchLocation(A, TouchLocation, TouchNormal);
+			ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
+		}
+		else
+			SetNullKineticEnergy();
 	}
-	
 	LastTouched = None;
 }
 
@@ -911,46 +921,54 @@ simulated function ProcessHitWall( Vector HitNormal )
 {
 	local	Vector			VectVelDotNorm, TmpVect;
 	local	Material		HitMat;
-	local	ESurfaceTypes	ST;
-	local	float			f;
+	local	int				Num;
+	local	float			VelDotNorm;
 	
 	// Updating bullet performance before hit the wall
 	// Needed because bullet lose Speed and Damage while flying
-	UpdateProjectilePerformance();
-	if ( Speed > MinSpeed )  {
+	UpdateBallisticPerformance();
+	if ( Speed <= MinSpeed )  {
+		SetNullKineticEnergy();
+		Return;
+	}
+	else  {
 		SpawnHitEffects(Location, HitNormal);
 		if ( Role == ROLE_Authority )
 			MakeNoise(0.3);
 	}
 	
-	if ( bCanRebound )  {
-		// Finding out surface material
-		Trace(VectVelDotNorm, TmpVect, (Location + Normal(Velocity) * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
-		if ( HitMat != None && ESurfaceTypes(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
-			ST = ESurfaceTypes(HitMat.SurfaceType);
-		else
-			ST = EST_Default;
-		// Speed by HitNormal
-		f = Velocity Dot HitNormal;
-		// Stuck or Rebound
-		if ( (Square(f) * SpeedSquaredToEnergy) < ImpactSurfaces[ST].ProjectileEnergyToStuck )  {
-			VectVelDotNorm = HitNormal * f;
-			// Mirroring Velocity Vector by HitNormal with lossy
-			Velocity = (Velocity - VectVelDotNorm) * FMin((ImpactSurfaces[ST].FrictionCoefficient * BounceBonus), 0.98) - VectVelDotNorm * FMin((ImpactSurfaces[ST].PlasticityCoefficient * BounceBonus), 0.96);
-			// Start Falling
-			if ( Physics == PHYS_Projectile )
-				SetPhysics(PHYS_Falling);
-			// Decreasing performance
-			UpdateProjectilePerformance(True);
-			// Landed on the next colliding with ground
-			if ( Speed <= MinSpeed )
-				bBounce = False;
-			
-			Return;
-		}
+	if ( !bCanRicochet )  {
+		SetNullKineticEnergy();
+		Return;
 	}
 	
-	ZeroProjectileEnergy();
+	// Finding out surface material
+	Trace(VectVelDotNorm, TmpVect, (Location + Normal(Velocity) * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
+	if ( HitMat != None && int(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
+		Num = int(HitMat.SurfaceType);
+	else
+		Num = 0;
+	
+	// Speed by HitNormal
+	VelDotNorm = Velocity dot HitNormal;
+	// Stuck
+	if ( (Square(VelDotNorm) * SpeedSquaredToKineticEnergy) >= ImpactSurfaces[Num].KineticEnergyToStuck )  {
+		SetNullKineticEnergy();
+		Return;
+	}
+	
+	// ricochet
+	VectVelDotNorm = HitNormal * VelDotNorm;
+	// Mirroring Velocity Vector by HitNormal with lossy
+	Velocity = (Velocity - VectVelDotNorm) * ImpactSurfaces[Num].FrictionCoefficient - VectVelDotNorm * ImpactSurfaces[Num].PlasticityCoefficient;
+	// Start Falling
+	if ( Physics == PHYS_Projectile )
+		SetPhysics(PHYS_Falling);
+	// Decreasing performance
+	UpdateBallisticPerformance(True);
+	// Landed on the next colliding with ground
+	if ( Speed <= MinSpeed )
+		bBounce = False;
 }
 
 // Called when the actor can collide with world geometry and just hit a wall.
@@ -959,10 +977,9 @@ simulated singular event HitWall( vector HitNormal, Actor Wall )
 	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall);
-		Return;
 	}
-	
-	ProcessHitWall(HitNormal);
+	else
+		ProcessHitWall(HitNormal);
 	HurtWall = None;
 }
 
@@ -981,7 +998,7 @@ simulated event Landed( vector HitNormal )
 simulated event EncroachedBy( Actor Other )
 {
 	if ( Other != None && (Other == Level || Other.bWorldGeometry) )
-		ZeroProjectileEnergy();
+		SetNullKineticEnergy();
 }
 
 simulated event Destroyed()
@@ -995,6 +1012,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 bUseMetricSystem=True
 	 InstigatorTeamNum=255	// Default TeamNum
 	 bCanHurtSameTypeProjectile=False
 	 // EST_Default
@@ -1041,8 +1059,6 @@ defaultproperties
 	 bCanBeDamaged=False
 	 bEnableLogging=False
 	 bAutoLifeSpan=False
-	 bReplicateSpawnTime=False
-	 bReplicateSpawnLocation=False
 	 bCanHurtOwner=True
 	 //Collision
 	 CollisionRadius=0.000000
@@ -1082,7 +1098,7 @@ defaultproperties
 	 //Ballistic performance randomization percent
 	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 //ProjectileMass
-	 ProjectileMass=0.020000	// kilograms
+	 ProjectileMass=20.0	// grams
 	 //MuzzleVelocity
      MuzzleVelocity=0.000000	// m/sec
 	 //UpdateTimeDelay - prevents from non-stopping (looping) updates
@@ -1109,7 +1125,7 @@ defaultproperties
      bUpdateSimulatedPosition=False
 	 //[end]
      //[block] Physics options.
-	 bCanRebound=False
+	 bCanRicochet=False
 	 // If bBounce=True call HitWal() instead of Landed()
 	 // when the actor has finished falling (Physics was PHYS_Falling).
 	 bBounce=True

@@ -32,9 +32,9 @@ var		UM_BaseActor.SoundData	PickupSound;
 //[block] Functions
 
 // Called when projectile has lost all energy
-simulated function ZeroProjectileEnergy()
+simulated function SetNullKineticEnergy()
 {
-	Super(UM_BaseProjectile).ZeroProjectileEnergy();
+	Super(UM_BaseProjectile).SetNullKineticEnergy();
 	GotoState('NoEnergy');
 }
 
@@ -62,12 +62,12 @@ defaultproperties
 	 MaxEffectiveRange=350.000000
 	 //Expansion
 	 ExpansionCoefficient=1.00000	// For FMJ
-	 ProjectileMass=0.300000	// kilograms
+	 ProjectileMass=300.0	//grams
      MuzzleVelocity=100.000000	// m/sec
 	 //[end]
 	 HeadShotDamageMult=1.250000
 	 bBounce=True
-	 bCanRebound=True
+	 bCanRicochet=True
 	 bOrientToVelocity=True
 	 Physics=PHYS_Projectile
 	 //Trail

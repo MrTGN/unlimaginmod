@@ -29,7 +29,7 @@ defaultproperties
 	 BallisticRandRange=(Min=0.97,Max=1.03)
 	 EffectiveRange=1400.000000
 	 MaxEffectiveRange=1500.000000
-	 ProjectileMass=0.015000
+	 ProjectileMass=15.0 //grams
 	 //Trail
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
 	 MuzzleVelocity=380.000000

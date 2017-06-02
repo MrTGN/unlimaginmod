@@ -22,7 +22,7 @@ defaultproperties
 {
 	 ProjectileDiameter=12.98
 	 HeadShotDamageMult=2.500000
-	 bCanRebound=True
+	 bCanRicochet=True
 	 //You can use this varible to set new hit sound volume and radius
 	 HitSoundVolume=1.400000
 	 //Ballistic
@@ -30,7 +30,7 @@ defaultproperties
 	 BallisticRandRange=(Min=0.93,Max=1.03)
 	 EffectiveRange=1800.000000	// meters
 	 MaxEffectiveRange=2000.000000
-	 ProjectileMass=0.059000	//Kilograms
+	 ProjectileMass=59.0	//grams
 	 MuzzleVelocity=770.000000	// m/s
 	 Damage=920.000000
 	 MomentumTransfer=160000.000000

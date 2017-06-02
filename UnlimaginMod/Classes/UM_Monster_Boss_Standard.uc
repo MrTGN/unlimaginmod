@@ -45,7 +45,7 @@ defaultproperties
 	 // ControllerClass
      ControllerClass=Class'UnlimaginMod.UM_ZombieBossController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Patriarch_A.Patriarch_Mesh'
+	 Mesh=SkeletalMesh'UM_Patriarch_A.PatriarchMesh'
 	 // Collision
 	 MeshTestCollisionHeight=70.0
 	 MeshTestCollisionRadius=24.0

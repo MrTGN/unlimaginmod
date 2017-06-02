@@ -23,15 +23,15 @@ class UM_BaseExplosiveProjectile extends UM_BaseProjectile
 //[block] Variables
 
 // camera shakes
-var(Shakes)		vector				ShakeRotMag;		// how far to rot view
-var(Shakes)		vector				ShakeRotRate;		// how fast to rot view
-var(Shakes)		float				ShakeRotTime;		// how much time to rot the instigator's view
-var(Shakes)		vector				ShakeOffsetMag;		// max view offset vertically
-var(Shakes)		vector				ShakeOffsetRate;	// how fast to offset view vertically
-var(Shakes)		float				ShakeOffsetTime;	// how much time to offset view
+var(Shakes)			vector			ShakeRotMag;		// how far to rot view
+var(Shakes)			vector			ShakeRotRate;		// how fast to rot view
+var(Shakes)			float			ShakeRotTime;		// how much time to rot the instigator's view
+var(Shakes)			vector			ShakeOffsetMag;		// max view offset vertically
+var(Shakes)			vector			ShakeOffsetRate;	// how fast to offset view vertically
+var(Shakes)			float			ShakeOffsetTime;	// how much time to offset view
 
-var(Shakes)		float				ShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRadiusScale;
-var(Shakes)		float				MaxEpicenterShakeScale; // Maximum shake scale in explosion epicenter
+var(Shakes)			float			ShakeRadiusScale;	// ShakeRadius = DamageRadius * ShakeRadiusScale;
+var(Shakes)			float			MaxEpicenterShakeScale; // Maximum shake scale in explosion epicenter
 
 
 // With DisintegrationDamageTypes array you can set damage types 
@@ -46,10 +46,10 @@ var		class<UM_BaseProjectile>	ShrapnelClass;
 var		UM_BaseObject.IRange		ShrapnelAmount;
 
 //[block] Effects
-var		bool						bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
-var		bool						bShouldDisintegrate, bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
-var		float						DisintegrationChance;	// Chance of this projectile to Disintegrate
-var		float						DisintegrationDamageScale; // Scale damage by this multiplier when projectile has been disintegrated
+var					bool			bShouldExplode, bHasExploded; 	// This Projectile has Exploded.
+var					bool			bShouldDisintegrate, bDisintegrated;	// This Projectile has been disintegrated by a siren scream.
+var					float			DisintegrationChance;	// Chance of this projectile to Disintegrate
+var					float			DisintegrationDamageScale; // Scale damage by this multiplier when projectile has been disintegrated
 
 // Sounds
 var		UM_BaseActor.SoundData		DisintegrationSound, ExplosionSound;
@@ -59,15 +59,14 @@ var		class<Emitter>				ExplosionVisualEffect, DisintegrationVisualEffect;
 //[end]
 
 // ArmingDelay
-var		float						ArmingRange; // Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
-var		float						SquaredArmingRange;
-var		float						ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
-var		transient	float			ArmedTime;
-var					bool			bArmed;
+var					float			ArmingRange; // Detonator will be armed after this distance (meters). Converted to UU and squared in CalcDefaultProperties().
+var					float			SquaredArmingRange;
+var					float			ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
+var					bool			bDelayArming, bArmed, bLoopTimer;
 
 // How much damage to do when this Projectile impacts something before exploding
-var(Impact)		float				ImpactDamage;
-var(Impact)		float				ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
+var(Impact)			float			ImpactDamage;
+var(Impact)			float			ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
 var		class<DamageType>			ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
 
 
@@ -80,7 +79,7 @@ var		class<DamageType>			ImpactDamageType;	// Damagetype of this Projectile hitt
 replication
 {
 	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bShouldDisintegrate, bShouldExplode;
+		bShouldDisintegrate, bShouldExplode, bArmed;
 }
 
 //[end] Replication
@@ -145,19 +144,12 @@ simulated static function bool UnloadAssets()
 }
 //[end]
 
-simulated function SetArmingDelay( float NewArmingDelay )
+function ServerInitialUpdate()
 {
-	if ( NewArmingDelay > 0.0 )  {
+	if ( bDelayArming && ArmingDelay > 0.0 )  {
 		bArmed = False;
-		ArmedTime = Level.TimeSeconds + NewArmingDelay;
+		SetTimer(ArmingDelay, bLoopTimer);
 	}
-}
-
-simulated event PostNetBeginPlay()
-{
-	Super.PostNetBeginPlay();
-	// ArmedTime
-	SetArmingDelay( ArmingDelay );
 }
 
 simulated event PostNetReceive()
@@ -171,26 +163,21 @@ simulated event PostNetReceive()
 // Detonator is armed
 simulated function bool IsArmed()
 {
-	if ( bDisintegrated || bHasExploded )
-		Return False;
-	
-	Return bArmed;
+	Return bArmed && !bDisintegrated && !bHasExploded;
 }
 
 simulated function Disarm()
 {
-	ArmedTime = 0.0;
+	bDelayArming = False;
 	bArmed = False;
+	ArmingDelay = 0.0;
 	LifeSpan = 1.0;
 }
 
-simulated event Tick( float DeltaTime )
+event Timer()
 {
-	// Arming
-	if ( !bArmed && ArmedTime > 0.0 && Level.TimeSeconds >= ArmedTime )  {
-		ArmedTime = 0.0;
+	if ( bDelayArming && !bArmed )
 		bArmed = True;
-	}
 }
 
 // Check for friendly Pawns in radius
@@ -227,10 +214,11 @@ simulated function bool EnemyIsInRadius( float EnemySearchRadius )
 }
 
 // Called when projectile has lost all energy
-simulated function ZeroProjectileEnergy()
+simulated function SetNullKineticEnergy()
 {
-	Super.ZeroProjectileEnergy();
+	Super.SetNullKineticEnergy();
 	ImpactDamage = 0.0;
+	ImpactMomentumTransfer = 0.0;
 }
 
 // Called when the projectile loses some of the energy
@@ -245,7 +233,7 @@ function bool CanHurtVictim(Actor Victim)
 	local	int		i;
 	
 	if ( Victim == None || Victim.bDeleteMe || Victim.bHidden || !Victim.bCanBeDamaged
-		 || Victim == Self || Victim == Hurtwall || FluidSurfaceInfo(Victim) != None )
+		 || Victim == Self || FluidSurfaceInfo(Victim) != None )
 		Return False;
 	
 	// Check IgnoredVictims array
@@ -475,14 +463,6 @@ simulated function ShakePlayersView()
 	}
 }
 
-event Timer()
-{
-	if ( IsArmed() )
-		Explode(Location, Vector(Rotation));
-	else
-		Destroy();
-}
-
 simulated function Explode( vector HitLocation, vector HitNormal )
 {
 	if ( bHasExploded || bDisintegrated )
@@ -601,8 +581,15 @@ simulated function ProcessTouchActor( Actor A )
 	
 	LastTouched = A;
 	if ( CanHurtActor(A) )  {
-		GetTouchLocation(A, TouchLocation, TouchNormal);
-		ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		// Updating Projectile Performance before hit the victim
+		// Needed because Projectile can lose some Speed and Damage while flying
+		UpdateBallisticPerformance();
+		if ( Speed > MinSpeed )  {
+			GetTouchLocation(A, TouchLocation, TouchNormal);
+			ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
+		}
+		else
+			SetNullKineticEnergy();
 		if ( IsArmed() )
 			Explode(TouchLocation, TouchNormal);
 	}
@@ -614,11 +601,11 @@ simulated singular event HitWall(vector HitNormal, actor Wall)
 	if ( CanTouchActor(Wall) )  {
 		HurtWall = Wall;
 		ProcessTouchActor(Wall);
-		Return;
 	}
-	
-	if ( IsArmed() )
+	else if ( IsArmed() )
 		Explode((Location + ExploWallOut * HitNormal), HitNormal);
+	else
+		ProcessHitWall(HitNormal);
 	
 	HurtWall = None;
 }

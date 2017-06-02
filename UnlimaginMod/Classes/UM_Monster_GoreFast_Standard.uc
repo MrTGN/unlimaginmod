@@ -34,7 +34,7 @@ defaultproperties
 	 // ControllerClass
      ControllerClass=Class'UnlimaginMod.UM_ZombieGoreFastController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_GoreFast_A.GoreFast_Mesh'
+	 Mesh=SkeletalMesh'UM_GoreFast_A.GoreFastMesh'
 	 // Collision
 	 MeshTestCollisionHeight=50.0
 	 MeshTestCollisionRadius=17.4

@@ -22,13 +22,13 @@ class UM_BaseProjectile_M1022LRSniper extends UM_BaseProjectile_Bullet
 defaultproperties
 {
      ProjectileDiameter=12.95
-	 bCanRebound=True
+	 bCanRicochet=True
 	 //Ballistic
 	 BallisticCoefficient=0.876000
 	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 EffectiveRange=1800.000000
 	 MaxEffectiveRange=1950.000000
-	 ProjectileMass=0.042443		//kilograms
+	 ProjectileMass=42.443		//grams
 	 MuzzleVelocity=920.000000	// m/s
    	 HeadShotDamageMult=2.800000
 	 Damage=720.000000

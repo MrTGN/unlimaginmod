@@ -37,7 +37,7 @@ defaultproperties
 	 // ControllerClass
      ControllerClass=Class'UnlimaginMod.UM_ZombieScrakeController'
 	 // Mesh
-	 Mesh=SkeletalMesh'UM_Scrake_A.Scrake_Mesh'
+	 Mesh=SkeletalMesh'UM_Scrake_A.ScrakeMesh'
 	 // Collision
 	 MeshTestCollisionHeight=59.6
 	 MeshTestCollisionRadius=20.0

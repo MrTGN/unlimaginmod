@@ -27,7 +27,7 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 //[block] Functions
 
 // Called when projectile has lost all energy
-simulated function SetNullKineticEnergy()
+simulated function SetNoKineticEnergy()
 {
 	Damage = 0;
 	MomentumTransfer = 0.0;
@@ -39,7 +39,7 @@ simulated function SetNullKineticEnergy()
 
 simulated event Landed( Vector HitNormal )
 {
-	SetNullKineticEnergy();
+	SetNoKineticEnergy();
 }
 
 // Called when the projectile loses some of it's energy

@@ -32,9 +32,9 @@ var		UM_BaseActor.SoundData	PickupSound;
 //[block] Functions
 
 // Called when projectile has lost all energy
-simulated function SetNullKineticEnergy()
+simulated function SetNoKineticEnergy()
 {
-	Super(UM_BaseProjectile).SetNullKineticEnergy();
+	Super(UM_BaseProjectile).SetNoKineticEnergy();
 	GotoState('NoEnergy');
 }
 

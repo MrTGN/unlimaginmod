@@ -89,43 +89,44 @@ var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 var				int			InstigatorTeamNum;
 
 //[block] Ballistic performance
-var(Headshots)	class<DamageType>	HeadShotDamageType;	// Headshot damage type
-var(Headshots)	float				HeadShotDamageMult;	// Headshot damage multiplier
+var(Headshots)	class<DamageType>			HeadShotDamageType;	// Headshot damage type
+var(Headshots)	float						HeadShotDamageMult;	// Headshot damage multiplier
 
-var		SurfaceImpactData	ImpactSurfaces[20];
+var				SurfaceImpactData			ImpactSurfaces[20];
 
-var				Vector		CollisionExtent;
-var				float		CollisionExtentVSize;
-var				float		SurfaceTraceRange;
-var				float		LandedPrePivotCollisionScale;
+var				Vector						CollisionExtent;
+var				float						CollisionExtentVSize;
+var				float						SurfaceTraceRange;
+var				float						LandedPrePivotCollisionScale;
 // Projectile Expansion Coefficient.
 // For FMJ bullets ExpansionCoefficient less then 1.01 (approximately 1.0)
 // For JHP and HP bullets ExpansionCoefficient more then 1.4
-var(Ballistic)	float		ExpansionCoefficient;
-var(Ballistic)	float		ProjectileDiameter;		// Projectile diameter in mm
-var				float		ProjectileCrossSectionalArea;	// Projectile cross-sectional area in mm2. Calculated automatically.
+var(Ballistic)	float						ExpansionCoefficient;
+var(Ballistic)	float						ProjectileDiameter;		// Projectile diameter in mm
+var				float						ProjectileCrossSectionalArea;	// Projectile cross-sectional area in mm2. Calculated automatically.
 
-var(Ballistic)	float		EffectiveRange, MaxEffectiveRange;	// EffectiveRange and MaxEffectiveRange of this projectile in meters. 
-var(Ballistic)	range		BallisticRandRange;	// Projectile ballistic performance randomization range
-var(Ballistic)	float		MuzzleVelocity;	// Projectile muzzle velocity in m/s (bUseMetricSystem) or in feet per second (bUseUSCustomarySystem).
-var(Ballistic)	float		ProjectileMass;	// Projectile mass in grams (bUseMetricSystem) or in grains (bUseUSCustomarySystem).
+var(Ballistic)	float						EffectiveRange, MaxEffectiveRange;	// EffectiveRange and MaxEffectiveRange of this projectile in meters. 
+var(Ballistic)	range						BallisticRandRange;	// Projectile ballistic performance randomization range
+var(Ballistic)	float						MuzzleVelocity;	// Projectile muzzle velocity in m/s (bUseMetricSystem) or in feet per second (bUseUSCustomarySystem).
+var(Ballistic)	float						ProjectileMass;	// Projectile mass in grams (bUseMetricSystem) or in grains (bUseUSCustomarySystem).
 
-var				float		SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
-var				float		FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
-var				float		MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
+var				float						SpeedDropInWaterCoefficient;	// The projectile speed drop in the water
+var				float						FullStopSpeedCoefficient;	// If Speed < (MaxSpeed * FullStopSpeedCoefficient) the projectile will fully stop moving
+var				float						MinSpeed;					// If Speed < MinSpeed projectile will stop moving.
 
 // This variables used to decrease the load on the CPU
-var	transient	float		NextProjectileUpdateTime;
-var				float		UpdateTimeDelay, InitialUpdateTimeDelay;
+var	transient	float						NextProjectileUpdateTime;
+var				float						UpdateTimeDelay, InitialUpdateTimeDelay;
 
 // Projectile kinetic energy in Joules. Used for penetrations and bounces calculation.
 // KineticEnergy Calculates automatically before initial replication.
-var	transient	float		KineticEnergy;
-var				float		SpeedSquaredToKineticEnergy;		// default.ProjectileMass / (EnergyConst * SquareMeterInUU)
-var				float		KineticEnergyToSpeedSquared;		// (EnergyConst * SquareMeterInUU) / default.ProjectileMass
+var				bool						bNoKineticEnergy;
+var	transient	float						KineticEnergy;
+var				float						SpeedSquaredToKineticEnergy;		// default.ProjectileMass / (EnergyConst * SquareMeterInUU)
+var				float						KineticEnergyToSpeedSquared;		// (EnergyConst * SquareMeterInUU) / default.ProjectileMass
 
-var				float		PenetrationBonus;
-var				float		BounceBonus;
+var				float						PenetrationBonus;
+var				float						BounceBonus;
 //[end]
 
 //[block] Effects
@@ -165,7 +166,10 @@ simulated function Reset()
 
 simulated static final function vector GetDefaultCollisionExtent()
 {
-	Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
+	if ( CollisionRadius > 0.0 || CollisionHeight > 0.0 )
+		Return default.CollisionRadius * Vect(1.0, 1.0, 0.0) + default.CollisionHeight * Vect(0.0, 0.0, 1.0);
+	
+	Return Vect(0,0,0);
 }
 
 simulated static function CalcDefaultProperties()
@@ -241,8 +245,14 @@ simulated static function CalcDefaultProperties()
 	
 	// CollisionExtent
 	default.CollisionExtent = GetDefaultCollisionExtent();
-	default.CollisionExtentVSize = VSize(default.CollisionExtent);
-	default.SurfaceTraceRange = default.CollisionExtentVSize + 16.0;
+	if ( default.CollisionExtent != vect(0,0,0) )  {
+		default.CollisionExtentVSize = VSize(default.CollisionExtent);
+		default.SurfaceTraceRange = default.CollisionExtentVSize + 16.0;
+	}
+	else  {
+		default.CollisionExtentVSize = 0.0;
+		default.SurfaceTraceRange = 16.0;
+	}
 	
 	// Assign BCInverse of this Projectile
 	if ( default.BCInverse <= 0.0 )
@@ -530,7 +540,7 @@ simulated function ClientPostInitialReplication()
 				Speed = VSize(Velocity);
 		}
 		else
-			SetNullKineticEnergy();
+			SetNoKineticEnergy();
 	}
 }
 
@@ -579,7 +589,7 @@ state InTheWater
 			
 			Acceleration = Vect(0,0,0);
 			if ( KineticEnergy > 0.0 )
-				SetNullKineticEnergy();
+				SetNoKineticEnergy();
 			else  {
 				Velocity = Vect(0,0,0);
 				Speed = 0.0;
@@ -633,8 +643,9 @@ simulated function StopProjectile()
 }
 
 // Called when the projectile has lost all kinetic energy
-simulated function SetNullKineticEnergy()
+simulated function SetNoKineticEnergy()
 {
+	bNoKineticEnergy = True;
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_Falling);
@@ -676,7 +687,7 @@ simulated function SubtractKineticEnergy( float SubtractedEnergy )
 	
 	NextProjectileUpdateTime = Level.TimeSeconds + UpdateTimeDelay;
 	if ( SubtractedEnergy >= KineticEnergy )  {
-		SetNullKineticEnergy();
+		SetNoKineticEnergy();
 		Return;
 	}
 	
@@ -813,45 +824,109 @@ simulated function bool CanHurtActor( Actor A )
 	Return True;
 }
 
-simulated function ProcessHitActor( 
-	Actor				A, 
-	Vector				HitLocation,
-	Vector				HitNormal,
-	float				DamageAmount, 
-	float				MomentumAmount, 
-	class<DamageType>	DamageType )
+simulated function GetTouchLocation( Actor A, out vector TouchLocation, optional out vector TouchNormal )
 {
-	local	Vector	VelNormal;
-	local	float	SubtractedEnergy;
-	local	Pawn	P;
+	if ( Velocity == Vect(0,0,0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - Velocity * 1.5), CollisionExtent) )  {
+		//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
+		TouchLocation = Location;
+		//TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
+		TouchNormal = Normal(TouchLocation - A.Location);
+	}
+}
+
+simulated function GetProjectileImpactParameters( 
+	out			float				DamageAmount,
+	out			float				MomentumAmount,
+	out			class<DamageType>	DamageType
+	optional	bool				bIsHeadShot	)
+{
+	// out DamageAmount
+	if ( bIsHeadShot )
+		DamageAmount = Damage * HeadShotDamageMult;
+	else
+		DamageAmount = Damage;
+	
+	// out MomentumAmount
+	MomentumAmount = MomentumTransfer;
+	
+	// out DamageType
+	if ( bIsHeadShot && HeadShotDamageType != None )
+		DamageType = HeadShotDamageType;
+	else
+		DamageType = MyDamageType;
+}
+
+simulated function ProcessHitMonster( UM_BaseMonster Monster )
+{
+	local	UM_BallisticCollision	BC;
+	local	Vector					HitLocation, HitNormal, VelNormal, TraceStart, TraceEnd;
+	local	float					DamageAmount, MomentumAmount;
+	local	class<DamageType>		DamageType;
+	local	bool					bSpawnHitEffects;
+	
+	if ( Monster == None )
+		Return;
+	
+	GetTouchLocation(Monster, TraceStart);
+	VelNormal = Normal(Velocity);
+	TraceEnd = VelNormal * (2.0 * Monster.CollisionHeight + 2.0 * Monster.CollisionRadius);
+	Monster.TraceActors(class'UM_BallisticCollision', BC, HitLocation, HitNormal, TraceEnd, TraceStart, CollisionExtent)  {
+		if ( BC == None || !BC.CanBeDamaged() || BC.Instigator != Monster )
+			Continue;
+		
+		// HeadShot
+		if ( UM_PawnHeadCollision(BC) != None )
+			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType, True);
+		else
+			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType);
+		
+		if ( DamageType == None || DamageAmount < 0.5 )
+			Break;
+		
+		if ( !bSpawnHitEffects )
+			bSpawnHitEffects = Speed > MinSpeed;
+		
+		// Damage
+		if ( Role == ROLE_Authority )  {
+			if ( Instigator == None || Instigator.Controller == None )
+				Monster.SetDelayedDamageInstigatorController( InstigatorController );
+			// Hurt this actor
+			Monster.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DamageType);
+			MakeNoise(1.0);
+		}
+		SubtractKineticEnergy(BC.ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus);
+		
+		if ( bNoKineticEnergy )
+			Break;
+	}
+	
+	if ( bSpawnHitEffects )
+		SpawnHitEffects(HitLocation, HitNormal, Monster);
+}
+
+simulated function ProcessHitActor( Actor A )
+{
+	local	vector				HitLocation, HitNormal, VelNormal;
+	local	float				SubtractedEnergy, DamageAmount, MomentumAmount;
+	local	class<DamageType>	DamageType;
+
+	VelNormal = Normal(Velocity);
+	GetTouchLocation(A, HitLocation, HitNormal);
+	// If projectile hit a Pawn
+	if ( Pawn(A) != None )  {
+		// HeadShot
+		if ( Pawn(A).IsHeadShot(HitLocation, VelNormal, 1.0) )  {
+			SubtractedEnergy = DefaultPawnHeadImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
+			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType, True);
+		}
+		else  {
+			SubtractedEnergy = DefaultPawnBodyImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
+			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType);
+		}
+	}
 	
 	if ( DamageType == None || DamageAmount < 0.5 )
 		Return;
-	
-	VelNormal = Normal(Velocity);
-	
-	if ( UM_BallisticCollision(A) != None )  {
-		if ( !UM_BallisticCollision(A).CanBeDamaged() )
-			Return;
-		
-		P = Pawn(A.Base);
-		if ( UM_PawnHeadCollision(A) != None )
-			DamageAmount *= HeadShotDamageMult;	// HeadShot
-		SubtractedEnergy = UM_BallisticCollision(A).ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
-	}
-	// If projectile hit a Pawn
-	else if ( Pawn(A) != None )  {
-		P = Pawn(A);
-		// HeadShot
-		if ( P.IsHeadShot(HitLocation, VelNormal, 1.0) )  {
-			DamageAmount *= HeadShotDamageMult;
-			SubtractedEnergy = DefaultPawnHeadImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
-			if ( HeadShotDamageType != None )
-				DamageType = HeadShotDamageType;
-		}
-		else
-			SubtractedEnergy = DefaultPawnBodyImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
-	}
 	
 	// Damage
 	if ( Role == ROLE_Authority )  {
@@ -867,7 +942,9 @@ simulated function ProcessHitActor(
 		Return;
 	}
 	
-	SpawnHitEffects(HitLocation, HitNormal, A);
+	if ( Speed > MinSpeed )
+		SpawnHitEffects(HitLocation, HitNormal, A);
+	
 	if ( SubtractedEnergy > 0.0 )
 		SubtractKineticEnergy(SubtractedEnergy);
 }
@@ -880,31 +957,19 @@ simulated function bool CanTouchActor( Actor A )
 	Return LastTouched == None || (A != LastTouched && A.Base != LastTouched);
 }
 
-simulated function GetTouchLocation( Actor A, out vector TouchLocation, optional out vector TouchNormal )
-{
-	if ( Velocity == Vect(0,0,0) || A.TraceThisActor(TouchLocation, TouchNormal, (Location + Velocity), (Location - Velocity * 1.5), CollisionExtent) )  {
-		//Log("Velocity="$Velocity @"Location="$Location @"TraceThisActor did't hit"@A.Name @A.Name@"Location="$A.Location, Name);
-		TouchLocation = Location;
-		//TouchNormal = Normal((TouchLocation - A.Location) cross Vect(0.0, 0.0, 1.0));
-		TouchNormal = Normal(TouchLocation - A.Location);
-	}
-}
-
 simulated function ProcessTouchActor( Actor A )
 {
-	local	vector	TouchLocation, TouchNormal;
-	
 	LastTouched = A;
 	if ( CanHurtActor(A) )  {
 		// Updating Projectile Performance before hit the victim
 		// Needed because Projectile can lose some Speed and Damage while flying
 		UpdateBallisticPerformance();
-		if ( Speed > MinSpeed )  {
-			GetTouchLocation(A, TouchLocation, TouchNormal);
-			ProcessHitActor(A, TouchLocation, TouchNormal, Damage, MomentumTransfer, MyDamageType);
-		}
+		if ( Speed <= MinSpeed )
+			SetNoKineticEnergy();
+		else if ( UM_BaseMonster(A) != None )
+			ProcessHitMonster( UM_BaseMonster(A) );
 		else
-			SetNullKineticEnergy();
+			ProcessHitActor(A);
 	}
 	LastTouched = None;
 }
@@ -928,7 +993,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 	// Needed because bullet lose Speed and Damage while flying
 	UpdateBallisticPerformance();
 	if ( Speed <= MinSpeed )  {
-		SetNullKineticEnergy();
+		SetNoKineticEnergy();
 		Return;
 	}
 	else  {
@@ -938,7 +1003,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 	}
 	
 	if ( !bCanRicochet )  {
-		SetNullKineticEnergy();
+		SetNoKineticEnergy();
 		Return;
 	}
 	
@@ -953,7 +1018,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 	VelDotNorm = Velocity dot HitNormal;
 	// Stuck
 	if ( (Square(VelDotNorm) * SpeedSquaredToKineticEnergy) >= ImpactSurfaces[Num].KineticEnergyToStuck )  {
-		SetNullKineticEnergy();
+		SetNoKineticEnergy();
 		Return;
 	}
 	
@@ -998,7 +1063,7 @@ simulated event Landed( vector HitNormal )
 simulated event EncroachedBy( Actor Other )
 {
 	if ( Other != None && (Other == Level || Other.bWorldGeometry) )
-		SetNullKineticEnergy();
+		SetNoKineticEnergy();
 }
 
 simulated event Destroyed()
@@ -1061,8 +1126,8 @@ defaultproperties
 	 bAutoLifeSpan=False
 	 bCanHurtOwner=True
 	 //Collision
-	 CollisionRadius=0.000000
-     CollisionHeight=0.000000
+	 CollisionRadius=0.0
+     CollisionHeight=0.0
      bCollideActors=True
      bCollideWorld=True
 	 bBlockActors=False
@@ -1076,41 +1141,42 @@ defaultproperties
 	 // TrueBallistics
 	 bTrueBallistics=False
 	 bInitialAcceleration=False
-     BallisticCoefficient=0.300000
-	 SpeedFudgeScale=1.000000
-     MinFudgeScale=0.025000
-     InitialAccelerationTime=0.100000
+     BallisticCoefficient=0.3
+	 SpeedFudgeScale=1.0
+     MinFudgeScale=0.025
+     InitialAccelerationTime=0.1
 	 LandedPrePivotCollisionScale=0.25
 	 //[block] Ballistic performance
-	 PenetrationBonus=1.000000
-	 BounceBonus=1.000000
-	 ExpansionCoefficient=1.000000
-	 SpeedDropInWaterCoefficient=0.850000
-	 FullStopSpeedCoefficient=0.100000
-	 Speed=0.000000
-	 MaxSpeed=0.000000
+	 HeadShotDamageMult=1.0
+	 PenetrationBonus=1.0
+	 BounceBonus=1.0
+	 ExpansionCoefficient=1.0
+	 SpeedDropInWaterCoefficient=0.85
+	 FullStopSpeedCoefficient=0.1
+	 Speed=0.0
+	 MaxSpeed=0.0
 	 ProjectileDiameter=10.0
 	 //EffectiveRange in Meters
-	 EffectiveRange=500.000000
-	 MaxEffectiveRange=500.000000
+	 EffectiveRange=500.0
+	 MaxEffectiveRange=500.0
 	 //Visible Distance
-	 CullDistance=4000.000000
+	 CullDistance=4000.0
 	 //Ballistic performance randomization percent
 	 BallisticRandRange=(Min=0.98,Max=1.02)
 	 //ProjectileMass
 	 ProjectileMass=20.0	// grams
 	 //MuzzleVelocity
-     MuzzleVelocity=0.000000	// m/sec
+     MuzzleVelocity=0.0	// m/sec
 	 //UpdateTimeDelay - prevents from non-stopping (looping) updates
-	 InitialUpdateTimeDelay=0.100000
-	 UpdateTimeDelay=0.100000
+	 InitialUpdateTimeDelay=0.1
+	 UpdateTimeDelay=0.1
 	 ImpactSound=None
 	 // AmbientSound Settings
 	 SoundVolume=255
 	 SoundPitch=64
-     SoundRadius=250.000000
+     SoundRadius=250.0
 	 //[end]
-	 WeaponRecoilScale=1.000000
+	 WeaponRecoilScale=1.0
 	 //[block] Replication
 	 bNetTemporary=True
      bReplicateInstigator=True
@@ -1137,5 +1203,5 @@ defaultproperties
 	 //RemoteRole
      RemoteRole=ROLE_SimulatedProxy
 	 //LifeSpan
-	 LifeSpan=0.000000
+	 LifeSpan=0.0
 }

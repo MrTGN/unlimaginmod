@@ -214,9 +214,9 @@ simulated function bool EnemyIsInRadius( float EnemySearchRadius )
 }
 
 // Called when projectile has lost all energy
-simulated function SetNullKineticEnergy()
+simulated function SetNoKineticEnergy()
 {
-	Super.SetNullKineticEnergy();
+	Super.SetNoKineticEnergy();
 	ImpactDamage = 0.0;
 	ImpactMomentumTransfer = 0.0;
 }
@@ -575,21 +575,41 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 	}
 }
 
+simulated function GetProjectileImpactParameters( 
+	out			float				DamageAmount,
+	out			float				MomentumAmount,
+	out			class<DamageType>	DamageType
+	optional	bool				bIsHeadShot	)
+{
+	// out DamageAmount
+	if ( bIsHeadShot )
+		DamageAmount = ImpactDamage * HeadShotDamageMult;
+	else
+		DamageAmount = ImpactDamage;
+	
+	// out MomentumAmount
+	MomentumAmount = ImpactMomentumTransfer;
+	
+	// out DamageType
+	if ( bIsHeadShot && HeadShotDamageType != None )
+		DamageType = HeadShotDamageType;
+	else
+		DamageType = ImpactDamageType;
+}
+
 simulated function ProcessTouchActor( Actor A )
 {
-	local	vector	TouchLocation, TouchNormal;
-	
 	LastTouched = A;
 	if ( CanHurtActor(A) )  {
 		// Updating Projectile Performance before hit the victim
 		// Needed because Projectile can lose some Speed and Damage while flying
 		UpdateBallisticPerformance();
-		if ( Speed > MinSpeed )  {
-			GetTouchLocation(A, TouchLocation, TouchNormal);
-			ProcessHitActor(A, TouchLocation, TouchNormal, ImpactDamage, ImpactMomentumTransfer, ImpactDamageType);
-		}
+		if ( Speed <= MinSpeed )
+			SetNoKineticEnergy();
+		else if ( UM_BaseMonster(A) != None )
+			ProcessHitMonster( UM_BaseMonster(A) );
 		else
-			SetNullKineticEnergy();
+			ProcessHitActor(A);
 		if ( IsArmed() )
 			Explode(TouchLocation, TouchNormal);
 	}

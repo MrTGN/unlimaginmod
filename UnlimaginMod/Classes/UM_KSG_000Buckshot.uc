@@ -18,6 +18,6 @@ class UM_KSG_000Buckshot extends UM_BaseProjectile_000Buckshot;
 defaultproperties
 {
      MuzzleVelocity=350.000000
-	 Damage=40.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeKSG_000Buckshot'
+	 ImpactDamage=40.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeKSG_000Buckshot'
 }

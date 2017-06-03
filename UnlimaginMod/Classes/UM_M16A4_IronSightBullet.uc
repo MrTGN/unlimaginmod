@@ -21,6 +21,6 @@ class UM_M16A4_IronSightBullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=930.000000
-	 MyDamageType=Class'UnlimaginMod.Maria_DamTypeM16A4_IronSight'
-     Damage=46.000000
+	 ImpactDamageType=Class'UnlimaginMod.Maria_DamTypeM16A4_IronSight'
+     ImpactDamage=46.000000
 }

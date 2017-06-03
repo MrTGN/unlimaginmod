@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_Shotgun
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.02.2013 02:42
 //================================================================================
-class UM_BaseDamType_Shotgun extends UM_BaseProjectileDamageType
+class UM_BaseDamType_Shotgun extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 

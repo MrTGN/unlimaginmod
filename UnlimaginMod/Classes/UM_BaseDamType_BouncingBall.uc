@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_BouncingBall
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseDamType_BouncingBall extends UM_BaseProjectileDamageType
+class UM_BaseDamType_BouncingBall extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 

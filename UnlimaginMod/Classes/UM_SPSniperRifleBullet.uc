@@ -21,6 +21,6 @@ defaultproperties
 {
      MuzzleVelocity=810.000000		//Meter/sec
 	 HeadShotDamageMult=2.200000
-	 Damage=140.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeSPSniperRifle'
+	 ImpactDamage=140.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSPSniperRifle'
 }

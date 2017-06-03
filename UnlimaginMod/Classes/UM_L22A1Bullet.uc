@@ -20,6 +20,6 @@ class UM_L22A1Bullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=780.000000
-	 Damage=45.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeL22A1Bullet'
+	 ImpactDamage=45.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeL22A1Bullet'
 }

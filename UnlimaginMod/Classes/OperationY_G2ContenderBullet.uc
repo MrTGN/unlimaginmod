@@ -7,5 +7,5 @@ defaultproperties
 {
      HeadShotDamageMult=2.250000
 	 MuzzleVelocity=580.000000		//Meter/sec
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeG2Contender'
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeG2Contender'
 }

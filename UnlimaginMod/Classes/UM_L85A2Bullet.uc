@@ -21,6 +21,6 @@ class UM_L85A2Bullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=940.000000
-	 Damage=46.500000
-	 MyDamageType=Class'UnlimaginMod.JSullivan_DamTypeL85A2AssaultRifle'
+	 ImpactDamage=46.500000
+	 ImpactDamageType=Class'UnlimaginMod.JSullivan_DamTypeL85A2AssaultRifle'
 }

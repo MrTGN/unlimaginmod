@@ -18,7 +18,6 @@ class UM_DamTypeSCARMK17AssaultRifle extends UM_BaseDamType_AssaultRifle
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
 	 WeaponClass=Class'UnlimaginMod.UM_SCARMK17AssaultRifle'
      DeathString="%k killed %o (SCARMK17)."
      FemaleSuicide="%o shot herself in the foot."

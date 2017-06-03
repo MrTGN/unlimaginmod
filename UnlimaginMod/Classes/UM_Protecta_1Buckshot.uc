@@ -20,6 +20,6 @@ class UM_Protecta_1Buckshot extends UM_BaseProjectile_1Buckshot;
 defaultproperties
 {
      MuzzleVelocity=352.000000
-	 Damage=30.500000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeProtecta_1Buckshot'
+	 ImpactDamage=31.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeProtecta_1Buckshot'
 }

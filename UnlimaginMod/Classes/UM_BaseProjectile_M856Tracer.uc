@@ -30,7 +30,7 @@ defaultproperties
 	 MuzzleVelocity=880.000000		//Meter/sec
 	 //Damage
 	 HeadShotDamageMult=1.100000
-	 Damage=40.000000
-	 MomentumTransfer=28000.000000
+	 ImpactDamage=40.000000
+	 ImpactMomentum=28000.000000
 	 HitSoundVolume=0.600000
 }

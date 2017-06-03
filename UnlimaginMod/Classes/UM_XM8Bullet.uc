@@ -21,6 +21,6 @@ class UM_XM8Bullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=920.000000
-	 Damage=46.000000
-	 MyDamageType=Class'UnlimaginMod.ZedekPD_DamTypeXM8AssaultRifle'
+	 ImpactDamage=46.000000
+	 ImpactDamageType=Class'UnlimaginMod.ZedekPD_DamTypeXM8AssaultRifle'
 }

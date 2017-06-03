@@ -19,7 +19,7 @@ class UM_MAC10Bullet extends UM_BaseProjectile_45ACP_Speer200JHP;
 
 defaultproperties
 {
-     Damage=41.000000
+     ImpactDamage=41.000000
 	 MuzzleVelocity=280.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeMAC10MP'
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeMAC10MP'
 }

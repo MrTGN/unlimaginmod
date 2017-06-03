@@ -28,7 +28,6 @@ static function GetHitEffects(out class<xEmitter> HitEffects[4], int VictimHealt
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
      DeathString="%k killed %o (Explosive Projectile)."
      FemaleSuicide="%o blew up."
      MaleSuicide="%o blew up."

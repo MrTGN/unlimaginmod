@@ -29,8 +29,9 @@ class UM_BaseProjectile_Bullet extends UM_BaseProjectile
 // Called when projectile has lost all energy
 simulated function SetNoKineticEnergy()
 {
-	Damage = 0;
-	MomentumTransfer = 0.0;
+	bNoKineticEnergy = True;
+	ImpactDamage = 0.0;
+	ImpactMomentum = 0.0;
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_None);
@@ -40,13 +41,6 @@ simulated function SetNoKineticEnergy()
 simulated event Landed( Vector HitNormal )
 {
 	SetNoKineticEnergy();
-}
-
-// Called when the projectile loses some of it's energy
-simulated function ScaleProjectilePerformance(float NewScale)
-{
-	Damage *= NewScale;
-	MomentumTransfer *= NewScale;
 }
 
 //[end] Functions
@@ -90,10 +84,9 @@ defaultproperties
 	 //HitSoundVolume=1.000000
      //HitSoundRadius=200.000000
 	 HitEffectsClass=Class'UnlimaginMod.UM_BulletHitEffects'
-	 //Damage
-	 Damage=100.000000
-	 DamageRadius=0.000000
-	 MomentumTransfer=50000.000000
+	 //ImpactDamage
+	 ImpactDamage=100.000000
+	 ImpactMomentum=50000.000000
 	 CullDistance=3400.000000
 	 //Light
 	 AmbientGlow=30		// Ambient brightness, or 255=pulsing.

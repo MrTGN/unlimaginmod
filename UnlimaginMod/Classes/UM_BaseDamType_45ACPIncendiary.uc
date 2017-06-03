@@ -20,6 +20,5 @@ class UM_BaseDamType_45ACPIncendiary extends UM_BaseDamType_IncendiaryProjectile
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
      DeathString="%k killed %o (45ACPIncendiary Bullet)."
 }

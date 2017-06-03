@@ -19,5 +19,5 @@ class UM_GoldenAK47Bullet extends UM_AK47Bullet;
 
 defaultproperties
 {
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeGoldenAK47AssaultRifle'
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeGoldenAK47AssaultRifle'
 }

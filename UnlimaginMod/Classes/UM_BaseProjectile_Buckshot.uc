@@ -34,8 +34,8 @@ defaultproperties
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_LeadBulletTracer')
 	 MuzzleVelocity=380.000000
      HeadShotDamageMult=1.500000
-	 Damage=100.000000
-	 MomentumTransfer=70000.000000
+	 ImpactDamage=100.000000
+	 ImpactMomentum=70000.000000
 	 HitSoundVolume=0.750000
 	 DrawScale=1.900000
 }

@@ -38,8 +38,8 @@ state NoEnergy
 
 defaultproperties
 {
-     Damage=350.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM79BouncingBall'
+     ImpactDamage=350.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM79BouncingBall'
 	 //Trail=(xEmitterClass=Class'KFMod.NailGunTracer')
 	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Slot=SLOT_Pain,Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 }

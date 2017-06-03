@@ -31,4 +31,13 @@ class UM_BaseWeaponDamageType extends KFWeaponDamageType
 
 defaultproperties
 {
+	 bDirectDamage=True
+	 bCheckForHeadShots=False
+	 HeadShotDamageMult=1.0
+	 bArmorStops=False // does regular armor provide protection against this damage
+	 bInstantHit=False // done by trace hit weapon
+	 bFastInstantHit=False // done by fast repeating trace hit weapon
+     bLocationalHit=False
+     bCausesBlood=False
+     bExtraMomentumZ=False
 }

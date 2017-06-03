@@ -20,6 +20,6 @@ class UM_BenelliM3_TriBallBuckshot extends UM_BaseProjectile_TriBallBuckshot;
 defaultproperties
 {
      MuzzleVelocity=382.000000
-	 Damage=95.000000
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM3_TriBallBuckshot'
+	 ImpactDamage=95.000000
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeBenelliM3_TriBallBuckshot'
 }

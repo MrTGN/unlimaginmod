@@ -20,6 +20,6 @@ class UM_BrowningPistolBullet extends UM_BaseProjectile_40SW_H180XTP;
 defaultproperties
 {
      MuzzleVelocity=300.000000		//Meter/sec
-	 Damage=43.500000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeBrowningPistol'
+	 ImpactDamage=44.0
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeBrowningPistol'
 }

@@ -1,7 +1,7 @@
 //================================================================================
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-//	Class name:		 UM_BaseProjectileDamageType
+//	Class name:		 UM_BaseDamType_ProjectileImpact
 //	Parent class:	 UM_BaseWeaponDamageType
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
@@ -14,13 +14,18 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseProjectileDamageType extends UM_BaseWeaponDamageType
+class UM_BaseDamType_ProjectileImpact extends UM_BaseWeaponDamageType
 	Abstract;
 
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
+     bCheckForHeadShots=True
+	 HeadShotDamageMult=1.0
+	 bArmorStops=True
+     bLocationalHit=True
+     bCausesBlood=True
+	 bBulletHit=True
 	 PawnDamageEmitter=Class'ROEffects.ROBloodPuff'
      LowGoreDamageEmitter=Class'ROEffects.ROBloodPuffNoGore'
      LowDetailEmitter=Class'ROEffects.ROBloodPuffSmall'

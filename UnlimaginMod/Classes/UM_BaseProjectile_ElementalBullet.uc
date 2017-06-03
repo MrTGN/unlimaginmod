@@ -133,7 +133,7 @@ defaultproperties
 	 HitEffectsClass=Class'UnlimaginMod.UM_BulletHitEffects'
 	 //Damage
 	 ImpactDamage=100.000000
-	 ImpactMomentumTransfer=30000.000000
+	 ImpactMomentum=30000.000000
 	 Damage=100.000000
 	 DamageRadius=30.000000
 	 MomentumTransfer=50000.000000

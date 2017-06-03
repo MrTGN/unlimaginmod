@@ -18,7 +18,6 @@ class UM_DamTypeAA12MedGasImpact extends UM_BaseDamType_ElementalProjImpact
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
      WeaponClass=Class'UnlimaginMod.UM_AA12AutoShotgun'
      DeathString="%k poisoned %o (MedGas)."
      FemaleSuicide="%o poisoned herself."

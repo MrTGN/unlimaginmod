@@ -19,7 +19,7 @@ class UM_SPThompsonM1928Bullet extends UM_ThompsonM1928Bullet;
 
 defaultproperties
 {
-     Damage=41.000000
+     ImpactDamage=41.000000
 	 MuzzleVelocity=270.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeSPThompsonM1928Bullet'
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSPThompsonM1928Bullet'
 }

@@ -28,6 +28,6 @@ defaultproperties
 	 MomentumTransfer=100000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM203M381Grenade'
 	 ImpactDamage=120.000000
-	 ImpactMomentumTransfer=10000.000000
+	 ImpactMomentum=10000.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM203M381GrenadeImpact'
 }

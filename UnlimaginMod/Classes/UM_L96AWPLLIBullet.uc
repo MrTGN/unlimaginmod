@@ -20,6 +20,6 @@ class UM_L96AWPLLIBullet extends UM_BaseProjectile_338ScenarGB488HPBT;
 defaultproperties
 {
      MuzzleVelocity=910.000000
-	 Damage=220.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeL96AWPLLI'
+	 ImpactDamage=220.000000
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeL96AWPLLI'
 }

@@ -20,6 +20,6 @@ class UM_MKb42Bullet extends UM_BaseProjectile_792x33Kurz;
 defaultproperties
 {
      MuzzleVelocity=685.000000
-	 Damage=66.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeMKb42AssaultRifle'
+	 ImpactDamage=66.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeMKb42AssaultRifle'
 }

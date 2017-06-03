@@ -21,6 +21,6 @@ class UM_PKMBullet extends UM_BaseProjectile_57N323FMJ;
 defaultproperties
 {
      MuzzleVelocity=825.000000
-	 Damage=110.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypePKM'
+	 ImpactDamage=110.000000
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypePKM'
 }

@@ -22,6 +22,6 @@ defaultproperties
 {
      HeadShotDamageMult=2.500000
 	 MuzzleVelocity=290.000000
-	 Damage=60.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeVSSDT'
+	 ImpactDamage=60.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeVSSDT'
 }

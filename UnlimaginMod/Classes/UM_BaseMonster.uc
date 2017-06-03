@@ -729,7 +729,7 @@ simulated event PostBeginPlay()
 			PlayerShadow = Spawn(class'ShadowProjector',Self,'',Location);
 			PlayerShadow.ShadowActor = self;
 			PlayerShadow.bBlobShadow = bBlobShadow;
-			PlayerShadow.LightDirection = Normal(vect(1,1,3));
+			PlayerShadow.LightDirection = vect(0.301511344578, 0.301511344578, 0.904534033733); // (Normal(vect(1,1,3)))
 			PlayerShadow.LightDistance = 320;
 			PlayerShadow.MaxTraceDistance = 350;
 			PlayerShadow.InitShadow();
@@ -970,7 +970,7 @@ function AdjustGroundSpeed()
 function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Actor			Victim;
-	local	float			DamageScale, ;
+	local	float			DamageScale, Dist;
 	local	vector			Dir;
 	local	int				FriendlyTeamNum, i;
 	local	array<Pawn>		CheckedPawns;
@@ -1007,8 +1007,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Continue;
 		
 		Dir = Victim.Location - HitLocation;
-		DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );		
-		Dir = Normal(Dir);
+		Dist = VSize(Dir);
+		Dir = Dir / Dist; // Normalization
+		DamageScale = FMax( (1.0 - FMax((Dist - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
 		// if Pawn
 		if ( Pawn(Victim) != None )  {
 			// Do not damage a friendly Pawn
@@ -1489,7 +1490,7 @@ function bool DoJump( bool bUpdating )
 		else if ( Physics == PHYS_Ladder )
 			Velocity.Z = 0;
 		else  {
-			Velocity = Normal(Rotation) * JumpSpeed;
+			Velocity = vector(Rotation) * JumpSpeed;
 			Velocity.Z = JumpZ;
 		}
 
@@ -2323,7 +2324,7 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 				SetTearOffMomemtum(GetTearOffMomemtum() * 0.25);
 				bSkeletized = True;
 				
-				if ( Level.NetMode != NM_DedicatedServer && DamageType == class'FellLava' )  {
+				if ( Level.NetMode != NM_DedicatedServer && DamageType == class'UM_DamTypeFellLava' )  {
 					LD = spawn(class'LavaDeath', , , Location + vect(0, 0, 10), Rotation );
 					if ( LD != None )
 						LD.SetBase(self);
@@ -3473,7 +3474,7 @@ function bool IsHeadShot(vector Loc, vector Ray, float AdditionalScale)
 		AdditionalScale = Square(HeadRadius * HeadScale * AdditionalScale);
 
 	// Express snipe trace line
-	Ray *= 2.0 * CollisionHeight + 2.0 * CollisionRadius;
+	Ray *= CollisionHeight * 2.0 + CollisionRadius * 2.0;
 	// Find Point-Line Squared Distance
 	Loc = HeadLocation - Loc;
 	RayDotLoc = Ray dot Loc;
@@ -3678,7 +3679,7 @@ function bool CanPlayPain(int Damage, class<DamageType> DamageType)
 function PlayPain(vector HitLocation, int Damage)
 {
 	local	vector	X, Y, Z, HitDir;
-	local	float	DotX;
+	local	float	DotX, HitDirVSize;
 	
 	NextPainTime = Level.TimeSeconds + 0.1;
 	// PainAnim
@@ -3686,8 +3687,10 @@ function PlayPain(vector HitLocation, int Damage)
 		NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
 		if ( HitLocation != Location )  {
 			HitLocation.Z = Location.Z;
-			if ( VSizeSquared(Location - HitLocation) > 1.0 )
-				HitDir = -Normal(Location - HitLocation);
+			HitDir = Location - HitLocation;
+			HitDirVSize = VSize(HitDir)
+			if ( HitDirVSize > 1.0 )
+				HitDir = -HitDir / HitDirVSize; // Normalization
 			else
 				HitDir = VRand(); // Do random hit direction
 		}
@@ -3888,9 +3891,9 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 	if ( !bDecapitated && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bCheckForHeadShots && class<DamTypeBurned>(DamageType) == None )  {
 		// Do larger headshot checks if it is a melee attach
 		if ( class<DamTypeMelee>(DamageType) != None )
-			bIsHeadShot = IsHeadShot(HitLocation, normal(Momentum), 1.25);
+			bIsHeadShot = IsHeadShot(HitLocation, Normal(Momentum), 1.25);
 		else
-			bIsHeadShot = IsHeadShot(HitLocation, normal(Momentum), 1.0);
+			bIsHeadShot = IsHeadShot(HitLocation, Normal(Momentum), 1.0);
 		
 		if ( bIsHeadShot )  {
 			if ( class<DamTypeMelee>(DamageType) == None && KFPRI != None &&
@@ -4093,7 +4096,7 @@ defaultproperties
 	 ExplosionShakeOffsetTime=3.0
 	 // Explosion parametrs
 	 ExplosionDamage=180
-	 ExplosionDamageType=Class'DamTypeFrag'
+	 ExplosionDamageType=Class'UnlimaginMod.UM_BaseDamType_Explosive'
 	 ExplosionRadius=280.0
 	 ExplosionMomentum=8000.0
 	 //ExplosionShrapnelClass=
@@ -4149,10 +4152,10 @@ defaultproperties
 	 ZappedDamageMod=2.000000
 	 ZapResistanceScale=2.000000
 	 // Falling
-	 FallingDamageType=Class'Fell'
-	 DrowningDamageType=Class'Drowned'
-	 SuicideDamageType=Class'Suicided'
-	 LavaDamageType=Class'FellLava'
+	 FallingDamageType=Class'UnlimaginMod.UM_DamTypeFell'
+	 DrowningDamageType=Class'UnlimaginMod.UM_DamTypeDrowned'
+	 SuicideDamageType=Class'UnlimaginMod.UM_DamTypeSuicided'
+	 LavaDamageType=Class'UnlimaginMod.UM_DamTypeFellLava'
 	 // SoundsPitchRange
 	 SoundsPitchRange=(Min=0.9,Max=1.1)
 	 PlayerCountHealthScale=0.1

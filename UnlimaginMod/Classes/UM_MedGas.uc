@@ -80,7 +80,7 @@ simulated event PostNetBeginPlay()
 function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Pawn					Victim;
-	local	float					DamageScale;
+	local	float					DamageScale, Dist;
 	local	vector					Dir;
 	local	int						i;
 	local	array<Pawn>				CheckedPawns;
@@ -131,8 +131,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 				Continue;
 			
 			Dir = Victim.Location - HitLocation;
-			DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
-			Dir = Normal(Dir);
+			Dist = VSize(Dir);
+			Dir = Dir / Dist; // Normalization
+			DamageScale = FMax( (1.0 - FMax((Dist - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
 			i = Round(DamageScale * DamageAmount);
 			if ( i < 1 )
 				Continue;

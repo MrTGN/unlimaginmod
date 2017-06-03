@@ -19,6 +19,6 @@ class UM_M37Ithaca_00Buckshot extends UM_BaseProjectile_00Buckshot;
 defaultproperties
 {
 	 MuzzleVelocity=376.000000
-	 Damage=35.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM37Ithaca_00Buckshot'
+	 ImpactDamage=35.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM37Ithaca_00Buckshot'
 }

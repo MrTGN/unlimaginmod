@@ -30,8 +30,8 @@ defaultproperties
 	 MuzzleVelocity=380.000000
      HeadShotDamageMult=1.500000
 	 // Damage for 6 pellets
-	 Damage=48.000000
-	 MomentumTransfer=62000.000000
+	 ImpactDamage=48.000000
+	 ImpactMomentum=62000.000000
 	 HitSoundVolume=0.660000
 	 DrawScale=1.122000
 }

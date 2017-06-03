@@ -21,6 +21,6 @@ class UM_G36CBullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=850.000000
-	 Damage=45.000000
-	 MyDamageType=Class'UnlimaginMod.FluX_DamTypeG36CAssaultRifle'
+	 ImpactDamage=45.000000
+	 ImpactDamageType=Class'UnlimaginMod.FluX_DamTypeG36CAssaultRifle'
 }

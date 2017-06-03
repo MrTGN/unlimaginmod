@@ -27,9 +27,9 @@ defaultproperties
 	 ProjectileMass=5.0	// grams
 	 ExpansionCoefficient=1.050000
 	 MuzzleVelocity=100.000000	// m/sec
-	 Damage=40.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenadeShrapnel'
-	 MomentumTransfer=60000.000000
+	 ImpactDamage=40.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenadeShrapnel'
+	 ImpactMomentum=60000.000000
 	 HitSoundVolume=0.650000
 	 DrawScale=1.080000
 }

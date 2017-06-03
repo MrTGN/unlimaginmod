@@ -89,8 +89,13 @@ var	UM_BaseWeaponMuzzle		WeaponMuzzle;
 var				int			InstigatorTeamNum;
 
 //[block] Ballistic performance
-var(Headshots)	class<DamageType>			HeadShotDamageType;	// Headshot damage type
-var(Headshots)	float						HeadShotDamageMult;	// Headshot damage multiplier
+// How much damage to do when this Projectile impacts (direct hits) something
+var(Impact)		float						ImpactDamage; // Impact (direct hit) damage
+var(Impact)		float						ImpactMomentum; // Impact (direct hit) momentum
+var(Impact)		class<DamageType>			ImpactDamageType; // Impact (direct hit) damage type
+
+var(HeadShots)	class<DamageType>			HeadShotDamageType;	// HeadShot damage type
+var(HeadShots)	float						HeadShotDamageMult;	// HeadShot damage multiplier
 
 var				SurfaceImpactData			ImpactSurfaces[20];
 
@@ -575,7 +580,7 @@ state InTheWater
 		if ( Speed > 0.0 && SpeedDropInWaterCoefficient > 0.0 )  {
 			Speed *= SpeedDropInWaterCoefficient;
 			if ( Velocity != Vect(0,0,0) )
-				Acceleration = -Normal(Velocity) * Speed;
+				Acceleration = -Velocity * SpeedDropInWaterCoefficient;
 		}
 	}
 	
@@ -646,20 +651,16 @@ simulated function StopProjectile()
 simulated function SetNoKineticEnergy()
 {
 	bNoKineticEnergy = True;
+	ImpactDamage = 0.0;
+	ImpactMomentum = 0.0;
 	DestroyTrail();
 	StopProjectile();
 	SetPhysics(PHYS_Falling);
 }
 
-// Called when the projectile loses some kinetic energy
-simulated function ScaleProjectilePerformance(float NewScale)
-{
-	//Damage *= NewScale;
-}
-
 simulated function UpdateBallisticPerformance( optional bool bForceUpdate )
 {
-	local	float	LastSpeed, SpeedSquared;
+	local	float	ScalePerformance, SpeedSquared;
 	
 	if ( !bForceUpdate && Level.TimeSeconds < NextProjectileUpdateTime )
 		Return;
@@ -671,11 +672,13 @@ simulated function UpdateBallisticPerformance( optional bool bForceUpdate )
 	}
 	
 	// Performance update
-	LastSpeed = Speed;
+	ScalePerformance = Speed;
 	SpeedSquared = VSizeSquared(Velocity);
 	KineticEnergy = SpeedSquared * SpeedSquaredToKineticEnergy;
 	Speed = Sqrt(SpeedSquared);
-	ScaleProjectilePerformance(Speed / LastSpeed);
+	ScalePerformance = Speed / ScalePerformance;
+	ImpactDamage *= ScalePerformance;
+	ImpactMomentum *= ScalePerformance;
 }
 
 simulated function SubtractKineticEnergy( float SubtractedEnergy )
@@ -697,7 +700,8 @@ simulated function SubtractKineticEnergy( float SubtractedEnergy )
 	Speed = Sqrt(KineticEnergy * KineticEnergyToSpeedSquared);
 	ScalePerformance = Speed / ScalePerformance;
 	Velocity *= ScalePerformance;
-	ScaleProjectilePerformance(ScalePerformance);
+	ImpactDamage *= ScalePerformance;
+	ImpactMomentum *= ScalePerformance;
 }
 
 simulated function SpawnHitEffects(
@@ -706,35 +710,27 @@ simulated function SpawnHitEffects(
  optional	Actor			A )
 {
 	local	UM_BaseHitEffects	HitEffects;
-	local	Pawn				P;
 	
-	if ( Level.NetMode != NM_DedicatedServer && !Level.bDropDetail
-		 && Level.DetailMode != DM_Low && HitEffectsClass != None )  {
-		// Spawn
-		if ( Class'UM_GlobalData'.default.ActorPool != None )
-			HitEffects = UM_BaseHitEffects(Class'UM_GlobalData'.default.ActorPool.AllocateActor(HitEffectsClass, HitLocation, rotator(-HitNormal)));
+	if ( Level.NetMode == NM_DedicatedServer || HitEffectsClass == None || Level.bDropDetail || Level.DetailMode == DM_Low )
+		Return;
+	
+	// Spawn
+	if ( Class'UM_GlobalData'.default.ActorPool != None )
+		HitEffects = UM_BaseHitEffects(Class'UM_GlobalData'.default.ActorPool.AllocateActor(HitEffectsClass, HitLocation, rotator(-HitNormal)));
+	else
+		HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
+	
+	if ( HitEffects == None )
+		Return;
+	
+	// Play Hit Effects
+	if ( Pawn(A) != None )  {
+		if ( Pawn(A).ShieldStrength > 0 )
+			HitSurfaceType = EST_MetalArmor;
 		else
-			HitEffects = Spawn(HitEffectsClass,,, HitLocation, rotator(-HitNormal));
-		
-		if ( HitEffects == None )
-			Return;
-		
-		// Play Hit Effects
-		if ( A != None )  {
-			if ( UM_BallisticCollision(A) != None )
-				P = Pawn(A.Base);
-			else
-				P = Pawn(A);
-			// New HitSurfaceType for Pawn
-			if ( P != None )  {
-				if ( P.ShieldStrength > 0 )
-					HitSurfaceType = EST_MetalArmor;
-				else
-					HitSurfaceType = EST_Flesh;
-			}
-		}
-		HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
+			HitSurfaceType = EST_Flesh;
 	}
+	HitEffects.PlayHitEffects(HitSurfaceType, HitSoundVolume, HitSoundRadius);
 }
 
 simulated function ClientSideTouch(Actor Other, Vector HitLocation) {}
@@ -747,9 +743,8 @@ simulated function bool	CanHurtBallisticCollision( UM_BallisticCollision Ballist
 	// Return False if no BallisticCollision was specified
 	if ( BallisticCollision == None || !BallisticCollision.CanBeDamaged() )
 		Return False;
-	
 	// HurtOwner
-	if ( (Instigator != None && BallisticCollision.Instigator == Instigator)
+	else if ( (Instigator != None && BallisticCollision.Instigator == Instigator)
 		 || (InstigatorController != None && BallisticCollision.InstigatorController == InstigatorController) )
 		Return bCanHurtOwner;
 	// FriendlyFire
@@ -765,9 +760,8 @@ simulated function bool CanHurtPawn( Pawn P )
 	// Return False if no Pawn was specified
 	if ( P == None || P.Health < 1 )
 		Return False;
-	
 	// HurtOwner
-	if ( (Instigator != None && P == Instigator) 
+	else if ( (Instigator != None && P == Instigator) 
 		 || (InstigatorController != None && P.Controller == InstigatorController) )
 		Return bCanHurtOwner;
 	// FriendlyFire
@@ -784,9 +778,8 @@ simulated function bool CanHurtProjectile( Projectile Proj )
 	// Return False if no projectile was specified
 	if ( Proj == None )
 		Return False;
-	
 	// Same Projectile Type
-	if ( Proj.Class == Class )
+	else if ( Proj.Class == Class )
 		Return bCanHurtSameTypeProjectile;
 	// Same Owner
 	else if ( (Instigator != None && Proj.Instigator == Instigator)
@@ -810,12 +803,8 @@ simulated function bool CanHurtActor( Actor A )
 {
 	if ( A == None || !A.bCanBeDamaged || ROBulletWhipAttachment(A) != None )
 		Return False;
-	
-	if ( Instigator != None && A.Base == Instigator )
+	else if ( Instigator != None && A.Base == Instigator )
 		Return bCanHurtOwner;
-	
-	if ( UM_BallisticCollision(A) != None )
-		Return CanHurtBallisticCollision( UM_BallisticCollision(A) );
 	else if ( Pawn(A) != None )
 		Return CanHurtPawn( Pawn(A) );
 	else if ( Projectile(A) != None )
@@ -834,98 +823,102 @@ simulated function GetTouchLocation( Actor A, out vector TouchLocation, optional
 	}
 }
 
-simulated function GetProjectileImpactParameters( 
-	out			float				DamageAmount,
-	out			float				MomentumAmount,
-	out			class<DamageType>	DamageType
-	optional	bool				bIsHeadShot	)
-{
-	// out DamageAmount
-	if ( bIsHeadShot )
-		DamageAmount = Damage * HeadShotDamageMult;
-	else
-		DamageAmount = Damage;
-	
-	// out MomentumAmount
-	MomentumAmount = MomentumTransfer;
-	
-	// out DamageType
-	if ( bIsHeadShot && HeadShotDamageType != None )
-		DamageType = HeadShotDamageType;
-	else
-		DamageType = MyDamageType;
-}
-
 simulated function ProcessHitMonster( UM_BaseMonster Monster )
 {
 	local	UM_BallisticCollision	BC;
-	local	Vector					HitLocation, HitNormal, VelNormal, TraceStart, TraceEnd;
-	local	float					DamageAmount, MomentumAmount;
+	local	vector					HitLocation, HitNormal, VelNormal;
+	local	vector					TouchLocation, TouchNormal, TraceEnd;
+	local	int						DamageAmount;
 	local	class<DamageType>		DamageType;
-	local	bool					bSpawnHitEffects;
+	local	bool					bDidDamage, bSpawnHitEffects;
 	
-	if ( Monster == None )
+	if ( Monster == None || ImpactDamage < 0.5 )
 		Return;
 	
-	GetTouchLocation(Monster, TraceStart);
-	VelNormal = Normal(Velocity);
-	TraceEnd = VelNormal * (2.0 * Monster.CollisionHeight + 2.0 * Monster.CollisionRadius);
-	Monster.TraceActors(class'UM_BallisticCollision', BC, HitLocation, HitNormal, TraceEnd, TraceStart, CollisionExtent)  {
+	GetTouchLocation(Monster, TouchLocation, TouchNormal);
+	VelNormal = Velocity / Speed; // Normalization
+	TraceEnd = VelNormal * (Monster.CollisionHeight * 2.0 + Monster.CollisionRadius * 2.0);
+	Monster.TraceActors(class'UM_BallisticCollision', BC, HitLocation, HitNormal, TraceEnd, TouchLocation, CollisionExtent)  {
 		if ( BC == None || !BC.CanBeDamaged() || BC.Instigator != Monster )
 			Continue;
 		
 		// HeadShot
-		if ( UM_PawnHeadCollision(BC) != None )
-			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType, True);
-		else
-			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType);
+		if ( UM_PawnHeadCollision(BC) != None )  {
+			DamageAmount = Round(ImpactDamage * HeadShotDamageMult);
+			if ( HeadShotDamageType != None )
+				DamageType = HeadShotDamageType;
+			else
+				DamageType = ImpactDamageType;
+		}
+		else  {
+			DamageAmount = Round(ImpactDamage);
+			DamageType = ImpactDamageType;
+		}
 		
-		if ( DamageType == None || DamageAmount < 0.5 )
+		if ( DamageType == None || DamageAmount < 1 )
 			Break;
 		
 		if ( !bSpawnHitEffects )
 			bSpawnHitEffects = Speed > MinSpeed;
 		
-		// Damage
-		if ( Role == ROLE_Authority )  {
-			if ( Instigator == None || Instigator.Controller == None )
-				Monster.SetDelayedDamageInstigatorController( InstigatorController );
-			// Hurt this actor
-			Monster.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DamageType);
-			MakeNoise(1.0);
-		}
-		SubtractKineticEnergy(BC.ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus);
+		// Hurt this actor
+		if ( Role == ROLE_Authority )
+			Monster.TakeDamage(DamageAmount, Instigator, HitLocation, (ImpactMomentum * VelNormal), DamageType);
 		
+		bDidDamage = True;
+		SubtractKineticEnergy(BC.ImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus);
 		if ( bNoKineticEnergy )
 			Break;
 	}
 	
+	if ( !bDidDamage )
+		Return;
+	
+	if ( Role == ROLE_Authority )  {
+		if ( Instigator == None || Instigator.Controller == None )
+			Monster.SetDelayedDamageInstigatorController( InstigatorController );
+		MakeNoise(1.0);
+	}
+	
 	if ( bSpawnHitEffects )
-		SpawnHitEffects(HitLocation, HitNormal, Monster);
+		SpawnHitEffects(TouchLocation, TouchNormal, Monster);
 }
 
 simulated function ProcessHitActor( Actor A )
 {
-	local	vector				HitLocation, HitNormal, VelNormal;
-	local	float				SubtractedEnergy, DamageAmount, MomentumAmount;
+	local	vector				TouchLocation, TouchNormal, VelNormal;
+	local	int					DamageAmount;
+	local	float				SubtractedEnergy;
 	local	class<DamageType>	DamageType;
 
-	VelNormal = Normal(Velocity);
-	GetTouchLocation(A, HitLocation, HitNormal);
+	if ( A == None || ImpactDamage < 0.5 )
+		Return;
+	
+	VelNormal = Velocity / Speed;
+	GetTouchLocation(A, TouchLocation, TouchNormal);
 	// If projectile hit a Pawn
 	if ( Pawn(A) != None )  {
 		// HeadShot
-		if ( Pawn(A).IsHeadShot(HitLocation, VelNormal, 1.0) )  {
+		if ( Pawn(A).IsHeadShot(TouchLocation, VelNormal, 1.0) )  {
 			SubtractedEnergy = DefaultPawnHeadImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
-			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType, True);
+			DamageAmount = Round(ImpactDamage * HeadShotDamageMult);
+			if ( HeadShotDamageType != None )
+				DamageType = HeadShotDamageType;
+			else
+				DamageType = ImpactDamageType;
 		}
 		else  {
 			SubtractedEnergy = DefaultPawnBodyImpactStrength * ProjectileCrossSectionalArea / PenetrationBonus;
-			GetProjectileImpactParameters(DamageAmount, MomentumAmount, DamageType);
+			DamageAmount = Round(ImpactDamage);
+			DamageType = ImpactDamageType;
 		}
 	}
+	else  {
+		DamageAmount = Round(ImpactDamage);
+		DamageType = ImpactDamageType;
+	}
 	
-	if ( DamageType == None || DamageAmount < 0.5 )
+	if ( DamageType == None || DamageAmount < 1 )
 		Return;
 	
 	// Damage
@@ -933,17 +926,17 @@ simulated function ProcessHitActor( Actor A )
 		if ( Instigator == None || Instigator.Controller == None )
 			A.SetDelayedDamageInstigatorController( InstigatorController );
 		// Hurt this actor
-		A.TakeDamage(DamageAmount, Instigator, HitLocation, (MomentumAmount * VelNormal), DamageType);
+		A.TakeDamage(Round(DamageAmount), Instigator, TouchLocation, (ImpactMomentum * VelNormal), DamageType);
 		MakeNoise(1.0);
 	}
 	
 	if ( Mover(A) != None )  {
-		ProcessHitWall(HitNormal);
+		ProcessHitWall(TouchNormal);
 		Return;
 	}
 	
 	if ( Speed > MinSpeed )
-		SpawnHitEffects(HitLocation, HitNormal, A);
+		SpawnHitEffects(TouchLocation, TouchNormal, A);
 	
 	if ( SubtractedEnergy > 0.0 )
 		SubtractKineticEnergy(SubtractedEnergy);
@@ -1008,7 +1001,7 @@ simulated function ProcessHitWall( Vector HitNormal )
 	}
 	
 	// Finding out surface material
-	Trace(VectVelDotNorm, TmpVect, (Location + Normal(Velocity) * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
+	Trace(VectVelDotNorm, TmpVect, (Location + Velocity / Speed * SurfaceTraceRange), Location, False, CollisionExtent, HitMat);
 	if ( HitMat != None && int(HitMat.SurfaceType) < ArrayCount(ImpactSurfaces) )
 		Num = int(HitMat.SurfaceType);
 	else
@@ -1153,9 +1146,19 @@ defaultproperties
 	 ExpansionCoefficient=1.0
 	 SpeedDropInWaterCoefficient=0.85
 	 FullStopSpeedCoefficient=0.1
+	 TossZ=0.0
 	 Speed=0.0
 	 MaxSpeed=0.0
 	 ProjectileDiameter=10.0
+	 //Damage
+	 Damage=0.0
+	 DamageRadius=0.0
+	 MomentumTransfer=0.0
+	 MyDamageType=None
+	 //ImpactDamage
+	 ImpactDamage=0.0
+	 ImpactMomentum=0.0
+	 ImpactDamageType=None
 	 //EffectiveRange in Meters
 	 EffectiveRange=500.0
 	 MaxEffectiveRange=500.0

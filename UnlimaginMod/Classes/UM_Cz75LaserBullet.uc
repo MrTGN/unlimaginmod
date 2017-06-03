@@ -21,6 +21,6 @@ defaultproperties
 {
      HeadShotDamageMult=1.250000
 	 MuzzleVelocity=348.000000
-	 Damage=40.000000
-	 MyDamageType=Class'UnlimaginMod.Maria_DamTypeCz75Laser'
+	 ImpactDamage=40.000000
+	 ImpactDamageType=Class'UnlimaginMod.Maria_DamTypeCz75Laser'
 }

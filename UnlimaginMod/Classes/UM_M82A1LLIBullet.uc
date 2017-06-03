@@ -20,6 +20,6 @@ class UM_M82A1LLIBullet extends UM_BaseProjectile_M1022LRSniper;
 defaultproperties
 {
      HeadShotDamageType=Class'UnlimaginMod.OperationY_DamTypeM82A1LLIHeadShot'
-     MyDamageType=Class'UnlimaginMod.OperationY_DamTypeM82A1LLI'
+     ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeM82A1LLI'
 	 MuzzleVelocity=850.000000	// m/s
 }

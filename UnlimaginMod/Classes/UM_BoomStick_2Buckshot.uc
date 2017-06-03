@@ -18,6 +18,6 @@ class UM_BoomStick_2Buckshot extends UM_BaseProjectile_2Buckshot;
 defaultproperties
 {
      MuzzleVelocity=316.000000
-	 Damage=34.500000
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeBoomStick_2Buckshot'
+	 ImpactDamage=34.500000
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeBoomStick_2Buckshot'
 }

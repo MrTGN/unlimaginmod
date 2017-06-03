@@ -3373,14 +3373,14 @@ defaultproperties
 	 // Drowning
 	 DrowningDamageRandRange=(Min=3.0,Max=6.0)
 	 DrowningDamageFrequency=1.0
-	 DrowningDamageType=Class'Drowned'
+	 DrowningDamageType=Class'UnlimaginMod.UM_DamTypeDrowned'
 	 // Burning
 	 BurnDamageRandRange=(Min=4.0,Max=6.0)
 	 BurningFrequency=0.5
-	 BurnDamageType=Class'DamTypeBurned'
+	 BurnDamageType=class'UnlimaginMod.UM_BaseDamType_Flame'
 	 // Falling
-	 FallingDamageType=Class'Fell'
-	 LavaDamageType=Class'FellLava'
+	 FallingDamageType=Class'UnlimaginMod.UM_DamTypeFell'
+	 LavaDamageType=Class'UnlimaginMod.UM_DamTypeFellLava'
 	 // Stamina Modifiers Defaults
 	 VeterancyStaminaDrainModifier=1.0
 	 CarryWeightJumpStaminaDrainModifier=1.0

@@ -31,6 +31,6 @@ defaultproperties
 	 ProjectileMass=11.664		//grams
 	 MuzzleVelocity=860.000000		//Meter/sec
      HeadShotDamageMult=1.200000
-   	 Damage=140.000000
-	 MomentumTransfer=130000.000000
+   	 ImpactDamage=140.000000
+	 ImpactMomentum=130000.000000
 }

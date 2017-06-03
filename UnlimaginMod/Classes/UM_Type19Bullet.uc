@@ -21,6 +21,6 @@ class UM_Type19Bullet extends UM_BaseProjectile_SS190APFMJ;
 defaultproperties
 {
      MuzzleVelocity=715.000000
-	 Damage=40.000000
-	 MyDamageType=Class'UnlimaginMod.ZedekPD_DamTypeType19PDW'
+	 ImpactDamage=40.000000
+	 ImpactDamageType=Class'UnlimaginMod.ZedekPD_DamTypeType19PDW'
 }

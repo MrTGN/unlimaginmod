@@ -20,6 +20,6 @@ class UM_AK47Bullet extends UM_BaseProjectile_57N231FMJ;
 defaultproperties
 {
 	 MuzzleVelocity=715.000000
-	 Damage=64.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeAK47AssaultRifle'
+	 ImpactDamage=64.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeAK47AssaultRifle'
 }

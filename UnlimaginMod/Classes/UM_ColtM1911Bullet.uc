@@ -20,6 +20,6 @@ class UM_ColtM1911Bullet extends UM_BaseProjectile_45ACP_FHST230JHP;
 defaultproperties
 {
      MuzzleVelocity=275.000000		//Meter/sec
-	 Damage=50.000000
-	 MyDamageType=Class'UnlimaginMod.Whisky_DamTypeColtM1911Pistol'
+	 ImpactDamage=50.000000
+	 ImpactDamageType=Class'UnlimaginMod.Whisky_DamTypeColtM1911Pistol'
 }

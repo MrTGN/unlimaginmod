@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_BattleRifle
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,12 +12,11 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.02.2013 02:51
 //================================================================================
-class UM_BaseDamType_BattleRifle extends UM_BaseProjectileDamageType
+class UM_BaseDamType_BattleRifle extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
 	 DamageThreshold=1
      bSniperWeapon=True
      DeathString="%k killed %o (BattleRifle)."

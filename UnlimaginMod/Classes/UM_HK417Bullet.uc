@@ -21,6 +21,6 @@ class UM_HK417Bullet extends UM_BaseProjectile_M118LRBTHP;
 defaultproperties
 {
      MuzzleVelocity=790.000000
-	 Damage=110.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeHK417BattleRifle'
+	 ImpactDamage=110.000000
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeHK417BattleRifle'
 }

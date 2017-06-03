@@ -64,12 +64,6 @@ var					float			SquaredArmingRange;
 var					float			ArmingDelay; // Detonator will be armed after a specified amount of time in sec.
 var					bool			bDelayArming, bArmed, bLoopTimer;
 
-// How much damage to do when this Projectile impacts something before exploding
-var(Impact)			float			ImpactDamage;
-var(Impact)			float			ImpactMomentumTransfer;		// Momentum magnitude imparted by impacting projectile.
-var		class<DamageType>			ImpactDamageType;	// Damagetype of this Projectile hitting something, before exploding
-
-
 //[end] Varibles
 //====================================================================
 
@@ -213,21 +207,6 @@ simulated function bool EnemyIsInRadius( float EnemySearchRadius )
 	Return False;
 }
 
-// Called when projectile has lost all energy
-simulated function SetNoKineticEnergy()
-{
-	Super.SetNoKineticEnergy();
-	ImpactDamage = 0.0;
-	ImpactMomentumTransfer = 0.0;
-}
-
-// Called when the projectile loses some of the energy
-simulated function ScaleProjectilePerformance(float NewScale)
-{
-	ImpactDamage *= NewScale;
-	ImpactMomentumTransfer *= NewScale;
-}
-
 function bool CanHurtVictim(Actor Victim)
 {
 	local	int		i;
@@ -250,7 +229,7 @@ function bool CanHurtVictim(Actor Victim)
 function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> DamageType, float Momentum, vector HitLocation )
 {
 	local	Actor			Victim;
-	local	float			DamageScale;
+	local	float			DamageScale, Dist;
 	local	vector			Dir;
 	local	int				NumKilled, i;
 	local	array<Pawn>		CheckedPawns;
@@ -277,8 +256,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 		// Skip this Victim if IgnoredVictims array contain this Victim.class
 		if ( !bIgnoreThisVictim )  {
 			Dir = Victim.Location - HitLocation;
-			DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
-			Dir = Normal(Dir);
+			Dist = VSize(Dir);
+			Dir = Dir / Dist; // Normalization
+			DamageScale = FMax( (1.0 - FMax((Dist - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
 			if ( Pawn(Victim) != None )  {
 				if ( CanHurtPawn(Pawn(Victim)) )  {
 					// Extended FastTraces from bones Locations
@@ -331,8 +311,9 @@ function HurtRadius( float DamageAmount, float DamageRadius, class<DamageType> D
 			Continue;
 		
 		Dir = Victim.Location - HitLocation;
-		DamageScale = FMax( (1.0 - FMax((VSize(Dir) - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );		
-		Dir = Normal(Dir);
+		Dist = VSize(Dir);
+		Dir = Dir / Dist; // Normalization
+		DamageScale = FMax( (1.0 - FMax((Dist - Victim.CollisionRadius), 0.0) / DamageRadius), 0.0 );
 		// if Pawn
 		if ( Pawn(Victim) != None )  {
 			// Do not damage a friendly Pawn
@@ -573,28 +554,6 @@ event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation, vector M
 		if ( IsArmed() )
 			Explode(HitLocation, Vector(Rotation));
 	}
-}
-
-simulated function GetProjectileImpactParameters( 
-	out			float				DamageAmount,
-	out			float				MomentumAmount,
-	out			class<DamageType>	DamageType
-	optional	bool				bIsHeadShot	)
-{
-	// out DamageAmount
-	if ( bIsHeadShot )
-		DamageAmount = ImpactDamage * HeadShotDamageMult;
-	else
-		DamageAmount = ImpactDamage;
-	
-	// out MomentumAmount
-	MomentumAmount = ImpactMomentumTransfer;
-	
-	// out DamageType
-	if ( bIsHeadShot && HeadShotDamageType != None )
-		DamageType = HeadShotDamageType;
-	else
-		DamageType = ImpactDamageType;
 }
 
 simulated function ProcessTouchActor( Actor A )

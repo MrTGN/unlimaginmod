@@ -21,7 +21,7 @@ class UM_BaseProjectile_TracerBullet extends UM_BaseProjectile_Bullet
 defaultproperties
 {
      HeadShotDamageMult=1.100000
-	 Damage=30.000000
+	 ImpactDamage=30.000000
 	 Trail=(xEmitterClass=Class'UnlimaginMod.UM_IncBulletTracer')
 	 LightType=LT_Steady
      LightHue=255

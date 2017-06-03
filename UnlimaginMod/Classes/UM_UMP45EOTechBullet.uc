@@ -19,5 +19,5 @@ class UM_UMP45EOTechBullet extends UM_UMP45Bullet;
 
 defaultproperties
 {
-     MyDamageType=Class'UnlimaginMod.OperationY_DamTypeUMP45EOTech'
+     ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeUMP45EOTech'
 }

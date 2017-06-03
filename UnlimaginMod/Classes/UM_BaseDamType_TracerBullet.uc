@@ -20,8 +20,6 @@ class UM_BaseDamType_TracerBullet extends UM_BaseDamType_Flame
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
-     bCheckForHeadShots=True
      DeathString="%k killed %o (Tracer Bullet)."
      FemaleSuicide="%o blew up."
      MaleSuicide="%o blew up."

@@ -20,6 +20,6 @@ class UM_SVDBullet extends UM_BaseProjectile_7N1FMJ;
 defaultproperties
 {
      MuzzleVelocity=830.000000
-	 Damage=125.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeSVDLLI'
+	 ImpactDamage=125.000000
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeSVDLLI'
 }

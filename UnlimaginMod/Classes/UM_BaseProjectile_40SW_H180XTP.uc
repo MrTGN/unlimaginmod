@@ -31,7 +31,7 @@ defaultproperties
 	 // Barrel > 4"
 	 MuzzleVelocity=295.000000		//Meter/sec
      HeadShotDamageMult=1.250000
-   	 Damage=42.500000
-	 MomentumTransfer=30500.000000
+   	 ImpactDamage=42.500000
+	 ImpactMomentum=30500.000000
 	 HitSoundVolume=0.700000
 }

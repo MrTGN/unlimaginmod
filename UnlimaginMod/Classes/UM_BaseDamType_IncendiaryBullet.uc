@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_IncendiaryBullet
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 Temporary class for the old standart Killing Floor weapons
 //================================================================================
-class UM_BaseDamType_IncendiaryBullet extends UM_BaseProjectileDamageType
+class UM_BaseDamType_IncendiaryBullet extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 static function AwardDamage(KFSteamStatsAndAchievements KFStatsAndAchievements, int Amount)
@@ -31,10 +31,6 @@ defaultproperties
 	 DeathString="%k killed %o (Incendiary Bullet)."
      FemaleSuicide="%o shot herself in the foot."
      MaleSuicide="%o shot himself in the foot."
-	 //[end]
-	 //[block] Headshots
-	 bCheckForHeadShots=True
-	 HeadShotDamageMult=1.100000
 	 //[end]
 	 bArmorStops=True
      bLocationalHit=True

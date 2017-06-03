@@ -35,7 +35,6 @@ static function AwardDamage(KFSteamStatsAndAchievements KFStatsAndAchievements, 
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
      DeathString="%k killed %o (Incendiary Projectile)."
      FemaleSuicide="%o burn up."
      MaleSuicide="%o burn up."

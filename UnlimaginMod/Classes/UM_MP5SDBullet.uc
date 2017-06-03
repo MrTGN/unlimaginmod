@@ -22,6 +22,6 @@ defaultproperties
 {
      EffectiveRange=600.000000
 	 MuzzleVelocity=285.000000
-	 Damage=35.000000
-	 MyDamageType=Class'UnlimaginMod.Braindead_DamTypeMP5SD'
+	 ImpactDamage=35.000000
+	 ImpactDamageType=Class'UnlimaginMod.Braindead_DamTypeMP5SD'
 }

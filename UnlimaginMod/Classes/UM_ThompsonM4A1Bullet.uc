@@ -20,7 +20,7 @@ class UM_ThompsonM4A1Bullet extends UM_BaseProjectile_45ACP_Speer200JHP;
 
 defaultproperties
 {
-     Damage=41.000000
+     ImpactDamage=41.000000
 	 MuzzleVelocity=290.000000
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeThompsonM4A1Bullet'
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeThompsonM4A1Bullet'
 }

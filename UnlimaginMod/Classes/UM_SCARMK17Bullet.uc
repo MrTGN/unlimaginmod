@@ -21,5 +21,5 @@ class UM_SCARMK17Bullet extends UM_BaseProjectile_M80FMJ;
 defaultproperties
 {
      MuzzleVelocity=715.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeSCARMK17AssaultRifle'
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSCARMK17AssaultRifle'
 }

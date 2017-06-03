@@ -74,8 +74,8 @@ defaultproperties
 	 DrawType=DT_StaticMesh
 	 StaticMesh=StaticMesh'kf_generic_sm.Shotgun_Pellet'
 	 DrawScale=7.000000
-	 Damage=300.000000
+	 ImpactDamage=300.000000
 	 PickupSound=(Ref="KF_InventorySnd.Ammo_GenericPickup",Slot=SLOT_Pain,Vol=2.2,Radius=400.0,PitchRange=(Min=0.95,Max=1.05),bUse3D=True)
 	 bNetTemporary=False
-	 MyDamageType=None
+	 ImpactDamageType=None
 }

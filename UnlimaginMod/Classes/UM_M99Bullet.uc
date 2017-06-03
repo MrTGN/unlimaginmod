@@ -19,8 +19,8 @@ class UM_M99Bullet extends UM_BaseProjectile_M1022LRSniper;
 
 defaultproperties
 {
-     HeadShotDamageType=Class'UnlimaginMod.UM_DamTypeM99HeadShot'
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeM99SniperRifle'
-	 Damage=720.000000
-	 HeadShotDamageMult=2.800000
+	 ImpactDamage=720.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM99SniperRifle'
+	 HeadShotDamageMult=2.75
+	 HeadShotDamageType=Class'UnlimaginMod.UM_DamTypeM99HeadShot'
 }

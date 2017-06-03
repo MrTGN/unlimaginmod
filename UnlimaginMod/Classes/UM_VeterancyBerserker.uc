@@ -125,7 +125,7 @@ static function float GetWeaponPawnMovementBonus( UM_PlayerReplicationInfo PRI, 
 // New function to reduce taken damage
 static function float GetHumanTakenDamageModifier( UM_PlayerReplicationInfo PRI, UM_HumanPawn Victim, Pawn Aggressor, class<DamageType> DamageType )
 {
-	if ( DamageType == Class'Fell' )
+	if ( DamageType == Class'UM_DamTypeFell' )
 		Return 1.0 - 0.095 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 95% reduced Damage by falling
 	else if ( DamageType == class'DamTypeVomit' )
 		Return 1.0 - 0.09 * float(Min(PRI.ClientVeteranSkillLevel, 10)); // Up to 90% reduced Bloat Bile damage

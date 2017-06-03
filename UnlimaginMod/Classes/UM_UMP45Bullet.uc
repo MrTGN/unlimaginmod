@@ -20,7 +20,7 @@ class UM_UMP45Bullet extends UM_BaseProjectile_45ACP_Speer200JHP;
 
 defaultproperties
 {
-     Damage=42.500000
+     ImpactDamage=43.0
 	 MuzzleVelocity=320.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeUMP45SMG'
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeUMP45SMG'
 }

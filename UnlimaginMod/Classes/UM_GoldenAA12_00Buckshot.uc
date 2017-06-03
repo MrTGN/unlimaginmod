@@ -19,5 +19,5 @@ class UM_GoldenAA12_00Buckshot extends UM_AA12_00Buckshot;
 
 defaultproperties
 {
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeGoldenAA12_00Buckshot'
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeGoldenAA12_00Buckshot'
 }

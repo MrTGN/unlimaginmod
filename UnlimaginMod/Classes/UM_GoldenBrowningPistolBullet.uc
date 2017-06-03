@@ -19,5 +19,5 @@ class UM_GoldenBrowningPistolBullet extends UM_BrowningPistolBullet;
 
 defaultproperties
 {
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeGoldenBrowningPistol'
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeGoldenBrowningPistol'
 }

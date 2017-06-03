@@ -21,6 +21,6 @@ class UM_M16A4_AimpointBullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=940.000000
-	 MyDamageType=Class'UnlimaginMod.Maria_DamTypeM16A4_Aimpoint'
-     Damage=46.000000
+	 ImpactDamageType=Class'UnlimaginMod.Maria_DamTypeM16A4_Aimpoint'
+     ImpactDamage=46.000000
 }

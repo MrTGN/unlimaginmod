@@ -20,6 +20,6 @@ class UM_HuntingRifleBullet extends UM_BaseProjectile_338ScenarGB488HPBT;
 defaultproperties
 {
      MuzzleVelocity=885.000000
-	 Damage=215.000000
-	 MyDamageType=Class'UnlimaginMod.Braindead_DamTypeHuntingRifle'
+	 ImpactDamage=215.000000
+	 ImpactDamageType=Class'UnlimaginMod.Braindead_DamTypeHuntingRifle'
 }

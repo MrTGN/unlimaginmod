@@ -19,8 +19,6 @@ class UM_BaseDamType_IncendiaryProjectile extends UM_BaseDamType_Flame
 
 defaultproperties
 {
-	 HeadShotDamageMult=1.000000
-     //bCheckForHeadShots=True
      DeathString="%k killed %o (Incendiary Projectile)."
      FemaleSuicide="%o blew up."
      MaleSuicide="%o blew up."

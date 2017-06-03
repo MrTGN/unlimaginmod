@@ -19,5 +19,5 @@ class UM_GoldenBenelliM4_1Buckshot extends UM_BenelliM4_1Buckshot;
 
 defaultproperties
 {
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeGoldenBenelliM4_1Buckshot'
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeGoldenBenelliM4_1Buckshot'
 }

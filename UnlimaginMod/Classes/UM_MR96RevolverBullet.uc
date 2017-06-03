@@ -20,6 +20,6 @@ class UM_MR96RevolverBullet extends UM_BaseProjectile_357Mag_H158XTP;
 defaultproperties
 {
      MuzzleVelocity=360.000000
-	 Damage=44.000000
-	 MyDamageType=Class'UnlimaginMod.ZedekPD_DamTypeMR96Revolver'
+	 ImpactDamage=44.000000
+	 ImpactDamageType=Class'UnlimaginMod.ZedekPD_DamTypeMR96Revolver'
 }

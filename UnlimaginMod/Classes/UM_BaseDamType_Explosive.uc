@@ -29,12 +29,9 @@ static function GetHitEffects(out class<xEmitter> HitEffects[4], int VictimHealt
 defaultproperties
 {
      bIsExplosive=True
-     bCheckForHeadShots=False
-	 HeadShotDamageMult=1.000000
      DeathString="%o filled %k's body with shrapnel."
      FemaleSuicide="%o blew up."
      MaleSuicide="%o blew up."
-     bLocationalHit=False
      bThrowRagdoll=True
      bExtraMomentumZ=True
      DamageThreshold=1

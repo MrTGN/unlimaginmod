@@ -19,5 +19,5 @@ class UM_V94Bullet extends UM_BaseProjectile_7N34Sniper;
 defaultproperties
 {
      HeadShotDamageType=Class'UnlimaginMod.OperationY_DamTypeV94HeadShot'
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeV94SniperRifle'
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeV94SniperRifle'
 }

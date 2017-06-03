@@ -20,6 +20,6 @@ class UM_Spas12_000Buckshot extends UM_BaseProjectile_000Buckshot;
 defaultproperties
 {
      MuzzleVelocity=390.000000
-	 Damage=41.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeSpas12_000Buckshot'
+	 ImpactDamage=41.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeSpas12_000Buckshot'
 }

@@ -29,7 +29,5 @@ defaultproperties
      FemaleSuicide="%o roasted herself alive."
      MaleSuicide="%o roasted himself alive."
 	 //[end]
-	 bCheckForHeadShots=False
-	 bLocationalHit=False
-	 bExtraMomentumZ=False
+	 FlashFog=(X=800.000000,Y=600.000000,Z=240.000000)
 }

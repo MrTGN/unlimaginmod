@@ -169,7 +169,7 @@ defaultproperties
 	 MomentumTransfer=100000.000000
 	 MyDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenade'
 	 ImpactDamage=50.000000
-	 ImpactMomentumTransfer=10000.000000
+	 ImpactMomentum=10000.000000
 	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeHandGrenadeImpact'
 	 //DisintegrationDamageTypes
 	 DisintegrationDamageTypes(0)=Class'SirenScreamDamage'

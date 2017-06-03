@@ -20,10 +20,7 @@ class UM_BaseDamType_PoisonGas extends UM_BaseWeaponDamageType
 
 defaultproperties
 {
-     bCheckForHeadShots=False
      DeathString="%k poisoned %o (Poison Gas)."
      FemaleSuicide="%o poisoned herself."
      MaleSuicide="%o poisoned himself."
-	 bArmorStops=False
-	 bLocationalHit=False
 }

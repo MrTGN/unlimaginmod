@@ -83,7 +83,7 @@ simulated event PostNetBeginPlay()
 	Super.PostNetBeginPlay();
 	
 	if ( Velocity != Vect(0.0,0.0,0.0) && Speed > 0.0 && SpeedDropScale > 0.0 )
-		Acceleration = -Normal(Velocity) * Speed * SpeedDropScale;
+		Acceleration = -Velocity * SpeedDropScale;
 	else if ( !bGasCloudSpawned && (Velocity == Vect(0.0,0.0,0.0) || bStopped) )
 		SpawnGasCloud();
 }

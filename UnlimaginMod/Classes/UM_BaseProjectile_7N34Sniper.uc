@@ -32,6 +32,6 @@ defaultproperties
 	 MaxEffectiveRange=2000.000000
 	 ProjectileMass=59.0	//grams
 	 MuzzleVelocity=770.000000	// m/s
-	 Damage=920.000000
-	 MomentumTransfer=160000.000000
+	 ImpactDamage=920.000000
+	 ImpactMomentum=160000.000000
 }

@@ -21,6 +21,6 @@ defaultproperties
 {
      MuzzleVelocity=730.000000		//Meter/sec
 	 HeadShotDamageMult=2.250000
-   	 Damage=95.000000
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeWinchesterM1894Rifle'
+   	 ImpactDamage=95.000000
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeWinchesterM1894Rifle'
 }

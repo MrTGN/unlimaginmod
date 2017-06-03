@@ -20,6 +20,6 @@ class UM_AUG_A1ARBullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=970.000000
-	 Damage=46.000000
-	 MyDamageType=Class'UnlimaginMod.OperationY_DamTypeAUG_A1AssaultRifle'
+	 ImpactDamage=46.000000
+	 ImpactDamageType=Class'UnlimaginMod.OperationY_DamTypeAUG_A1AssaultRifle'
 }

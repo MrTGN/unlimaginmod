@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_ElementalProjImpact
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2013 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -12,7 +12,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Creation date:	 24.02.2013 04:09
 //================================================================================
-class UM_BaseDamType_ElementalProjImpact extends UM_BaseProjectileDamageType
+class UM_BaseDamType_ElementalProjImpact extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 
@@ -23,7 +23,6 @@ static function AwardDamage(KFSteamStatsAndAchievements KFStatsAndAchievements, 
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
 	 DamageThreshold=1
      DeathString="%k killed %o (Projectile)."
      FemaleSuicide="%o blew up."

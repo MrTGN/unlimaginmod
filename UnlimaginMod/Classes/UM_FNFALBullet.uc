@@ -21,6 +21,6 @@ class UM_FNFALBullet extends UM_BaseProjectile_M80FMJ;
 defaultproperties
 {
      MuzzleVelocity=830.000000
-	 Damage=100.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeFNFALAssaultRifle'
+	 ImpactDamage=100.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeFNFALAssaultRifle'
 }

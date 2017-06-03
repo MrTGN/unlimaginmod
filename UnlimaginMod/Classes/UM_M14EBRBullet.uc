@@ -20,6 +20,6 @@ class UM_M14EBRBullet extends UM_BaseProjectile_M118LRBTHP;
 defaultproperties
 {
      MuzzleVelocity=840.000000
-	 Damage=115.000000
-	 MyDamageType=Class'UnlimaginMod.UM_DamTypeM14EBR'
+	 ImpactDamage=115.000000
+	 ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM14EBR'
 }

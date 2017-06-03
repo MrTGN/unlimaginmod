@@ -21,6 +21,6 @@ class UM_MP5KBullet extends UM_BaseProjectile_9x19P_Speer124JHP;
 defaultproperties
 {
      MuzzleVelocity=375.000000
-	 Damage=36.000000
-	 MyDamageType=Class'UnlimaginMod.Braindead_DamTypeMP5K_Dual'
+	 ImpactDamage=36.000000
+	 ImpactDamageType=Class'UnlimaginMod.Braindead_DamTypeMP5K_Dual'
 }

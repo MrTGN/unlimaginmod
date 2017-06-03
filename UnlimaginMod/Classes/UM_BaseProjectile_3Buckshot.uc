@@ -29,8 +29,8 @@ defaultproperties
 	 ProjectileMass=1.5163 // grams
 	 MuzzleVelocity=380.000000
 	 // Damage for 18 pellets
-     Damage=22.000000
-	 MomentumTransfer=31200.000000
+     ImpactDamage=22.000000
+	 ImpactMomentum=31200.000000
 	 HitSoundVolume=0.340000
 	 DrawScale=0.760000
 }

@@ -2,7 +2,7 @@
 //	Package:		 UnlimaginMod
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Class name:		 UM_BaseDamType_Shrapnel
-//	Parent class:	 UM_BaseProjectileDamageType
+//	Parent class:	 UM_BaseDamType_ProjectileImpact
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Copyright:		 © 2014 Tsiryuta G. N. <spbtgn@gmail.com>
 //
@@ -14,7 +14,7 @@
 //––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 //	Comments:		 
 //================================================================================
-class UM_BaseDamType_Shrapnel extends UM_BaseProjectileDamageType
+class UM_BaseDamType_Shrapnel extends UM_BaseDamType_ProjectileImpact
 	Abstract;
 
 

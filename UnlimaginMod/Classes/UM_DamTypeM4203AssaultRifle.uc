@@ -17,7 +17,6 @@ class UM_DamTypeM4203AssaultRifle extends UM_BaseDamType_AssaultRifle
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000	 
 	 WeaponClass=Class'UnlimaginMod.UM_M4203AssaultRifle'
      DeathString="%k killed %o (M4 203)."
      FemaleSuicide="%o shot herself in the foot."

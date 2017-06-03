@@ -1134,7 +1134,7 @@ function bool FindRoamDest()
 			else  {
 				if ( NumRandomJumps > 5 )  {
 					Pawn.Health = 0;
-					Pawn.Died( self, class'Suicided', Pawn.Location );
+					Pawn.Died( self, class'UM_DamTypeSuicided', Pawn.Location );
 					
 					Return True;
 				}

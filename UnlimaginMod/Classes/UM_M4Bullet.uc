@@ -21,6 +21,6 @@ class UM_M4Bullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=885.000000
-	 Damage=45.000000
-     MyDamageType=Class'UnlimaginMod.UM_DamTypeM4AssaultRifle'
+	 ImpactDamage=45.000000
+     ImpactDamageType=Class'UnlimaginMod.UM_DamTypeM4AssaultRifle'
 }

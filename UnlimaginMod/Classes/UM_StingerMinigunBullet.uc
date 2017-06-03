@@ -21,6 +21,6 @@ class UM_StingerMinigunBullet extends UM_BaseProjectile_SS109FMJBT;
 defaultproperties
 {
      MuzzleVelocity=900.000000
-	 Damage=50.000000
-	 MyDamageType=Class'UnlimaginMod.Exod_PooSH_DamTypeStingerMinigun'
+	 ImpactDamage=50.000000
+	 ImpactDamageType=Class'UnlimaginMod.Exod_PooSH_DamTypeStingerMinigun'
 }

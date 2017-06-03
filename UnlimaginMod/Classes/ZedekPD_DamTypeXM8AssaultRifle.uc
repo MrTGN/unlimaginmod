@@ -6,7 +6,6 @@ class ZedekPD_DamTypeXM8AssaultRifle extends UM_BaseDamType_AssaultRifle
 
 defaultproperties
 {
-     HeadShotDamageMult=1.000000
 	 WeaponClass=Class'UnlimaginMod.ZedekPD_XM8AssaultRifle'
      DeathString="%k killed %o (XM8 Rifle)."
      FemaleSuicide="%o shot herself in the foot."

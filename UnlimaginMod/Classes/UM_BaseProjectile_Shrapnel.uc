@@ -36,9 +36,9 @@ defaultproperties
 	 //EffectiveRange in Meters
 	 EffectiveRange=1000.000000
 	 MaxEffectiveRange=1200.000000
-	 Damage=50.000000
+	 ImpactDamage=50.000000
 	 HeadShotDamageMult=1.500000
-	 MomentumTransfer=64000.000000
+	 ImpactMomentum=64000.000000
 	 HitSoundVolume=0.700000
 	 DrawScale=1.125000
 }

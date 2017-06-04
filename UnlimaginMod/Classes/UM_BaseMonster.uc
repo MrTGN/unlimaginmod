@@ -113,6 +113,8 @@ var					float				KilledWaveCountDownExtensionTime;
 
 var					bool				bAllowRespawnIfLost;
 
+var					float				TimerUpdateDelay;
+
 var		transient	bool				bIsRelevant;
 var		transient	float				LastRelevantTime;
 var					float				RelevanceCheckDelay;
@@ -143,7 +145,6 @@ var					float				BurnDamageDelay;
 var		transient	int					BurnCountDown;
 var		transient	class<DamageType>	LastBurnDamageType;
 var					sound				BurningAmbientSound;
-
 // AshenSkin
 var		transient	bool				bCrispApplied;
 var					Material			AshenSkin;
@@ -155,6 +156,14 @@ var		transient	float				NextBileDamageTime;
 var					float				BileDamageDelay;
 var		transient	int					BileCountDown, LastBileDamage;
 var		transient	class<DamageType>	LastBileDamageType;
+
+// BleedOut
+var		transient	bool				bIsTakingBleedOutDamage;
+var		transient	float				NextBleedOutDamageTime;
+var		transient	Pawn				BleedOutInstigator;
+var					float				BleedOutDamageDelay;
+var		transient	int					BleedOutCountDown, LastBleedOutDamage;
+var					class<DamageType>	BleedOutDamageType;
 
 // RagDoll impacts (used in event KImpact())
 var		transient	float				NextStreakTime;
@@ -201,8 +210,15 @@ var					bool				bKnockDownByDecapitation;
 var					bool				bPlayDecapitationAnim;
 var					name				DecapitationAnim;
 var		transient	bool				bDecapitationPlayed;
+// DecapitatedDamage
+var		transient	bool				bIsTakingDecapitatedDamage;
+var		transient	Pawn				DecapitationInstigator;
+var		transient	float				NextDecapitatedDamageTime;
+var					float				DecapitatedDamageDelay;
+var					range				DecapitatedRandDamage;
+var					class<DamageType>	DecapitatedDamageType;
 // HeadlessAnim
-var		transient	bool				bHeadlessAnimated, bBleedOut;
+var		transient	bool				bHeadlessAnimated;
 var					name				HeadlessIdleAnim;
 
 // Replicates next rand num for animation array index
@@ -647,7 +663,7 @@ function AdjustGameDifficulty()
 		bIsAlphaMonster = True;
 		RandMult = Lerp( FRand(), AlphaHealthScaleRange.Min, AlphaHealthScaleRange.Max );
 	}
-	Health = Round( float(default.Health) * DifficultyHealthModifer() * RandMult * NumPlayersHealthModifer() );
+	Health = Round( float(default.Health) * RandMult * DifficultyHealthModifer() * NumPlayersHealthModifer() );
 	HealthMax = float(Health);
 	KnockDownDamage = Round(HealthMax * KnockDownHealthPct);
 	ExplosiveKnockDownDamage = Round(HealthMax * ExplosiveKnockDownHealthPct);
@@ -656,7 +672,9 @@ function AdjustGameDifficulty()
 		RandMult *= Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
 	else
 		RandMult = Lerp( FRand(), HeadHealthScaleRange.Min, HeadHealthScaleRange.Max );
-	HeadHealth = default.HeadHealth * DifficultyHeadHealthModifer() * RandMult * NumPlayersHeadHealthModifer();
+	HeadHealth = default.HeadHealth * RandMult * DifficultyHeadHealthModifer() * NumPlayersHeadHealthModifer();
+	DecapitatedRandDamage.Min = default.DecapitatedRandDamage.Min * RandMult * DifficultyHealthModifer() * NumPlayersHealthModifer();
+	DecapitatedRandDamage.Max = default.DecapitatedRandDamage.Max * RandMult * DifficultyHealthModifer() * NumPlayersHealthModifer();
 	//[end]
 		
 	// Jump
@@ -714,9 +732,6 @@ simulated event PostBeginPlay()
 	}
 
 	AssignInitialPose();
-	// Let's randomly alter the position of our zombies' spines, to give their animations
-	// the appearance of being somewhat unique.
-	SetTimer(1.0, False);
 
 	//Set Karma Ragdoll skeleton for this character.
 	if ( KFRagdollName != "" )
@@ -741,12 +756,11 @@ simulated event PostBeginPlay()
 		}
 	}
 
-	bSTUNNED = False;
-	DECAP = False;
 	if ( Role == ROLE_Authority )  {
 		AdjustGameDifficulty();
 		if ( UM_InvasionGame(Level.Game) != None && !bAddedToMonsterList )
 			bAddedToMonsterList = UM_InvasionGame(Level.Game).AddToMonsterList( self );
+		SetTimer(TimerUpdateDelay, True);
 	}
 }
 
@@ -1184,23 +1198,28 @@ function Died( Controller Killer, class<DamageType> DamageType, vector HitLocati
 	if ( bDeleteMe || Level.bLevelChange || Level.Game == None )
 		Return; // already destroyed, or level is being cleaned up
 	
-	// making attached SealSquealProjectile explode when this pawn dies
-	for ( i = 0; i < Attached.Length; ++i )  {
-		if ( SealSquealProjectile(Attached[i]) != None )
-			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
-	}
-	DestroyBallisticCollision();
-	
-	if ( DamageType.default.bCausedByWorld && (Killer == None || Killer == Controller) && LastHitBy != None )
-		Killer = LastHitBy;
-	
 	// mutator hook to prevent deaths
 	// WARNING - don't prevent bot suicides - they suicide when really needed
 	if ( Level.Game.PreventDeath(self, Killer, DamageType, HitLocation) )  {
 		Health = Max(Health, 1); //mutator should set this higher
 		Return;
 	}
+	
+	DestroyBallisticCollision();
+	// making attached SealSquealProjectile explode when this pawn dies
+	for ( i = 0; i < Attached.Length; ++i )  {
+		if ( SealSquealProjectile(Attached[i]) != None )
+			SealSquealProjectile(Attached[i]).HandleBasePawnDestroyed();
+	}
+	
+	if ( DamageType.default.bCausedByWorld && (Killer == None || Killer == Controller) && LastHitBy != None )
+		Killer = LastHitBy;
+	
 	Health = Min(0, Health);
+	bIsTakingBurnDamage = False;
+	bIsTakingBileDamage = False;
+	bIsTakingBleedOutDamage = False;
+	bIsTakingDecapitatedDamage = False;
 	
 	if ( Weapon != None && (DrivenVehicle == None || DrivenVehicle.bAllowWeaponToss) )  {
 		if ( Controller != None )
@@ -2293,7 +2312,7 @@ simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 	bSTUNNED = False;
 	bMovable = True;
 
-	if ( class<DamTypeBurned>(DamageType) != None || class<DamTypeFlamethrower>(DamageType) != None )
+	if ( class<DamTypeBurned>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None )
 		ZombieCrispUp();
 
 	ProcessHitFX();
@@ -2994,6 +3013,7 @@ function SetBurning(bool bBurning)
 		StartBurnFX();
 	}
 	else  {
+		bIsTakingBurnDamage = False;
 		HeatAmount = 0;
 		BurnCountDown = 0;
 		LastBurnDamage = 0;
@@ -3006,15 +3026,11 @@ function SetBurning(bool bBurning)
 function TakeBurnDamage()
 {
 	NextBurnDamageTime = Level.TimeSeconds + BurnDamageDelay;
-	if ( bIsTakingBurnDamage )  {
-		--BurnCountDown;
-		HeatAmount = Min( BurnCountDown, 3 );
-		bIsTakingBurnDamage = BurnCountDown > 0;
-		ProcessTakeDamage( LastBurnDamage, BurnInstigator, Location, Vect(0, 0, 0), FireDamageClass );
-		LastBurnDamage = Round( Lerp(FRand(), (float(LastBurnDamage) * 0.9), float(LastBurnDamage)) );
-	}
-	
-	if ( !bIsTakingBurnDamage )  {
+	ProcessTakeDamage( LastBurnDamage, BurnInstigator, Location, Vect(0, 0, 0), FireDamageClass );
+	--BurnCountDown;
+	HeatAmount = Min( BurnCountDown, 3 );
+	LastBurnDamage = Round( Lerp(FRand(), (float(LastBurnDamage) * 0.85), float(LastBurnDamage)) );
+	if ( BurnCountDown < 1 || LastBurnDamage < 1 )  {
 		SetBurning(False);
 		Return;
 	}
@@ -3032,19 +3048,66 @@ function TakeBurnDamage()
 function TakeBileDamage()
 {
 	NextBileDamageTime = Level.TimeSeconds + BileDamageDelay;
+	ProcessTakeDamage( LastBileDamage, BileInstigator, Location, Vect(0,0,0), LastBileDamageType );
 	--BileCountDown;
-	bIsTakingBileDamage = BileCountDown > 0;
-	ProcessTakeDamage( LastBileDamage, BileInstigator, Location, Vect(0, 0, 0), LastBileDamageType );
-	LastBileDamage = Round(float(LastBileDamage) * 0.65);
-	if ( LastBileDamage < 1 )  {
-		BileCountDown = 0;
+	LastBileDamage = Round( Lerp(FRand(), (float(LastBileDamage) * 0.6), (float(LastBileDamage) * 0.8)) );
+	if ( BileCountDown < 1 || LastBileDamage < 1 )  {
 		bIsTakingBileDamage = False;
+		BileCountDown = 0;
+		LastBileDamage = 0;
 	}
 }
 
 function TakeBleedOutDamage()
 {
+	NextBleedOutDamageTime = Level.TimeSeconds + BleedOutDamageDelay;
+	ProcessTakeDamage( LastBleedOutDamage, BleedOutInstigator, Location, Vect(0,0,0), BleedOutDamageType );
+	--BleedOutCountDown;
+	LastBleedOutDamage = Round( Lerp(FRand(), (float(LastBleedOutDamage) * 0.6), (float(LastBleedOutDamage) * 0.8)) );
+	if ( BleedOutCountDown < 1 || LastBleedOutDamage < 1 )  {
+		bIsTakingBleedOutDamage = False;
+		BleedOutCountDown = 0;
+		LastBleedOutDamage = 0;
+	}
+}
+
+function TakeDecapitatedDamage()
+{
+	NextDecapitatedDamageTime = Level.TimeSeconds + DecapitatedDamageDelay;
+	ProcessTakeDamage( Round(Lerp(FRand(), DecapitatedRandDamage.Min, DecapitatedRandDamage.Max)), DecapitationInstigator, Location, Vect(0,0,0), DecapitatedDamageType );
+}
+
+event Timer()
+{
+	if ( Role < Role_Authority )
+		Return;
 	
+	// Reset AnimAction variable to replicate any new value even if
+	// it will be the same AnimAction as playing
+	if ( bResetAnimAct && Level.TimeSeconds >= ResetAnimActTime )  {
+		bResetAnimAct = False;
+		AnimAction = '';
+	}
+	
+	// Chech Relevance
+	if ( Level.TimeSeconds >= NextRelevanceCheckTime )
+		IsRelevant();
+	if ( Level.TimeSeconds >= NextPlayersSeenCheckTime )
+		CheckPlayersCanSeeMe();
+	
+	// Taking Damages
+	if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurnDamageTime )
+		TakeBurnDamage();
+	if ( bIsTakingBileDamage && Level.TimeSeconds >= NextBileDamageTime )
+		TakeBileDamage();
+	if ( bIsTakingBleedOutDamage && Level.TimeSeconds >= NextBleedOutDamageTime )
+		TakeBleedOutDamage();
+	if ( bIsTakingDecapitatedDamage && Level.TimeSeconds >= NextDecapitatedDamageTime )
+		TakeDecapitatedDamage();
+	
+	// Hidden monster SpeedAdjust
+	if ( CanSpeedAdjust() )
+		AdjustGroundSpeed();
 }
 
 simulated function MakeInvisible()
@@ -3194,34 +3257,10 @@ simulated event Tick( float DeltaTime )
 	
 	// Server side code
 	if ( Role == ROLE_Authority )  {
-		// Reset AnimAction variable to replicate any new value even if
-		// it will be the same AnimAction as playing
-		if ( bResetAnimAct && Level.TimeSeconds >= ResetAnimActTime )  {
-			bResetAnimAct = False;
-			AnimAction = '';
-		}
 		// ResetCumulativeDamage
 		if ( bResetCumulativeDamage && Level.TimeSeconds > CumulativeDamageResetTime )  {
 			bResetCumulativeDamage = False;
 			CumulativeDamage = 0;
-		}
-		// Chech Relevance
-		if ( Level.TimeSeconds >= NextRelevanceCheckTime )
-			IsRelevant();
-		if ( Level.TimeSeconds >= NextPlayersSeenCheckTime )
-			CheckPlayersCanSeeMe();
-		// Tick Damages
-		if ( bIsTakingBileDamage && Level.TimeSeconds >= NextBileDamageTime )
-			TakeBileDamage();
-		if ( bIsTakingBurnDamage && Level.TimeSeconds >= NextBurnDamageTime )
-			TakeBurnDamage();
-		// Hidden monster SpeedAdjust
-		if ( CanSpeedAdjust() )
-			AdjustGroundSpeed();
-		// If the Zed has been bleeding long enough, make it die
-		if ( bBleedOut && Level.TimeSeconds > BleedOutTime )  {
-			bBleedOut = False;
-			Died( LastDamagedBy.Controller, class'DamTypeBleedOut', Location );
 		}
 		if ( TotalZap > 0.0 )
 			TickZapped(DeltaTime);
@@ -3626,7 +3665,8 @@ function bool HitCanInterruptAction()
 }
 
 // ToDo: delete this
-function PlayDirectionalHit(vector HitLoc)
+function PlayDirectionalHit(vector HitLoc) { }
+/*
 {
 	local	vector	X,Y,Z, Dir;
 	local	float	DirDotX;
@@ -3657,6 +3697,7 @@ function PlayDirectionalHit(vector HitLoc)
 			else
 				SetAnimAction(KFHitFront);
 		}
+		SetAnimAction(KFHitFront);
 	}
 	// HitBack
 	else if ( DirDotX < -0.7 )
@@ -3667,9 +3708,9 @@ function PlayDirectionalHit(vector HitLoc)
 	// HitLeft
 	else
 		SetAnimAction(KFHitLeft);
-}
+}	*/
 
-function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType) {}
+function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType) { }
 
 function bool CanPlayPain(int Damage, class<DamageType> DamageType)
 {
@@ -3940,9 +3981,13 @@ function int ProcessTakeDamage(
 		HeadHealth = Max( (HeadHealth - Damage), 0 );
 		// Decapitate
 		if ( HeadHealth < 1 || Damage >= Health )  {
+			NextDecapitatedDamageTime = Level.TimeSeconds + DecapitatedDamageDelay;
+			DecapitationInstigator = InstigatedBy;
+			bIsTakingDecapitatedDamage = True;
 			RemoveHead();
 			// Head explodes, causing additional hurty.
-			Damage += Damage + int(HealthMax * 0.25);
+			//Damage += Damage + int(HealthMax * 0.25);
+			Damage += int(HealthMax * 0.3);
 			// Bonuses
 			if ( UM_HumanPawn(InstigatedBy) != None )  {
 				// SlowMoCharge
@@ -3994,11 +4039,6 @@ function int ProcessTakeDamage(
 	}
 	// Paw has lost some Health
 	else  {
-		// Decapitated BleedOutTime
-		if ( bDecapitated && !bBleedOut )  {
-			bBleedOut = True;
-			BleedOutTime = Level.TimeSeconds + BleedOutDuration;
-		}
 		AddVelocity( Momentum );
 		if ( Controller != None )
 			Controller.NotifyTakeHit( InstigatedBy, HitLocation, Damage, DamageType, Momentum );
@@ -4052,7 +4092,7 @@ event TakeDamage(
 	// Same rules apply to zombies as players.
 	if ( class<DamTypeVomit>(DamageType) != None )  {
 		BileCountDown = 6;
-		LastBileDamage = Round(float(Damage) * 0.65);
+		LastBileDamage = Max( Round(float(Damage) * 0.65), LastBileDamage );
 		BileInstigator = InstigatedBy;
 		LastBileDamageType = DamageType;
 		bIsTakingBileDamage = True;
@@ -4064,13 +4104,6 @@ event TakeDamage(
 }
 
 function TakeFireDamage( int Damage, Pawn FireDamageInstigator ) {}
-
-simulated event Timer()
-{
-	// bSTUNNED variable actually indicates flinching, not stunning! So don't get confused.
-	bSTUNNED = False;
-	SetTimer(0.0, False);  // Disable timer
-}
 
 function PushAwayZombie(Vector NewVelocity)
 {
@@ -4120,7 +4153,7 @@ defaultproperties
 	 ExplosionVisualEffect=class'KFMod.FlameImpact_Medium'
 	 //ExplosionVisualEffect=class'KFMod.FlameImpact_Weak'
 	 ExplosionSound=(Snd='ProjectileSounds.cannon_rounds.HE_deflect',Vol=2.2,Radius=600.0,PitchRange=(Min=0.95,Max=1.05))
-	 
+	 TimerUpdateDelay=0.1
 	 bAllowRespawnIfLost=True
 	 RelevanceCheckDelay=0.5
 	 SpeedAdjustCheckDelay=0.5
@@ -4166,11 +4199,18 @@ defaultproperties
 	 ZapThreshold=0.250000
 	 ZappedDamageMod=2.000000
 	 ZapResistanceScale=2.000000
-	 // Falling
+	 // DamageTypes
 	 FallingDamageType=Class'UnlimaginMod.UM_DamTypeFell'
 	 DrowningDamageType=Class'UnlimaginMod.UM_DamTypeDrowned'
 	 SuicideDamageType=Class'UnlimaginMod.UM_DamTypeSuicided'
 	 LavaDamageType=Class'UnlimaginMod.UM_DamTypeFellLava'
+	 // BleedOutDamage
+	 BleedOutDamageType=Class'UnlimaginMod.UM_BaseDamType_BleedOut'
+	 BleedOutDamageDelay=1.0
+	 // DecapitatedDamage
+	 DecapitatedDamageType=Class'UnlimaginMod.UM_BaseDamType_Decapitated'
+	 DecapitatedRandDamage=(Min=20.0,Max=25.0)
+	 DecapitatedDamageDelay=1.0
 	 // SoundsPitchRange
 	 SoundsPitchRange=(Min=0.9,Max=1.1)
 	 PlayerCountHealthScale=0.1

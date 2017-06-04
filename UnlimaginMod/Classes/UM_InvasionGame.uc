@@ -1427,9 +1427,14 @@ state BossWaveInProgress
 }
 //[end] BossWaveInProgress code
 
-function Killed( Controller Killer, Controller Killed, Pawn KilledPawn, class<DamageType> DamageType )
+function Killed( 
+	Controller			Killer, 
+	Controller			Killed, 
+	Pawn				KilledPawn, 
+	class<DamageType>	DamageType )
 {
 	// if Monster was killed
+	// All Killed Achievements Moved to the UM_ServerStats (NotifyKilled() function call down below)
 	if ( MonsterController(Killed) != None || Monster(KilledPawn) != None )  {
 		--NumMonsters;
 		++ZombiesKilled;

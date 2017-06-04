@@ -663,9 +663,10 @@ defaultproperties
 	 IdleRestAnim="SawZombieIdle"
 	 RotationRate=(Yaw=45000,Roll=0)
 	 
-	 HealthMax=1050.0
-     Health=1050
+	 HealthMax=1100.0
+     Health=1100
 	 HeadHealth=650.0
+	 DecapitatedRandDamage=(Min=30.0,Max=60.0)
 	 //PlayerCountHealthScale=0.500000
 	 //PlayerNumHeadHealthScale=0.300000
 	 PlayerCountHealthScale=0.5

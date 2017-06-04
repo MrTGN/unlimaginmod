@@ -214,6 +214,7 @@ defaultproperties
 	 HealthMax=130.0
 	 Health=130
 	 HeadHealth=25.0
+	 DecapitatedRandDamage=(Min=16.0,Max=33.0)
 	 //PlayerCountHealthScale=0.0
      PlayerCountHealthScale=0.0
 	 //PlayerNumHeadHealthScale=0.0

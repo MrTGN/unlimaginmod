@@ -342,40 +342,41 @@ function MatchEnded()
 function NotifyKilled( Controller Killed, Pawn KilledPawn, class<DamageType> DamageType )
 {
 	// Server Check
-	if ( Role != ROLE_Authority )
+	if ( Role != ROLE_Authority || KFMonster(KilledPawn) == None )
 		Return;
 	
-	if ( KFMonster(KilledPawn) != None )  {
-		// KilledWhileZapped
-		if ( KFMonster(KilledPawn).bZapped )
-			AddZedKilledWhileZapped();
-		
-		if ( Class<DamTypeBurned>(DamageType) != None || Class<DamTypeFlamethrower>(DamageType) != None || Class<DamTypeBlowerThrower>(DamageType) != None )
-			AddMonsterKillsWithBileOrFlame( KilledPawn.Class );
-		
-		// Bloat
-		if ( UM_BaseMonster_Bloat(KilledPawn) != None )
-			AddBloatKill( Class<DamTypeBullpup>(DamageType) != None );
-		// Siren
-		else if ( UM_BaseMonster_Siren(KilledPawn) != None )
-			AddSirenKill( Class<DamTypeLawRocketImpact>(DamageType) != None );
-		// Stalker
-		else if ( UM_BaseMonster_Stalker(KilledPawn) != None )  {
-			if ( Class<DamTypeFrag>(DamageType) != None || Class<UM_BaseDamType_Explosive>(DamageType) != None )
-				AddStalkerKillWithExplosives();
-		}
-		// Scrake
-		else if ( UM_BaseMonster_Scrake(KilledPawn) != None )  {
-			if ( Class<DamTypeChainsaw>(DamageType) != None )
-				AddChainsawScrakeKill();
-		}
-		// Clot
-		else if ( UM_BaseMonster_Clot(KilledPawn) != None )
-			AddClotKill();
-		
-		if ( Class<KFWeaponDamageType>(DamageType) != None )
-			Class<KFWeaponDamageType>(DamageType).static.AwardKill( Self, OwnerController, KFMonster(KilledPawn) );
+	if ( UM_BaseGameInfo(Level.Game) != None )
+		AddKill(KFMonster(KilledPawn).bLaserSightedEBRM14Headshotted, class<DamTypeMelee>(DamageType) != None, UM_BaseGameInfo(Level.Game).bZEDTimeActive, class<DamTypeM4AssaultRifle>(DamageType) != None || class<DamTypeM4203AssaultRifle>(DamageType) != None, class<DamTypeBenelli>(DamageType) != None, class<DamTypeMagnum44Pistol>(DamageType) != None, class<DamTypeMK23Pistol>(DamageType) != None, class<DamTypeFNFALAssaultRifle>(DamageType) != None, class<DamTypeBullpup>(DamageType) != None, UM_BaseGameInfo(Level.Game).GetCurrentMapName(Level));
+	
+	// KilledWhileZapped
+	if ( KFMonster(KilledPawn).bZapped )
+		AddZedKilledWhileZapped();
+	
+	if ( Class<DamTypeBurned>(DamageType) != None || Class<DamTypeFlamethrower>(DamageType) != None || Class<DamTypeBlowerThrower>(DamageType) != None )
+		AddMonsterKillsWithBileOrFlame( KilledPawn.Class );
+	
+	// Bloat
+	if ( UM_BaseMonster_Bloat(KilledPawn) != None )
+		AddBloatKill( Class<DamTypeBullpup>(DamageType) != None );
+	// Siren
+	else if ( UM_BaseMonster_Siren(KilledPawn) != None )
+		AddSirenKill( Class<DamTypeLawRocketImpact>(DamageType) != None );
+	// Stalker
+	else if ( UM_BaseMonster_Stalker(KilledPawn) != None )  {
+		if ( Class<DamTypeFrag>(DamageType) != None || Class<UM_BaseDamType_Explosive>(DamageType) != None )
+			AddStalkerKillWithExplosives();
 	}
+	// Scrake
+	else if ( UM_BaseMonster_Scrake(KilledPawn) != None )  {
+		if ( Class<DamTypeChainsaw>(DamageType) != None )
+			AddChainsawScrakeKill();
+	}
+	// Clot
+	else if ( UM_BaseMonster_Clot(KilledPawn) != None )
+		AddClotKill();
+	
+	if ( Class<KFWeaponDamageType>(DamageType) != None )
+		Class<KFWeaponDamageType>(DamageType).static.AwardKill( Self, OwnerController, KFMonster(KilledPawn) );
 }
 
 function AddDamageHealed(int Amount, optional bool bMP7MHeal, optional bool bMP5MHeal)

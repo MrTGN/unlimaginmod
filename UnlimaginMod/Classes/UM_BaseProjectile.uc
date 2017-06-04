@@ -430,7 +430,7 @@ simulated event PreBeginPlay()
 		NextProjectileUpdateTime = Level.TimeSeconds + InitialUpdateTimeDelay;
 }
 
-//simulated function used to Spawn trails on client side
+// SpawnTrail() function used to Spawn trails on client side
 simulated function SpawnTrail()
 {
 	// Level.bDropDetail is True when frame rate is below DesiredFrameRate
@@ -838,7 +838,7 @@ simulated function ProcessHitMonster( UM_BaseMonster Monster )
 	GetTouchLocation(Monster, TouchLocation, TouchNormal);
 	VelNormal = Velocity / Speed; // Normalization
 	TraceEnd = VelNormal * (Monster.CollisionHeight * 2.0 + Monster.CollisionRadius * 2.0);
-	Monster.TraceActors(class'UM_BallisticCollision', BC, HitLocation, HitNormal, TraceEnd, TouchLocation, CollisionExtent)  {
+	foreach Monster.TraceActors(class'UM_BallisticCollision', BC, HitLocation, HitNormal, TraceEnd, TouchLocation, CollisionExtent)  {
 		if ( BC == None || !BC.CanBeDamaged() || BC.Instigator != Monster )
 			Continue;
 		
@@ -894,7 +894,7 @@ simulated function ProcessHitActor( Actor A )
 	if ( A == None || ImpactDamage < 0.5 )
 		Return;
 	
-	VelNormal = Velocity / Speed;
+	VelNormal = Velocity / Speed; // Normalization
 	GetTouchLocation(A, TouchLocation, TouchNormal);
 	// If projectile hit a Pawn
 	if ( Pawn(A) != None )  {
@@ -973,7 +973,6 @@ simulated singular event Touch( Actor Other )
 	if ( CanTouchActor(Other) )
 		ProcessTouchActor(Other);
 }
-
 
 simulated function ProcessHitWall( Vector HitNormal )
 {

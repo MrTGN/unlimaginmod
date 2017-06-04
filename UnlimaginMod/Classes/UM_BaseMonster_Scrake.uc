@@ -351,16 +351,21 @@ State SawingLoop
 	}
 }
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(damageType) != None || class<DamTypeCrossbowHeadShot>(damageType) != None) )  {
 		Damage = Round( float(Damage) * 0.5 );
+		Momentum *= 0.5;
 	}
 	
 	if ( InstigatedBy != None && Level.Game.GameDifficulty >= 4.0 && !IsInState('SawingLoop') && !IsInState('RunningState') && float(Damage) > (HealthMax * 0.25) )
 		RangedAttack(InstigatedBy);
-	
-	Return Damage;
 }
 
 function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageType)

@@ -146,7 +146,13 @@ function PlayTakeHit(vector HitLocation, int Damage, class<DamageType> DamageTyp
 	PlaySound(HitSound[0], SLOT_Pain,1.25,,400);
 }
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	if ( Level.TimeSeconds > LastDamagedTime )
 		TwoSecondDamageTotal = 0;
@@ -161,23 +167,33 @@ function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 	else if ( DamageType == class'DamTypeFrag' || DamageType == class'DamTypePipeBomb' || DamageType == class'DamTypeMedicNade' )
         Damage = Round( float(Damage) * 2.0 );
 	// He takes less damage to small arms fire (non explosives)
-	else if ( bIsHeadShot && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult >= 1.5 )
+	else if ( bIsHeadShot && class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.HeadShotDamageMult >= 1.5 )  {
 		Damage = Round( float(Damage) * 0.75 ); // Don't reduce the damage so much if its a high headshot damage weapon
-	else if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(DamageType) != None || class<DamTypeCrossbowHeadShot>(DamageType) != None) )
+		Momentum *= 0.75;
+	}
+	else if ( Level.Game.GameDifficulty >= 5.0 && bIsHeadshot && (class<DamTypeCrossbow>(DamageType) != None || class<DamTypeCrossbowHeadShot>(DamageType) != None) )  {
 		Damage = Round( float(Damage) * 0.4 );
+		Momentum *= 0.4;
+	}
 	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
-	else if( DamageType == class 'DamTypeBlowerThrower' )
+	else if( DamageType == class 'DamTypeBlowerThrower' )  {
 		Damage = Round( float(Damage) * 0.25 );
-	else if ( DamageType == class'DamTypeVomit' )
-		Return 0; // nulled
-	else
+		Momentum *= 0.25;
+	}
+	else if ( DamageType == class'DamTypeVomit' )  {
+		Damage = 0; // nulled
+		Momentum = vect(0,0,0);
+	}
+	else  {
 		Damage = Round( float(Damage) * 0.55 );
+		Momentum *= 0.55;
+	}
 	
 	if ( AnimAction == 'PoundBlock' )
 		Damage = Round( float(Damage) * BlockDamageReduction );
 	
 	if ( Damage < 1 )
-		Return 0;
+		Return;
 	
 	// Shut off his "Device" when dead
 	if ( Damage >= Health )
@@ -186,8 +202,6 @@ function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 	TwoSecondDamageTotal += Damage;
 	if ( !bDecapitated && TwoSecondDamageTotal > RageDamageThreshold && !bChargingPlayer && !bZapped && (!(bCrispified && bBurnified) || bFrustrated) )
 		StartCharging();
-	
-	Return Damage;
 }
 
 // changes colors on Device (notified in anim)

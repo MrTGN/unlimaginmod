@@ -65,13 +65,17 @@ simulated event PostBeginPlay()
 	Super(UM_BaseMonster).PostBeginPlay();
 }
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	// Reduced damage from explosive
 	if ( Class<UM_BaseDamType_Explosive>(DamageType) != None || DamageType == class'DamTypeFrag' || DamageType == class'DamTypePipeBomb' || DamageType == class'DamTypeM79Grenade' || DamageType == class'DamTypeM32Grenade' || DamageType == class'DamTypeM203Grenade' || DamageType == class'DamTypeSPGrenade' || DamageType == class'DamTypeSealSquealExplosion' || DamageType == class'DamTypeSeekerSixRocket' )
-		Return Round( float(Damage) * ExplosiveDamageScale );
-	
-	Return Damage;
+		Damage = Round( float(Damage) * ExplosiveDamageScale );
 }
 //[end] Functions
 //====================================================================

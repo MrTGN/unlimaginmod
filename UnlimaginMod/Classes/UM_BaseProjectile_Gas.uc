@@ -27,7 +27,7 @@ var		float			SpawnCheckRadiusScale;	// CheckRadius calculating by multiplying Da
 var		class<Emitter>	GasCloudEmitterClass;
 var		Emitter			GasCloudEmitter;
 
-var		bool			bStopped;	// This projectile has stopped
+var		bool			bShouldStop, bHasStopped;	// This projectile has stopped
 var		bool			bGasCloudSpawned;
 
 //[end] Varibles
@@ -39,8 +39,8 @@ var		bool			bGasCloudSpawned;
 
 replication
 {
-	reliable if ( Role == ROLE_Authority && bNetDirty )
-		bStopped;
+	reliable if ( Role == ROLE_Authority && bNetDirty && bNetInitial )
+		bShouldStop;
 }
 
 //[end] Replication
@@ -52,7 +52,7 @@ replication
 
 simulated function SpawnTrail()
 {
-	if ( !bStopped )
+	if ( !bShouldStop )
 		Super.SpawnTrail();
 }
 
@@ -60,104 +60,84 @@ simulated function SpawnGasCloud()
 {
 	local	Emitter		GasCloud;
 	
-	bGasCloudSpawned = True;
+	if ( bGasCloudSpawned )
+		Return;
 	
-	if ( Level.NetMode != NM_DedicatedServer && !PhysicsVolume.bWaterVolume
-		 && GasCloudEmitterClass != None && GasCloudEmitter == None )  {
-		foreach VisibleActors(Class'Emitter', GasCloud, (DamageRadius * SpawnCheckRadiusScale), Location)  {
-			if ( GasCloud != None && GasCloud.Class == GasCloudEmitterClass )  {
-				GasCloud.Reset();
-				Break;
-			}
-			else
-				GasCloud = None;
+	bGasCloudSpawned = True;
+	if ( Level.NetMode == NM_DedicatedServer || PhysicsVolume.bWaterVolume || GasCloudEmitterClass == None )
+		Return;
+	
+	foreach VisibleActors(Class'Emitter', GasCloud, (DamageRadius * SpawnCheckRadiusScale), Location)  {
+		if ( GasCloud != None && GasCloud.Class == GasCloudEmitterClass )  {
+			GasCloud.Reset();
+			Break;
 		}
-		
-		if ( GasCloud == None )
-			GasCloudEmitter = Spawn(GasCloudEmitterClass, self);
+		else
+			GasCloud = None;
 	}
+	
+	if ( GasCloud == None )
+		GasCloudEmitter = Spawn(GasCloudEmitterClass, self);
+}
+
+simulated function StopProjectile()
+{
+	bHasStopped = True;
+	bShouldStop = True;
+	Velocity = Vect(0, 0, 0);
+	Acceleration = Vect(0, 0, 0);
+	Speed = 0.0;
+	DestroyTrail();
+	SpawnGasCloud();
+	SetPhysics(PHYS_None);
+	bCollideWorld = False;
 }
 
 simulated event PostNetBeginPlay()
 {
 	Super.PostNetBeginPlay();
 	
-	if ( Velocity != Vect(0.0,0.0,0.0) && Speed > 0.0 && SpeedDropScale > 0.0 )
+	if ( bShouldStop && !bHasStopped )
+		StopProjectile();
+	else if ( Velocity != Vect(0,0,0) && SpeedDropScale > 0.0 )
 		Acceleration = -Velocity * SpeedDropScale;
-	else if ( !bGasCloudSpawned && (Velocity == Vect(0.0,0.0,0.0) || bStopped) )
-		SpawnGasCloud();
-}
-
-simulated event PostNetReceive()
-{
-	if ( bStopped )  {
-		if ( bTrailSpawned )
-			DestroyTrail();
-		
-		if ( !bGasCloudSpawned )
-			SpawnGasCloud();
-	}
 }
 
 simulated event Tick(float DeltaTime)
 {
-	if ( Level.TimeSeconds > NextProjectileUpdateTime && !bStopped 
-		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
+	if ( Level.TimeSeconds > NextProjectileUpdateTime && !bHasStopped )  {
 		UpdateBallisticPerformance();
-		if ( Speed < MinSpeed )  {
-			bStopped = True;
-			Acceleration = Vect(0.0,0.0,0.0);
-			Velocity = Vect(0.0,0.0,0.0);
-			Speed = 0.0;
-			SpawnGasCloud();
-			DestroyTrail();
-			SetPhysics(PHYS_None);
-			
-			if ( bCollideWorld )
-				bCollideWorld = False;
-		}
+		if ( Speed <= MinSpeed )
+			StopProjectile();
 	}
 }
 
 simulated function ProcessTouchActor( Actor A )
 {
 	LastTouched = A;
-	if ( !bStopped 
-		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-		UpdateBallisticPerformance();
-		if ( Speed > 0.0 )  {
-			bStopped = True;
-			Acceleration = Vect(0.0,0.0,0.0);
-			Velocity = Vect(0.0,0.0,0.0);
-			Speed = 0.0;
-			SpawnGasCloud();
-			DestroyTrail();
-			SetPhysics(PHYS_None);
-			
-			if ( bCollideWorld )
-				bCollideWorld = False;
-		}
+	if ( !bHasStopped )  {
+		UpdateBallisticPerformance(True);
+		if ( Speed > 0.0 )
+			StopProjectile();
 	}
 	LastTouched = None;
 }
 
 simulated singular event HitWall( vector HitNormal, actor Wall )
 {
-	if ( !bStopped
-		 && (Velocity != Vect(0.0,0.0,0.0) || Acceleration != Vect(0.0,0.0,0.0)) )  {
-		UpdateBallisticPerformance();
-		if ( Speed > 0.0 )  {
-			bStopped = True;
-			Acceleration = Vect(0.0,0.0,0.0);
-			Velocity = Vect(0.0,0.0,0.0);
-			Speed = 0.0;
-			SpawnGasCloud();
-			DestroyTrail();
-			SetPhysics(PHYS_None);
-			
-			if ( bCollideWorld )
-				bCollideWorld = False;
-		}
+	if ( !bHasStopped )  {
+		UpdateBallisticPerformance(True);
+		if ( Speed > 0.0 )
+			StopProjectile();
+	}
+}
+
+simulated event Landed( vector HitNormal )
+{
+	if ( !bHasStopped )  {
+		UpdateBallisticPerformance(True);
+		if ( Speed > 0.0 )
+			StopProjectile();
 	}
 }
 
@@ -168,7 +148,7 @@ simulated singular event HitWall( vector HitNormal, actor Wall )
 defaultproperties
 {
      MomentumTransfer=0.0
-	 SpawnCheckRadiusScale=0.200000
+	 SpawnCheckRadiusScale=0.2
 	 bCanRicochet=False
 	 bOrientToVelocity=True
 	 //Ballistic performance randomization

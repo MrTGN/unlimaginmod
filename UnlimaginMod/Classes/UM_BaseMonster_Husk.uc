@@ -221,7 +221,7 @@ defaultproperties
 	 // Explosion parametrs
 	 KilledExplodeChance=1.0
 	 ExplosionDamage=80
-	 ExplosionDamageType=Class'DamTypeHuskGun'
+	 ExplosionDamageType=Class'UnlimaginMod.UM_BaseDamType_Flame'
 	 ExplosionRadius=320.0
 	 ExplosionMomentum=8000.0
 	 ExplosionShrapnelClass=Class'KFMod.FlameTendril'

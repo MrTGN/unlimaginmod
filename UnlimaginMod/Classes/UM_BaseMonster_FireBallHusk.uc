@@ -65,14 +65,18 @@ simulated event PostBeginPlay()
 	Super(UM_BaseMonster).PostBeginPlay();
 }
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	// Reduced damage from fire
 	if ( DamageType == class 'DamTypeBurned' || DamageType == class 'DamTypeFlamethrower'
 		 || Class<UM_BaseDamType_Flame>(DamageType) != None )
-		Return Round( float(Damage) * BurnDamageScale );
-	
-	Return Damage;
+		Damage = Round( float(Damage) * BurnDamageScale );
 }
 //[end] Functions
 //====================================================================

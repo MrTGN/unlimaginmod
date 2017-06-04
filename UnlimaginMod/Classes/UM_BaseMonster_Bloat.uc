@@ -259,17 +259,25 @@ function RemoveHead()
 	Super.RemoveHead();
 }
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	// Bloats are volatile. They burn faster than other zeds.
-	if ( damageType == class 'DamTypeBurned' )
-		Return Round( float(Damage) * 1.5 );
-	else if ( damageType == class 'DamTypeBlowerThrower' )
-		Return Round( float(Damage) * 0.25 );	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
-	else if ( damageType == Class'DamTypeVomit' )
-		Return 0;
-	
-	Return Damage;
+	if ( DamageType == class 'DamTypeBurned' )
+		Damage = Round( float(Damage) * 1.5 );
+	else if ( DamageType == class 'DamTypeBlowerThrower' )  {
+		Damage = Round( float(Damage) * 0.25 );	// Reduced damage from the blower thrower bile, but lets not zero it out entirely
+		Momentum *= 0.25;
+	}
+	else if ( DamageType == Class'DamTypeVomit' )  {
+		Damage = 0;
+		Momentum = vect(0,0,0);
+	}
 }
 
 simulated function ProcessHitFX()

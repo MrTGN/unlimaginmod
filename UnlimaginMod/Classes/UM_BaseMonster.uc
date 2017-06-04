@@ -3827,13 +3827,22 @@ function AddCumulativeDamage(int NewDamage)
 }
 
 // Use this function to modify taken damage in subclasses
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
-{
-	Return Damage;
-}
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
+{}
 
 // Process the damaging and Return the amount of taken damage
-function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType )
+function int ProcessTakeDamage( 
+	int					Damage, 
+	Pawn				InstigatedBy, 
+	vector				HitLocation, 
+	vector				Momentum, 
+	class<DamageType>	DamageType )
 {
 	local	bool						bIsHeadShot;
 	local	Controller					Killer;
@@ -3918,7 +3927,7 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 	if ( DamageType.default.bArmorStops )
 		Damage = ShieldAbsorb( Damage );
 	
-	Damage = AdjustTakenDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, bIsHeadShot);
+	AdjustTakenDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, bIsHeadShot);
 	//[end]
 	
 	// Just Return if this wouldn't even damage us.
@@ -4002,7 +4011,13 @@ function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 	Return Damage;
 }
 
-event TakeDamage( int Damage, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, class<DamageType> DamageType, optional int HitIndex )
+event TakeDamage( 
+				int					Damage, 
+				Pawn				InstigatedBy, 
+				vector				HitLocation, 
+				vector				Momentum, 
+				class<DamageType>	DamageType, 
+	optional	int					HitIndex )
 {
 	// GodMode
 	if ( Role < ROLE_Authority || Damage < 1 || (Controller != None && Controller.bGodMode) )

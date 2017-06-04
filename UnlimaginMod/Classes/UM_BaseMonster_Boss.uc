@@ -1477,7 +1477,13 @@ function bool ShouldChargeFromDamage()
 // No ImpressiveKill on BossMonster. Boss Already have a DoBossDeath function.
 function CheckForImpressiveKill( UM_PlayerController PC );
 
-function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, bool bIsHeadShot )
+function AdjustTakenDamage( 
+	out		int					Damage, 
+			Pawn				InstigatedBy, 
+			vector				HitLocation, 
+	out		vector				Momentum, 
+			class<DamageType>	DamageType, 
+			bool				bIsHeadShot )
 {
 	local	float	UsedPipeBombDamScale;
 	
@@ -1488,10 +1494,8 @@ function int AdjustTakenDamage( int Damage, Pawn InstigatedBy, vector HitLocatio
 		UsedPipeBombDamScale = FMax((1.0 - PipeBombDamageScale), 0.0);
 		if ( PipeBombDamageScale < 1.0 )
 			PipeBombDamageScale = FMin( (PipeBombDamageScale + 0.075), 1.0 );
-		Return Round( float(Damage) * UsedPipeBombDamScale );
+		Damage = Round( float(Damage) * UsedPipeBombDamScale );
 	}
-	
-	Return Damage;
 }
 
 function int ProcessTakeDamage( int Damage, Pawn InstigatedBy, Vector Hitlocation, Vector Momentum, class<DamageType> DamageType )

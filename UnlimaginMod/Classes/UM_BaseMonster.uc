@@ -140,10 +140,13 @@ var					class<DamageType>	LavaDamageType;
 
 // BurnDamage
 var		transient	bool				bIsTakingBurnDamage;
+//var		transient	Pawn				BurnInstigator;	// declared in KFMonster
 var		transient	float				NextBurnDamageTime;
 var					float				BurnDamageDelay;
 var		transient	int					BurnCountDown;
-var		transient	class<DamageType>	LastBurnDamageType;
+var		transient	int					BurnDamage;
+var					range				BurnDamageRandScale;
+var					class<DamageType>	BurnDamageType;
 var					sound				BurningAmbientSound;
 // AshenSkin
 var		transient	bool				bCrispApplied;
@@ -152,17 +155,22 @@ var		transient	bool				bAshenApplied;
 
 // BileDamage
 var		transient	bool				bIsTakingBileDamage;
+//var		transient	Pawn				BileInstigator;	// declared in KFMonster
 var		transient	float				NextBileDamageTime;
 var					float				BileDamageDelay;
-var		transient	int					BileCountDown, LastBileDamage;
-var		transient	class<DamageType>	LastBileDamageType;
+var		transient	int					BileCountDown;
+var		transient	int					BileDamage;
+var					range				BileDamageRandScale;
+var		transient	class<DamageType>	BileDamageType;
 
 // BleedOut
 var		transient	bool				bIsTakingBleedOutDamage;
-var		transient	float				NextBleedOutDamageTime;
 var		transient	Pawn				BleedOutInstigator;
+var		transient	float				NextBleedOutDamageTime;
 var					float				BleedOutDamageDelay;
-var		transient	int					BleedOutCountDown, LastBleedOutDamage;
+var		transient	int					BleedOutCountDown;
+var		transient	int					BleedOutDamage;
+var					range				BleedOutDamageRandScale;
 var					class<DamageType>	BleedOutDamageType;
 
 // RagDoll impacts (used in event KImpact())
@@ -3005,10 +3013,10 @@ function SetBurning(bool bBurning)
 	
 	bBurnified = bBurning;
 	if ( bBurning )  {
-		HeatAmount = 3;
-		BurnCountDown = 10; // Inits burn tick count to 10
 		if ( Level.TimeSeconds >= NextBurnDamageTime )
 			NextBurnDamageTime = Level.TimeSeconds + BurnDamageDelay;
+		HeatAmount = 3;
+		BurnCountDown = 10; // Inits burn tick count to 10
 		bIsTakingBurnDamage = True;
 		StartBurnFX();
 	}
@@ -3016,8 +3024,8 @@ function SetBurning(bool bBurning)
 		bIsTakingBurnDamage = False;
 		HeatAmount = 0;
 		BurnCountDown = 0;
-		LastBurnDamage = 0;
 		CrispUpThreshhold = default.CrispUpThreshhold;
+		BurnDamage = 0;
 		StopBurnFX();
 	}
 	AdjustMovement();
@@ -3026,11 +3034,11 @@ function SetBurning(bool bBurning)
 function TakeBurnDamage()
 {
 	NextBurnDamageTime = Level.TimeSeconds + BurnDamageDelay;
-	ProcessTakeDamage( LastBurnDamage, BurnInstigator, Location, Vect(0, 0, 0), FireDamageClass );
+	ProcessTakeDamage( BurnDamage, BurnInstigator, Location, Vect(0, 0, 0), FireDamageClass );
 	--BurnCountDown;
 	HeatAmount = Min( BurnCountDown, 3 );
-	LastBurnDamage = Round( Lerp(FRand(), (float(LastBurnDamage) * 0.85), float(LastBurnDamage)) );
-	if ( BurnCountDown < 1 || LastBurnDamage < 1 )  {
+	BurnDamage = Round( float(BurnDamage) * Lerp(FRand(), BurnDamageRandScale.Min, BurnDamageRandScale.Max) );
+	if ( BurnCountDown < 1 || BurnDamage < 1 )  {
 		SetBurning(False);
 		Return;
 	}
@@ -3048,26 +3056,26 @@ function TakeBurnDamage()
 function TakeBileDamage()
 {
 	NextBileDamageTime = Level.TimeSeconds + BileDamageDelay;
-	ProcessTakeDamage( LastBileDamage, BileInstigator, Location, Vect(0,0,0), LastBileDamageType );
+	ProcessTakeDamage( BileDamage, BileInstigator, Location, Vect(0,0,0), BileDamageType );
 	--BileCountDown;
-	LastBileDamage = Round( Lerp(FRand(), (float(LastBileDamage) * 0.6), (float(LastBileDamage) * 0.8)) );
-	if ( BileCountDown < 1 || LastBileDamage < 1 )  {
+	BileDamage = Round( float(BileDamage) * Lerp(FRand(), BileDamageRandScale.Min, BileDamageRandScale.Max) );
+	if ( BileCountDown < 1 || BileDamage < 1 )  {
 		bIsTakingBileDamage = False;
 		BileCountDown = 0;
-		LastBileDamage = 0;
+		BileDamage = 0;
 	}
 }
 
 function TakeBleedOutDamage()
 {
 	NextBleedOutDamageTime = Level.TimeSeconds + BleedOutDamageDelay;
-	ProcessTakeDamage( LastBleedOutDamage, BleedOutInstigator, Location, Vect(0,0,0), BleedOutDamageType );
+	ProcessTakeDamage( BleedOutDamage, BleedOutInstigator, Location, Vect(0,0,0), BleedOutDamageType );
 	--BleedOutCountDown;
-	LastBleedOutDamage = Round( Lerp(FRand(), (float(LastBleedOutDamage) * 0.6), (float(LastBleedOutDamage) * 0.8)) );
-	if ( BleedOutCountDown < 1 || LastBleedOutDamage < 1 )  {
+	BleedOutDamage = Round( float(BleedOutDamage) * Lerp(FRand(), BleedOutDamageRandScale.Min, BleedOutDamageRandScale.Max)) );
+	if ( BleedOutCountDown < 1 || BleedOutDamage < 1 )  {
 		bIsTakingBleedOutDamage = False;
 		BleedOutCountDown = 0;
-		LastBleedOutDamage = 0;
+		BleedOutDamage = 0;
 	}
 }
 
@@ -4059,23 +4067,26 @@ event TakeDamage(
 				class<DamageType>	DamageType, 
 	optional	int					HitIndex )
 {
+	local	UM_PlayerReplicationInfo	PRI;
+	local	int							NewBleedOutCountDown;
+	
 	// GodMode
 	if ( Role < ROLE_Authority || Damage < 1 || (Controller != None && Controller.bGodMode) )
 		Return;
 
 	// Fire damage
 	if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None || class<UM_BaseDamType_Flame>(DamageType) != None || (class<KFWeaponDamageType>(DamageType) != None && class<KFWeaponDamageType>(DamageType).default.bDealBurningDamage) )  {
-		if ( !bIsTakingBurnDamage || Damage > LastBurnDamage )  {
-			LastBurnDamage = Damage;
+		if ( Damage > BurnDamage )  {
+			BurnDamage = Max( Round(float(Damage) * Lerp(FRand(), BurnDamageRandScale.Min, BurnDamageRandScale.Max)), BurnDamage );
 			if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) != None ||
-				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != None || class<DamTypeFlareRevolver>(DamageType) != None || class<DamTypeMAC10MPInc>(DamageType) != None )
-				LastBurnDamageType = DamageType;
+				 class<UM_BaseDamType_Flame>(DamageType) != None || class<DamTypeTrenchgun>(DamageType) != None || class<DamTypeFlareRevolver>(DamageType) != None )
+				BurnDamageType = DamageType;
 			else
-				LastBurnDamageType = class'DamTypeFlamethrower';
+				BurnDamageType = default.BurnDamageType;
 		}
 		
 		if ( class<UM_BaseDamType_IncendiaryBullet>(DamageType) == None )
-			Damage = float(Damage) * 1.5; // Increase burn damage 1.5 times, except all Incendiary Bullets.
+			Damage = Round(float(Damage) * 1.5); // Increase first burn damage, except all Incendiary Bullets.
 		
 		if ( Damage >= 15 )
 			HeatAmount = 4;
@@ -4091,13 +4102,29 @@ event TakeDamage(
 
 	// Same rules apply to zombies as players.
 	if ( class<DamTypeVomit>(DamageType) != None )  {
-		BileCountDown = 6;
-		LastBileDamage = Max( Round(float(Damage) * 0.65), LastBileDamage );
-		BileInstigator = InstigatedBy;
-		LastBileDamageType = DamageType;
-		bIsTakingBileDamage = True;
 		if ( Level.TimeSeconds >= NextBileDamageTime )
 			NextBileDamageTime = Level.TimeSeconds + BileDamageDelay;
+		BileCountDown = 6;
+		if ( Damage > BileDamage )  {
+			BileDamage = Max( Round(float(Damage) * Lerp(FRand(), BileDamageRandScale.Min, BileDamageRandScale.Max)), BileDamage );
+			BileDamageType = DamageType;
+		}
+		BileInstigator = InstigatedBy;
+		bIsTakingBileDamage = True;
+	}
+	
+	// BleedOutDamage
+	PRI = UM_PlayerReplicationInfo(InstigatedBy.PlayerReplicationInfo);
+	if ( PRI != None && UM_VeterancyTypes(PRI.ClientVeteranSkill) != None )  {
+		NewBleedOutCountDown = UM_VeterancyTypes(PRI.ClientVeteranSkill).GetBleedOutCountDown(PRI, DamageType);
+		if ( NewBleedOutCountDown > BleedOutCountDown )  {
+			if ( Level.TimeSeconds >= NextBleedOutDamageTime )
+				NextBleedOutDamageTime = Level.TimeSeconds + BleedOutDamageDelay;
+			BleedOutCountDown = NewBleedOutCountDown;
+			BleedOutDamage = Max( Round(float(Damage) * Lerp(FRand(), BleedOutDamageRandScale.Min, BleedOutDamageRandScale.Max)), BleedOutDamage );
+			BleedOutInstigator = InstigatedBy;
+			bIsTakingBleedOutDamage = True;
+		}
 	}
 
 	ProcessTakeDamage( Damage, InstigatedBy, HitLocation, Momentum, DamageType );
@@ -4188,11 +4215,6 @@ defaultproperties
 	 
 	 HeadShotSlowMoChargeBonus=0.2
 	 AshenSkin=Combiner'PatchTex.Common.BurnSkinEmbers_cmb'
-	 //BileDamage
-	 BileDamageDelay=1.0
-	 //BurnDamage
-	 BurningAmbientSound=Sound'Amb_Destruction.Krasnyi_Fire_House02'
-	 BurnDamageDelay=1.0
 	 //ZedGun Zapped
 	 ZapDuration=4.000000
 	 ZappedSpeedMod=0.500000
@@ -4204,9 +4226,18 @@ defaultproperties
 	 DrowningDamageType=Class'UnlimaginMod.UM_DamTypeDrowned'
 	 SuicideDamageType=Class'UnlimaginMod.UM_DamTypeSuicided'
 	 LavaDamageType=Class'UnlimaginMod.UM_DamTypeFellLava'
+	 // BurnDamage
+	 BurnDamageDelay=1.0
+	 BurnDamageRandScale=(Min=0.8,Max=0.9)
+	 BurnDamageType=Class'UnlimaginMod.UM_BaseDamType_Flame'
+	 BurningAmbientSound=Sound'Amb_Destruction.Krasnyi_Fire_House02'
+	 //BileDamage
+	 BileDamageDelay=1.0
+	 BileDamageRandScale=(Min=0.6,Max=0.8)
 	 // BleedOutDamage
-	 BleedOutDamageType=Class'UnlimaginMod.UM_BaseDamType_BleedOut'
 	 BleedOutDamageDelay=1.0
+	 BleedOutDamageRandScale=(Min=0.6,Max=0.8)
+	 BleedOutDamageType=Class'UnlimaginMod.UM_BaseDamType_BleedOut'
 	 // DecapitatedDamage
 	 DecapitatedDamageType=Class'UnlimaginMod.UM_BaseDamType_Decapitated'
 	 DecapitatedRandDamage=(Min=20.0,Max=25.0)

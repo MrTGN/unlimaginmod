@@ -56,9 +56,9 @@ static function byte GetRequirementCount( UM_ClientRepInfoLink StatOther, byte C
 // Return 0-1 % of how much of the progress is done to gain this perk (for menu GUI).
 static function float GetTotalProgress( UM_ClientRepInfoLink StatOther, byte CurLevel )
 {
-	local byte i,rc,Minimum;
-	local int R,V,NegReq;
-	local float RV;
+	local	byte	i, rc, Minimum;
+	local	int		R, V, NegReq;
+	local	float	RV;
 
 	if ( CurLevel == StatOther.MaximumLevel )
 		Return 1.f;
@@ -82,12 +82,12 @@ static function float GetTotalProgress( UM_ClientRepInfoLink StatOther, byte Cur
 			V -= NegReq;
 		}
 		
-		if( R <= 0 ) // Avoid division by zero error.
-			RV += 1.f;
+		if ( R <= 0 ) // Avoid division by zero error.
+			RV += 1.0;
 		else 
-			RV += FClamp((float(V) / (float(R))), 0.f, 1.f);
+			RV += FClamp((float(V) / (float(R))), 0.0, 1.0);
 	}
-	Return RV/float(rc);
+	Return RV / float(rc);
 }
 
 // Return True if this level is earned.
@@ -199,7 +199,7 @@ static function string GetCustomLevelInfo( byte Level )
 
 static final function string GetPercentStr( float InValue )
 {
-	Return int(InValue * 100.f)$"%";
+	Return int(InValue * 100.0)$"%";
 }
 
 // This function is called for every weapon with and every perk every time trader menu is shown.
@@ -383,6 +383,11 @@ static function float GetProjectilePenetrationBonus( UM_PlayerReplicationInfo PR
 static function float GetProjectileBounceBonus( UM_PlayerReplicationInfo PRI, Class<UM_BaseProjectile> ProjClass )
 {
 	Return 1.0;
+}
+
+static function int GetBleedOutCountDown( UM_PlayerReplicationInfo PRI, class<DamageType>	DamageType )
+{
+	Return 0;
 }
 
 //[end] Functions

@@ -204,6 +204,14 @@ static function float GetBodyArmorDamageModifier(KFPlayerReplicationInfo KFPRI)
 	Return 1.00 - 0.08 * float(Min(KFPRI.ClientVeteranSkillLevel,10)); // Up to 80% Better Body Armor
 }
 
+static function int GetBleedOutCountDown( UM_PlayerReplicationInfo PRI, class<DamageType>	DamageType )
+{
+	if ( class<UM_BaseDamType_SMG>(DamageType) != None || class<UM_BaseDamType_PDW>(DamageType) != None )
+		Return 1 + Min(KFPRI.ClientVeteranSkillLevel, 9);
+	
+	Return 0;
+}
+
 static function string GetCustomLevelInfo( byte Level )
 {
 	local string S;

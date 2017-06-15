@@ -354,7 +354,7 @@ event AnimEnd(int Channel)
 function NotifyMonsterDecapitated()
 {
 	Accuracy = -5.0; // More chance of missing. (he's headless now, after all) :-D
-	// We can't see and can't hear now
+	// Monster can't see and can't hear without head
 	Disable('SeeMonster');
 	Disable('SeePlayer');
 	Disable('HearNoise');
@@ -1878,13 +1878,13 @@ state RangedAttack
 		}
 	}
 
-	function EnemyNotVisible()
+	event EnemyNotVisible()
 	{
 		//let attack animation complete
 		WhatToDoNext(33);
 	}
 
-	function Timer()
+	event Timer()
 	{
 		if ( Monster(Pawn).PreferMelee() )  {
 			SetCombatTimer();
@@ -1901,7 +1901,7 @@ state RangedAttack
 		GotoState('RangedAttack');
 	}
 
-	function BeginState()
+	event BeginState()
 	{
 		StopStartTime = Level.TimeSeconds;
 		bHasFired = false;
@@ -2013,13 +2013,14 @@ state DoorBashing
 			WhatToDoNext(32);
 	}
 	
+	/*
 	function NotifyMonsterDecapitated()
 	{
 		Global.NotifyMonsterDecapitated();
 		if ( MyMonster.bShotAnim )
 			AnimEnd(MyMonster.ExpectingChannel);
 		WhatToDoNext(152);
-	}
+	}	*/
 
 	event EndState()
 	{
@@ -3287,11 +3288,6 @@ WaitForAnim:
 	WhatToDoNext(99);
 	if ( bSoaking )
 		SoakStop("STUCK IN KnockDown!!!");
-}
-
-state DecapitatedMoving
-{
-
 }
 
 // State for being scared of something, the bot attempts to move away from it

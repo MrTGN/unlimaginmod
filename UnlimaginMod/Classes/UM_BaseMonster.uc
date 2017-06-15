@@ -218,6 +218,7 @@ var					bool				bKnockDownByDecapitation;
 var					bool				bPlayDecapitationAnim;
 var					name				DecapitationAnim;
 var		transient	bool				bDecapitationPlayed;
+var		transient	bool				bShocked;
 // DecapitatedDamage
 var		transient	bool				bIsTakingDecapitatedDamage;
 var		transient	Pawn				DecapitationInstigator;
@@ -1539,7 +1540,7 @@ function bool MeleeDamageTarget(int HitDamage, vector PushDir)
 	local	Actor		HitActor;
 	local	Name		TearBone;
 	
-	if ( Role < ROLE_Authority || Controller == None || Controller.Target == None || bSTUNNED || DECAP )
+	if ( Role < ROLE_Authority || Controller == None || Controller.Target == None || bSTUNNED || bKnockedDown || bShocked )
 		Return False;
 	
 	if ( KFDoorMover(Controller.Target) != None )  {
@@ -2605,7 +2606,7 @@ function CorpseAttack(Actor A)
 // Called from UM_MonsterController FireWeaponAt()
 function bool CanAttack(Actor A)
 {
-	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || DECAP || bKnockedDown )
+	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || bShocked || bKnockedDown )
 		Return False;
 
 	if ( KFDoorMover(A) != None )
@@ -2648,7 +2649,9 @@ function AttackDoor()
 		SetAnimAction(DistanceDoorAttackAnim);
 	else
 		SetAnimAction('AA_DoorBash');
-	GotoState('DoorBashing');
+	
+	if ( !IsInState('DoorBashing') )
+		GotoState('DoorBashing');
 }
 
 state DoorBashing
@@ -2658,19 +2661,21 @@ state DoorBashing
 		Return False;
 	}
 	
+	function SendToKnockDown()
+	{
+		Global.SendToKnockDown();
+		GoToState('');
+	}
+	
+	function RemoveHead()
+	{
+		Global.RemoveHead();
+		GoToState('');
+	}
+	
 	simulated event Tick(float DeltaTime)
 	{
 		Global.Tick(DeltaTime);
-	}
-	
-	function AttackDoor()
-	{
-		DisableMovement();
-		bShotAnim = True;
-		if ( bDistanceAttackingDoor )
-			SetAnimAction(DistanceDoorAttackAnim);
-		else
-			SetAnimAction('AA_DoorBash');
 	}
 	
 	event EndState()
@@ -3276,11 +3281,6 @@ simulated event Tick( float DeltaTime )
 	
 	if ( Level.NetMode != NM_DedicatedServer )
 		TickFX(DeltaTime);
-	
-	if ( DECAP && Level.TimeSeconds > (DecapTime + 2.0) && Controller != None )  {
-		DECAP = False;
-		MonsterController(Controller).ExecuteWhatToDoNext(); //Todo: убрать это в #UM_MonsterController!!!
-	}
 }
 
 // Actually execute the kick (this is notified in the ZombieKick animation)
@@ -3539,9 +3539,7 @@ function bool IsHeadShot(vector Loc, vector Ray, float AdditionalScale)
 function RemoveHead()
 {
 	bDecapitated = True;
-	DECAP = True;
 	bDontPlayVoice = True;
-	DecapTime = Level.TimeSeconds;
 	Intelligence = BRAINS_Retarded; // Headless dumbasses!
 	//Velocity = vect(0.0, 0.0, 0.0);
 	AnimateHeadless();
@@ -3645,11 +3643,13 @@ function PlayDecapitationHit()
 {
 	bDecapitationPlayed = True;
 	bKnockDownByDecapitation = False;
+	bShocked = True;
+	GotoState('DecapitationShock');
 	// PlayHit times
 	NextPainTime = Level.TimeSeconds + 0.1;
 	NextPainAnimTime = Level.TimeSeconds + MinTimeBetweenPainAnims;
 	// HitAnims
-	bShotAnim = True;
+	//bShotAnim = True;
 	SetAnimAction('AA_Hit');
 	
 	// DecapitationSound
@@ -3661,6 +3661,15 @@ function PlayDecapitationHit()
 	// makes playercontroller hear much better
 	if ( LastDamagedByPlayer != None )
 		LastDamagedByPlayer.bAcuteHearing = LastDamagedByPlayer.default.bAcuteHearing;
+}
+
+state DecapitationShock
+{
+Begin:
+	Sleep(Lerp(FRand(), 1.0, 2.0));
+	bShocked = False;
+	if ( UM_MonsterController(Controller) != None )
+		UM_MonsterController(Controller).WhatToDoNext(99);
 }
 
 // clear old function

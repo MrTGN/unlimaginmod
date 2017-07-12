@@ -22,10 +22,7 @@ class UM_BaseMonster_Bloat extends UM_BaseMonster
 //[block] Variables
 
 var		BileJet					BloatJet;
-var		bool					bPlayBileSplash;
-var		bool					bMovingPukeAttack;
-var		float					RunAttackTimeout;
-var		transient	bool		bPopDeath;
+var		transient	bool		bBileSplashPlayed, bPopDeath, bDoBarfAttack;
 
 var		class<FleshHitEmitter>	BileExplosion;
 var		class<FleshHitEmitter>	BileExplosionHeadless;
@@ -43,72 +40,44 @@ var		Class<Projectile>		BileProjectileClass;
 //========================================================================
 //[block] Functions
 
-function PlayDoorBashing()
+// Called from UM_MonsterController FireWeaponAt()
+function bool CanAttack(Actor A)
 {
-	SetGroundSpeed(0.0);
-	AccelRate = 0.0;
-	Acceleration = vect(0,0,0);
-	bShotAnim = True;
-	if ( !bDecapitated && bDistanceAttackingDoor )
-		SetAnimAction('ZombieBarf');
-	else
-		SetAnimAction('DoorBash');
+	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || bShocked || bKnockedDown )
+		Return False;
+
+	if ( VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius + A.CollisionRadius) )
+		Return True;
+	else if ( VSizeSquared(A.Location - Location) <= 62500.0 )  {
+		bDoBarfAttack = True;
+		Return True;
+	}
+	
+	Return False;
 }
 
 function RangedAttack(Actor A)
 {
 	local	float	ChargeChance;
 
-	if ( A == None || bSTUNNED || bShotAnim || DECAP || Physics == PHYS_Swimming )
-		Return;
-
-	// if in melee range
-	if ( VSizeSquared(A.Location - Location) <= Square(MeleeRange + CollisionRadius + A.CollisionRadius) )  {
+	if ( bDoBarfAttack )  {
+		bDoBarfAttack = False;
 		bShotAnim = True;
-		SetAnimAction('Claw');
-		//PlaySound(sound'Claw2s', SLOT_Interact); KFTODO: Replace this
-		Controller.bPreparingMove = True;
-		Acceleration = vect(0,0,0);
-	}
-	else if ( !bDecapitated && (KFDoorMover(A) != None || VSizeSquared(A.Location - Location) <= 62500.0) )  {
-		bShotAnim = True;
-		// Decide what chance the bloat has of charging during a puke attack
-		if( Level.Game.GameDifficulty < 2.0 )
-			ChargeChance = 0.2;
-		else if( Level.Game.GameDifficulty < 4.0 )
-			ChargeChance = 0.4;
-		else if( Level.Game.GameDifficulty < 5.0 )
-			ChargeChance = 0.6;
-		else // Hardest difficulty
-			ChargeChance = 0.8;
-		
-		if ( FRand() > ChargeChance )  {
+		if ( FRand() > GetMovingAttackChance() )  {
+			DisableMovement(); // Must be called before SetAnimAction
 			SetAnimAction('ZombieBarf');
-			Controller.bPreparingMove = True;
-			Acceleration = vect(0,0,0);
 		}
-		// Randomly do a moving attack so the player can't kite the zed
-		else  {
-			SetAnimAction('ZombieBarfMoving');
-			GotoState('MovingAttack');
+		else if ( UM_MonsterController(Controller) != None )  {
+			SetAnimAction('ZombieBarf');
+			UM_MonsterController(Controller).GotoState('MovingAttack');
 		}
-
+		
 		// Randomly send out a message about Bloat Vomit burning(3% chance)
 		if ( FRand() <= 0.05 && KFHumanPawn(A) != None && PlayerController(KFHumanPawn(A).Controller) != None )
 			PlayerController(KFHumanPawn(A).Controller).Speech('AUTO', 7, "");
 	}
-}
-
-simulated function int DoAnimAction( name AnimName )
-{
-	if ( AnimName == 'ZombieBarfMoving' )  {
-		AnimBlendParams(1, 1.0, 0.0,, FireRootBone);
-		PlayAnim('ZombieBarf',, 0.1, 1);
-
-		Return 1;
-	}
-	
-	Return Super.DoAnimAction(AnimName);
+	else
+		Super.RangedAttack(A);
 }
 
 // Barf Time.
@@ -157,23 +126,13 @@ function SpawnTwoShots()
 
 simulated event Tick( float DeltaTime )
 {
-	local Vector BileExplosionLoc;
-	local FleshHitEmitter GibBileExplosion;
+	local	vector			BileExplosionLoc;
+	local	FleshHitEmitter	GibBileExplosion;
 
 	Super.Tick( DeltaTime );
 
-	// Hack to force animation updates on the server for the bloat if he is relevant to someone
-	// He has glitches when some of his animations don't play on the server. If we
-	// find some other fix for the glitches take this out - Ramm
-	if ( Level.NetMode != NM_Client && Level.NetMode != NM_Standalone )  {
-		if ( (Level.TimeSeconds-LastSeenOrRelevantTime) < 1.0  )
-			bForceSkelUpdate = True;
-		else
-			bForceSkelUpdate = False;
-	}
-
-	if ( Level.NetMode != NM_DedicatedServer && Health < 1 && !bPlayBileSplash &&
-		HitDamageType != class'DamTypeBleedOut' )  {
+	if ( Level.NetMode != NM_DedicatedServer && Health < 1 && !bBileSplashPlayed &&
+		HitDamageType != BleedOutDamageType )  {
 		if ( !class'GameInfo'.static.UseLowGore() )  {
 			BileExplosionLoc = Location;
 			BileExplosionLoc.z += (CollisionHeight - (CollisionHeight * 0.5));
@@ -181,13 +140,13 @@ simulated event Tick( float DeltaTime )
 				GibBileExplosion = Spawn(BileExplosionHeadless,self,, BileExplosionLoc );
 			else
 				GibBileExplosion = Spawn(BileExplosion,self,, BileExplosionLoc );
-			bPlayBileSplash = True;
+			bBileSplashPlayed = True;
 	    }
 	    else  {
 			BileExplosionLoc = Location;
 			BileExplosionLoc.z += (CollisionHeight - (CollisionHeight * 0.5));
 			GibBileExplosion = Spawn(class 'LowGoreBileExplosion',self,, BileExplosionLoc );
-			bPlayBileSplash = True;
+			bBileSplashPlayed = True;
 		}
 	}
 }
@@ -237,7 +196,7 @@ function PlayDyingAnimation(class<DamageType> DamageType, vector HitLoc)
 
 simulated event PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
-	bPopDeath = DamageType != class'DamTypeBleedOut';
+	bPopDeath = DamageType != BleedOutDamageType;
 	Super.PlayDying(DamageType, HitLoc);
 }
 
@@ -280,145 +239,6 @@ function AdjustTakenDamage(
 	}
 }
 
-simulated function ProcessHitFX()
-{
-	local Coords boneCoords;
-	local class<xEmitter> HitEffects[4];
-	local int i,j;
-	local float GibPerterbation;
-
-	if ( Level.NetMode == NM_DedicatedServer || bSkeletized || Mesh == SkeletonMesh )  {
-		SimHitFxTicker = HitFxTicker;
-		Return;
-	}
-
-	for ( SimHitFxTicker = SimHitFxTicker; SimHitFxTicker != HitFxTicker; SimHitFxTicker = (SimHitFxTicker + 1) % ArrayCount(HitFX) )  {
-		j++;
-		if ( j > 30 )  {
-			SimHitFxTicker = HitFxTicker;
-			Return;
-		}
-
-		if ( HitFX[SimHitFxTicker].damtype == None 
-			 || (Level.bDropDetail && (Level.TimeSeconds - LastRenderTime) > 3 && !IsHumanControlled()) )
-			Continue;
-
-		//log("Processing effects for damtype "$HitFX[SimHitFxTicker].damtype);
-
-		if ( HitFX[SimHitFxTicker].bone == 'obliterate' && !class'GameInfo'.static.UseLowGore() )  {
-			SpawnGibs( HitFX[SimHitFxTicker].rotDir, 1);
-			bGibbed = True;
-			// Wait a tick on a listen server so the obliteration can replicate before the pawn is destroyed
-			if ( Level.NetMode == NM_ListenServer )  {
-				bDestroyNextTick = True;
-				TimeSetDestroyNextTickTime = Level.TimeSeconds;
-			}
-			else
-				Destroy();
-			
-			Return;
-		}
-
-		boneCoords = GetBoneCoords( HitFX[SimHitFxTicker].bone );
-
-		if ( !Level.bDropDetail && !class'GameInfo'.static.NoBlood() 
-			 && !bSkeletized && !class'GameInfo'.static.UseLowGore() )  {
-			//AttachEmitterEffect( BleedingEmitterClass, HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
-			HitFX[SimHitFxTicker].damtype.static.GetHitEffects( HitEffects, Health );
-			// don't attach effects under water
-			if ( !PhysicsVolume.bWaterVolume )  {
-				for( i = 0; i < ArrayCount(HitEffects); i++ )  {
-					if ( HitEffects[i] == None )
-						Continue;
-					AttachEffect( HitEffects[i], HitFX[SimHitFxTicker].bone, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir );
-				}
-			}
-		}
-
-		if ( class'GameInfo'.static.UseLowGore() )  {
-			HitFX[SimHitFxTicker].bSever = False;
-			switch( HitFX[SimHitFxTicker].bone )  {
-				 case 'head':
-					if( !bHeadGibbed )  {
-						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, False);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, False, True);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, True);
-
-						bHeadGibbed = True;
-					}
-					Break;
-			}
-			Return;
-		}
-
-		if( HitFX[SimHitFxTicker].bSever )  {
-			GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
-			switch( HitFX[SimHitFxTicker].bone )  {
-				case 'obliterate':
-					Break;
-
-				case LeftThighBone:
-					if( !bLeftLegGibbed )  {
-	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bLeftLegGibbed=True;
-					}
-					Break;
-
-				case RightThighBone:
-					if( !bRightLegGibbed )  {
-	                    SpawnSeveredGiblet( DetachedLegClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bRightLegGibbed=True;
-					}
-					Break;
-
-				case LeftFArmBone:
-					if( !bLeftArmGibbed )  {
-	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bLeftArmGibbed=True;
-					}
-					Break;
-
-				case RightFArmBone:
-					if( !bRightArmGibbed )  {
-	                    SpawnSeveredGiblet( DetachedArmClass, boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, GetBoneRotation(HitFX[SimHitFxTicker].bone) );
-						KFSpawnGiblet( class 'KFMod.KFGibBrain',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-						KFSpawnGiblet( class 'KFMod.KFGibBrainb',boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, GibPerterbation, 250 ) ;
-	                    bRightArmGibbed=True;
-					}
-					Break;
-
-				case 'head':
-					if( !bHeadGibbed )  {
-						if ( HitFX[SimHitFxTicker].damtype == class'DamTypeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, False);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeProjectileDecap' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, False, True);
-						else if( HitFX[SimHitFxTicker].damtype == class'DamTypeMeleeDecapitation' )
-							DecapFX( boneCoords.Origin, HitFX[SimHitFxTicker].rotDir, True);
-
-						bHeadGibbed = True;
-					}
-					Break;
-			}
-
-			// Don't do this right now until we get the effects sorted - Ramm
-			if ( HitFX[SimHitFXTicker].bone != 'Spine' && HitFX[SimHitFXTicker].bone != FireRootBone && HitFX[SimHitFXTicker].bone != LeftFArmBone && HitFX[SimHitFXTicker].bone != RightFArmBone && HitFX[SimHitFXTicker].bone != 'head' && Health <= 0 )
-				HideBone(HitFX[SimHitFxTicker].bone);
-		}
-	}
-}
-
 //[end] Functions
 //====================================================================
 
@@ -447,6 +267,7 @@ defaultproperties
 	 MeleeAnims(0)="BloatChop2"
 	 MeleeAnims(1)="BloatChop2"
 	 MeleeAnims(2)="BloatChop2"
+	 DistanceDoorAttackAnim="ZombieBarf"
 	 BleedOutDuration=6.000000
 	 ZapThreshold=0.500000
 	 ZappedDamageMod=1.500000

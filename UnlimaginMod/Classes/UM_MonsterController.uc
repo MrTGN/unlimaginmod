@@ -666,6 +666,9 @@ function bool DoWaitForLanding()
 
 function bool CanAttack(Actor A)
 {
+	if ( MyMonster == None )
+		Return False;
+	
 	// return true if in range of current weapon
 	Return MyMonster.CanAttack(A);
 }
@@ -3195,6 +3198,31 @@ Moving:
 		SoakStop("STUCK IN CHARGING!");
 }
 
+// Keep moving toward the target until anim finishes
+state MovingAttack
+{
+	event AnimEnd(int Channel)
+	{
+		if ( Pawn != None )
+			Pawn.AnimEnd(Channel);
+	}
+	
+	event EndState()
+	{
+		MyMonster.bMovingAttack = False;
+	}
+	
+Begin:
+	if ( MyMonster.bShotAnim )  {
+		MyMonster.bMovingAttack = True;
+		FinishAnim(MyMonster.ExpectingChannel);
+	}
+	
+	WhatToDoNext(115);
+	if ( bSoaking )
+		SoakStop("STUCK IN MovingAttack!");
+}
+
 state Kicking
 {
 	ignores EnemyNotVisible;
@@ -3229,6 +3257,11 @@ state KnockDown
 	
 	// Don't do this in this state
 	function GetOutOfTheWayOfShot(vector ShotDirection, vector ShotOrigin){}
+	
+	event EndState()
+	{
+		Pawn.ShouldCrouch(False);
+	}
 
 Begin:
 	if ( Pawn.Physics == PHYS_Falling )
@@ -3242,9 +3275,6 @@ WaitForAnim:
 	WhatToDoNext(152);
 	if ( bSoaking )
 		SoakStop("STUCK IN STAGGERED!!!");
-
-End:
-	Pawn.ShouldCrouch(False);
 }
 
 function SetStunTime(float StunDuration)

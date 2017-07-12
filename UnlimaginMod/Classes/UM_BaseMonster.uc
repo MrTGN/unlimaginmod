@@ -29,7 +29,7 @@ const 	BaseActor = Class'UnlimaginMod.UM_BaseActor';
 // Animation channels 2 through 11 are used for animation updating by physics
 const	BaseAnimChannel = 0;
 const	MajorAnimChannel = 12;
-const	MinorAnimChannel = 1;
+const	MinorAnimChannel = 13;
 
 var					bool				bRandomSizeAdjusted;
 
@@ -189,6 +189,7 @@ var					sound				ChallengingSound;
 var					sound				RagImpactSound; // Ragdoll impact sound
 
 var		transient	bool				bMovingAttack;
+var					float				MovingAttackChance;
 var		transient	bool				bMovementDisabled;
 // Animation
 var					name				RunAnims[8];
@@ -2159,7 +2160,7 @@ simulated function ProcessHitFX()
 	local	int					i, j;
 	local	float				GibPerterbation;
 
-	if ( Level.NetMode == NM_DedicatedServer || bSkeletized || Mesh == SkeletonMesh)  {
+	if ( Level.NetMode == NM_DedicatedServer || bSkeletized || Mesh == SkeletonMesh )  {
 		SimHitFxTicker = HitFxTicker;
 		Return;
 	}
@@ -2221,8 +2222,7 @@ simulated function ProcessHitFX()
 			Continue; // Skip if UseLowGore()
 				
 		GibPerterbation = HitFX[SimHitFxTicker].damtype.default.GibPerterbation;
-		switch( HitFX[SimHitFxTicker].bone )
-		{
+		switch( HitFX[SimHitFxTicker].bone )  {
 			case 'obliterate':
 				Break;
 
@@ -2414,25 +2414,27 @@ simulated function int DoAnimAction( name AnimName )
 		Return MinorAnimChannel;
 	}
 	
-	PlayAnim(AnimName, ,0.1, BaseAnimChannel);
-	Return BaseAnimChannel;
+	// DoAnimAction while standing
+	if ( Acceleration == vect(0, 0, 0) )  {
+		PlayAnim(AnimName, ,0.1, BaseAnimChannel);
+		Return BaseAnimChannel;
+	}
+	// DoAnimAction while Moving
+	else  {
+		AnimBlendParams(MajorAnimChannel, 1.0, 0.0,, FireRootBone);
+		PlayAnim(AnimName, , 0.1, MajorAnimChannel);
+		Return MajorAnimChannel;
+	}
 }
 
-simulated function bool AnimNeedsWait(name TestAnim)
+simulated function bool AnimNeedsWait( name TestAnim )
 {
 	Return ExpectingChannel == BaseAnimChannel;
 }
 
-// Choose AnimAction on the server and replicate it to the clients
-function ServerSetAnimAction(out name NewAction)
+function name GetAnimActionName( name NewAction )
 {
 	local	byte	RandNum;
-	
-	if ( NewAction == '' )  {
-		bResetAnimAct = False;
-		AnimAction = '';
-		Return;
-	}
 	
 	switch( NewAction )  {
 		case 'AA_Taunt':
@@ -2459,25 +2461,32 @@ function ServerSetAnimAction(out name NewAction)
 			Break;
 	}
 	
-	AnimAction = NewAction;
-	// Reset AnimAction variable to replicate any new value even if
-	// it will be the same AnimAction as playing
-	bResetAnimAct = True;
-	ResetAnimActTime = Level.TimeSeconds + 0.3;
+	Return NewAction;
 }
 
 // Called on the clients when new value of AnimAction variable was received
 simulated event SetAnimAction(name NewAction)
 {
-	if ( Role == ROLE_Authority )
-		ServerSetAnimAction(NewAction);
-	// Reset AnimAction variable on the clients to receive event SetAnimAction call
-	// by any new value
-	else
+	if ( Role == ROLE_Authority )  {
+		if ( NewAction == '' )  {
+			bResetAnimAct = False;
+			AnimAction = '';
+			Return;
+		}
+		// Choose AnimAction on the server and replicate it to the clients
+		AnimAction = GetAnimActionName(NewAction);
+		// Reset AnimAction variable to replicate any new value even if
+		// it will be the same AnimAction as playing
+		bResetAnimAct = True;
+		ResetAnimActTime = Level.TimeSeconds + 0.3;
+	}
+	else  {
+		// Reset AnimAction variable on the clients to receive event SetAnimAction
+		// by any new value
 		AnimAction = '';
-		
-	if ( NewAction == '' )
-		Return;
+		if ( NewAction == '' )
+			Return;
+	}
 	
 	ExpectingChannel = DoAnimAction(NewAction);
 	bWaitForAnim = AnimNeedsWait(NewAction);
@@ -2498,44 +2507,22 @@ simulated event AnimEnd(int Channel)
 		if ( bKeepTaunting )
 			PlayVictoryAnimation();
 	}
-	else if ( Channel == MinorAnimChannel )  {
+	else if ( Channel == MajorAnimChannel || Channel == MinorAnimChannel )  {
 		if ( FireState == FS_Ready )  {
-			AnimBlendToAlpha(MinorAnimChannel, 0.0, 0.12);
+			AnimBlendToAlpha(Channel, 0.0, 0.12);
 			FireState = FS_None;
 		}
 		else if ( FireState == FS_PlayOnce )  {
 			if ( HasAnim(IdleWeaponAnim) )
-				PlayAnim(IdleWeaponAnim,, 0.2, MinorAnimChannel);
+				PlayAnim(IdleWeaponAnim,, 0.2, Channel);
 			FireState = FS_Ready;
 			IdleTime = Level.TimeSeconds;
 		}
 		else
-			AnimBlendToAlpha(MinorAnimChannel, 0.0, 0.12);
+			AnimBlendToAlpha(Channel, 0.0, 0.12);
 	}
 }
 //[End]
-
-// Keep moving toward the target until anim finishes
-state MovingAttack
-{
-	simulated event Tick( float DeltaTime )
-	{
-		Global.Tick( DeltaTime );
-		
-		// Keep monster moving toward its target when attacking
-		if ( Role == ROLE_Authority && bMovingAttack && LookTarget != None )
-		    Acceleration = AccelRate * Normal(LookTarget.Location - Location);
-	}
-
-Begin:
-	bMovingAttack = True;
-	if ( bShotAnim )
-		FinishAnim(ExpectingChannel);
-
-End:
-	bMovingAttack = False;
-	GotoState('');
-}
 
 function DisableMovement()
 {
@@ -2609,8 +2596,8 @@ function bool CanAttack(Actor A)
 	if ( A == None || Physics == PHYS_Swimming || bShotAnim || bSTUNNED || bShocked || bKnockedDown )
 		Return False;
 
-	if ( KFDoorMover(A) != None )
-		Return True;
+	//if ( KFDoorMover(A) != None )
+		//Return True;
 	
 	if ( KFHumanPawn(A) != None && KFHumanPawn(A).Health < 1 )
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius);
@@ -2618,12 +2605,30 @@ function bool CanAttack(Actor A)
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius + A.CollisionRadius);
 }
 
+function float GetMovingAttackChance()
+{
+	if ( MovingAttackChance <= 0.0 || MovingAttackChance >= 1.0 )
+		Return MovingAttackChance;
+	
+	if ( float(Health) >= HealthMax || float(Health) <= (HealthMax * 0.05) )
+		Return MovingAttackChance + Level.Game.GameDifficulty * 0.1;
+	else
+		Return MovingAttackChance + Level.Game.GameDifficulty * 0.1 + HealthMax / float(Health) * 0.025;
+}
+
 // Called from UM_MonsterController FireWeaponAt()
 function RangedAttack(Actor A)
 {
-	DisableMovement();
 	bShotAnim = True;
-	SetAnimAction('AA_MeleeAttack');
+	if ( FRand() > GetMovingAttackChance() )  {
+		DisableMovement(); // Must be called before SetAnimAction
+		SetAnimAction('AA_MeleeAttack');
+	}
+	else  {
+		SetAnimAction('AA_MeleeAttack');
+		if ( UM_MonsterController(Controller) != None )
+			UM_MonsterController(Controller).GotoState('MovingAttack');
+	}
 }
 
 function bool CanAttackDoor(KFDoorMover Door)
@@ -3118,6 +3123,11 @@ event Timer()
 	if ( bIsTakingDecapitatedDamage && Level.TimeSeconds >= NextDecapitatedDamageTime )
 		TakeDecapitatedDamage();
 	
+	// Keep monster moving toward its target when attacking
+	// bMovingAttack changed from the UM_MonsterController
+	if ( bMovingAttack && LookTarget != None )
+		Acceleration = AccelRate * Normal(LookTarget.Location - Location);
+	
 	// Hidden monster SpeedAdjust
 	if ( CanSpeedAdjust() )
 		AdjustGroundSpeed();
@@ -3528,7 +3538,7 @@ function bool IsHeadShot(vector Loc, vector Ray, float AdditionalScale)
 	if ( RayDotLoc > 0.0 )  {
 		RayDotRay = Ray dot Ray;
 		if ( RayDotLoc < RayDotRay )
-			Loc = Loc - Ray * RayDotLoc / RayDotRay;
+			Loc -= Ray * RayDotLoc / RayDotRay;
 		else
 			Loc -= Ray;
 	}
@@ -3620,7 +3630,6 @@ function SendToKnockDown()
 	
 	bKnockedDown = True;
 	bDontPlayPain = True;
-	bDontPlayVoice = True;
 	CumulativeDamage = 0; // Reset CumulativeDamage
 	DisableMovement();
 	if ( bDecapitated && bKnockDownByDecapitation )
@@ -3634,7 +3643,6 @@ function EndKnockDown()
 {
 	bKnockedDown = False;
 	bDontPlayPain = default.bDontPlayPain;
-	bDontPlayVoice = bDecapitated || default.bDontPlayVoice;
 	EnableMovement();
 }
 //[end] KnockDown

@@ -1228,23 +1228,6 @@ simulated function rotator GetViewRotation()
 	Return Rotation;
 }
 
-// Returns camera location, camera rotation vector (if needed) and camera rotation (if needed)
-function GetCameraPosition( 
-			out	vector	CameraLoc, 
- optional	out	vector	CameraRotVect, 
- optional	out	rotator	CameraRot )
-{
-	if ( Vehicle(Pawn) != None ) {
-		CameraLoc = Vehicle(Pawn).GetCameraLocationStart();
-		CameraRot = GetViewRotation();
-		CameraRotVect = vector(CameraRot);
-	}
-	else  {
-		PlayerCalcView(CamActor, CameraLoc, CameraRot);
-		CameraRotVect = vector(CameraRot);
-	}
-}
-
 simulated final function bool GetShoulderCam( out vector Pos, Pawn Other )
 {
 	local vector HL,HN;
@@ -1361,6 +1344,23 @@ event PlayerCalcView( out actor ViewActor, out vector CameraLocation, out rotato
 	}
 
 	CacheCalcView( ViewActor, CameraLocation, CameraRotation );
+}
+
+// Returns camera location, camera rotation vector (if needed) and camera rotation (if needed)
+function GetCameraPosition( 
+			out	vector	CameraLoc, 
+ optional	out	vector	CameraRotVect, 
+ optional	out	rotator	CameraRot )
+{
+	if ( Vehicle(Pawn) != None ) {
+		CameraLoc = Vehicle(Pawn).GetCameraLocationStart();
+		CameraRot = GetViewRotation();
+		CameraRotVect = vector(CameraRot);
+	}
+	else  {
+		PlayerCalcView(CamActor, CameraLoc, CameraRot);
+		CameraRotVect = vector(CameraRot);
+	}
 }
 
 exec function ChangeCharacter(string newCharacter, optional string inClass)

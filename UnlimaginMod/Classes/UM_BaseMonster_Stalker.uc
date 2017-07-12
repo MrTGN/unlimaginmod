@@ -22,9 +22,15 @@ class UM_BaseMonster_Stalker extends UM_BaseMonster
 //========================================================================
 //[block] Variables
 
-var		transient	float			NextCheckTime, LastUncloakTime;
-var					KFHumanPawn		LocalKFHumanPawn;
+var		transient	float			NextSpottedCheckTime; 
+var					float			SpottedCheckDelay;
+var		transient	float			UnCloakEndTime;
+var					float			UnCloakDelay;
+var					KFHumanPawn		LocalHuman;
 var(Display) 	array<Material> 	UnCloakedSkins;
+var		transient	bool			bIsCloaked, bIsUnCloaked;
+
+var		transient	bool			bCloakedSkinsApplied, bUnCloakedSkinsApplied, bGlowSkinApplied;
 
 var					UM_HumanPawn	DisabledPawn;           // The pawn that has been disabled by this zombie's grapple
 var					bool			bGrappling;             // This zombie is grappling someone
@@ -54,15 +60,51 @@ simulated event PostBeginPlay()
 
 simulated event PostNetBeginPlay()
 {
-	local PlayerController PC;
-
 	Super.PostNetBeginPlay();
+	if ( Level.NetMode != NM_DedicatedServer )
+		LocalHuman = KFHumanPawn(Level.GetLocalPlayerController().Pawn);
+}
 
-	if ( Level.NetMode != NM_DedicatedServer )  {
-		PC = Level.GetLocalPlayerController();
-		if ( PC != None && PC.Pawn != None )
-			LocalKFHumanPawn = KFHumanPawn(PC.Pawn);
-	}
+simulated function ApplyCloakedSkins()
+{
+	local	int		i;
+	
+	if ( bCloakedSkinsApplied )
+		Return;
+	
+	bCloakedSkinsApplied = True;
+	bUnCloakedSkinsApplied = False;
+	bGlowSkinApplied = False;
+	Skins.Length = default.Skins.Length;
+	for ( i = 0; i < Skins.Length; ++i )
+		Skins[i] = default.Skins[i];
+}
+
+simulated function ApplyUnCloakedSkins()
+{
+	local	int		i;
+	
+	if ( bUnCloakedSkinsApplied )
+		Return;
+	
+	bCloakedSkinsApplied = False;
+	bUnCloakedSkinsApplied = True;
+	bGlowSkinApplied = False;
+	Skins.Length = UnCloakedSkins.Length;
+	for ( i = 0; i < UnCloakedSkins.Length; ++i )
+		Skins[i] = UnCloakedSkins[i];
+}
+
+simulated function ApplyGlowSkin()
+{
+	if ( bGlowSkinApplied )
+		Return;
+	
+	bCloakedSkinsApplied = False;
+	bUnCloakedSkinsApplied = False;
+	bGlowSkinApplied = True;
+	Skins.Length = 1;
+	Skins[0] = Finalblend'KFX.StalkerGlow';
 }
 
 // EnemyChanged() called by controller when current enemy changes
@@ -109,7 +151,7 @@ function ClawDamageTarget()
 simulated event SetAnimAction(name NewAction)
 {
 	if ( NewAction == 'Claw' || NewAction == MeleeAnims[0] || NewAction == MeleeAnims[1] || NewAction == MeleeAnims[2] )
-		UncloakStalker();
+		UnCloakStalker();
 	
 	Super.SetAnimAction(NewAction);
 }
@@ -127,105 +169,104 @@ simulated event Tick( float DeltaTime )
 			AnimEnd(1);
 		}
 	}
-
-	if ( Level.NetMode != NM_DedicatedServer )  {
-	    if ( bZapped )
-			NextCheckTime = Level.TimeSeconds; // Make sure we check if we need to be cloaked as soon as the zap wears off
-		else if ( Level.TimeSeconds > NextCheckTime && Health > 0 )  {
-			NextCheckTime = Level.TimeSeconds + 0.5;
-	        if ( LocalKFHumanPawn != None && LocalKFHumanPawn.Health > 0 && LocalKFHumanPawn.ShowStalkers() &&
-	            VSizeSquared(Location - LocalKFHumanPawn.Location) < LocalKFHumanPawn.GetStalkerViewDistanceMulti() * 640000.0 ) // 640000 = 800 Units
-				bSpotted = True;
-			else
-				bSpotted = False;
-
-			if ( !bSpotted && !bCloaked && Skins[0] != UnCloakedSkins[0] )
-				UncloakStalker();
-			else if ( Level.TimeSeconds - LastUncloakTime > 1.2 )  {
-				// if we're uberbrite, turn down the light
-				if ( bSpotted && Skins[0] != Finalblend'KFX.StalkerGlow' )  {
-					bUnlit = False;
-					CloakStalker();
-				}
-				else if ( Skins[0] != default.Skins[0] )
-					CloakStalker();
-			}
-		}
-	}
 }
 
 // Cloak Functions ( called from animation notifies to save Gibby trouble ;) )
 simulated function CloakStalker()
 {
 	// No cloaking if zapped
-	if ( bZapped )
-		Return;
-
-	if ( bSpotted )  {
-		if ( Level.NetMode == NM_DedicatedServer )
-			Return;
-
-		Skins[0] = Finalblend'KFX.StalkerGlow';
-		Skins[1] = Finalblend'KFX.StalkerGlow';
-		bUnlit = True;
-		Return;
-	}
-
 	// No head, no cloak, honey.  updated :  Being charred means no cloak either :D
-	if ( !bDecapitated && !bCrispified )  {
-		Visibility = 1;
-		bCloaked = True;
+	if ( bZapped || bDecapitated || bCrispified || bIsCloaked )
+		Return;
+	
+	Visibility = 1;
+	bCloaked = True;
+	bIsCloaked = True;
+	bIsUnCloaked = False;
 
-		if ( Level.NetMode == NM_DedicatedServer )
-			Return;
+	if ( Level.NetMode == NM_DedicatedServer )
+		Return;
 
-		Skins[0] = default.Skins[0];
-		Skins[1] = default.Skins[1];
+	if ( !bSpotted )
+		ApplyCloakedSkins();
 
-		// Invisible - no shadow
-		if ( PlayerShadow != None )
-			PlayerShadow.bShadowActive = False;
-		if ( RealTimeShadow != None )
-			RealTimeShadow.Destroy();
+	// Invisible - no shadow
+	if ( PlayerShadow != None )
+		PlayerShadow.bShadowActive = False;
+	
+	if ( RealTimeShadow != None )
+		RealTimeShadow.Destroy();
 
-		// Remove/disallow projectors on invisible people
-		Projectors.Remove(0, Projectors.Length);
-		bAcceptsProjectors = False;
-		SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
-	}
+	// Remove/disallow projectors on invisible people
+	Projectors.Remove(0, Projectors.Length);
+	bAcceptsProjectors = False;
+	SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
 }
 
 simulated function UnCloakStalker()
 {
-	if ( bZapped )
+	if ( bZapped || bCrispified || bIsUnCloaked )
 		Return;
 
-	if ( !bCrispified )  {
-		LastUncloakTime = Level.TimeSeconds;
+	UnCloakEndTime = Level.TimeSeconds + UnCloakDelay;
+	Visibility = default.Visibility;
+	bUnlit = False;
+	bCloaked = False;
+	bIsCloaked = False;
+	bIsUnCloaked = True;
 
-		Visibility = default.Visibility;
-		bCloaked = False;
-		bUnlit = False;
-
-		// 25% chance of our Enemy saying something about us being invisible
-		if ( KFGameType(Level.Game) != None && Level.NetMode != NM_Client && !KFGameType(Level.Game).bDidStalkerInvisibleMessage && FRand() < 0.25 && Controller.Enemy != None && PlayerController(Controller.Enemy.Controller) != None )  {
-			PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
-			KFGameType(Level.Game).bDidStalkerInvisibleMessage = True;
-		}
-		
-		if ( Level.NetMode == NM_DedicatedServer )
-			Return;
-
-		if ( Skins[0] != UnCloakedSkins[0] )  {
-			Skins = UnCloakedSkins;
-
-			if ( PlayerShadow != None )
-				PlayerShadow.bShadowActive = True;
-
-			bAcceptsProjectors = True;
-			SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
-		}
+	// 25% chance of our Enemy saying something about us being invisible
+	if ( Role == ROLE_Authority && KFGameType(Level.Game) != None && !KFGameType(Level.Game).bDidStalkerInvisibleMessage && FRand() < 0.25 && Controller.Enemy != None && PlayerController(Controller.Enemy.Controller) != None )  {
+		PlayerController(Controller.Enemy.Controller).Speech('AUTO', 17, "");
+		KFGameType(Level.Game).bDidStalkerInvisibleMessage = True;
 	}
+	
+	if ( Level.NetMode == NM_DedicatedServer )
+		Return;
+	
+	ApplyUnCloakedSkins();
+	if ( PlayerShadow != None )
+		PlayerShadow.bShadowActive = True;
+
+	bAcceptsProjectors = True;
+	SetOverlayMaterial(Material'KFX.FBDecloakShader', 0.25, True);
+}
+
+simulated function CheckSpotted()
+{
+	NextSpottedCheckTime = Level.TimeSeconds + SpottedCheckDelay;
+	if ( LocalHuman == None || LocalHuman.Health < 1 || !LocalHuman.ShowStalkers() || VSizeSquared(Location - LocalHuman.Location) > (LocalHuman.GetStalkerViewDistanceMulti() * 640000.0) )  {
+		bSpotted = False;
+		bUnlit = False;
+		if ( bCloaked )
+			ApplyCloakedSkins();
+		else
+			ApplyUnCloakedSkins();
+	}
+	else  {
+		bSpotted = True;
+		bUnlit = True;
+		if ( !bCloaked )
+			ApplyUnCloakedSkins();
+		else
+			ApplyGlowSkin();
+	}
+}
+
+simulated event Timer()
+{
+	Super.Timer();
+	
+	if ( Level.NetMode == NM_DedicatedServer || Health < 1 || bZapped )
+		Return;
+	
+	if ( Level.TimeSeconds >= NextSpottedCheckTime )
+		CheckSpotted();
+	
+	if ( !bCloaked && !bIsUnCloaked )
+		UncloakStalker();
+	else if ( !bIsCloaked && Level.TimeSeconds >= UnCloakEndTime  )
+		CloakStalker();
 }
 
 // Set the zed to the zapped behavior
@@ -234,17 +275,17 @@ simulated function SetZappedBehavior()
 	Super.SetZappedBehavior();
 
 	bUnlit = False;
-
 	// Handle setting the zed to uncloaked so the zapped overlay works properly
-	if ( Level.Netmode != NM_DedicatedServer )  {
-		Skins = UnCloakedSkins;
+	if ( Level.Netmode == NM_DedicatedServer )
+		Return;
+	
+	ApplyUnCloakedSkins();
 
-		if ( PlayerShadow != None )
-			PlayerShadow.bShadowActive = True;
+	if ( PlayerShadow != None )
+		PlayerShadow.bShadowActive = True;
 
-		bAcceptsProjectors = True;
-		SetOverlayMaterial(Material'KFZED_FX_T.Energy.ZED_overlay_Hit_Shdr', 999, True);
-	}
+	bAcceptsProjectors = True;
+	SetOverlayMaterial(Material'KFZED_FX_T.Energy.ZED_overlay_Hit_Shdr', 999, True);
 }
 
 // Turn off the zapped behavior
@@ -255,7 +296,7 @@ simulated function UnSetZappedBehavior()
 	// Handle getting the zed back cloaked if need be
 	if ( Level.Netmode != NM_DedicatedServer )  {
 		NextCheckTime = Level.TimeSeconds;
-		SetOverlayMaterial(None, 0.0f, True);
+		SetOverlayMaterial(None, 0.0, True);
 	}
 }
 
@@ -263,20 +304,14 @@ simulated function UnSetZappedBehavior()
 function SetZapped(float ZapAmount, Pawn Instigator)
 {
 	LastZapTime = Level.TimeSeconds;
-
-	if ( bZapped )  {
-		TotalZap = ZapThreshold;
-		RemainingZap = ZapDuration;
-	}
-	else  {
-		TotalZap += ZapAmount;
-
-		if ( TotalZap >= ZapThreshold )  {
-			RemainingZap = ZapDuration;
-			  bZapped = True;
-		}
-	}
+	TotalZap += ZapAmount;
+	if ( TotalZap < ZapThreshold )
+		Return;
+	
+	bZapped = True;
+	RemainingZap = ZapDuration;
 	ZappedBy = Instigator;
+	SetZappedBehavior();
 }
 
 function BreakGrapple()
@@ -293,9 +328,8 @@ function RemoveHead()
 	Super.RemoveHead();
 
 	BreakGrapple();
-	
 	if ( !bCrispified )
-		Skins = UnCloakedSkins;
+		ApplyUnCloakedSkins();
 }
 
 function Died( Controller Killer, class<DamageType> DamageType, vector HitLocation )
@@ -308,13 +342,10 @@ simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
 {
 	Super.PlayDying(DamageType,HitLoc);
 
-	if ( bUnlit )
-		bUnlit = !bUnlit;
-
-	LocalKFHumanPawn = None;
-
+	bUnlit = False;
+	LocalHuman = None;
 	if ( !bCrispified )
-		Skins = UnCloakedSkins;
+		ApplyUnCloakedSkins();
 }
 
 simulated event Destroyed()
@@ -328,6 +359,9 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 SpottedCheckDelay=0.5
+	 UnCloakDelay=1.2
+	 
 	 KilledExplodeChance=0.2
 	 ExplosionDamage=160
 	 ExplosionRadius=280.0

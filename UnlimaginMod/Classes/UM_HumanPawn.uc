@@ -1103,6 +1103,14 @@ simulated function UpdateViewPosition()
 	LastViewDirection = vector(LastViewRotation);
 }
 
+function bool IsLastAimTargetVaild()
+{
+	if ( LastAimTarget == None || LastAimTarget.bHidden || LastAimTarget.bDeleteMe || LastAimTarget == Self || LastAimTarget.Base == Self )
+		Return False; // Target is not satisfy
+	
+	Return LastAimTarget.bProjTarget || LastAimTarget.bWorldGeometry || LastAimTarget == Level;
+}
+
 // Find the target to fire at
 final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, out vector SpawnLocation )
 {
@@ -1114,20 +1122,18 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 	UpdateViewPosition();
 	//SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True, vect(1.0, 1.0, 1.0));
 	SpawnBlocker = Trace(HitLocation, HitNormal, SpawnLocation, LastEyePosition, True);
-	if ( SpawnBlocker != None )  {
-		//Log("SpawnBlocker found!", Name);
+	if ( SpawnBlocker != None )
 		LastAimTarget = SpawnBlocker;
-		//SpawnLocation = LastEyePosition;
-	}
 	// Decreasing CPU load
 	else if ( Level.TimeSeconds >= NextAimRotationTime )  {
 		NextAimRotationTime = Level.TimeSeconds + AimRotationDelay;
+		LastAimTarget = None;
 		// Trace Range
 		if ( WeaponFire.UMWeapon.bAimingRifle )
 			f = WeaponFire.MaxRange();
 		else
 			f = GetIntuitiveShootingRange();
-		// TraceEnd
+		// CameraPosition
 		if ( UM_PlayerController(Controller) != None )
 			UM_PlayerController(Controller).GetCameraPosition( LastCameraLocation, LastCameraDirection, LastCameraRotation );
 		else  {
@@ -1135,6 +1141,7 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 			LastCameraRotation = LastViewRotation;
 			LastCameraDirection = LastViewDirection;
 		}
+		// TraceEnd
 		TraceEnd = LastCameraLocation + LastCameraDirection * f;
 		
 		// adjust aim based on FOV
@@ -1153,27 +1160,23 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 			LastAimTarget = Controller.PickTarget( BestAim, TargetDist, LastCameraDirection, LastCameraLocation, f );
 		}
 		
-		if ( LastAimTarget == None )  {
+		if ( !IsLastAimTargetVaild() )  {
 			// Tracing from the player camera to find the target
 			foreach TraceActors( Class'Actor', LastAimTarget, LastAimLocation, HitNormal, TraceEnd, LastCameraLocation )  {
-				if ( LastAimTarget != None && LastAimTarget != Self && LastAimTarget.Base != Self && !LastAimTarget.bHidden
-					 && (LastAimTarget == Level || LastAimTarget.bWorldGeometry || LastAimTarget.bProjTarget /*|| LastAimTarget.bBlockActors*/) )
-					Break;	// We have found the Target
+				if ( IsLastAimTargetVaild() )
+					Break;
 				else
-					LastAimTarget = None;	// Target is not satisfy the conditions of search
+					LastAimTarget = None;
 			}
 		}
 		
 		// Pick any target
-		if ( LastAimTarget == None )
+		if ( LastAimTarget = None )
 			LastAimTarget = Trace(LastAimLocation, HitNormal, TraceEnd, LastCameraLocation, True);
 		
-		// If we didn't find the Target just get the TraceEnd location
-		if ( LastAimTarget == None )
+		// If we didn't find the Target just set LastAimLocation to the TraceEnd
+		if ( !IsLastAimTargetVaild() )
 			LastAimLocation = TraceEnd;
-		
-		//SquaredDistToTarget = VSizeSquared(LastAimLocation - LastCameraLocation);
-		SquaredDistToTarget = VSizeSquared(LastAimLocation - LastEyePosition);
 	}
 	
 	if ( LastAimTarget != None && Controller != None )  {
@@ -1187,37 +1190,24 @@ final function rotator GetAimRotation( UM_BaseProjectileWeaponFire WeaponFire, o
 		}
 	}
 
-	// If target is closer to the screen than the SpawnLocation
-	// or if it closer than 1600.0 uu (~= 0.67 m)
-	//if ( SquaredDistToTarget <= 900.0 || SpawnBlocker != None || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastCameraLocation) )  {
+	// Dist from the EyePosition for case if third-person view
+	SquaredDistToTarget = VSizeSquared(LastAimLocation - LastEyePosition);
 	if ( SpawnBlocker != None || SquaredDistToTarget <= 1600.0 || SquaredDistToTarget <= VSizeSquared(SpawnLocation - LastEyePosition) )  {
-		/*
-		if ( WeaponFire.ProjClass != None )
-			f = WeaponFire.ProjClass.default.CollisionExtentVSize + 12.0;
-		else
-			f = 12.0;
-		// Change SpawnLocation
-		SpawnLocation = LastCameraLocation - Normal(LastCameraLocation - LastAimLocation) * f;
-		*/
-		/*
-		SpawnLocation = LastCameraLocation - LastCameraDirection * (CollisionRadius + 12.0);
-		AimRotation = LastCameraRotation;
-		*/
 		SpawnLocation = LastEyePosition - LastViewDirection * (CollisionRadius + 12.0);
 		AimRotation = LastViewRotation;
 	}
 	else
 		AimRotation = rotator(LastAimLocation - SpawnLocation);
-		//AimRotation = rotator(Normal(LastAimLocation - SpawnLocation));
 	
 	if ( bOnDrugs )
 		f = WeaponFire.GetAimError() * DrugsAimErrorScale;
 	else
 		f = WeaponFire.GetAimError();
+	
 	// Adjusting AimError to the AimRotation
 	if ( f > 0.0 )  {
-		AimRotation.Yaw += Round(f * (FRand() - 0.5));
-		AimRotation.Pitch += Round(f * (FRand() - 0.5));
+		AimRotation.Yaw += Round(f * Lerp(FRand(), -0.5, 0.5));
+		AimRotation.Pitch += Round(f * Lerp(FRand(), -0.5, 0.5));
 	}
 	
 	Return AimRotation;

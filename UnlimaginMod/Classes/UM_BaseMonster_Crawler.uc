@@ -20,16 +20,13 @@ class UM_BaseMonster_Crawler extends UM_BaseMonster
 //========================================================================
 //[block] Variables
 
-var()			float						PounceSpeed;
-var				bool						bPouncing;
+var(Anims)			name						MeleeAirAnims[3]; // Attack anims for when flying through the air
 
-var(Anims)		name						MeleeAirAnims[3]; // Attack anims for when flying through the air
-
-var				bool						bPoisonous;
-var				float						PoisonousChance;
-var(Display)	Material					PoisonousMaterial;
-var				class<DamTypeZombieAttack>	PoisonDamageType;
-var				range						PoisonDamageRandRange;
+var					bool						bPoisonous;
+var					float						PoisonousChance;
+var(Display)		Material					PoisonousMaterial;
+var					class<DamTypeZombieAttack>	PoisonDamageType;
+var					range						PoisonDamageRandRange;
 
 //[end] Varibles
 //====================================================================
@@ -49,146 +46,51 @@ replication
 //========================================================================
 //[block] Functions
 
+// Difficulty Scaling
+function AdjustGameDifficulty()
+{
+	local	byte	i;
+	
+	if ( bPoisonous )  {
+		MeleeDamage = Round(Lerp(Frand(), PoisonDamageRandRange.Min, PoisonDamageRandRange.Max));
+		for ( i = 0; i < ArrayCount(ZombieDamType); ++i )
+			ZombieDamType[i] = PoisonDamageType;
+	}
+	
+	Super.AdjustGameDifficulty();
+}
+
 simulated event PostBeginPlay()
 {
-	// Randomizing PounceSpeed
-	if ( Level.Game != None && !bDiffAdjusted )
-		PounceSpeed *= Lerp( FRand(), 0.9, 1.1 );
+	if ( Role == ROLE_Authority && FRand() <= PoisonousChance )  {
+		bPoisonous = True;
+		SetOverlayMaterial(PoisonousMaterial, 1800.0, False); // 30 minutes
+		MenuName = "Poisonous" @ MenuName;
+	}
 	
 	Super.PostBeginPlay();
+}
+
+function name GetAnimActionName( name NewAction )
+{
+	local	byte	RandNum;
 	
-	// Server only next
-	if ( Role < ROLE_Authority )
-		Return;
-	
-	if ( FRand() <= PoisonousChance )  {
-		bPoisonous = True;
-		CurrentDamtype = PoisonDamageType;
-		PoisonDamageRandRange.Min *= DifficultyDamageModifer();
-		PoisonDamageRandRange.Max *= DifficultyDamageModifer();
-		SetOverlayMaterial(PoisonousMaterial, 1800.0, False); // 30 minutes
-	}
-	else
-		CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-}
-
-simulated event PostNetBeginPlay()
-{
-	Super.PostNetBeginPlay();
-	
-	if ( bPoisonous )
-		MenuName = "Poisonous" @ MenuName;
-}
-
-function bool DoPounce()
-{
-	if ( bZapped || bIsCrouched || bWantsToCrouch || Physics != PHYS_Walking || 
-		 VSize(Location - Controller.Target.Location) > (MeleeRange * 5.0) )
-		Return False;
-
-	bPouncing = True;
-	Velocity = Normal(Controller.Target.Location - Location) * PounceSpeed;
-	Velocity.Z = JumpZ;
-	SetPhysics(PHYS_Falling);
-	ZombieSpringAnim();
-	
-	Return True;
-}
-
-simulated function ZombieSpringAnim()
-{
-	SetAnimAction('ZombieSpring');
-}
-
-event Landed(vector HitNormal)
-{
-	Super.Landed(HitNormal);
-	bPouncing = False;
-}
-
-event Bump(actor Other)
-{
-	if ( bPouncing && KFHumanPawn(Other) != None )  {
-		if ( bPoisonous )
-			KFHumanPawn(Other).TakeDamage( Lerp(FRand(), PoisonDamageRandRange.Min, PoisonDamageRandRange.Max), self, Location, Velocity, PoisonDamageType );
-		else if ( CurrentDamtype != None )
-			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, CurrentDamtype );
-		else
-			KFHumanPawn(Other).TakeDamage( (MeleeDamage * Lerp(FRand(), 0.95, 1.05)), self, Location, Velocity, ZombieDamType[Rand(ArrayCount(ZombieDamType))] );
-		//TODO - move this to humanpawn.takedamage? Also see KFMonster.MeleeDamageTarget
-		if ( KFHumanPawn(Other).Health <= 0 )
-			KFHumanPawn(Other).SpawnGibs(Rotation, 1);
-		//After impact, there'll be no momentum for further bumps
-		bPouncing = True;
-	}
-}
-
-// Blend his attacks so he can hit you in mid air.
-simulated function int DoAnimAction( name AnimName )
-{
-    if ( AnimName == 'InAir_Attack1' || AnimName == 'InAir_Attack2' )  {
-		AnimBlendParams(1, 1.0, 0.0,, FireRootBone);
-		PlayAnim(AnimName,, 0.0, 1);
-		Return 1;
+	if ( NewAction == 'AA_JumpMeleeAttack' )  {
+		RandNum = Rand(ArrayCount(MeleeAirAnims));
+		NewAction = MeleeAirAnims[RandNum];
+		CurrentDamtype = ZombieDamType[RandNum];
+		Return NewAction;
 	}
 	
-    if ( AnimName == 'HitF' )  {
-		AnimBlendParams(1, 1.0, 0.0,, NeckBone);
-		PlayAnim(AnimName,, 0.0, 1);
-		Return 1;
-	}
-
-	if ( AnimName == 'ZombieSpring' )  {
-        PlayAnim(AnimName,,0.02);
-        Return 0;
-	}
-
-	Return Super.DoAnimAction(AnimName);
+	Return Super.GetAnimActionName(NewAction);
 }
 
-simulated event SetAnimAction(name NewAction)
+function PlayMeleeAirAttack()
 {
-	if ( NewAction == '' )
-		Return;
-
-	if ( NewAction == 'DoorBash' )  {
-		if ( bPoisonous )
-			CurrentDamtype = PoisonDamageType;
-		else
-			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-	}
-	else if ( NewAction == 'Claw' )  {
-		if ( bPoisonous )
-			CurrentDamtype = PoisonDamageType;
-		else
-			CurrentDamtype = ZombieDamType[Rand(ArrayCount(ZombieDamType))];
-		if ( Physics == PHYS_Falling )
-			NewAction = MeleeAirAnims[Rand(ArrayCount(MeleeAirAnims))];
-		else
-			NewAction = MeleeAnims[Rand(ArrayCount(MeleeAnims))];
-	}
-	
-	ExpectingChannel = DoAnimAction(NewAction);
-
-	if ( AnimNeedsWait(NewAction) )
-		bWaitForAnim = True;
-	else
-		bWaitForAnim = False;
-
-	if ( Level.NetMode != NM_Client )  {
-		AnimAction = NewAction;
-		bResetAnimAct = True;
-		ResetAnimActTime = Level.TimeSeconds + 0.3;
-	}
-}
-
-// The animation is full body and should set the bWaitForAnim flag
-simulated function bool AnimNeedsWait(name TestAnim)
-{
-    if ( TestAnim == 'ZombieSpring' || TestAnim == 'DoorBash' )
-        Return True;
-
-    Return True;
+	bShotAnim = True;
+	SetAnimAction('AA_JumpMeleeAttack');
+	if ( UM_MonsterController(Controller) != None )
+		UM_MonsterController(Controller).GotoState('MovingAttack');
 }
 
 //[end] Functions
@@ -196,6 +98,9 @@ simulated function bool AnimNeedsWait(name TestAnim)
 
 defaultproperties
 {
+	 JumpAttackChance=0.8
+	 JumpAttackRandDelay=(Min=1.5,Max=4.5)
+	 
 	 KnockDownHealthPct=0.0
 	 ExplosiveKnockDownHealthPct=0.6
 	 
@@ -215,7 +120,7 @@ defaultproperties
 	 //PoisonousMaterial=FinalBlend'kf_fx_trip_t.siren.siren_scream_fb'
 	 PoisonousMaterial=Combiner'kf_fx_trip_t.siren.siren_scream_cmb'
 	 PoisonDamageType=Class'UnlimaginMod.UM_ZombieDamType_CrawlerPoison'
-	 PoisonDamageRandRange=(Min=6.0,Max=8.0)
+	 PoisonDamageRandRange=(Min=5.0,Max=7.0)
 	 AlphaSpeedChance=0.25
 	 AlphaSpeedScaleRange=(Min=1.2,Max=2.4)
 	 // Extra Sizes
@@ -223,7 +128,7 @@ defaultproperties
 	 ZombieDamType(0)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
      ZombieDamType(1)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
      ZombieDamType(2)=Class'UnlimaginMod.UM_ZombieDamType_CrawlerMelee'
-	 PounceSpeed=330.000000
+
      bStunImmune=True
      bCannibal=True
      ZombieFlag=2
@@ -246,7 +151,7 @@ defaultproperties
 
 	 // JumpZ
 	 JumpZ=350.0
-	 JumpSpeed=200.0
+	 JumpSpeed=320.0
 	 AirControl=0.25
      HeadHeight=2.500000
      HeadScale=1.050000

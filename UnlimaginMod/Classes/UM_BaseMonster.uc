@@ -188,9 +188,19 @@ var					sound				GibbedDeathSound; // monster was gibbed
 var					sound				ChallengingSound;
 var					sound				RagImpactSound; // Ragdoll impact sound
 
+var					bool				bGibMeleeKilledPawn; // SpawnGibs if Pawn was killed by melee attack
+
+// MovingAttack
 var		transient	bool				bMovingAttack;
 var					float				MovingAttackChance;
 var		transient	bool				bMovementDisabled;
+
+// JumpAttack
+var		transient	bool				bDoingJumpAttack;
+var					float				JumpAttackChance;
+var		transient	float				NextJumpAttackTime;
+var					range				JumpAttackRandDelay;
+
 // Animation
 var					name				RunAnims[8];
 
@@ -795,6 +805,7 @@ simulated event PostNetBeginPlay()
 	InitCheckAnimActions();
 	AnimateDefault();
 	EnableChannelNotify(BaseAnimChannel, 1);
+	EnableChannelNotify(MajorAnimChannel, 1);
 	EnableChannelNotify(MinorAnimChannel, 1);
 	//AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , SpineBone1);
 	//AnimBlendParams(MinorAnimChannel, 1.0, 0.0, , HeadBone);
@@ -896,9 +907,16 @@ event FellOutOfWorld( eKillZType KillType )
 // move karma objects by a kick
 // The Kick animation will ONLY be called if the Zombie is On level ground with the KActor,
 // and is facing it.
-event Bump(actor Other)
+event Bump(Actor Other)
 {
 	local Vector X,Y,Z;
+	
+	if ( bDoingJumpAttack && Other == LookTarget && CanAttack(Other) )  {
+		Controller.Target = Other;
+		PlayMeleeAirAttack();
+		bDoingJumpAttack = False;
+		Return;
+	}
 
 	Super(Skaarj).Bump(Other);
 	
@@ -1566,24 +1584,23 @@ function bool MeleeDamageTarget(int HitDamage, vector PushDir)
 		}
 
 		// Do more damage if you are attacking another zed so that zeds don't just stand there whacking each other forever! - Ramm
-		if ( KFMonster(Controller.Target) != None )  {
+		if ( KFMonster(Controller.Target) != None )
 			Controller.Target.TakeDamage(Round(float(HitDamage) * DamageToMonsterScale), self, HitLocation, PushDir, CurrentDamType);
-			Return True;
-		}
+		else
+			Controller.Target.TakeDamage(HitDamage, self, HitLocation, PushDir, CurrentDamType);
 		
-		Controller.Target.TakeDamage(HitDamage, self, HitLocation, PushDir, CurrentDamType);
-		// Check for killed Human
-		if ( KFHumanPawn(Controller.Target) != None && KFHumanPawn(Controller.Target).Health < 1 )  {
+		// Check for killed Pawn
+		if ( xPawn(Controller.Target) != None && xPawn(Controller.Target).Health < 1 )  {
 			// Blood effects
 			if ( !class'GameInfo'.static.UseLowGore() )  {
 				Spawn(class'KFMod.FeedingSpray', self,, Controller.Target.Location, rotator(PushDir));
-				KFHumanPawn(Controller.Target).SpawnGibs(rotator(PushDir), 1);
+				xPawn(Controller.Target).SpawnGibs(rotator(PushDir), 1);
 				TearBone = Controller.Target.GetClosestBone(HitLocation, PushDir, F);
 				if ( TearBone != '' )
-					KFHumanPawn(Controller.Target).HideBone(TearBone);
+					xPawn(Controller.Target).HideBone(TearBone);
 			}
 			// Give us some Health back
-			if ( Health <= (HealthMax * (1.0 - FeedThreshold)) )
+			if ( KFHumanPawn(Controller.Target) != None && Health <= (HealthMax * (1.0 - FeedThreshold)) )
 				Health += Round(FeedThreshold * HealthMax * float(Health) / HealthMax);
 		}
 
@@ -1765,6 +1782,7 @@ function TakeFallingDamage()
 
 event Landed(vector HitNormal)
 {
+	bDoingJumpAttack = False;
 	ImpactVelocity = vect(0,0,0);
 	TakeFallingDamage();
 	
@@ -2401,7 +2419,7 @@ simulated function bool IsMinorAnim( name AnimName )
 simulated function int DoAnimAction( name AnimName )
 {
 	if ( IsMinorAnim(AnimName) )  {
-		if ( bZapped || bCrispified || IsAnimating(BaseAnimChannel) )  {
+		if ( bZapped || bCrispified || IsAnimating(BaseAnimChannel) || IsAnimating(MajorAnimChannel) )  {
 			AnimBlendParams(MinorAnimChannel, 0.0, 0.0,, SpineBone1);
 			AnimBlendParams(MinorAnimChannel, 1.0, 0.0,, NeckBone);
 		}
@@ -2599,7 +2617,7 @@ function bool CanAttack(Actor A)
 	//if ( KFDoorMover(A) != None )
 		//Return True;
 	
-	if ( KFHumanPawn(A) != None && KFHumanPawn(A).Health < 1 )
+	if ( Pawn(A) != None && Pawn(A).Health < 1 )
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius);
 	else
 		Return VSizeSquared(A.Location - Location) < Square(MeleeRange + CollisionRadius + A.CollisionRadius);
@@ -2620,15 +2638,50 @@ function float GetMovingAttackChance()
 function RangedAttack(Actor A)
 {
 	bShotAnim = True;
-	if ( FRand() > GetMovingAttackChance() )  {
+	// Stop when attacking
+	if ( Physics == PHYS_Walking && FRand() > GetMovingAttackChance() )  {
 		DisableMovement(); // Must be called before SetAnimAction
 		SetAnimAction('AA_MeleeAttack');
 	}
+	// Attack while moving
 	else  {
 		SetAnimAction('AA_MeleeAttack');
 		if ( UM_MonsterController(Controller) != None )
 			UM_MonsterController(Controller).GotoState('MovingAttack');
 	}
+}
+
+// Called from Controller FireWeaponAt()
+function bool CanJumpAttack(Actor A)
+{
+	if ( A == None || Controller == None || JumpAttackChance <= 0.0 || bZapped 
+		 || bIsCrouched || bWantsToCrouch || Physics == PHYS_Swimming || bSTUNNED 
+		 || bShocked || bKnockedDown || NextJumpAttackTime > Level.TimeSeconds )
+		Return False;
+	
+	Return VSizeSquared(A.Location - Location) < Square(JumpSpeed + MeleeRange);
+}
+
+// Called from Controller FireWeaponAt()
+function DoJumpAttack(Actor A)
+{
+	LookTarget = A;
+	Acceleration = AccelRate * Normal(LookTarget.Location - Location);
+	Rotation = Rotator(Acceleration);
+	// Do Jump to the Enemy and wait for a Bump or Landed event
+	if ( DoJump(False) )  {
+		bDoingJumpAttack = True;
+		NextJumpAttackTime = Level.TimeSeconds + Lerp(FRand(), JumpAttackRandDelay.Min, JumpAttackRandDelay.Max);
+	}
+}
+
+function PlayMeleeAirAttack()
+{
+	// Attack while flying or falling
+	bShotAnim = True;
+	SetAnimAction('AA_MeleeAttack');
+	if ( UM_MonsterController(Controller) != None )
+		UM_MonsterController(Controller).GotoState('MovingAttack');
 }
 
 function bool CanAttackDoor(KFDoorMover Door)
@@ -4176,6 +4229,8 @@ function Dazzle(float TimeScale)
 
 defaultproperties
 {
+	 JumpAttackChance=0.0
+	 JumpAttackRandDelay=(Min=4.0,Max=8.0)
 	 //KilledShouldExplode
 	 // Explosion camera shakes
 	 ExplosionShakeRadiusScale=2.0

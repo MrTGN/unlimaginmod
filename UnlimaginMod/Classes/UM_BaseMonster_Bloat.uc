@@ -244,6 +244,9 @@ function AdjustTakenDamage(
 
 defaultproperties
 {
+	 JumpAttackChance=0.05
+	 MovingAttackChance=0.2
+	 
 	 // Explosion parametrs
 	 KilledExplodeChance=1.0
 	 ExplosionDamage=240
@@ -294,7 +297,7 @@ defaultproperties
 	 
 	 // JumpZ
 	 JumpZ=320.0
-	 JumpSpeed=110.0
+	 JumpSpeed=120.0
 	 AirControl=0.15
 	 HeadHeight=2.500000
 	 HeadScale=1.500000

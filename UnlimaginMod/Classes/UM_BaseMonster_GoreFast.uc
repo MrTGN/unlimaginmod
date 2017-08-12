@@ -331,6 +331,8 @@ simulated function HideBone(name boneName)
 
 defaultproperties
 {
+	 JumpAttackChance=0.05
+	 
 	 KilledExplodeChance=0.15
 	 ExplosionDamage=180
 	 ExplosionRadius=280.0
@@ -361,7 +363,7 @@ defaultproperties
 	 AlphaIntelligence=BRAINS_Human
 	 // JumpZ
 	 JumpZ=320.0
-	 JumpSpeed=180.0
+	 JumpSpeed=190.0
 	 
 	 HeadHeight=2.500000
 	 HeadScale=1.500000

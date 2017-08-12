@@ -145,29 +145,56 @@ function ClawDamageTarget()
 		DisabledPawn = NewDisabledPawn;
 		NewDisabledPawn.DisableMovement(GrappleDuration);
 		NewDisabledPawn.NotifyGrabbedBy(Self);
+		GoToState('Grappling');
 	}
 }
 
 simulated event SetAnimAction(name NewAction)
 {
-	if ( NewAction == 'Claw' || NewAction == MeleeAnims[0] || NewAction == MeleeAnims[1] || NewAction == MeleeAnims[2] )
+	if ( NewAction == 'AA_MeleeAttack' || NewAction == KnockDownAnim )
 		UnCloakStalker();
 	
 	Super.SetAnimAction(NewAction);
 }
 
-simulated event Tick( float DeltaTime )
+function bool IsOutOfGrappleRange()
 {
-	Super.Tick( DeltaTime );
+	if ( LookTarget == None )
+		Return True;
+	
+	if ( Level.TimeSeconds < NextGrappleRangeCheckTime )
+		Return False;
+	
+	NextGrappleRangeCheckTime = Level.TimeSeconds + GrappleRangeCheckDelay;
+	
+	Return VSizeSquared(LookTarget.Location - Location) > GrappleSquaredRange;
+}
 
-	if ( Role == ROLE_Authority )  {
-		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
-			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
-		// if we move out of melee range, stop doing the grapple animation
-		if ( bGrappling && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
-			bGrappling = False;
-			AnimEnd(1);
+function BreakGrapple()
+{
+	bGrappling = False;
+	if ( DisabledPawn == None )
+		Return;
+	
+	DisabledPawn.EnableMovement();
+	DisabledPawn = None;
+}
+
+state Grappling
+{
+	event Timer()
+	{
+		Global.Timer();
+		if ( Role == ROLE_Authority && bGrappling 
+			 && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
+			AnimEnd(ExpectingChannel);
+			GoToState('');
 		}
+	}
+	
+	event EndState()
+	{
+		BreakGrapple();
 	}
 }
 
@@ -314,15 +341,6 @@ function SetZapped(float ZapAmount, Pawn Instigator)
 	SetZappedBehavior();
 }
 
-function BreakGrapple()
-{
-	if ( DisabledPawn == None )
-		Return;
-	
-	DisabledPawn.EnableMovement();
-	DisabledPawn = None;
-}
-
 function RemoveHead()
 {
 	Super.RemoveHead();
@@ -359,6 +377,9 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 JumpAttackChance=0.25
+	 MovingAttackChance=0.25
+	 
 	 SpottedCheckDelay=0.5
 	 UnCloakDelay=1.2
 	 
@@ -396,7 +417,7 @@ defaultproperties
 	 
 	 // JumpZ
 	 JumpZ=350.0
-	 JumpSpeed=220.0
+	 JumpSpeed=300.0
 	 AirControl=0.25
 	 
 	 HeadHeight=2.500000

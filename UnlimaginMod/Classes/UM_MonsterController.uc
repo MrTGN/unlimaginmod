@@ -678,15 +678,21 @@ function bool FireWeaponAt(Actor A)
 	if ( A == None )
 		A = Enemy;
 	
-	if ( A == None || MyMonster == None || Focus != A || !MyMonster.CanAttack(A) )
+	if ( A == None || MyMonster == None || Focus != A )
 		Return False;
 	
-	Target = A;
-	MyMonster.RangedAttack(Target);
-	
-	//ToDo: по логике для задержки выстрела должно возвращаться True. #Проверить!!!
-	//Return False;
-	Return True;
+	if ( MyMonster.CanAttack(A) )  {
+		Target = A;
+		MyMonster.RangedAttack(A);
+		Return True;
+	}
+	else if ( MyMonster.CanJumpAttack(A) )  {
+		Target = A;
+		MyMonster.DoJumpAttack(A);
+		Return True;
+	}
+
+	Return False;
 }
 
 function TimedFireWeaponAtEnemy()

@@ -644,7 +644,7 @@ defaultproperties
 	 
 	 // JumpZ
 	 JumpZ=320.0
-	 JumpSpeed=160.0
+	 JumpSpeed=200.0
 	 
      HeadHeight=2.500000
      HeadScale=1.300000

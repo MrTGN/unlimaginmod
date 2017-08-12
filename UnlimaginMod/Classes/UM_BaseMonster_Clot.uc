@@ -75,6 +75,7 @@ function ClawDamageTarget()
 		DisabledPawn = NewDisabledPawn;
 		NewDisabledPawn.DisableMovement(GrappleDuration);
 		NewDisabledPawn.NotifyGrabbedBy(Self);
+		GoToState('Grappling');
 	}
 }
 
@@ -91,28 +92,32 @@ function bool IsOutOfGrappleRange()
 	Return VSizeSquared(LookTarget.Location - Location) > GrappleSquaredRange;
 }
 
-simulated event Tick( float DeltaTime )
-{
-	Super.Tick( DeltaTime );
-
-	if ( Role == ROLE_Authority )  {
-		if ( bShotAnim && !bWaitForAnim && LookTarget != None )
-			Acceleration = AccelRate * Normal(LookTarget.Location - Location);
-		// if we move out of melee range, stop doing the grapple animation
-		if ( bGrappling && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
-			bGrappling = False;
-			AnimEnd(1);
-		}
-	}
-}
-
 function BreakGrapple()
 {
+	bGrappling = False;
 	if ( DisabledPawn == None )
 		Return;
 	
 	DisabledPawn.EnableMovement();
 	DisabledPawn = None;
+}
+
+state Grappling
+{
+	event Timer()
+	{
+		Global.Timer();
+		if ( Role == ROLE_Authority && bGrappling 
+			 && (Level.TimeSeconds > GrappleEndTime || IsOutOfGrappleRange()) )  {
+			AnimEnd(ExpectingChannel);
+			GoToState('');
+		}
+	}
+	
+	event EndState()
+	{
+		BreakGrapple();
+	}
 }
 
 function RemoveHead()
@@ -145,6 +150,9 @@ simulated event Destroyed()
 
 defaultproperties
 {
+	 JumpAttackChance=0.1
+	 MovingAttackChance=0.1
+	 
 	 KnockDownHealthPct=0.65
 	 ExplosiveKnockDownHealthPct=0.55
 	 
@@ -179,7 +187,7 @@ defaultproperties
 	 WaterSpeed=105.000000
 	 
 	 JumpZ=340.0
-	 JumpSpeed=160.0
+	 JumpSpeed=200.0
 	 RotationRate=(Yaw=45000,Roll=0)
 	 MenuName="Clot"
 	 DecapitationAnim="HeadLoss"
